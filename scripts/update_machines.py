@@ -3,18 +3,18 @@ from bs4 import BeautifulSoup
 import re
 import time
 import json
-import sys
 
 # ==========================================
 # 1. あなたのGASウェブアプリURLをここに貼り付けてください
 # ==========================================
-GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxF17iitBnp-nLmY0xT0Q7phiYq0boWvbrKbdl67Daf8H3MHRNdq_bYImeZdQIEyIRL/exec"
+GAS_WEBAPP_URL = "あなたのGASウェブアプリURL"
 
 BASE_URL = "https://pachiseven.jp"
+# パチンコ新着一覧（一番確実なURL）
 LIST_URL = "https://pachiseven.jp/machines/search?m_type=1&order=1"
 
 def get_pachi7_details(detail_url):
-    headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"}
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
     try:
         res = requests.get(detail_url, headers=headers, timeout=15)
         res.encoding = res.apparent_encoding
@@ -23,16 +23,13 @@ def get_pachi7_details(detail_url):
         print(f"      エラー: 接続失敗 {e}")
         return None
 
-    # 機種名
     name_el = soup.select_one('h1')
     if not name_el: return None
     name = name_el.get_text(strip=True)
 
-    # メーカー名
-    maker_el = soup.select_one('.m-machineMain_maker a')
+    maker_el = soup.select_one('.m-machineMain_maker a') or soup.select_one('td a[href*="/machines/maker/"]')
     maker = maker_el.get_text(strip=True) if maker_el else "不明"
 
-    # 大当り確率
     probability = "-"
     spec_tables = soup.select('.m-machineSpecTable')
     for table in spec_tables:
@@ -40,37 +37,31 @@ def get_pachi7_details(detail_url):
             th = row.select_one('th')
             td = row.select_one('td')
             if th and td and "大当り確率" in th.get_text():
-                text = td.get_text()
+                text = td.get_text(strip=True)
                 match = re.search(r"1/\d+\.?\d*", text)
-                probability = match.group(0) if match else text.split('(')[0].strip()
+                probability = match.group(0) if match else text
                 break
 
-    # 大当り振分け
     heso_prizes = []
     denchu_prizes = []
-    sections = soup.select('h3')
     
-    # h3が見つからない場合、テーブルの中身を直接走査するバックアップ
-    if not sections:
-        sections = [soup.select_one('.m-machineSpecTable')]
-
+    # 全ての「大当り振分け」テーブルを取得
+    # 見出し(h3)とその後のテーブルのセットを網羅的に探す
+    sections = soup.find_all(['h3', 'h4'])
     for section in sections:
-        if not section: continue
-        section_title = section.get_text()
+        title = section.get_text()
+        if not any(x in title for x in ["振分け", "内訳", "割合"]): continue
         
-        # 振分けテーブルを特定
-        table = section.find_next('table', class_='m-machineSpecTable')
+        table = section.find_next('table')
         if not table: continue
         
-        rows = table.select('tr')
-        for row in rows:
+        for row in table.select('tr'):
             cols = row.select('td')
-            # 列が2つ以上（出玉と状態）ある行が対象
             if len(cols) >= 2:
+                # [出玉, 内容, 割合] のパターンを解析
                 prize_text = cols[0].get_text(strip=True)
                 status_text = cols[1].get_text(strip=True)
                 
-                # R数、出玉の抽出
                 r_match = re.search(r"(\d+)R", row.get_text())
                 r_val = r_match.group(1) if r_match else "?"
                 p_match = re.search(r"(\d+)個", prize_text)
@@ -78,8 +69,8 @@ def get_pachi7_details(detail_url):
                 
                 label = f"{r_val}R({p_val}個)-{status_text}"
                 
-                # ヘソか電チューかの判定（セクションタイトルまたはテーブル見出し）
-                if any(x in section_title for x in ["通常時", "ヘソ", "特図1", "初回"]):
+                # 特図1と2の振り分け
+                if any(x in title for x in ["通常時", "ヘソ", "特図1", "初回"]):
                     if label not in heso_prizes: heso_prizes.append(label)
                 else:
                     if label not in denchu_prizes: denchu_prizes.append(label)
@@ -93,57 +84,55 @@ def get_pachi7_details(detail_url):
     }
 
 def main():
-    if GAS_WEBAPP_URL == "あなたのGASウェブアプリURL":
-        print("❌ 失敗: GAS_WEBAPP_URL が設定されていません。")
+    if not GAS_WEBAPP_URL or "あなたの" in GAS_WEBAPP_URL:
+        print("❌ GAS URLが未設定です。")
         return
 
-    headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"}
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
     print(f"🚀 巡回開始: {LIST_URL}")
     
     try:
         res = requests.get(LIST_URL, headers=headers)
         soup = BeautifulSoup(res.text, "html.parser")
-        links = soup.select('.m-machineList_item_ttl a')
-        print(f"📌 見つかった機種リンク数: {len(links)}")
+        # href属性に "/machines/" を含み、末尾が数字のリンクをすべて抽出
+        links = soup.find_all('a', href=re.compile(r'/machines/\d+$'))
+        
+        # 重複を除去しながらURLリストを作成
+        target_urls = []
+        for l in links:
+            url = BASE_URL + l['href'] if l['href'].startswith('/') else l['href']
+            if url not in target_urls:
+                target_urls.append(url)
+        
+        print(f"📌 見つかった機種リンク数: {len(target_urls)}")
     except Exception as e:
-        print(f"❌ リスト取得エラー: {e}")
+        print(f"❌ リンク取得エラー: {e}")
         return
 
     batch_data = []
-    for a in links:
-        url = BASE_URL + a['href']
+    for url in target_urls:
         print(f"🔍 解析中: {url}")
-        
         data = get_pachi7_details(url)
         
-        if data:
-            if data['heso_prizes'] or data['denchu_prizes']:
-                print(f"   ✅ 抽出成功: {data['name']}")
-                print(f"      [特図1]: {data['heso_prizes'][:30]}...")
-                batch_data.append(data)
-            else:
-                print(f"   ⚠️  警告: 内訳が空のためスキップします")
-        else:
-            print(f"   ❌ 解析失敗")
+        if data and (data['heso_prizes'] or data['denchu_prizes']):
+            print(f"   ✅ 抽出成功: {data['name']} ({data['probability']})")
+            batch_data.append(data)
         
-        time.sleep(1.2) # サイトへの負荷軽減
+        time.sleep(1.5)
 
-        # 3件溜まったら送信（デバッグしやすくするため少なめに設定）
         if len(batch_data) >= 3:
-            print(f"📡 GASへ送信中 ({len(batch_data)}件)...")
+            print(f"📡 GASへ送信中...")
             try:
                 post_res = requests.post(GAS_WEBAPP_URL, json=batch_data, timeout=20)
                 print(f"📬 GASレスポンス: {post_res.status_code} - {post_res.text}")
                 batch_data = []
             except Exception as e:
-                print(f"❌ 送信エラー: {e}")
+                print(f"❌ 送信失敗: {e}")
 
-    # 残りのデータを送信
     if batch_data:
-        print(f"📡 残りのデータを送信中...")
         requests.post(GAS_WEBAPP_URL, json=batch_data)
 
-    print("🏁 全工程が終了しました。")
+    print("🏁 完了しました。")
 
 if __name__ == "__main__":
     main()
