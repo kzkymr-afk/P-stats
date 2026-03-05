@@ -4,7 +4,7 @@ import json
 import time
 import re
 
-# --- あなたのGASのURLに書き換えてください ---
+# --- あなたのGASのURL ---
 GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyX48IuYB89g2CA3c-ZON626aaSaP9appshUGubnVSOn57SI1SJ66s-UANNUa4YgRGP/exec"
 
 def get_soup(url):
@@ -15,7 +15,7 @@ def get_soup(url):
     try:
         response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
-        response.encoding = response.apparent_encoding # 文字化け対策
+        response.encoding = response.apparent_encoding
         return BeautifulSoup(response.text, "html.parser")
     except Exception as e:
         print(f"通信エラー ({url}): {e}")
@@ -26,11 +26,10 @@ def parse_pworld_detail(code):
     soup = get_soup(url)
     if not soup: return None
 
-    # 機種名
     name_tag = soup.select_one("h1")
     name = name_tag.get_text(strip=True) if name_tag else "不明"
 
-    # 全テキストをスペース区切りで取得（キーワードがくっつくのを防ぐ）
+    # 全テキストをスペース区切りで取得
     full_text = soup.get_text(" ", strip=True)
 
     def extract_by_regex(pattern, text):
@@ -38,19 +37,13 @@ def parse_pworld_detail(code):
         return match.group(1).strip() if match else None
 
     # --- P-WORLD特有のパターンで抽出 ---
-    # 確率： 「1/319」や「1/99」など
     prob = extract_by_regex(r"大当り確率\s*[:：]?\s*(\d+/\d+\.?\d*)", full_text)
-    
-    # メーカー： 文字列の塊を取得
     maker = extract_by_regex(r"メーカー\s*[:：]?\s*([^\s\n\r]+)", full_text)
-    
-    # 突入・継続率
     rush_rate = extract_by_regex(r"突入率\s*[:：]?\s*(\d+%)", full_text)
     rush_cont = extract_by_regex(r"継続率\s*[:：]?\s*(\d+%)", full_text)
 
-    # 当たり内訳（Rと個数のペアを抽出）
+    # 当たり内訳（Rと個数のペア）
     prize_entries = []
-    # 「10R」「1500個」のような並びを探す
     rounds_balls = re.findall(r"(\d+)\s*R.*?(\d{3,4})\s*個", full_text)
     
     unique_check = set()
@@ -63,47 +56,65 @@ def parse_pworld_detail(code):
     return {
         "name": name,
         "probability": prob if prob else "1/319.7",
-        "border": "18.0", # 固定値
+        "border": "18.0",
         "manufacturer": maker if maker else "不明",
         "rushRate": rush_rate if rush_rate else "-",
         "rushContinuation": rush_cont if rush_cont else "-",
-        "prizeEntries": prize_entries[:8]
+        "prizeEntries": prize_entries[:8],
+        "raw_text": full_text # 判定用にテキストを保持
     }
 
 def main():
-    print("--- P-WORLD 強化版スクレイピング開始 ---")
+    print("--- P-WORLD パチンコ限定スクレイピング開始 ---")
     
-    # 1. 新着機種一覧からコードを取得
     list_url = "https://www.p-world.co.jp/sp/machine.cgi?type=pachinko"
     soup = get_soup(list_url)
     if not soup: return
 
-    # code=数字 を含むリンクをすべて探す
     links = soup.find_all("a", href=re.compile(r"code=\d+"))
     codes = []
     for l in links:
         match = re.search(r"code=(\d+)", l["href"])
         if match: codes.append(match.group(1))
     
-    # 重複を除去して最新の15件程度を対象にする
-    unique_codes = list(dict.fromkeys(codes))[:15]
-    print(f"解析対象コード: {unique_codes}")
+    unique_codes = list(dict.fromkeys(codes))[:20] # 少し多めに取得してフィルタリング
+    print(f"取得対象候補: {len(unique_codes)}件")
 
     new_machines = []
     for code in unique_codes:
-        print(f"解析中: {code}...")
         data = parse_pworld_detail(code)
-        if data:
-            new_machines.append(data)
-        time.sleep(1.5) # サーバーに優しく
+        if not data: continue
 
-    # 2. GAS経由でスプレッドシートへ送信
+        # --- 強力なスロット除外ロジック ---
+        name = data["name"]
+        text = data["raw_text"]
+        prob = data["probability"]
+
+        # 1. 除外キーワード（これらが入っていたらスロット）
+        ng_words = ["機械割", "スマスロ", "パチスロ", "スロット", "AT中", "ART中", "設定1", "設定L", "設定S"]
+        if any(word in text or word in name for word in ng_words):
+            print(f"スキップ（スロット判定）: {name}")
+            continue
+
+        # 2. 必須キーワード（パチンコなら通常これがある）
+        # 「1/」という確率表記がないものは除外（スロットのAタイプ等との誤認回避）
+        if "1/" not in prob:
+            print(f"スキップ（確率表記なし）: {name}")
+            continue
+
+        # 判定用データは不要なので削除して送信リストへ
+        del data["raw_text"]
+        print(f"採用: {name} ({prob})")
+        new_machines.append(data)
+        time.sleep(1.5)
+
+    # 2. GAS経由で送信
     if new_machines:
         print(f"スプレッドシートへ {len(new_machines)} 件送信します...")
         headers = {"Content-Type": "application/json"}
         try:
             res = requests.post(GAS_WEBAPP_URL, data=json.dumps(new_machines), headers=headers)
-            print(f"GASからの応答: {res.text}")
+            print(f"GAS応答: {res.text}")
         except Exception as e:
             print(f"送信エラー: {e}")
 
