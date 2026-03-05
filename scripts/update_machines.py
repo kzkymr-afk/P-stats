@@ -8,7 +8,7 @@ import sys
 # ==========================================
 # 1. あなたのGASウェブアプリURLをここに貼り付けてください
 # ==========================================
-GAS_WEBAPP_URL = "あなたのGASウェブアプリURL"
+GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxF17iitBnp-nLmY0xT0Q7phiYq0boWvbrKbdl67Daf8H3MHRNdq_bYImeZdQIEyIRL/exec"
 
 BASE_URL = "https://pachiseven.jp"
 LIST_URL = "https://pachiseven.jp/machines/search?m_type=1&order=1"
