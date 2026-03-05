@@ -1,114 +1,71 @@
+# scripts/update_machines.py 最終版
 import requests
 from bs4 import BeautifulSoup
 import json
 import time
 import re
 
-# --- 更新されたGASのURL ---
 GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw2QCT2hn2gVoEiA4eT0SvQxpk4F-hHbI2wAFOMJgiAe3Ghhi4Fw7vAsBP5zafMK5ZF/exec"
 
 def get_soup(url):
-    headers = {
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
-        "Accept-Language": "ja,en-US;q=0.9,en;q=0.8"
-    }
+    headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"}
     try:
         response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
         response.encoding = response.apparent_encoding
         return BeautifulSoup(response.text, "html.parser")
-    except Exception as e:
-        print(f"通信エラー ({url}): {e}")
-        return None
+    except: return None
 
 def parse_pworld_detail(code):
     url = f"https://www.p-world.co.jp/sp/kisyu.cgi?code={code}"
     soup = get_soup(url)
     if not soup: return None
-
-    # 機種名取得
-    name_tag = soup.select_one("h1")
-    name = name_tag.get_text(strip=True) if name_tag else "不明"
-
-    # 全テキストをスペース区切りで取得（キーワード判定用）
+    name = soup.select_one("h1").get_text(strip=True) if soup.select_one("h1") else "不明"
     full_text = soup.get_text(" ", strip=True)
 
-    def extract_by_regex(pattern, text):
-        match = re.search(pattern, text)
-        return match.group(1).strip() if match else None
+    def find_val(patterns):
+        for p in patterns:
+            res = re.search(p, full_text)
+            if res: return res.group(1).strip()
+        return "-"
 
-    # --- データ抽出 ---
-    prob = extract_by_regex(r"大当り確率\s*[:：]?\s*(\d+/\d+\.?\d*)", full_text)
-    maker = extract_by_regex(r"メーカー\s*[:：]?\s*([^\s\n\r]+)", full_text)
-    rush_rate = extract_by_regex(r"突入率\s*[:：]?\s*(\d+%)", full_text)
-    rush_cont = extract_by_regex(r"継続率\s*[:：]?\s*(\d+%)", full_text)
+    prob = find_val([r"大当り確率\s*[:：]?\s*(\d+/\d+\.?\d*)", r"確率\s*[:：]?\s*(\d+/\d+\.?\d*)"])
+    maker = find_val([r"メーカー\s*[:：]?\s*([^\s\n\r]+)"])
+    rush_rate = find_val([r"(?:RUSH|ST|時短)突入率\s*[:：]?\s*(\d+(?:\.\d+)?%)", r"突入率\s*[:：]?\s*(\d+(?:\.\d+)?%)"])
+    rush_cont = find_val([r"(?:RUSH|ST|時短)継続率\s*[:：]?\s*(\d+(?:\.\d+)?%)", r"継続率\s*[:：]?\s*(\d+(?:\.\d+)?%)"])
 
-    # 当たり内訳（Rと個数）
-    prize_entries = []
-    rounds_balls = re.findall(r"(\d+)\s*R.*?(\d{3,4})\s*個", full_text)
-    unique_check = set()
-    for r, b in rounds_balls:
-        label = f"{r}R"
-        if label not in unique_check:
-            prize_entries.append({"label": label, "rounds": int(r), "balls": int(b)})
-            unique_check.add(label)
+    raw_prizes = re.findall(r"(\d+)\s*R.*?(\d{3,4})\s*個", full_text)
+    prize_list = []
+    seen = set()
+    for r, b in raw_prizes:
+        combo = f"{r}-{b}"
+        if combo not in seen:
+            prize_list.append(f"{r}R({b}個)")
+            seen.add(combo)
+    prize_list.sort(key=lambda x: int(re.search(r'\d+', x).group()), reverse=True)
+    prize_summary = " / ".join(prize_list) if prize_list else "調査中"
 
     return {
-        "name": name,
-        "probability": prob if prob else "1/319.7",
-        "border": "18.0",
-        "manufacturer": maker if maker else "不明",
-        "rushRate": rush_rate if rush_rate else "-",
-        "rushContinuation": rush_cont if rush_cont else "-",
-        "prizeEntries": prize_entries[:8],
-        "raw_text": full_text # 判定用
+        "name": name, "probability": prob, "border": "18.0",
+        "manufacturer": maker, "rushRate": rush_rate,
+        "rushContinuation": rush_cont, "prizeEntries": prize_summary
     }
 
 def main():
-    print("--- Data Synchronization Engine Starting ---")
-    
-    list_url = "https://www.p-world.co.jp/sp/machine.cgi?type=pachinko"
-    soup = get_soup(list_url)
-    if not soup: return
-
-    links = soup.find_all("a", href=re.compile(r"code=\d+"))
-    codes = list(dict.fromkeys([re.search(r"code=(\d+)", l["href"]).group(1) for l in links if "code=" in l["href"]]))[:20]
-    
-    print(f"Targeting {len(codes)} candidates...")
-
-    new_machines = []
-    for code in codes:
-        data = parse_pworld_detail(code)
-        if not data: continue
-
-        # --- 厳格なフィルタリング ---
-        name = data["name"]
-        text = data["raw_text"]
-        
-        # スロット用語があれば即除外
-        ng_words = ["機械割", "スマスロ", "パチスロ", "スロット", "AT中", "ART中", "設定1", "設定L", "設定S", "純増"]
-        if any(word in text or word in name for word in ng_words):
-            print(f"Skipping (Slot detected): {name}")
-            continue
-
-        # 確率表記「1/」がなければ除外
-        if "1/" not in data["probability"]:
-            print(f"Skipping (No typical probability): {name}")
-            continue
-
-        del data["raw_text"]
-        print(f"Adding: {name}")
-        new_machines.append(data)
-        time.sleep(1)
-
-    # --- 送信 ---
-    if new_machines:
-        print(f"Sending {len(new_machines)} items to Spreadsheet...")
-        try:
-            res = requests.post(GAS_WEBAPP_URL, data=json.dumps(new_machines), headers={"Content-Type": "application/json"})
-            print(f"Response: {res.text}")
-        except Exception as e:
-            print(f"Error: {e}")
+    # ページ範囲は必要に応じて調整 (1, 301) で全件
+    for page in range(1, 2): 
+        list_url = f"https://www.p-world.co.jp/sp/machine.cgi?type=pachinko&page={page}"
+        soup = get_soup(list_url)
+        if not soup: break
+        links = soup.find_all("a", href=re.compile(r"code=\d+"))
+        codes = list(dict.fromkeys([re.search(r"code=(\d+)", l["href"]).group(1) for l in links]))
+        batch_data = []
+        for code in codes:
+            data = parse_pworld_detail(code)
+            if not data or any(x in data["name"] for x in ["スロット", "パチスロ"]): continue
+            batch_data.append(data)
+            time.sleep(1)
+        if batch_data:
+            requests.post(GAS_WEBAPP_URL, data=json.dumps(batch_data), headers={"Content-Type": "application/json"})
 
 if __name__ == "__main__":
     main()
