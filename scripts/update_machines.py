@@ -8,7 +8,7 @@ import logging
 from datetime import datetime
 
 # --- 設定 ---
-GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw2QCT2hn2gVoEiA4eT0SvQxpk4F-hHbI2wAFOMJgiAe3Ghhi4Fw7vAsBP5zafMK5ZF/exec"
+GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyowI0rxAsfvNVh4r5b95Rzyw9EohviNDmVpOhpD8V67su1Ey6zyYJClipb0ls-17mP/exec"
 RETRY_COUNT = 3
 EXCLUDE_WORDS = ["スロット", "パチスロ", "スマスロ", "設定L"]
 
