@@ -95,3 +95,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+print(f"送信データの中身: {new_machines[:1]}") # 最初の1件だけ表示してみる
