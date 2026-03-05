@@ -1,99 +1,56 @@
-import requests
-from bs4 import BeautifulSoup
-import json
-import os
-import time
-import re
-
-# --- 設定 ---
-GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyX48IuYB89g2CA3c-ZON626aaSaP9appshUGubnVSOn57SI1SJ66s-UANNUa4YgRGP/exec"
-BASE_URL = "https://p-town.dmm.com"
-CALENDAR_URL = f"{BASE_URL}/machines/new_calendar"
-
-def get_soup(url):
-    headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"}
-    try:
-        response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
-        return BeautifulSoup(response.content, "html.parser")
-    except Exception as e:
-        print(f"Error fetching {url}: {e}")
-        return None
-
-def fetch_detailed_data(machine_url):
-    """詳細ページからボーダー、RUSH情報、当たり内訳を抽出"""
-    soup = get_soup(machine_url)
-    if not soup: return {"border": "18.0", "prizeEntries": [], "rushRate": "", "rushCont": ""}
-
-    res = {"border": "18.0", "prizeEntries": [], "rushRate": "", "rushCont": ""}
-    text = soup.get_text()
-
-    # ボーダー抽出 (等価)
-    border_match = re.search(r"(?:等価|4\.0円).*?(\d+\.\d+|\d+)", text)
-    if border_match: res["border"] = border_match.group(1)
-
-    # 突入率・継続率の簡易抽出
-    rush_rate = re.search(r"突入率[:：]?\s*(\d+%|約\d+%)", text)
-    if rush_rate: res["rushRate"] = rush_rate.group(1)
-    rush_cont = re.search(r"継続率[:：]?\s*(\d+%|約\d+%)", text)
-    if rush_cont: res["rushCont"] = rush_cont.group(1)
-
-    # 当たり内訳の抽出 (最大8種類)
-    # サイトの構造に合わせて正規表現で「○R」と「○玉」のペアを探す
-    patterns = re.findall(r"(\d+)R.*?(\d{3,4})個", text)
-    unique_patterns = []
-    for r, balls in patterns:
-        label = f"{r}R"
-        # 重複を避けつつ追加
-        if not any(p['label'] == label and p['balls'] == int(balls) for p in unique_patterns):
-            unique_patterns.append({"label": label, "rounds": int(r), "balls": int(balls)})
-    
-    res["prizeEntries"] = unique_patterns[:8]
-    return res
-
 def main():
     print("--- スクレイピング開始 ---")
     soup = get_soup(CALENDAR_URL)
-    if not soup: return
+    if not soup: 
+        print("サイトの取得に失敗しました。")
+        return
 
     new_machines = []
-    # 機種カード（パチンコ）を取得
-    cards = soup.select(".p-machine_list_item")
-    print(f"見つかった機種数: {len(cards)}")
+    
+    # 【修正ポイント】より広い範囲で「機種詳細へのリンク」を探すように変更
+    # 機種名が入っているリンク（/machines/の後が数字のパターン）を直接狙います
+    machine_links = soup.find_all("a", href=re.compile(r"/machines/\d+"))
+    
+    # 重複を除去しながらリスト化
+    seen_urls = set()
+    unique_links = []
+    for l in machine_links:
+        url = l["href"]
+        if url not in seen_urls:
+            unique_links.append(l)
+            seen_urls.add(url)
 
-    # 最新300件を対象にする
-    for card in cards[:300]:
-        name_tag = card.select_one(".p-machine_list_item__name")
-        if not name_tag: continue
-        name = name_tag.text.strip()
+    print(f"見つかった機種リンク数: {len(unique_links)}")
+
+    # 最新の台から順に処理（まずはテストのため件数を絞ってもOK）
+    for link_tag in unique_links[:50]: # 300件は多いため、まずは50件でテスト推奨
+        # リンクの中にあるテキストを機種名として取得
+        name = link_tag.get_text().strip()
+        if not name or len(name) < 2: continue # 短すぎる文字列は除外
         
-        maker = card.select_one(".p-machine_list_item__maker").text.strip() if card.select_one(".p-machine_list_item__maker") else ""
-        spec = card.select_one(".p-machine_list_item__spec").text.strip() if card.select_one(".p-machine_list_item__spec") else ""
+        detail_url = BASE_URL + link_tag["href"] if link_tag["href"].startswith("/") else link_tag["href"]
         
-        link = card.select_one("a")["href"]
-        detail_url = BASE_URL + link if link.startswith("/") else link
-        
+        # メーカー名などは詳細ページから取るように変更（一覧から取れない場合があるため）
         print(f"詳細取得中: {name}")
         details = fetch_detailed_data(detail_url)
-        time.sleep(1) # サーバー負荷軽減
+        time.sleep(1) 
 
         new_machines.append({
             "name": name,
-            "probability": spec.replace("大当り確率:", "").strip(),
+            "probability": details.get("probability", "調査中"),
             "border": details["border"],
-            "manufacturer": maker,
+            "manufacturer": details.get("manufacturer", "不明"),
             "rushRate": details["rushRate"],
             "rushContinuation": details["rushCont"],
             "prizeEntries": details["prizeEntries"]
         })
+
+    if not new_machines:
+        print("最終的に取得できた機種が0件でした。")
+        return
 
     # スプレッドシートに送信
     print(f"スプレッドシートへ {len(new_machines)} 件送信します...")
     headers = {"Content-Type": "application/json"}
     response = requests.post(GAS_WEBAPP_URL, data=json.dumps(new_machines), headers=headers)
     print(f"結果: {response.text}")
-
-if __name__ == "__main__":
-    main()
-
-print(f"送信データの中身: {new_machines[:1]}") # 最初の1件だけ表示してみる
