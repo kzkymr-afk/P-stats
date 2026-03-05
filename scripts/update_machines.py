@@ -4,19 +4,21 @@ import json
 import time
 import re
 
-# あなたのGASのURL
+# --- あなたのGASのURLに書き換えてください ---
 GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyX48IuYB89g2CA3c-ZON626aaSaP9appshUGubnVSOn57SI1SJ66s-UANNUa4YgRGP/exec"
 
 def get_soup(url):
-    headers = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+        "Accept-Language": "ja,en-US;q=0.9,en;q=0.8"
+    }
     try:
         response = requests.get(url, headers=headers, timeout=15)
         response.raise_for_status()
-        # P-WORLDはShift-JISの場合があるため、適切にデコード
-        response.encoding = response.apparent_encoding
+        response.encoding = response.apparent_encoding # 文字化け対策
         return BeautifulSoup(response.text, "html.parser")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"通信エラー ({url}): {e}")
         return None
 
 def parse_pworld_detail(code):
@@ -24,70 +26,86 @@ def parse_pworld_detail(code):
     soup = get_soup(url)
     if not soup: return None
 
-    # 基本情報の抽出
-    name = soup.select_one("h1").text.strip() if soup.select_one("h1") else "不明"
-    
-    # スペック表（テーブル）の解析
-    specs = {}
-    for tr in soup.select("table tr"):
-        th = tr.select_one("th")
-        td = tr.select_one("td")
-        if th and td:
-            specs[th.text.strip()] = td.text.strip()
+    # 機種名
+    name_tag = soup.select_one("h1")
+    name = name_tag.get_text(strip=True) if name_tag else "不明"
 
-    # 当たり内訳の解析 (正規表現で「10R」「1500個」などを探す)
-    prize_entries = []
-    text_content = soup.get_text()
+    # 全テキストをスペース区切りで取得（キーワードがくっつくのを防ぐ）
+    full_text = soup.get_text(" ", strip=True)
+
+    def extract_by_regex(pattern, text):
+        match = re.search(pattern, text)
+        return match.group(1).strip() if match else None
+
+    # --- P-WORLD特有のパターンで抽出 ---
+    # 確率： 「1/319」や「1/99」など
+    prob = extract_by_regex(r"大当り確率\s*[:：]?\s*(\d+/\d+\.?\d*)", full_text)
     
-    # 例: 「10R：50%」「1500個」などのパターンを抽出
-    patterns = re.findall(r"(\d+)R.*?(\d{3,4})個", text_content)
-    for r, balls in patterns[:8]: # 最大8種類
-        prize_entries.append({
-            "label": f"{r}R",
-            "rounds": int(r),
-            "balls": int(balls),
-            "isRush": "RUSH" in text_content or "時短" in text_content
-        })
+    # メーカー： 文字列の塊を取得
+    maker = extract_by_regex(r"メーカー\s*[:：]?\s*([^\s\n\r]+)", full_text)
+    
+    # 突入・継続率
+    rush_rate = extract_by_regex(r"突入率\s*[:：]?\s*(\d+%)", full_text)
+    rush_cont = extract_by_regex(r"継続率\s*[:：]?\s*(\d+%)", full_text)
+
+    # 当たり内訳（Rと個数のペアを抽出）
+    prize_entries = []
+    # 「10R」「1500個」のような並びを探す
+    rounds_balls = re.findall(r"(\d+)\s*R.*?(\d{3,4})\s*個", full_text)
+    
+    unique_check = set()
+    for r, b in rounds_balls:
+        label = f"{r}R"
+        if label not in unique_check:
+            prize_entries.append({"label": label, "rounds": int(r), "balls": int(b)})
+            unique_check.add(label)
 
     return {
         "name": name,
-        "probability": specs.get("大当り確率", "調査中"),
-        "border": "18.0", # ボーダーはP-WORLDには載っていないことが多いので一旦固定
-        "manufacturer": specs.get("メーカー", "不明"),
-        "prizeEntries": prize_entries
+        "probability": prob if prob else "1/319.7",
+        "border": "18.0", # 固定値
+        "manufacturer": maker if maker else "不明",
+        "rushRate": rush_rate if rush_rate else "-",
+        "rushContinuation": rush_cont if rush_cont else "-",
+        "prizeEntries": prize_entries[:8]
     }
 
 def main():
-    print("--- P-WORLD スクレイピング開始 ---")
+    print("--- P-WORLD 強化版スクレイピング開始 ---")
     
     # 1. 新着機種一覧からコードを取得
     list_url = "https://www.p-world.co.jp/sp/machine.cgi?type=pachinko"
     soup = get_soup(list_url)
     if not soup: return
 
-    # 機種ページのリンクから code=XXXXX を抜き出す
+    # code=数字 を含むリンクをすべて探す
     links = soup.find_all("a", href=re.compile(r"code=\d+"))
     codes = []
     for l in links:
         match = re.search(r"code=(\d+)", l["href"])
         if match: codes.append(match.group(1))
     
-    unique_codes = list(dict.fromkeys(codes))[:10] # まずは10件テスト
-    print(f"取得対象コード数: {len(unique_codes)}")
+    # 重複を除去して最新の15件程度を対象にする
+    unique_codes = list(dict.fromkeys(codes))[:15]
+    print(f"解析対象コード: {unique_codes}")
 
     new_machines = []
     for code in unique_codes:
-        print(f"解析中: {code}")
+        print(f"解析中: {code}...")
         data = parse_pworld_detail(code)
         if data:
             new_machines.append(data)
-        time.sleep(1)
+        time.sleep(1.5) # サーバーに優しく
 
-    # 2. スプレッドシートへ送信
+    # 2. GAS経由でスプレッドシートへ送信
     if new_machines:
         print(f"スプレッドシートへ {len(new_machines)} 件送信します...")
-        res = requests.post(GAS_WEBAPP_URL, data=json.dumps(new_machines), headers={"Content-Type":"application/json"})
-        print(f"結果: {res.text}")
+        headers = {"Content-Type": "application/json"}
+        try:
+            res = requests.post(GAS_WEBAPP_URL, data=json.dumps(new_machines), headers=headers)
+            print(f"GASからの応答: {res.text}")
+        except Exception as e:
+            print(f"送信エラー: {e}")
 
 if __name__ == "__main__":
     main()
