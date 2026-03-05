@@ -4,8 +4,8 @@ import json
 import time
 import re
 
-# --- あなたのGASのURL ---
-GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyX48IuYB89g2CA3c-ZON626aaSaP9appshUGubnVSOn57SI1SJ66s-UANNUa4YgRGP/exec"
+# --- 更新されたGASのURL ---
+GAS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw2QCT2hn2gVoEiA4eT0SvQxpk4F-hHbI2wAFOMJgiAe3Ghhi4Fw7vAsBP5zafMK5ZF/exec"
 
 def get_soup(url):
     headers = {
@@ -26,26 +26,26 @@ def parse_pworld_detail(code):
     soup = get_soup(url)
     if not soup: return None
 
+    # 機種名取得
     name_tag = soup.select_one("h1")
     name = name_tag.get_text(strip=True) if name_tag else "不明"
 
-    # 全テキストをスペース区切りで取得
+    # 全テキストをスペース区切りで取得（キーワード判定用）
     full_text = soup.get_text(" ", strip=True)
 
     def extract_by_regex(pattern, text):
         match = re.search(pattern, text)
         return match.group(1).strip() if match else None
 
-    # --- P-WORLD特有のパターンで抽出 ---
+    # --- データ抽出 ---
     prob = extract_by_regex(r"大当り確率\s*[:：]?\s*(\d+/\d+\.?\d*)", full_text)
     maker = extract_by_regex(r"メーカー\s*[:：]?\s*([^\s\n\r]+)", full_text)
     rush_rate = extract_by_regex(r"突入率\s*[:：]?\s*(\d+%)", full_text)
     rush_cont = extract_by_regex(r"継続率\s*[:：]?\s*(\d+%)", full_text)
 
-    # 当たり内訳（Rと個数のペア）
+    # 当たり内訳（Rと個数）
     prize_entries = []
     rounds_balls = re.findall(r"(\d+)\s*R.*?(\d{3,4})\s*個", full_text)
-    
     unique_check = set()
     for r, b in rounds_balls:
         label = f"{r}R"
@@ -61,62 +61,54 @@ def parse_pworld_detail(code):
         "rushRate": rush_rate if rush_rate else "-",
         "rushContinuation": rush_cont if rush_cont else "-",
         "prizeEntries": prize_entries[:8],
-        "raw_text": full_text # 判定用にテキストを保持
+        "raw_text": full_text # 判定用
     }
 
 def main():
-    print("--- P-WORLD パチンコ限定スクレイピング開始 ---")
+    print("--- Data Synchronization Engine Starting ---")
     
     list_url = "https://www.p-world.co.jp/sp/machine.cgi?type=pachinko"
     soup = get_soup(list_url)
     if not soup: return
 
     links = soup.find_all("a", href=re.compile(r"code=\d+"))
-    codes = []
-    for l in links:
-        match = re.search(r"code=(\d+)", l["href"])
-        if match: codes.append(match.group(1))
+    codes = list(dict.fromkeys([re.search(r"code=(\d+)", l["href"]).group(1) for l in links if "code=" in l["href"]]))[:20]
     
-    unique_codes = list(dict.fromkeys(codes))[:20] # 少し多めに取得してフィルタリング
-    print(f"取得対象候補: {len(unique_codes)}件")
+    print(f"Targeting {len(codes)} candidates...")
 
     new_machines = []
-    for code in unique_codes:
+    for code in codes:
         data = parse_pworld_detail(code)
         if not data: continue
 
-        # --- 強力なスロット除外ロジック ---
+        # --- 厳格なフィルタリング ---
         name = data["name"]
         text = data["raw_text"]
-        prob = data["probability"]
-
-        # 1. 除外キーワード（これらが入っていたらスロット）
-        ng_words = ["機械割", "スマスロ", "パチスロ", "スロット", "AT中", "ART中", "設定1", "設定L", "設定S"]
+        
+        # スロット用語があれば即除外
+        ng_words = ["機械割", "スマスロ", "パチスロ", "スロット", "AT中", "ART中", "設定1", "設定L", "設定S", "純増"]
         if any(word in text or word in name for word in ng_words):
-            print(f"スキップ（スロット判定）: {name}")
+            print(f"Skipping (Slot detected): {name}")
             continue
 
-        # 2. 必須キーワード（パチンコなら通常これがある）
-        # 「1/」という確率表記がないものは除外（スロットのAタイプ等との誤認回避）
-        if "1/" not in prob:
-            print(f"スキップ（確率表記なし）: {name}")
+        # 確率表記「1/」がなければ除外
+        if "1/" not in data["probability"]:
+            print(f"Skipping (No typical probability): {name}")
             continue
 
-        # 判定用データは不要なので削除して送信リストへ
         del data["raw_text"]
-        print(f"採用: {name} ({prob})")
+        print(f"Adding: {name}")
         new_machines.append(data)
-        time.sleep(1.5)
+        time.sleep(1)
 
-    # 2. GAS経由で送信
+    # --- 送信 ---
     if new_machines:
-        print(f"スプレッドシートへ {len(new_machines)} 件送信します...")
-        headers = {"Content-Type": "application/json"}
+        print(f"Sending {len(new_machines)} items to Spreadsheet...")
         try:
-            res = requests.post(GAS_WEBAPP_URL, data=json.dumps(new_machines), headers=headers)
-            print(f"GAS応答: {res.text}")
+            res = requests.post(GAS_WEBAPP_URL, data=json.dumps(new_machines), headers={"Content-Type": "application/json"})
+            print(f"Response: {res.text}")
         except Exception as e:
-            print(f"送信エラー: {e}")
+            print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()
