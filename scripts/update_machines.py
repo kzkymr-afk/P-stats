@@ -50,6 +50,13 @@ def fetch_and_parse_csv(url: str) -> list[dict]:
         raw = raw[1:]
     lines = [line for line in raw.splitlines() if line.strip()]
     if len(lines) < 2:
+        # 0件または1行のみ → 診断出力（GoogleがHTMLログイン画面を返しているか確認）
+        ct = r.headers.get("Content-Type", "")
+        print(f"[update_machines] 診断: status={r.status_code}, Content-Type={ct}, 行数={len(lines)}, body長={len(raw)}", flush=True)
+        head = raw.strip()[:600].replace("\r", " ").replace("\n", " ")
+        print(f"[update_machines] body先頭: {head!r}", flush=True)
+        if "<html" in raw.lower() or "sign in" in raw.lower() or "accounts.google" in raw.lower():
+            print("[update_machines] → HTMLが返っています。スプレッドシートを「リンクを知っている全員が閲覧可」にしてください。", flush=True)
         return []
     headers = _parse_csv_line(lines[0])
     result = []
@@ -81,7 +88,7 @@ def fetch_and_parse_csv(url: str) -> list[dict]:
         prize_entries = [{"label": "10R 1500玉", "rounds": 10, "balls": 1500}]
         default_prize = 1500
 
-        result.append({
+        row = {
             "name": name[:200],
             "probability": probability,
             "border": border,
@@ -92,7 +99,13 @@ def fetch_and_parse_csv(url: str) -> list[dict]:
             "manufacturer": manufacturer[:100] if manufacturer else "",
             "defaultPrize": default_prize,
             "prizeEntries": prize_entries,
-        })
+        }
+        if intro_date:
+            row["introductionDateRaw"] = intro_date
+        result.append(row)
+    if not result:
+        # 行はあるが1件も採用されなかった（機種名列が空など）
+        print(f"[update_machines] 診断: データ行は {len(lines)-1} 行ありますが、機種名列が空のため0件です。ヘッダー: {headers!r}", flush=True)
     return result
 
 
