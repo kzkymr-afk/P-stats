@@ -45,6 +45,8 @@ def fetch_and_parse_csv(url: str) -> list[dict]:
     """CSV URL を取得し、アプリ用の辞書リストに変換する。"""
     r = requests.get(url, timeout=REQUEST_TIMEOUT)
     r.raise_for_status()
+    # Google の CSV は UTF-8。CI 等で charset が渡らないと文字化けするため明示する
+    r.encoding = "utf-8"
     raw = r.text
     if raw.startswith("\uFEFF"):
         raw = raw[1:]
