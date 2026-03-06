@@ -1,24 +1,610 @@
 [
   {
-    "name": "P機動戦士ガンダムユニコーン 再来",
-    "probability": "1/319.5",
-    "border": "18.0",
+    "name": "e ソードアート・オンライン 閃光の軌跡",
+    "probability": "1/199.9",
+    "border": "16.5",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
-    "timeShortRotations": 100,
+    "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "SANKYO",
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
     "prizeEntries": [
       {
         "label": "10R 1500玉",
         "rounds": 10,
         "balls": 1500
-      },
-      {
-        "label": "2R 300玉",
-        "rounds": 2,
-        "balls": 300
       }
-    ]
+    ],
+    "introductionDateRaw": "2024/12/16"
+  },
+  {
+    "name": "eフィーバーからくりサーカス2 魔王ver.",
+    "probability": "1/399.9",
+    "border": "18.1",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/11/05"
+  },
+  {
+    "name": "eようこそ実力至上主義の教室へ",
+    "probability": "1/349.9",
+    "border": "29.8",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/01/05"
+  },
+  {
+    "name": "e地獄少女7500Ver.",
+    "probability": "1/49",
+    "border": "32.9",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "オレンジ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/12/08"
+  },
+  {
+    "name": "eフィーバーBASTARD!! -暗黒の破壊神-",
+    "probability": "1/399.9",
+    "border": "17",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/02/02"
+  },
+  {
+    "name": "P痛いのは嫌なので防御力に極振りしたいと思います。 極振り129ver",
+    "probability": "1/129",
+    "border": "17.1",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/02"
+  },
+  {
+    "name": "P戦国乙女7 終焉の関ヶ原 99ver.",
+    "probability": "1/99.9",
+    "border": "17",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/02"
+  },
+  {
+    "name": "eアクダマドライブ",
+    "probability": "1/319.6",
+    "border": "17.6",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/02"
+  },
+  {
+    "name": "eワンパンマン2～正義執行",
+    "probability": "1/179.55",
+    "border": "16.7",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/02"
+  },
+  {
+    "name": "eフィーバーダンベル何キロ持てる？2",
+    "probability": "1/149.9",
+    "border": "17.4",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/02"
+  },
+  {
+    "name": "e牙狼11〜冴島大河〜魔戒BURST",
+    "probability": "1/349.9",
+    "border": "29.9",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/02"
+  },
+  {
+    "name": "P Re:ゼロから始める異世界生活 season2 249ver.",
+    "probability": "1/249.9",
+    "border": "16.5",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "大都",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/02"
+  },
+  {
+    "name": "P Re:ゼロから始める異世界生活 season2 129ver.",
+    "probability": "1/129.9",
+    "border": "16.1",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "大都",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/02"
+  },
+  {
+    "name": "e 魔法少女まどか☆マギカ3 時間遡行〜始まりの願い〜",
+    "probability": "1/319.9",
+    "border": "20.2",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/02"
+  },
+  {
+    "name": "e 甲鉄城のカバネリ2 咲かせや燦然",
+    "probability": "1/319.7",
+    "border": "17.1",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/02"
+  },
+  {
+    "name": "e 真・北斗無双 第5章 夢幻闘双",
+    "probability": "1/159.8",
+    "border": "17",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/02/02"
+  },
+  {
+    "name": "e異世界でチート能力を手にした俺は現実世界をも無双する 〜レベルアップは人生を変えた〜",
+    "probability": "1/179",
+    "border": "27.1",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/02/02"
+  },
+  {
+    "name": "e吉宗 極乗3000ver.",
+    "probability": "1/199.9",
+    "border": "17.2",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "大都",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/01/05"
+  },
+  {
+    "name": "e 新世紀エヴァンゲリオン 〜はじまりの記憶〜",
+    "probability": "1/399.9",
+    "border": "16.7",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/12/22"
+  },
+  {
+    "name": "e アズールレーン2 THE ANIMATION 超次元",
+    "probability": "1/169.9",
+    "border": "17",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/12/08"
+  },
+  {
+    "name": "e 北斗の拳11 暴凶星",
+    "probability": "1/399.8",
+    "border": "16.8",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/12/08"
+  },
+  {
+    "name": "eフィーバーもののがたり",
+    "probability": "1/149.9",
+    "border": "16.9",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/11/04"
+  },
+  {
+    "name": "eとある科学の超電磁砲 PHASE NEXT",
+    "probability": "1/169.7",
+    "border": "17.5",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "オレンジ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/10/06"
+  },
+  {
+    "name": "eフィーバーブルーロック",
+    "probability": "1/399.9",
+    "border": "17.4",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/09/08"
+  },
+  {
+    "name": "e女神のカフェテラス",
+    "probability": "1/399",
+    "border": "27.4",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "JFJ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/08/18"
+  },
+  {
+    "name": "e牙狼12黄金騎士極限",
+    "probability": "1/349.99",
+    "border": "17.2",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/08/04"
+  },
+  {
+    "name": "eフィーバー炎炎ノ消防隊2 紅丸ver.",
+    "probability": "1/399.9",
+    "border": "16.7",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/07/07"
+  },
+  {
+    "name": "e東京リベンジャーズ",
+    "probability": "1/319.7",
+    "border": "16.5",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/07/07"
+  },
+  {
+    "name": "e 東京喰種",
+    "probability": "1/399",
+    "border": "16.7",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/04/21"
+  },
+  {
+    "name": "P魔法少女まどか☆マギカ3",
+    "probability": "1/199.9",
+    "border": "17.1",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/06/03"
+  },
+  {
+    "name": "e Re:ゼロから始める異世界生活 season2",
+    "probability": "1/349.9",
+    "border": "16.6",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "大都",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/11/20"
+  },
+  {
+    "name": "e 新世紀エヴァンゲリオン 〜はじまりの記憶〜",
+    "probability": "1/319.7",
+    "border": "17.8",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2021/12/20"
   }
 ]
