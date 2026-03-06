@@ -1,4 +1,4 @@
-name: Update master data
+name: Update master data daily
 
 on:
   schedule:
