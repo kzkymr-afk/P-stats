@@ -1,5 +1,157 @@
 [
   {
+    "name": "P Re:ゼロから始める異世界生活 鬼がかり 99ver.",
+    "probability": "1/99.9",
+    "border": "18.2",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "大都",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025年11月04日"
+  },
+  {
+    "name": "P北斗の拳 暴凶星",
+    "probability": "1/319.7",
+    "border": "17.7",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023年05月08日"
+  },
+  {
+    "name": "e真・一騎当千〜軍神覚醒〜319大入りver.",
+    "probability": "1/319.7",
+    "border": "30.6",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/08/04"
+  },
+  {
+    "name": "eぱちんこ押忍！番長 漢の頂",
+    "probability": "1/179.5",
+    "border": "17.1",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "大都",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/01/06"
+  },
+  {
+    "name": "PA戦国乙女7 終焉の関ヶ原 ときめき78バージョン",
+    "probability": "1/78.21",
+    "border": "20.1",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/02"
+  },
+  {
+    "name": "eノーゲーム・ノーライフ 199Ver.",
+    "probability": "1/199.8",
+    "border": "17.1",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/11/04"
+  },
+  {
+    "name": "e花の慶次〜黄金の一撃",
+    "probability": "1/399.76",
+    "border": "16.5",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/11/04"
+  },
+  {
+    "name": "P新世紀エヴァンゲリオン15 未来への咆哮",
+    "probability": "1/319.7",
+    "border": "17.8",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2021/12/20"
+  },
+  {
     "name": "e ソードアート・オンライン 閃光の軌跡",
     "probability": "1/199.9",
     "border": "16.5",
@@ -587,24 +739,5 @@
       }
     ],
     "introductionDateRaw": "2023/11/20"
-  },
-  {
-    "name": "e 新世紀エヴァンゲリオン 〜はじまりの記憶〜",
-    "probability": "1/319.7",
-    "border": "17.8",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "ビスティ",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2021/12/20"
   }
 ]
