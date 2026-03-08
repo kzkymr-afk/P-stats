@@ -174,7 +174,7 @@ struct PresetMachineEditView: View {
                     }
                     .listRowBackground(AppGlassStyle.rowBackground)
                 }
-                Section("当たり種類（R・出玉）") {
+                Section("ボーナス種類（R・出玉）") {
                     ForEach($prizeEntries) { $row in
                         HStack {
                             TextField("10R", text: $row.label)
@@ -195,7 +195,7 @@ struct PresetMachineEditView: View {
                         }
                         .listRowBackground(AppGlassStyle.rowBackground)
                     }
-                    Button("当たり種類を追加") {
+                    Button("ボーナス種類を追加") {
                         prizeEntries.append(PresetPrizeRow(label: "10R", rounds: 10, balls: 1500))
                     }
                     .foregroundColor(AppGlassStyle.accent)

@@ -1,0 +1,31 @@
+[
+  {
+    "name": "サンプル機種A（ST）",
+    "manufacturer": "サミー",
+    "machineTypeRaw": "st",
+    "supportLimit": 100,
+    "timeShortRotations": 30,
+    "defaultPrize": 1500,
+    "probability": "1/319.5",
+    "border": "16.5",
+    "countPerRound": 10,
+    "prizeEntries": [
+      { "label": "10R（1500玉）", "rounds": 10, "balls": 1500 },
+      { "label": "2R（300玉）", "rounds": 2, "balls": 300 }
+    ]
+  },
+  {
+    "name": "サンプル機種B（確変）",
+    "manufacturer": "藤森",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 50,
+    "defaultPrize": 1650,
+    "probability": "1/99.5",
+    "border": "52.0",
+    "countPerRound": 10,
+    "prizeEntries": [
+      { "label": "10R（1650玉）", "rounds": 10, "balls": 1650 }
+    ]
+  }
+]

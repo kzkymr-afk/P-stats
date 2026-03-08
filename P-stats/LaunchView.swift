@@ -4,7 +4,7 @@ import SwiftUI
 struct LaunchView: View {
     var onFinish: () -> Void
 
-    private let cyan = Color(red: 0, green: 0.83, blue: 1.0)
+    private let cyan = AppGlassStyle.accent
     @State private var gradientProgress: Double = 0
 
     var body: some View {

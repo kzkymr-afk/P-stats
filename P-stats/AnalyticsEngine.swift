@@ -281,4 +281,31 @@ enum AnalyticsEngine {
             avgDiffFromFormulaBorder: avgBorderDiff
         )
     }
+
+    /// 月別累計（収支トレンドグラフ用）。月キー昇順で、各月までの累計実収支・累計理論期待値を返す
+    static func monthlyCumulativeTrend(_ sessions: [GameSession]) -> [(month: String, cumulativeProfit: Int, cumulativeTheoretical: Int)] {
+        let byMonth = Dictionary(grouping: sessions) { monthKey(from: $0.date) }
+        let sortedKeys = byMonth.keys.sorted()
+        var cumProfit = 0
+        var cumTheoretical = 0
+        return sortedKeys.map { key in
+            let list = byMonth[key] ?? []
+            cumProfit += list.reduce(0) { $0 + $1.profit }
+            cumTheoretical += list.reduce(0) { $0 + $1.theoreticalProfit }
+            return (month: key, cumulativeProfit: cumProfit, cumulativeTheoretical: cumTheoretical)
+        }
+    }
+
+    /// 機種タイプ別集計（ST vs 確変）。machineTypeByMachineName: 機種名 → "st" or "kakugen"（Machine.machineTypeRaw）
+    static func byMachineType(_ sessions: [GameSession], machineTypeByMachineName: [String: String]) -> [AnalyticsGroup] {
+        let grouped = Dictionary(grouping: sessions) { session in
+            let name = session.machineName.isEmpty ? "未設定" : session.machineName
+            return machineTypeByMachineName[name] ?? "kakugen"
+        }
+        let order: [(String, String)] = [("st", "ST"), ("kakugen", "確変")]
+        return order.compactMap { raw, label in
+            guard let list = grouped[raw], !list.isEmpty else { return nil }
+            return aggregate(label: label, sessions: list)
+        }
+    }
 }

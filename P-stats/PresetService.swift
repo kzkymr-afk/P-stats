@@ -1,6 +1,13 @@
 import Foundation
 
-/// 管理人用マスターデータ1件（サーバーJSON）。管理人だけが編集し、ユーザーは参照のみ。
+/// 機種マスターデータ1件（正確な機種名とメーカー。管理人のみがリストを更新）
+struct MachineMasterItem: Codable, Identifiable {
+    var name: String
+    var manufacturer: String?
+    var id: String { "\(name)#\(manufacturer ?? "")" }
+}
+
+/// 管理人用マスターデータ1件（サーバーJSONまたはスプレッドシートCSV）。管理人だけが編集し、ユーザーは参照のみ。
 struct PresetFromServer: Codable {
     var name: String
     var machineTypeRaw: String?
@@ -17,6 +24,14 @@ struct PresetFromServer: Codable {
     var countPerRound: Int?
     var netPerRoundBase: Double?
     var manufacturer: String?
+    /// P-Sync/スプレッドシート用：特図1内訳（通常時）。CSVの「特図1内訳」列から設定。
+    var heso_prizes: String?
+    /// P-Sync/スプレッドシート用：特図2内訳（RUSH時）。CSVの「特図2内訳」列から設定。
+    var denchu_prizes: String?
+    /// 導入日（表示・ソート用）。CSVの「導入日」列。"2024-03-01" 形式など。新しい順で並べるときに使用。
+    var introductionDateRaw: String?
+    /// LT有無。CSVの「LT有無」列。"あり" のとき RUSH/LT パネルを分けて表示する。
+    var ltRaw: String?
 
     struct PrizeEntryFromServer: Codable {
         var label: String?
@@ -25,17 +40,164 @@ struct PresetFromServer: Codable {
     }
 }
 
+/// マスタ一覧を参照で渡すためのホルダー。Task.detached でコピーせず渡し、メインスレッドのブロックを防ぐ。
+final class PresetListHolder: @unchecked Sendable {
+    let items: [PresetFromServer]
+    init(_ items: [PresetFromServer]) { self.items = items }
+}
+
 enum PresetService {
-    /// 指定URLからプリセット一覧を取得。失敗時は nil。
-    static func fetchPresets(from urlString: String) async -> [PresetFromServer]? {
+    /// バンドル内 MachinesMaster.json を読み込み。同梱マスター用（PresetFromServer 形式）。
+    static func loadBundleMaster() -> [PresetFromServer] {
+        guard let url = Bundle.main.url(forResource: "MachinesMaster", withExtension: "json") else { return [] }
+        do {
+            let data = try Data(contentsOf: url)
+            return (try JSONDecoder().decode([PresetFromServer].self, from: data))
+        } catch {
+            return []
+        }
+    }
+
+    /// バンドル分とURL取得分をマージ。同名は先に出た方を採用（バンドル優先）。
+    static func mergeBundleAndServer(bundle: [PresetFromServer], server: [PresetFromServer]?) -> [PresetFromServer] {
+        var result = bundle
+        let bundleNames = Set(bundle.map(\.name))
+        for s in server ?? [] {
+            if !bundleNames.contains(s.name) { result.append(s) }
+        }
+        return result
+    }
+
+    /// 機種マスタURLから [機種名, メーカー] 一覧を取得。JSON: [{ "name": "", "manufacturer": "" }, ...]
+    static func fetchMachineMaster(from urlString: String) async -> [MachineMasterItem]? {
         guard !urlString.isEmpty, let url = URL(string: urlString) else { return nil }
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
-            let list = try JSONDecoder().decode([PresetFromServer].self, from: data)
-            return list
+            return try JSONDecoder().decode([MachineMasterItem].self, from: data)
         } catch {
             return nil
         }
+    }
+
+    /// 指定URLからプリセット一覧を取得。Googleスプレッドシート（CSVエクスポート）またはJSON。失敗時は nil。15秒でタイムアウト。
+    static func fetchPresets(from urlString: String) async -> [PresetFromServer]? {
+        guard !urlString.isEmpty, let url = URL(string: urlString) else {
+            print("[PresetService] fetchPresets: URLが空または不正です")
+            return nil
+        }
+        do {
+            let config = URLSessionConfiguration.default
+            config.timeoutIntervalForRequest = 15
+            config.timeoutIntervalForResource = 20
+            let (data, _) = try await URLSession(configuration: config).data(from: url)
+            let isCSV = isSpreadsheetCSVURL(urlString)
+            let list: [PresetFromServer]? = await Task.detached(priority: .userInitiated) {
+                if isCSV {
+                    return parsePresetsFromCSV(data: data)
+                }
+                return try? JSONDecoder().decode([PresetFromServer].self, from: data)
+            }.value
+            guard let list = list else {
+                print("[PresetService] fetchPresets: パース失敗")
+                return nil
+            }
+            print("[PresetService] fetchPresets: 取得成功 \(list.count) 件")
+            return list
+        } catch {
+            print("[PresetService] fetchPresets 失敗: \(error)")
+            return nil
+        }
+    }
+
+    /// GoogleスプレッドシートのCSVエクスポートURLかどうか
+    private static func isSpreadsheetCSVURL(_ urlString: String) -> Bool {
+        urlString.contains("docs.google.com/spreadsheets") && urlString.contains("export")
+    }
+
+    /// CSVデータをパースして [PresetFromServer] に変換。1行目をヘッダーとして列名でマッピング。Task.detached から呼ぶため nonisolated。
+    private static nonisolated func parsePresetsFromCSV(data: Data) -> [PresetFromServer]? {
+        guard var raw = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .utf16) else { return nil }
+        if raw.hasPrefix("\u{FEFF}") { raw = String(raw.dropFirst()) }
+        let lines = raw.components(separatedBy: .newlines).filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+        guard lines.count >= 2 else { return [] }
+        let headers = parseCSVLine(lines[0])
+        guard !headers.isEmpty else { return [] }
+        let headerMap: [String: Int] = Dictionary(uniqueKeysWithValues: headers.enumerated().map { (headers[$0.offset].trimmingCharacters(in: .whitespaces), $0.offset) })
+        func col(_ names: [String]) -> Int? {
+            for n in names {
+                if let i = headerMap[n] { return i }
+                let lower = n.lowercased()
+                if let (k, _) = headerMap.first(where: { $0.key.lowercased() == lower }) { return headerMap[k] }
+            }
+            return nil
+        }
+        var list: [PresetFromServer] = []
+        for lineIndex in 1..<lines.count {
+            let values = parseCSVLine(lines[lineIndex])
+            guard !values.isEmpty else { continue }
+            func v(_ names: String...) -> String {
+                guard let i = col(Array(names)), i < values.count else { return "" }
+                return values[i].trimmingCharacters(in: .whitespaces)
+            }
+            let name = v("機種名", "名前", "name", "機種")
+            if name.isEmpty { continue }
+            let probability = v("確率", "大当り確率", "probability")
+            let manufacturer = v("メーカー", "manufacturer")
+            let heso = v("特図1内訳", "heso_prizes")
+            let denchu = v("特図2内訳", "denchu_prizes")
+            let border = v("ボーダー", "border")
+            let countPerRoundStr = v("賞球数", "countPerRound", "カウント数")
+            let countPerRound = Int(countPerRoundStr) ?? 10
+            let mtRaw = v("機種タイプ", "machineTypeRaw", "ST/確変")
+            let machineTypeRaw = mtRaw.isEmpty ? nil : mtRaw
+            let supportStr = v("電サポ", "supportLimit")
+            let supportLimit = Int(supportStr) ?? 0
+            let timeShortStr = v("時短", "timeShortRotations")
+            let timeShortRotations = Int(timeShortStr) ?? 0
+            let defaultPrizeStr = v("デフォルト出玉", "defaultPrize")
+            let defaultPrize = Int(defaultPrizeStr) ?? 1500
+            let introDate = v("導入日", "introductionDate", "導入日付")
+            let ltYn = v("LT有無", "LT")
+            list.append(PresetFromServer(
+                name: name,
+                machineTypeRaw: machineTypeRaw?.isEmpty == false ? machineTypeRaw : nil,
+                supportLimit: supportLimit,
+                timeShortRotations: timeShortRotations,
+                defaultPrize: defaultPrize,
+                probability: probability.isEmpty ? nil : probability,
+                border: border.isEmpty ? nil : border,
+                prizeEntries: nil,
+                entryRate: nil,
+                continuationRate: nil,
+                countPerRound: countPerRound,
+                netPerRoundBase: nil,
+                manufacturer: manufacturer.isEmpty ? nil : manufacturer,
+                heso_prizes: heso.isEmpty ? nil : heso,
+                denchu_prizes: denchu.isEmpty ? nil : denchu,
+                introductionDateRaw: introDate.isEmpty ? nil : introDate,
+                ltRaw: ltYn.isEmpty ? nil : ltYn
+            ))
+        }
+        return list
+    }
+
+    /// 1行をCSVとしてパース（ダブルクォート内のカンマは無視）。parsePresetsFromCSV から呼ぶため nonisolated。
+    private static nonisolated func parseCSVLine(_ line: String) -> [String] {
+        var result: [String] = []
+        var current = ""
+        var inQuotes = false
+        for ch in line {
+            if ch == "\"" {
+                inQuotes.toggle()
+            } else if (ch == "," && !inQuotes) {
+                result.append(current)
+                current = ""
+            } else {
+                current.append(ch)
+            }
+        }
+        result.append(current)
+        return result
     }
 
     /// サーバー用プリセットの1Rあたり平均純増

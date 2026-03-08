@@ -16,8 +16,7 @@ struct BonusMonitorView: View {
 
     /// メーカー公表ベースの1R純増（ゲージ100%の基準）
     private var makerDefaultNetPerRound: Double {
-        if machine.netPerRoundBase > 0 { return machine.netPerRoundBase }
-        return machine.averageNetPerRound > 0 ? machine.averageNetPerRound : 140
+        machine.averageNetPerRound > 0 ? machine.averageNetPerRound : 140
     }
 
     @State private var currentNetPerRound: Double = 0
@@ -103,7 +102,7 @@ struct BonusMonitorView: View {
                         Text("1R NET")
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundColor(accentColor.opacity(0.7))
-                        Text(String(format: "%.0f%%", expectationRatio * 100))
+                        Text(String(format: "%.2f%%", expectationRatio * 100))
                             .font(.system(size: 11, weight: .medium, design: .monospaced))
                             .foregroundColor(accentColor.opacity(0.8))
                     }
@@ -126,19 +125,19 @@ struct BonusMonitorView: View {
                 HStack(spacing: 0) {
                     Button(action: applyLoss) {
                         ZStack {
-                            Color.red.opacity(0.15)
+                            AppGlassStyle.rushColor.opacity(0.15)
                             VStack(spacing: 6) {
                                 Text("−1")
                                     .font(.system(size: 28, weight: .black, design: .monospaced))
-                                    .foregroundColor(Color.red.opacity(0.9))
+                                    .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
                                 Text("LOSS")
                                     .font(.system(size: 12, weight: .bold, design: .monospaced))
                                     .tracking(1)
-                                    .foregroundColor(Color.red.opacity(0.8))
+                                    .foregroundColor(AppGlassStyle.rushColor.opacity(0.8))
                             }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .overlay(RoundedRectangle(cornerRadius: 0).stroke(Color.red.opacity(0.4), lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: 0).stroke(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushStrokeOpacity), lineWidth: 1))
                     }
                     .buttonStyle(.plain)
 
@@ -165,7 +164,7 @@ struct BonusMonitorView: View {
         }
         .font(.system(size: 14, design: .monospaced))
         .onAppear {
-            currentNetPerRound = machine.effectiveNetPerRoundForBorder > 0 ? machine.effectiveNetPerRoundForBorder : makerDefaultNetPerRound
+            currentNetPerRound = machine.averageNetPerRound > 0 ? machine.averageNetPerRound : makerDefaultNetPerRound
             currentNetPerRound = min(max(currentNetPerRound, minNet), maxNet)
             UIApplication.shared.isIdleTimerDisabled = true
         }
@@ -185,7 +184,6 @@ struct BonusMonitorView: View {
     }
 
     private func commitAndDismiss() {
-        machine.netPerRoundBase = currentNetPerRound
         onFinish(currentNetPerRound)
         dismiss()
     }

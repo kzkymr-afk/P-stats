@@ -41,6 +41,8 @@ struct ChainResultInputView: View {
     let totalRealCost: Double
     let normalRotations: Int
     let onDismiss: () -> Void
+    /// 今回の実測1R純増をセッションに反映するコールバック（nil可）。機種には永続しない。
+    var onAppliedNetPerRound: ((Double) -> Void)? = nil
 
     @State private var setCountStr: String = ""
     @State private var totalGainStr: String = ""
@@ -129,7 +131,7 @@ struct ChainResultInputView: View {
             Text("今回の期待値（仕事量）")
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .foregroundColor(cyan.opacity(0.8))
-            Text(theoreticalProfit >= 0 ? "+\(theoreticalProfit) 円" : "\(theoreticalProfit) 円")
+            Text(theoreticalProfit >= 0 ? "+\(theoreticalProfit.formattedYen) 円" : "\(theoreticalProfit.formattedYen) 円")
                 .font(.system(size: 42, weight: .bold, design: .monospaced))
                 .foregroundColor(cyan)
             Text("収支は運、期待値は実力")
@@ -160,7 +162,7 @@ struct ChainResultInputView: View {
         let avgBallsPerRound = Double(gain) / Double(totalRounds)
         let effectiveNetPerRound = avgBallsPerRound - Double(countPerRound)
         let clamped = min(max(effectiveNetPerRound, 50), 250)
-        machine.netPerRoundBase = clamped
+        onAppliedNetPerRound?(clamped)
 
         // 今回の期待値（仕事量）: 実質コスト × (現在回転率/新ボーダー - 1)。貸玉料金・交換率を考慮
         let rate = exchangeRate > 0 ? exchangeRate : 4.0

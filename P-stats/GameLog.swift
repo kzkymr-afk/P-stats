@@ -7,7 +7,8 @@ final class GameLog {
     var selectedMachine: Machine = Machine(name: "未選択", supportLimit: 100, defaultPrize: 1500)
     var selectedShop: Shop = Shop(name: "未選択", ballsPerCashUnit: 125, exchangeRate: 4.0)
     
-    var totalHoldings: Int = 0
+    /// 初期持ち玉（syncHoldings/syncToSnapshot で調整され、totalHoldings 計算のベースになる）
+    var initialHoldings: Int = 0
     var totalRotations: Int = 0
     var normalRotations: Int = 0
     /// 新規開始時に設定した台表示数（表示合わせのみ・あとから修正用）
@@ -15,38 +16,43 @@ final class GameLog {
     var currentState: PlayState = .normal
     /// 電サポまたは時短の残り回数（0で自動通常復帰）。ST電サポ・通常後の時短の両方で使用
     var remainingSupportCount: Int = 0
+    /// 現在の時短/STフェーズ開始時の残り回数（前回大当たり以降のゲーム数表示用）
+    var supportPhaseInitialCount: Int = 0
     /// 通常大当たり後の時短中か（表示を「時短中」にするため）
     var isTimeShortMode: Bool = false
-    /// 遊技中の1R純増の手動調整値。nilなら機種のeffectiveNetPerRoundForBorderを使用
+    /// 遊技中の1R純増の手動調整値。nilなら機種のaverageNetPerRoundを使用
     var adjustedNetPerRound: Double?
 
     var winRecords: [WinRecord] = []
     var lendingRecords: [LendingRecord] = []
 
-    /// RUSHフォーカス用：遊技開始時刻（チャート横軸の0）
-    var sessionStartDate: Date?
-    /// RUSHフォーカス用：(時刻, 損益円) の時系列。最大13時間分
-    var chartTimeline: [(Date, Double)] = []
-    private let chartMaxHours: Double = 13
-
-    /// 最大3回まで Undo 可能なスタック（操作前に保存した状態）
-    private struct StateSnapshot {
-        let totalRotations: Int
-        let normalRotations: Int
-        let totalHoldings: Int
-        let currentState: PlayState
-        let remainingSupportCount: Int
-        let isTimeShortMode: Bool
-        let winRecords: [WinRecord]
-        let lendingRecords: [LendingRecord]
+    /// Undo：最後に追加した Record の削除（最大3件）
+    private enum UndoAction {
+        case removeWin(id: UUID)
+        case removeLending(id: UUID)
     }
-    private var undoStack: [StateSnapshot] = []
+    private var undoStack: [UndoAction] = []
     private let maxUndoCount = 3
 
     /// 持ち玉投資は 1タップ = 125玉。125未満の残りは全額投資として記録
     private let holdingsBallsPerTap: Int = 125
 
     init() {}
+
+    /// 回転で消費した玉数（期待ベース＝回転/250玉 で按分）。収支グラフの過去時点計算用のみ。表示用持ち玉は減らさない（カウントタップで持ち玉が減らないようにする）
+    private var consumedBallsByRotation: Int {
+        let delta = totalRotations - initialDisplayRotation
+        guard delta > 0 else { return 0 }
+        let borderPer250 = max(dynamicBorder, 0.01)
+        return Int((Double(delta) * 250.0 / borderPer250).rounded())
+    }
+
+    /// 持ち玉数（初期＋出玉−持ち玉投資のみ）。現金投資は投資額の把握のみで持ち玉は増やさない
+    var totalHoldings: Int {
+        let prizes = winRecords.reduce(0) { $0 + ($1.prize ?? 0) }
+        let raw = initialHoldings + prizes - holdingsInvestedBalls
+        return max(0, raw)
+    }
 
     /// Undo 可能回数（0〜3）
     var undoCount: Int { undoStack.count }
@@ -55,18 +61,17 @@ final class GameLog {
         addRotations(1)
     }
 
-    /// 指定数だけ回転を加算（+10, +100 用）。時短/ST電サポ中は残り回数を減らし0で通常に復帰
+    /// 指定数だけ回転を加算（+10, +100 用）。時短/ST電サポ中は残り回数を減らし0で通常に復帰。総回転数は時短・ST中は加算しない（累積のみ）
     func addRotations(_ n: Int) {
         guard n > 0 else { return }
-        saveState()
         var remaining = n
         while remaining > 0 {
-            totalRotations += 1
             if currentState == .normal {
+                totalRotations += 1
                 normalRotations += 1
                 remaining -= 1
             } else if currentState == .support, remainingSupportCount > 0 {
-                // 時短またはST電サポ：残り回数カウントダウン、0で通常へ
+                // 時短またはST電サポ：残り回数カウントダウン、0で通常へ（総回転数は加算しない）
                 remainingSupportCount -= 1
                 remaining -= 1
                 if remainingSupportCount <= 0 {
@@ -74,21 +79,24 @@ final class GameLog {
                     isTimeShortMode = false
                 }
             } else {
-                // 確変電サポ（残り0＝手動復帰待ち）は回転だけ加算
+                // 確変電サポ（残り0＝手動復帰待ち）は総回転数も加算
+                totalRotations += 1
                 remaining -= 1
             }
         }
     }
 
     func addLending(type: LendingType) {
-        saveState()
         if type == .holdings {
             let deduct = min(holdingsBallsPerTap, max(0, totalHoldings))
             guard deduct > 0 else { return }
-            totalHoldings -= deduct
-            lendingRecords.append(LendingRecord(type: .holdings, timestamp: Date(), balls: deduct))
+            let record = LendingRecord(type: .holdings, timestamp: Date(), balls: deduct)
+            lendingRecords.append(record)
+            pushUndo(.removeLending(id: record.id))
         } else {
-            lendingRecords.append(LendingRecord(type: .cash, timestamp: Date()))
+            let record = LendingRecord(type: .cash, timestamp: Date())
+            lendingRecords.append(record)
+            pushUndo(.removeLending(id: record.id))
         }
     }
 
@@ -96,9 +104,10 @@ final class GameLog {
     func addCashInvestment(yen: Int) {
         let units = max(0, yen / 500)
         guard units > 0 else { return }
-        saveState()
         for _ in 0..<units {
-            lendingRecords.append(LendingRecord(type: .cash, timestamp: Date()))
+            let record = LendingRecord(type: .cash, timestamp: Date())
+            lendingRecords.append(record)
+            pushUndo(.removeLending(id: record.id))
         }
     }
 
@@ -106,24 +115,20 @@ final class GameLog {
     func addHoldingsInvestment(balls: Int) {
         let deduct = min(balls, max(0, totalHoldings))
         guard deduct > 0 else { return }
-        saveState()
-        totalHoldings -= deduct
-        lendingRecords.append(LendingRecord(type: .holdings, timestamp: Date(), balls: deduct))
+        let record = LendingRecord(type: .holdings, timestamp: Date(), balls: deduct)
+        lendingRecords.append(record)
+        pushUndo(.removeLending(id: record.id))
     }
 
     func toggleLendingType(id: UUID) {
-        saveState()
-        if let index = lendingRecords.firstIndex(where: { $0.id == id }) {
-            if lendingRecords[index].type == .cash {
-                let deduct = min(holdingsBallsPerTap, max(0, totalHoldings))
-                totalHoldings -= deduct
-                lendingRecords[index].type = .holdings
-                lendingRecords[index].balls = deduct
-            } else {
-                totalHoldings += lendingRecords[index].balls ?? holdingsBallsPerTap
-                lendingRecords[index].type = .cash
-                lendingRecords[index].balls = nil
-            }
+        guard let index = lendingRecords.firstIndex(where: { $0.id == id }) else { return }
+        if lendingRecords[index].type == .cash {
+            let deduct = min(holdingsBallsPerTap, max(0, totalHoldings))
+            lendingRecords[index].type = .holdings
+            lendingRecords[index].balls = deduct
+        } else {
+            lendingRecords[index].type = .cash
+            lendingRecords[index].balls = nil
         }
     }
 
@@ -133,24 +138,27 @@ final class GameLog {
         return Int(round(Double(rounds) * effective1RNetPerRound))
     }
 
-    func addWin(type: WinType, atRotation: Int) {
-        saveState()
+    /// 大当たりを1件追加。prizeBalls を指定した場合はその玉数（純増）を使用、nil の場合は effectiveBallsPerHit を使用
+    func addWin(type: WinType, atRotation: Int, prizeBalls: Int? = nil) {
         let diff = atRotation - totalRotations
         if diff != 0 && currentState == .normal { normalRotations += diff }
-        let prize = effectiveBallsPerHit
-        winRecords.append(WinRecord(type: type, prize: prize, rotationAtWin: atRotation))
-        totalHoldings += prize
-        totalRotations = 0
+        let prize = prizeBalls ?? effectiveBallsPerHit
+        var record = WinRecord(type: type, prize: prize, rotationAtWin: atRotation, normalRotationsAtWin: normalRotations)
+        record.timestamp = Date()
+        winRecords.append(record)
+        pushUndo(.removeWin(id: record.id))
+        totalRotations = atRotation
         if type == .normal {
             let timeShort = selectedMachine.timeShortRotations
             if timeShort > 0 {
-                // 通常大当たり後は時短：球を消費しない回転が timeShort 回続く
                 currentState = .support
                 remainingSupportCount = timeShort
+                supportPhaseInitialCount = timeShort
                 isTimeShortMode = true
             } else {
                 currentState = .normal
                 remainingSupportCount = 0
+                supportPhaseInitialCount = 0
                 isTimeShortMode = false
             }
         } else {
@@ -158,9 +166,25 @@ final class GameLog {
             isTimeShortMode = false
             if selectedMachine.isST {
                 remainingSupportCount = selectedMachine.supportLimit
+                supportPhaseInitialCount = selectedMachine.supportLimit
+            } else {
+                remainingSupportCount = 0
+                supportPhaseInitialCount = 0
             }
         }
-        recordChartPoint()
+    }
+
+    /// カウントボタン表示用：前回大当たり以降のゲーム数（時短・ST抜けゲーム数含む）
+    var gamesSinceLastWin: Int {
+        let lastRot = winRecords.last?.rotationAtWin ?? 0
+        if winRecords.isEmpty {
+            return totalRotations
+        }
+        let normalSinceWin = totalRotations - lastRot
+        let supportPlayed = currentState == .support
+            ? (supportPhaseInitialCount - remainingSupportCount)
+            : supportPhaseInitialCount
+        return normalSinceWin + supportPlayed
     }
 
     // 計算用
@@ -202,23 +226,88 @@ final class GameLog {
         return currentValue - cost
     }
 
-    /// 大当たり時にチャート用の1点を追加（RUSHフォーカス用）
-    func recordChartPoint() {
-        let t = Date()
-        if sessionStartDate == nil {
-            sessionStartDate = t
-            chartTimeline = [(t, 0), (t, chartProfitYen)]
-        } else {
-            var next = chartTimeline + [(t, chartProfitYen)]
-            let cutoff = t.addingTimeInterval(-chartMaxHours * 3600)
-            next.removeAll { $0.0 < cutoff }
-            chartTimeline = next
+    /// 収支グラフ用プロット。横軸＝総回転数（電サポ・時短を除く通常ゲーム累積）。縦軸＝損益（円）
+    var liveChartPoints: [(Int, Double)] {
+        if let cached = _cachedLiveChartPoints, _lastChartStateHash == chartStateHash {
+            return cached
         }
+        let rate = selectedShop.exchangeRate
+        var points: [(Int, Double)] = [(0, 0)]
+        let winsOrdered = winRecords.sorted { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
+        let lendingsOrdered = lendingRecords.sorted { ($0.timestamp) < ($1.timestamp) }
+        
+        var cumulativePrize = 0
+        var currentLendingIndex = 0
+        var runningInvYen = 0
+        var runningHoldBalls = 0
+
+        for win in winsOrdered {
+            let t = win.timestamp ?? .distantPast
+            
+            while currentLendingIndex < lendingsOrdered.count && lendingsOrdered[currentLendingIndex].timestamp < t {
+                let l = lendingsOrdered[currentLendingIndex]
+                if l.type == .cash {
+                    runningInvYen += 500
+                } else {
+                    runningHoldBalls += l.balls ?? holdingsBallsPerTap
+                }
+                currentLendingIndex += 1
+            }
+            
+            cumulativePrize += win.prize ?? 0
+            let holdingsAtWin = initialHoldings + cumulativePrize - runningHoldBalls - consumedBallsAt(rotation: win.rotationAtWin)
+            let cost = Double(runningInvYen) + Double(runningHoldBalls) * rate
+            let profit = Double(max(0, holdingsAtWin)) * rate - cost
+            let xRot = win.normalRotationsAtWin ?? win.rotationAtWin
+            points.append((xRot, profit))
+        }
+        
+        let lastWinNormal = winsOrdered.last.flatMap { $0.normalRotationsAtWin ?? Optional($0.rotationAtWin) } ?? -1
+        if normalRotations > lastWinNormal {
+            points.append((normalRotations, chartProfitYen))
+        }
+        
+        _cachedLiveChartPoints = points
+        _lastChartStateHash = chartStateHash
+        return points
     }
 
-    /// 実戦で使う1Rあたり純増（遊技中調整 or 機種の突入率・継続率・平均出玉反映値）
+    @ObservationIgnored private var _cachedLiveChartPoints: [(Int, Double)]?
+    @ObservationIgnored private var _lastChartStateHash: Int = 0
+
+    private var chartStateHash: Int {
+        var hasher = Hasher()
+        hasher.combine(winRecords.count)
+        if let last = winRecords.last {
+            hasher.combine(last.id)
+            hasher.combine(last.prize)
+            hasher.combine(last.rotationAtWin)
+            hasher.combine(last.normalRotationsAtWin)
+        }
+        hasher.combine(lendingRecords.count)
+        if let last = lendingRecords.last {
+            hasher.combine(last.id)
+        }
+        hasher.combine(normalRotations)
+        hasher.combine(totalRotations)
+        hasher.combine(selectedShop.exchangeRate)
+        hasher.combine(initialHoldings)
+        hasher.combine(initialDisplayRotation)
+        hasher.combine(dynamicBorder)
+        return hasher.finalize()
+    }
+
+    /// 指定回転数時点での消費玉数（liveChartPoints 用）
+    private func consumedBallsAt(rotation: Int) -> Int {
+        let delta = rotation - initialDisplayRotation
+        guard delta > 0 else { return 0 }
+        let borderPer250 = max(dynamicBorder, 0.01)
+        return Int((Double(delta) * 250.0 / borderPer250).rounded())
+    }
+
+    /// 実戦で使う1Rあたり純増（遊技中調整 or 機種のaverageNetPerRound）
     var effective1RNetPerRound: Double {
-        adjustedNetPerRound ?? selectedMachine.effectiveNetPerRoundForBorder
+        adjustedNetPerRound ?? selectedMachine.averageNetPerRound
     }
 
     /// 公式ボーダー（等価時）が数値で入力されていればその値。未入力・非数値なら 0
@@ -236,6 +325,7 @@ final class GameLog {
     /// 公式ボーダー（回転/1000円）。メーカー公表値（機種マスターまたはユーザー入力の border）に、
     /// 店舗の貸玉料金（1000円あたり玉数）と交換率（円/玉）を考慮して算出。
     /// 公式＝等価(4円/玉・250玉/1000円)基準。実戦 = 公式 × (貸玉料金/250) × (4/交換率)
+    /// ※業界でいう「回転/1000円」は通常回転のみ（時短・電サポは含めない）。実質回転率と比較可能。
     var dynamicBorder: Double {
         let rate = selectedShop.exchangeRate
         guard rate > 0 else { return 0 }
@@ -264,11 +354,38 @@ final class GameLog {
 
     /// 期待値（実戦ボーダー比）。実質回転率（1000円・250玉単位）÷ 実戦ボーダー。1.0でボーダー、>1で上回り
     var expectationRatio: Double {
-        guard dynamicBorder > 0, effectiveUnitsForBorder > 0 else { return 0 }
-        return realRate / dynamicBorder
+        if let cached = _cachedExpectationRatio, _lastExpectationStateHash == expectationStateHash {
+            return cached
+        }
+        let ratio: Double
+        if dynamicBorder > 0 && effectiveUnitsForBorder > 0 {
+            ratio = realRate / dynamicBorder
+        } else {
+            ratio = 0
+        }
+        _cachedExpectationRatio = ratio
+        _lastExpectationStateHash = expectationStateHash
+        return ratio
+    }
+    
+    @ObservationIgnored private var _cachedExpectationRatio: Double?
+    @ObservationIgnored private var _lastExpectationStateHash: Int = 0
+    
+    private var expectationStateHash: Int {
+        var hasher = Hasher()
+        hasher.combine(investment)
+        hasher.combine(holdingsInvestedBalls)
+        hasher.combine(selectedShop.exchangeRate)
+        hasher.combine(selectedShop.ballsPerCashUnit)
+        hasher.combine(formulaBorderAsNumber)
+        hasher.combine(effective1RNetPerRound)
+        hasher.combine(selectedMachine.probabilityDenominator)
+        hasher.combine(normalRotations)
+        return hasher.finalize()
     }
 
     /// 実質回転率（回転/単位）。1単位＝現金1000円 または 持ち玉250玉。店舗の貸玉料金・交換率は実戦ボーダー側で参照
+    /// 分子は normalRotations（通常回転のみ・時短・電サポ除く）＝金を払って回した回転数。公式ボーダーと同定義。
     var realRate: Double {
         effectiveUnitsForBorder > 0 ? Double(normalRotations) / effectiveUnitsForBorder : 0.0
     }
@@ -282,27 +399,20 @@ final class GameLog {
 
     /// 手動で通常へ復帰（確変の「通常落ち」やST・時短の手動切り上げ）
     func backToNormalManually() {
-        saveState()
         currentState = .normal
         remainingSupportCount = 0
         isTimeShortMode = false
     }
 
-    /// チャンスモードで「時短終了」押下時。残り時短回数を totalRotations に加算し通常へ（101回転目から通常再開）
+    /// チャンスモードで「時短終了」押下時。通常へ復帰（総回転数は時短中加算していないのでそのまま）
     func endTimeShortAndReturnToNormal() {
-        saveState()
-        totalRotations += remainingSupportCount
         currentState = .normal
         remainingSupportCount = 0
         isTimeShortMode = false
     }
 
-    /// フォーカスモードで「RUSH終了」押下時。STなら電サポゲーム数を totalRotations に加算して通常へ（161から通常再開）。確変なら1から通常
+    /// フォーカスモードで「RUSH終了」押下時。通常へ復帰（総回転数はST中加算していないのでそのまま）
     func endRushAndReturnToNormal() {
-        saveState()
-        if selectedMachine.isST {
-            totalRotations += selectedMachine.supportLimit
-        }
         currentState = .normal
         remainingSupportCount = 0
         isTimeShortMode = false
@@ -310,7 +420,6 @@ final class GameLog {
 
     /// 手動で電サポ中に切り替え（STのときは残り回数をセットしてカウントダウン開始）
     func enterSupportManually() {
-        saveState()
         currentState = .support
         isTimeShortMode = false
         if selectedMachine.isST {
@@ -319,33 +428,32 @@ final class GameLog {
     }
 
     func fixTotalChainPrize(finalTotal: Int) {
-        saveState()
         let currentTotal = winRecords.reduce(0) { $0 + ($1.prize ?? 0) }
         let diff = finalTotal - currentTotal
-        totalHoldings += diff
-        if let lastIndex = winRecords.indices.last {
+        if let lastIndex = winRecords.indices.last, diff != 0 {
             winRecords[lastIndex].prize = (winRecords[lastIndex].prize ?? 0) + diff
         }
     }
 
     func adjustForZeroTray(syncRotation: Int) {
-        saveState(); let diff = syncRotation - totalRotations; totalRotations = syncRotation
-        if currentState == .normal { normalRotations += diff }
+        let lastRot = winRecords.last?.rotationAtWin ?? 0
+        let prevPerCycle = totalRotations - lastRot
+        totalRotations = lastRot + syncRotation
+        if currentState == .normal { normalRotations += (syncRotation - prevPerCycle) }
     }
 
-    /// データランプなどに表示されているゲーム数とアプリを合わせる。通常時は normalRotations も同期
+    /// データランプなどに表示されているゲーム数（当選後からの回転数）とアプリを合わせる。総回転数は累積のまま
     func syncTotalRotations(newTotal: Int) {
-        saveState()
-        totalRotations = newTotal
-        if currentState == .normal { normalRotations = newTotal }
+        let lastRot = winRecords.last?.rotationAtWin ?? 0
+        let prevPerCycle = totalRotations - lastRot
+        totalRotations = lastRot + newTotal
+        if currentState == .normal { normalRotations += (newTotal - prevPerCycle) }
     }
 
-    /// 当選時点の投資・持ち玉に合わせて lendingRecords と totalHoldings を上書き（大当たり入力時に使用）
+    /// 当選時点の投資・持ち玉に合わせて lendingRecords と initialHoldings を設定（大当たり入力時に使用）
     func syncToSnapshot(cashYen: Int, holdingsBalls: Int, totalHoldingsCount: Int) {
-        saveState()
         let cashUnits = max(0, cashYen / 500)
         let hBalls = max(0, holdingsBalls)
-        totalHoldings = max(0, totalHoldingsCount)
         lendingRecords.removeAll()
         for _ in 0..<cashUnits {
             lendingRecords.append(LendingRecord(type: .cash, timestamp: Date()))
@@ -353,11 +461,12 @@ final class GameLog {
         if hBalls > 0 {
             lendingRecords.append(LendingRecord(type: .holdings, timestamp: Date(), balls: hBalls))
         }
+        let prizes = winRecords.reduce(0) { $0 + ($1.prize ?? 0) }
+        initialHoldings = max(0, totalHoldingsCount - prizes + holdingsInvestedBalls)
     }
 
     /// 新規遊技開始時：台の表示数に合わせるだけ。回転率には自分の回転のみ使うため normalRotations は 0 のまま
     func setInitialDisplayRotation(_ n: Int) {
-        saveState()
         let v = max(0, n)
         initialDisplayRotation = v
         totalRotations = v
@@ -366,7 +475,6 @@ final class GameLog {
 
     /// 開始時の台表示数をあとから修正（表示を合わせるだけ・normalRotations は変えない）
     func correctInitialDisplayRotation(to newValue: Int) {
-        saveState()
         let v = max(0, newValue)
         let diff = v - initialDisplayRotation
         initialDisplayRotation = v
@@ -375,7 +483,6 @@ final class GameLog {
 
     /// 当選時点などに回転数を合わせる（回転率に含める）。syncTotalRotations と同じ
     func setRotationsTo(_ n: Int) {
-        saveState()
         let v = max(0, n)
         totalRotations = v
         if currentState == .normal { normalRotations = v }
@@ -383,7 +490,6 @@ final class GameLog {
 
     /// 現金投資額をあとから修正（500円単位。持ち玉投資はそのまま）
     func setCashInvestment(yen: Int) {
-        saveState()
         let cashUnits = max(0, yen / 500)
         let holdingsOnly = lendingRecords.filter { $0.type == .holdings }
         lendingRecords = (0..<cashUnits).map { _ in LendingRecord(type: .cash, timestamp: Date()) } + holdingsOnly
@@ -391,7 +497,6 @@ final class GameLog {
 
     /// 持ち玉投資（玉数）をあとから修正。現金投資はそのまま
     func setHoldingsInvested(balls: Int) {
-        saveState()
         let cashOnly = lendingRecords.filter { $0.type == .cash }
         let h = max(0, balls)
         if h == 0 {
@@ -401,68 +506,135 @@ final class GameLog {
         }
     }
 
-    /// 直近1回の操作を取り消す。最大3回までスタックから復元。
+    /// 大当たり回数をあとから修正（RUSH回数・通常回数）。持ち玉数は変更しない
+    func setWinCounts(rush: Int, normal: Int) {
+        let r = max(0, rush)
+        let n = max(0, normal)
+        let rushRecords = (0..<r).map { _ in WinRecord(type: .rush, prize: 0, rotationAtWin: 0) }
+        let normalRecords = (0..<n).map { _ in WinRecord(type: .normal, prize: 0, rotationAtWin: 0) }
+        winRecords = rushRecords + normalRecords
+    }
+
+    /// 直近1回の操作を取り消す（最後に追加した Win または Lending を削除）。最大3回まで
     func undoLastAction() {
-        guard let s = undoStack.popLast() else { return }
-        totalRotations = s.totalRotations
-        normalRotations = s.normalRotations
-        totalHoldings = s.totalHoldings
-        currentState = s.currentState
-        remainingSupportCount = s.remainingSupportCount
-        isTimeShortMode = s.isTimeShortMode
-        winRecords = s.winRecords
-        lendingRecords = s.lendingRecords
-    }
-    func updatePrize(id: UUID, newPrize: Int) {
-        saveState()
-        if let index = winRecords.firstIndex(where: { $0.id == id }) {
-            let old = winRecords[index].prize ?? 0
-            winRecords[index].prize = newPrize; totalHoldings += (newPrize - old)
+        guard let action = undoStack.popLast() else { return }
+        switch action {
+        case .removeWin(id: let id):
+            winRecords.removeAll { $0.id == id }
+        case .removeLending(id: let id):
+            lendingRecords.removeAll { $0.id == id }
         }
     }
 
-    /// 大当たり1件を削除（連打で多く入力した場合など）。持ち玉からその分出玉を引く
-    func deleteWinRecord(id: UUID) {
-        saveState()
-        if let index = winRecords.firstIndex(where: { $0.id == id }) {
-            let prize = winRecords[index].prize ?? 0
-            winRecords.remove(at: index)
-            totalHoldings -= prize
-        }
-    }
-
-    /// 実際の持ち玉数で同期（確変終了後など）。差額で totalHoldings を上書き
-    func syncHoldings(actualHoldings: Int) {
-        saveState()
-        totalHoldings = max(0, actualHoldings)
-    }
-    private func saveState() {
-        let s = StateSnapshot(
-            totalRotations: totalRotations,
-            normalRotations: normalRotations,
-            totalHoldings: totalHoldings,
-            currentState: currentState,
-            remainingSupportCount: remainingSupportCount,
-            isTimeShortMode: isTimeShortMode,
-            winRecords: winRecords,
-            lendingRecords: lendingRecords
-        )
-        undoStack.append(s)
+    private func pushUndo(_ action: UndoAction) {
+        undoStack.append(action)
         if undoStack.count > maxUndoCount {
             undoStack.removeFirst()
         }
     }
+
+    func updatePrize(id: UUID, newPrize: Int) {
+        if let index = winRecords.firstIndex(where: { $0.id == id }) {
+            winRecords[index].prize = newPrize
+        }
+    }
+
+    /// 大当たり1件を削除（連打で多く入力した場合など）
+    func deleteWinRecord(id: UUID) {
+        winRecords.removeAll { $0.id == id }
+    }
+
+    /// 投資1件を削除（履歴編集用）
+    func deleteLendingRecord(id: UUID) {
+        lendingRecords.removeAll { $0.id == id }
+    }
+
+    /// 大当たりの回転数を修正（履歴編集用）
+    func updateWinRotation(id: UUID, rotationAtWin: Int) {
+        if let index = winRecords.firstIndex(where: { $0.id == id }) {
+            winRecords[index].rotationAtWin = rotationAtWin
+        }
+    }
+
+    /// 大当たりの種別を修正（履歴編集用）
+    func updateWinType(id: UUID, newType: WinType) {
+        if let index = winRecords.firstIndex(where: { $0.id == id }) {
+            winRecords[index].type = newType
+        }
+    }
+
+    /// 最後に記録した通常大当たりをRUSH大当たりに昇格させる（チャンスモード等から呼ぶ）
+    func promoteLastNormalToRush() {
+        if let lastNormalIndex = winRecords.lastIndex(where: { $0.type == .normal }) {
+            winRecords[lastNormalIndex].type = .rush
+        }
+        
+        // 状態をRUSHモードに更新する
+        currentState = .support
+        isTimeShortMode = false
+        if selectedMachine.isST {
+            remainingSupportCount = selectedMachine.supportLimit
+            supportPhaseInitialCount = selectedMachine.supportLimit
+        } else {
+            remainingSupportCount = 0
+            supportPhaseInitialCount = 0
+        }
+    }
+
+    /// 投資1件の内容を差し替え（履歴編集用・timestamp は維持）
+    func replaceLendingRecord(id: UUID, type: LendingType, balls: Int?) {
+        guard let index = lendingRecords.firstIndex(where: { $0.id == id }) else { return }
+        let old = lendingRecords[index]
+        lendingRecords[index] = LendingRecord(id: old.id, type: type, timestamp: old.timestamp, balls: balls)
+    }
+
+    /// 実際の持ち玉数で同期（終了時や確変終了後など）。
+    /// アプリ上の持ち玉(totalHoldings)との差分を計算し、差分を持ち玉投資として追加・相殺する。
+    func syncHoldings(actualHoldings: Int) {
+        let currentHoldings = totalHoldings
+        let diff = currentHoldings - actualHoldings
+        
+        if diff > 0 {
+            // アプリ上の方が多い場合 -> 実戦ではより多く消費（投資）していた
+            // 不足分を持ち玉投資として追加
+            lendingRecords.append(LendingRecord(type: .holdings, timestamp: Date(), balls: diff))
+        } else if diff < 0 {
+            // アプリ上の方が少ない場合 -> 実戦では思ったより消費していなかった（または出玉が多かった）
+            // マイナスの持ち玉投資（=回収）として追加して相殺
+            lendingRecords.append(LendingRecord(type: .holdings, timestamp: Date(), balls: diff))
+        }
+    }
+
     func reset() {
         undoStack = []
-        sessionStartDate = Date()
-        chartTimeline = []
-        totalHoldings = 0
+        initialHoldings = 0
+        initialDisplayRotation = 0
         totalRotations = 0
         normalRotations = 0
         currentState = .normal
         remainingSupportCount = 0
+        supportPhaseInitialCount = 0
+        isTimeShortMode = false
         adjustedNetPerRound = nil
         winRecords = []
         lendingRecords = []
+    }
+
+    /// 続きから：永続化した状態をログに反映する。機種・店舗は呼び出し元で解決済みのものを渡す
+    func applyResumableState(_ state: ResumableState, machine: Machine, shop: Shop) {
+        selectedMachine = machine
+        selectedShop = shop
+        initialHoldings = state.initialHoldings
+        totalRotations = state.totalRotations
+        normalRotations = state.normalRotations
+        initialDisplayRotation = state.initialDisplayRotation
+        currentState = state.currentState
+        remainingSupportCount = state.remainingSupportCount
+        supportPhaseInitialCount = state.supportPhaseInitialCount
+        isTimeShortMode = state.isTimeShortMode
+        adjustedNetPerRound = state.adjustedNetPerRound
+        winRecords = state.winRecords
+        lendingRecords = state.lendingRecords
+        undoStack = []
     }
 }

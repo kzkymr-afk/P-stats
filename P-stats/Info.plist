@@ -2,8 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSFaceIDUsageDescription</key>
-	<string>アプリのロック解除にFace IDを使用します。</string>
+	<key>GooglePlacesAPIKey</key>
+	<string>AIzaSyBi_H6osYb-1GZrchNsVNxiEP5nnKWrcG8</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>現在地周辺のパチンコ店を検索するために位置情報を利用します。</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

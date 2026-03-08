@@ -1,11 +1,11 @@
 import SwiftUI
 import SwiftData
 
-/// 当たり種類ライブラリの一覧・追加・編集
+/// ボーナス種類ライブラリの一覧・追加・編集
 struct PrizeSetListView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \PrizeSet.name) private var prizeSets: [PrizeSet]
+    @Query(sort: [SortDescriptor(\PrizeSet.displayOrder), SortDescriptor(\PrizeSet.name)]) private var prizeSets: [PrizeSet]
 
     @State private var showAdd = false
     @State private var editingSet: PrizeSet?
@@ -16,7 +16,7 @@ struct PrizeSetListView: View {
     var body: some View {
         List {
             Section {
-                Text("登録した当たり種類を機種登録時に選べます。例: 10R（1500玉）、4R（600玉）")
+                Text("例: 10R×150玉＝1500玉。並び順はドラッグで変更できます。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -25,6 +25,9 @@ struct PrizeSetListView: View {
                     editingSet = ps
                 } label: {
                     HStack {
+                        Image(systemName: "line.3.horizontal")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(ps.name.isEmpty ? "\(ps.rounds)R（\(ps.balls)玉）" : ps.name)
                                 .font(.subheadline)
@@ -46,8 +49,9 @@ struct PrizeSetListView: View {
                     }
                 }
             }
+            .onMove(perform: movePrizeSets)
         }
-        .navigationTitle("当たり種類ライブラリ")
+        .navigationTitle("ボーナス種類ライブラリ")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("追加") {
@@ -65,6 +69,7 @@ struct PrizeSetListView: View {
                 let name = newName.trimmingCharacters(in: .whitespaces)
                 let label = name.isEmpty ? "\(r)R（\(b)玉）" : name
                 let ps = PrizeSet(name: label, rounds: r, balls: b)
+                ps.displayOrder = (prizeSets.map(\.displayOrder).max() ?? -1) + 1
                 modelContext.insert(ps)
                 showAdd = false
             }
@@ -75,9 +80,17 @@ struct PrizeSetListView: View {
             }
         }
     }
+
+    private func movePrizeSets(from source: IndexSet, to destination: Int) {
+        var ordered = prizeSets
+        ordered.move(fromOffsets: source, toOffset: destination)
+        for (index, ps) in ordered.enumerated() {
+            ps.displayOrder = index
+        }
+    }
 }
 
-/// 当たり種類の名前・R・玉数を入力するシート（新規用）
+/// ボーナス種類の名前・R・玉数を入力するシート（新規用）
 struct PrizeSetEditSheet: View {
     @Binding var name: String
     @Binding var rounds: String

@@ -21,7 +21,7 @@
 | **FOCUS / 集中モード（右打ち中）** | あたり中のリアルタイムモニター（旧 BONUS MONITOR）。1R純増スライダーで実効ボーダーを表示。 |
 | **RESULT / 結果入力（今回の回収）** | 連チャン終了時の一括入力。Set Count・Total Gain を入力し、1R実効純増を機種にフィードバック。 |
 | **インサイトパネル** | 右端スワイプで開くドロワー。今日の期待値・あと何回でプラス転換などを表示（マルチタスク・暇つぶし用）。 |
-| **GesturePlayView** | ジェスチャーのみのミニマルUI。機種名長押しで起動。下部タップ=回転、左端スワイプ=1k投資、中央長押し=FOCUS。 |
+| **PowerSavingModeView** | 省エネモード。ジェスチャー＋タップのミニマルUI。機種名長押しで起動。下部タップ=回転、左端スワイプ=1k投資。 |
 
 ---
 
@@ -35,7 +35,7 @@
 | **BonusStandbyView.swift** | `BonusStandbyOverlay`（暗転・呼吸する円・ダブルタップでコールバック）、`ChainResultInputView`（Set Count / Total Gain 入力→1R純増フィードバック→「今回の期待値（仕事量）：＋◯◯円」「収支は運、期待値は実力」のフィードバック表示）。 |
 | **BonusMonitorView.swift** | FOCUS（集中モード）。1R純増スライダー・実効ボーダー・期待値ゲージ。終了で「集中モードを終了」ダイアログ。 |
 | **InsightPanelView.swift** | インサイトパネル本体。今回の期待値（円）、あと何回でプラス転換、今日の実戦サマリ。水色・ダークネイビー。左スワイプ／×／dim タップで閉じる。 |
-| **GesturePlayView.swift** | ジェスチャープレイ。ボタン非表示、ジェスチャーのみ、周辺発光・波紋。 |
+| **PowerSavingModeView.swift** | 省エネモード。ジェスチャー＋タップ、周辺発光・波紋。 |
 | **MachineShopSelectionView.swift** | 機種・店舗選択。保存済み Machine/Shop の選択と log への反映。 |
 | **AnalyticsDashboardView.swift** / **AnalyticsEngine.swift** | 保存セッションの分析（店舗・機種・メーカー別）。 |
 
@@ -60,7 +60,7 @@
 ### 4.3 その他
 
 - **FOCUS**: タイトル「FOCUS」＋サブ「集中モード（右打ち中）」、ボタン「終了」、確認「集中モードを終了」。
-- **GesturePlayView**: 機種名長押しで起動。`showGesturePlayUI` で表示。ジェスチャーのみのミニマルUI。
+- **PowerSavingModeView**: 省エネモード。機種名長押しで起動。`showPowerSavingMode` で表示。
 
 ---
 
@@ -90,7 +90,7 @@
 - 連チャン結果・Bonus Standby: `P-stats/BonusStandbyView.swift`
 - 集中モード: `P-stats/BonusMonitorView.swift`
 - インサイトパネル: `P-stats/InsightPanelView.swift`
-- ジェスチャープレイ: `P-stats/GesturePlayView.swift`
+- 省エネモード: `P-stats/PowerSavingModeView.swift`
 - 機種・店舗選択: `P-stats/MachineShopSelectionView.swift`
 
 この `HANDOVER.md` を次のチャットの最初に共有すると、仕様とファイル構成をすぐ引き継げます。

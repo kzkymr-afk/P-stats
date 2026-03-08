@@ -1,0 +1,55 @@
+name: マスターデータ週次更新
+
+on:
+  schedule:
+    # 毎週月曜 0:00 UTC = 日本時間 9:00
+    - cron: '0 0 * * 1'
+  workflow_dispatch:  # 手動実行用（Actions タブから「Run workflow」）
+
+env:
+  # スクリプトの書き込み先を明示（リポジトリルートの machines.json に確実に書く）
+  MACHINES_JSON_PATH: ${{ github.workspace }}/machines.json
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # リポジトリに push するために必要
+
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v4
+
+      - name: 作業ディレクトリの確認
+        run: |
+          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
+          echo "machines.json の有無:"
+          ls -la "$GITHUB_WORKSPACE/machines.json" 2>/dev/null || echo "（存在しない）"
+
+      - name: Python をセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 依存をインストール
+        run: pip install requests
+
+      - name: マスターデータを更新
+        run: |
+          python scripts/update_machines.py
+          echo "--- 書き込み後のファイル ---"
+          ls -la "$MACHINES_JSON_PATH"
+          echo "取得件数: $(python -c "import json; d=json.load(open('$MACHINES_JSON_PATH')); print(len(d))")"
+
+      - name: 変更をコミット＆プッシュ
+        run: |
+          git add "$MACHINES_JSON_PATH"
+          if git diff --staged --quiet; then
+            echo "::error::machines.json に変更がありません。取得データが既存と同一か、スプレッドシートの取得に失敗している可能性があります。"
+            echo "現在の取得件数: $(python -c "import json; d=json.load(open('$MACHINES_JSON_PATH')); print(len(d))")"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: マスターデータを自動更新"
+          git push || (echo "::error::git push に失敗しました。ブランチ保護や権限を確認してください。" && exit 1)

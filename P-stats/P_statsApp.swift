@@ -90,12 +90,40 @@ extension Color {
     }
 }
 
+// MARK: - 金額表示（1000円単位のカンマ区切り）
+extension Int {
+    /// 表示用：金額をカンマ区切りで返す（例: 12345 → "12,345"）
+    var formattedYen: String { formatted(.number) }
+}
+
 // MARK: - グラスモーフィズム共通（やや不透明で統一）
 enum AppGlassStyle {
     static let background = Color(hex: "0A0E1A")
-    static let rowBackground = Color.black.opacity(0.65)   // 65%（背景で見えにくくならないよう上げた）
-    static let cardBackground = Color.black.opacity(0.70)  // 70%
+    static let rowBackground = Color.black.opacity(0.65)
+    static let cardBackground = Color.black.opacity(0.70)
     static let accent = Color(red: 0, green: 0.83, blue: 1.0)
+
+    /// RUSH／通常ボタン用（背景・枠・文字の統一）
+    static let rushColor = Color.red
+    static let normalColor = Color.blue
+    static let rushBackgroundOpacity: Double = 0.12
+    static let rushStrokeOpacity: Double = 0.4
+    static let normalBackgroundOpacity: Double = 0.12
+    static let normalStrokeOpacity: Double = 0.4
+    static let rushTitleOpacity: Double = 0.95
+    static let normalTitleOpacity: Double = 0.95
+
+    /// 実質回転率とボーダーの差に応じたエッジ発光色（±0.5=白、+0.5〜+1.5=水色、+1.5超=青、-0.5〜-1.5=黄オレンジ、-1.5未満=赤）
+    static func edgeGlowColor(border: Double, realRate: Double) -> Color {
+        guard border > 0 else { return accent }
+        let diff = realRate - border
+        if diff > 1.5 { return Color(red: 0.2, green: 0.45, blue: 1.0) }
+        if diff > 0.5 { return accent }
+        if diff >= -0.5 { return .white }
+        if diff >= -1.5 { return Color(red: 1.0, green: 0.65, blue: 0.2) }
+        return Color(red: 1.0, green: 0.25, blue: 0.25)
+    }
+
     static var strokeGradient: LinearGradient {
         LinearGradient(
             colors: [
@@ -118,7 +146,7 @@ struct ListSelectionStyleModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .scaleEffect(isPressed ? 0.95 : 1.0)
-            .shadow(color: isSelected ? Color.cyan.opacity(0.3) : .clear, radius: 10)
+            .shadow(color: isSelected ? AppGlassStyle.accent.opacity(0.3) : .clear, radius: 10)
             .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isPressed)
             .animation(.easeOut(duration: 0.2), value: isSelected)
             .simultaneousGesture(
@@ -482,6 +510,9 @@ struct HomeView: View {
     @State private var isPlaying = false
     @State private var showMachineShopGate = false
     @State private var showContinueSelection = false
+    @State private var continueRestoreFailed = false
+    @Query(sort: \Machine.name) private var machines: [Machine]
+    @Query(sort: \Shop.name) private var shops: [Shop]
     @State private var selectedTab: HomeTab = .home
     @State private var homeNavigationPath: [HomeRoute] = []
     @State private var appeared = false
@@ -605,11 +636,26 @@ struct HomeView: View {
         .fullScreenCover(isPresented: $showMachineShopGate) {
             MachineShopSelectionView(log: log, gateMode: true, onGateStart: { showMachineShopGate = false; isPlaying = true }, onGateCancel: { showMachineShopGate = false })
         }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background {
+                ResumableStateStore.save(from: log)
+            }
+        }
         .fullScreenCover(isPresented: $showContinueSelection) {
-            ContinuePlaySelectionView(log: log) { showContinueSelection = false; isPlaying = true } onCancel: { showContinueSelection = false }
+            ContinuePlaySelectionView(log: log, restoreFailed: continueRestoreFailed) {
+                showContinueSelection = false
+                continueRestoreFailed = false
+                isPlaying = true
+            } onCancel: {
+                showContinueSelection = false
+                continueRestoreFailed = false
+            }
         }
         .fullScreenCover(isPresented: $isPlaying) {
-            PlayView(log: log, theme: $theme)
+            PlayView(log: log, theme: $theme, onOpenSettingsTab: {
+                isPlaying = false
+                selectedTab = .settings
+            })
         }
     }
 
@@ -770,13 +816,13 @@ struct HomeView: View {
                 Text(earningsPeriod.rawValue)
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundColor(.white.opacity(0.92))
-                Text("\(periodProfit >= 0 ? "+" : "")\(periodProfit.formatted(.number))円")
+                Text("\(periodProfit >= 0 ? "+" : "")\(periodProfit.formattedYen)円")
                     .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
                     .foregroundStyle(periodProfit >= 0 ? cyan : Color(red: 0.95, green: 0.3, blue: 0.5))
                     .frame(maxWidth: .infinity)
                 HStack {
                     Spacer(minLength: 0)
-                    Text(periodDeficitSurplus >= 0 ? "余剰 +\(periodDeficitSurplus.formatted(.number))円" : "欠損 \(periodDeficitSurplus.formatted(.number))円")
+                    Text(periodDeficitSurplus >= 0 ? "余剰 +\(periodDeficitSurplus.formattedYen)円" : "欠損 \(periodDeficitSurplus.formattedYen)円")
                         .font(.system(size: 14, weight: .semibold, design: .rounded).monospacedDigit())
                         .foregroundColor(periodDeficitSurplus >= 0 ? Color(red: 0.3, green: 0.95, blue: 0.5) : Color.orange)
                 }
@@ -856,11 +902,20 @@ struct HomeView: View {
             HomeGridButton(title: "新規スタート", icon: "plus.circle", cyan: cyan, size: side) {
                 HapticUtil.impact(.medium)
                 log.reset()
+                ResumableStateStore.clear()
                 showMachineShopGate = true
             }
             HomeGridButton(title: "続きから", icon: "play.circle", cyan: cyan, size: side) {
                 HapticUtil.impact(.medium)
-                showContinueSelection = true
+                if let state = ResumableStateStore.load(),
+                   let machine = machines.first(where: { $0.name == state.machineName }),
+                   let shop = shops.first(where: { $0.name == state.shopName }) {
+                    log.applyResumableState(state, machine: machine, shop: shop)
+                    isPlaying = true
+                } else {
+                    continueRestoreFailed = ResumableStateStore.load() != nil
+                    showContinueSelection = true
+                }
             }
             Button {
                 homeNavigationPath = [.history]
@@ -944,7 +999,7 @@ struct HomeView: View {
 struct HomeGridButtonLabel: View {
     let title: String
     let icon: String
-    var cyan: Color = Color(red: 0, green: 0.83, blue: 1.0)
+    var cyan: Color = AppGlassStyle.accent
     var size: CGFloat = 160
 
     private var iconSize: CGFloat { min(32, max(24, size * 0.175)) }
@@ -984,7 +1039,7 @@ struct HomeGridButtonLabel: View {
 struct HomeGridButton: View {
     let title: String
     let icon: String
-    var cyan: Color = Color(red: 0, green: 0.83, blue: 1.0)
+    var cyan: Color = AppGlassStyle.accent
     var size: CGFloat = 160
     let action: () -> Void
     @State private var isPressed = false
@@ -1176,11 +1231,15 @@ struct SettingsTabView: View {
     @AppStorage("playViewBackgroundStyle") private var playViewBackgroundStyle = "sameAsHome"
     @AppStorage("playViewBackgroundImagePath") private var playViewBackgroundImagePath = ""
     @AppStorage("playViewStartWithPowerSaving") private var playViewStartWithPowerSaving = false
+    @AppStorage("startWithZeroHoldings") private var startWithZeroHoldings = false
     @AppStorage("hapticEnabled") private var hapticEnabled = true
     @AppStorage("defaultExchangeRate") private var defaultExchangeRateStr = "4.0"  // 交換率（円/玉）文字列
     @AppStorage("defaultBallsPerCash") private var defaultBallsPerCashStr = "125"
     @AppStorage("defaultMachineName") private var defaultMachineName = ""
     @AppStorage("defaultShopName") private var defaultShopName = ""
+    @AppStorage("alwaysShowBothInvestmentButtons") private var alwaysShowBothInvestmentButtons = true
+    @AppStorage("machineMasterListURL") private var machineMasterListURL: String = ""
+    @AppStorage("machineMasterDataURL") private var machineMasterDataURL: String = ""
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selectedPlayPhotoItem: PhotosPickerItem?
     @State private var isSavingPhoto = false
@@ -1195,7 +1254,7 @@ struct SettingsTabView: View {
             StaticHomeBackgroundView()
             ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
-                    // アプリロック
+                    // 1. アプリロック
                     settingsCard(title: "アプリロック", icon: "lock.fill") {
                         VStack(alignment: .leading, spacing: 14) {
                             Toggle(isOn: bindingLockEnabled) {
@@ -1215,28 +1274,56 @@ struct SettingsTabView: View {
                         }
                     }
 
-                    // テーマ
-                    settingsCard(title: "テーマ", icon: "paintbrush.fill") {
-                        Picker("", selection: $theme) {
-                            ForEach(AppTheme.allCases, id: \.self) { t in
-                                Text(t.rawValue).tag(t)
+                    // 2. デフォルト設定（機種・店舗・持ち玉0・投資ボタン表示）
+                    settingsCard(title: "デフォルト設定", icon: "play.circle.fill") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("機種")
+                                    .foregroundColor(.white.opacity(0.85))
+                                Spacer()
+                                Picker("", selection: $defaultMachineName) {
+                                    Text("— 指定なし").tag("")
+                                    ForEach(machines) { m in
+                                        Text(m.name).tag(m.name)
+                                    }
+                                }
+                                .labelsHidden()
+                                .tint(cyan)
                             }
+                            HStack {
+                                Text("店舗")
+                                    .foregroundColor(.white.opacity(0.85))
+                                Spacer()
+                                Picker("", selection: $defaultShopName) {
+                                    Text("— 指定なし").tag("")
+                                    ForEach(shops) { s in
+                                        Text(s.name).tag(s.name)
+                                    }
+                                }
+                                .labelsHidden()
+                                .tint(cyan)
+                            }
+                            Toggle(isOn: $startWithZeroHoldings) {
+                                Text("新規遊技時の持ち玉数を常に０で始める")
+                                    .foregroundColor(.white.opacity(0.9))
+                            }
+                            .tint(cyan)
+                            Text("オンにすると、新規遊技開始時の必須入力「開始時の持ち玉（貯玉）」に０が入力された状態になります。")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                            Toggle(isOn: $alwaysShowBothInvestmentButtons) {
+                                Text("常に現金投資・持ち玉投資両方を表示")
+                                    .foregroundColor(.white.opacity(0.9))
+                            }
+                            .tint(cyan)
+                            Text("オフの場合、持ち玉0のときは現金投資のみ、持ち玉があるときは持ち玉投資のみを表示します（ボタンは2つ分の大きさ）。")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
                         }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
                     }
 
-                    // 触覚フィードバック
-                    settingsCard(title: "バイブ（触覚フィードバック）", icon: "iphone.radiowaves.left.and.right") {
-                        Toggle(isOn: $hapticEnabled) {
-                            Text("オン")
-                                .foregroundColor(.white.opacity(0.9))
-                        }
-                        .tint(cyan)
-                    }
-
-                    // 遊技開始時の初期画面（省エネ or 通常）
-                    settingsCard(title: "遊技開始時の初期画面", icon: "leaf.fill") {
+                    // 3. 遊技開始時の初期画面
+                    settingsCard(title: "遊戯開始時の初期画面", icon: "leaf.fill") {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("遊戯開始後、最初に表示する画面を選べます。")
                                 .font(.caption)
@@ -1250,92 +1337,47 @@ struct SettingsTabView: View {
                         }
                     }
 
-                    // 実戦画面の背景（ホームと同じ or 別画像）
-                    settingsCard(title: "実戦画面の背景", icon: "play.rectangle.fill") {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Picker("", selection: $playViewBackgroundStyle) {
-                                Text("ホームと同じ").tag("sameAsHome")
-                                Text("別の画像").tag("custom")
-                            }
-                            .pickerStyle(.segmented)
-                            .labelsHidden()
-                            if playViewBackgroundStyle == "custom" {
-                                PhotosPicker(
-                                    selection: $selectedPlayPhotoItem,
-                                    matching: .images,
-                                    photoLibrary: .shared()
-                                ) {
-                                    HStack {
-                                        Image(systemName: "photo.on.rectangle.angled")
-                                            .foregroundColor(cyan)
-                                        Text(playViewBackgroundImagePath.isEmpty ? "写真を選択" : "写真を変更")
-                                            .foregroundColor(.white)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                }
-                                .onChange(of: selectedPlayPhotoItem) { _, newItem in
-                                    Task { await saveSelectedPlayPhoto(newItem) }
-                                }
-                                if isSavingPlayPhoto {
-                                    HStack {
-                                        ProgressView().tint(.white)
-                                        Text("保存中…").font(.caption).foregroundColor(.white.opacity(0.7))
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                }
-                            }
+                    // 4. マスターデータURL（採用用・マスタから検索で表示する一覧の取得元）
+                    settingsCard(title: "マスターデータURL", icon: "list.bullet.rectangle") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("「マスタから検索」で表示する機種一覧の取得元。デフォルトは GitHub の machines.json（raw URL）です。別の JSON URL を指定することも可能。空欄のときはデフォルトURLを使用します。")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                            TextField("空ならデフォルトURLを使用", text: $machineMasterDataURL)
+                                .keyboardType(.URL)
+                                .textContentType(.URL)
+                                .autocapitalization(.none)
+                                .foregroundColor(.white)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 12)
+                                .background(Color.white.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            Text("デフォルト: \(PresetServiceConfig.defaultMachineMasterDataURL)")
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.5))
                         }
                     }
 
-                    // ホームの背景
-                    settingsCard(title: "ホームの背景", icon: "photo.fill") {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Picker("", selection: $homeBackgroundStyle) {
-                                Text("デフォルト（サイバー）").tag(HomeBackgroundStore.defaultStyle)
-                                Text("カスタム画像").tag("custom")
-                            }
-                            .pickerStyle(.segmented)
-                            .labelsHidden()
-                            if homeBackgroundStyle == "custom" {
-                                PhotosPicker(
-                                    selection: $selectedPhotoItem,
-                                    matching: .images,
-                                    photoLibrary: .shared()
-                                ) {
-                                    HStack {
-                                        Image(systemName: "photo.on.rectangle.angled")
-                                            .foregroundColor(cyan)
-                                        Text(homeBackgroundImagePath.isEmpty ? "写真を選択" : "写真を変更")
-                                            .foregroundColor(.white)
-                                        if homeBackgroundImagePath.isEmpty {
-                                            Text("壁紙として設定")
-                                                .font(.caption)
-                                                .foregroundColor(.white.opacity(0.6))
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                }
-                                .onChange(of: selectedPhotoItem) { _, newItem in
-                                    Task { await saveSelectedPhoto(newItem) }
-                                }
-                                if isSavingPhoto {
-                                    HStack {
-                                        ProgressView()
-                                            .tint(.white)
-                                        Text("保存中…")
-                                            .font(.caption)
-                                            .foregroundColor(.white.opacity(0.7))
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                }
-                            }
+                    // 4b. 機種マスタ（機種名・メーカー一覧の取得元URL・編集画面用）
+                    settingsCard(title: "機種マスタ（名前・メーカー一覧）", icon: "list.bullet") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("機種編集画面で「マスタから選ぶ」に表示する、機種名・メーカー一覧のJSONのURL。空なら非表示。")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                            TextField("https://...", text: $machineMasterListURL)
+                                .keyboardType(.URL)
+                                .textContentType(.URL)
+                                .autocapitalization(.none)
+                                .foregroundColor(.white)
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 12)
+                                .background(Color.white.opacity(0.12))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
                     }
 
-                    // デフォルト交換率・貸玉料金（新規セッション時）
-                    settingsCard(title: "新規プレイ時のデフォルト", icon: "yensign.circle.fill") {
+                    // 5. 店舗選択なしの場合のデフォルト交換率
+                    settingsCard(title: "店舗選択なしの場合のデフォルト交換率", icon: "yensign.circle.fill") {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
                                 Text("交換率（円/玉）")
@@ -1368,39 +1410,115 @@ struct SettingsTabView: View {
                         }
                     }
 
-                    // 新規スタート時のデフォルト機種・店舗
-                    settingsCard(title: "新規スタート時のデフォルト選択", icon: "play.circle.fill") {
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack {
-                                Text("機種")
-                                    .foregroundColor(.white.opacity(0.85))
-                                Spacer()
-                                Picker("", selection: $defaultMachineName) {
-                                    Text("— 指定なし").tag("")
-                                    ForEach(machines) { m in
-                                        Text(m.name).tag(m.name)
-                                    }
-                                }
-                                .labelsHidden()
-                                .tint(cyan)
+                    // 6. バイブ
+                    settingsCard(title: "バイブ（触覚フィードバック）", icon: "iphone.radiowaves.left.and.right") {
+                        Toggle(isOn: $hapticEnabled) {
+                            Text("オン")
+                                .foregroundColor(.white.opacity(0.9))
+                        }
+                        .tint(cyan)
+                    }
+
+                    // 7. テーマ
+                    settingsCard(title: "テーマ", icon: "paintbrush.fill") {
+                        Picker("", selection: $theme) {
+                            ForEach(AppTheme.allCases, id: \.self) { t in
+                                Text(t.rawValue).tag(t)
                             }
-                            HStack {
-                                Text("店舗")
-                                    .foregroundColor(.white.opacity(0.85))
-                                Spacer()
-                                Picker("", selection: $defaultShopName) {
-                                    Text("— 指定なし").tag("")
-                                    ForEach(shops) { s in
-                                        Text(s.name).tag(s.name)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                    }
+
+                    // 8. 背景設定（ホーム上・実戦下）
+                    settingsCard(title: "背景設定", icon: "photo.fill") {
+                        VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("ホーム")
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundColor(.white.opacity(0.9))
+                                Picker("", selection: $homeBackgroundStyle) {
+                                    Text("デフォルト").tag(HomeBackgroundStore.defaultStyle)
+                                    Text("カスタム画像").tag("custom")
+                                }
+                                .pickerStyle(.segmented)
+                                .labelsHidden()
+                                if homeBackgroundStyle == "custom" {
+                                    PhotosPicker(
+                                        selection: $selectedPhotoItem,
+                                        matching: .images,
+                                        photoLibrary: .shared()
+                                    ) {
+                                        HStack {
+                                            Image(systemName: "photo.on.rectangle.angled")
+                                                .foregroundColor(cyan)
+                                            Text(homeBackgroundImagePath.isEmpty ? "写真を選択" : "写真を変更")
+                                                .foregroundColor(.white)
+                                            if homeBackgroundImagePath.isEmpty {
+                                                Text("壁紙として設定")
+                                                    .font(.caption)
+                                                    .foregroundColor(.white.opacity(0.6))
+                                            }
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10)
+                                    }
+                                    .onChange(of: selectedPhotoItem) { _, newItem in
+                                        Task { await saveSelectedPhoto(newItem) }
+                                    }
+                                    if isSavingPhoto {
+                                        HStack {
+                                            ProgressView()
+                                                .tint(.white)
+                                            Text("保存中…")
+                                                .font(.caption)
+                                                .foregroundColor(.white.opacity(0.7))
+                                        }
+                                        .frame(maxWidth: .infinity)
                                     }
                                 }
+                            }
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("実戦画面")
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundColor(.white.opacity(0.9))
+                                Picker("", selection: $playViewBackgroundStyle) {
+                                    Text("ホームと同じ").tag("sameAsHome")
+                                    Text("別の画像").tag("custom")
+                                }
+                                .pickerStyle(.segmented)
                                 .labelsHidden()
-                                .tint(cyan)
+                                if playViewBackgroundStyle == "custom" {
+                                    PhotosPicker(
+                                        selection: $selectedPlayPhotoItem,
+                                        matching: .images,
+                                        photoLibrary: .shared()
+                                    ) {
+                                        HStack {
+                                            Image(systemName: "photo.on.rectangle.angled")
+                                                .foregroundColor(cyan)
+                                            Text(playViewBackgroundImagePath.isEmpty ? "写真を選択" : "写真を変更")
+                                                .foregroundColor(.white)
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10)
+                                    }
+                                    .onChange(of: selectedPlayPhotoItem) { _, newItem in
+                                        Task { await saveSelectedPlayPhoto(newItem) }
+                                    }
+                                    if isSavingPlayPhoto {
+                                        HStack {
+                                            ProgressView().tint(.white)
+                                            Text("保存中…").font(.caption).foregroundColor(.white.opacity(0.7))
+                                        }
+                                        .frame(maxWidth: .infinity)
+                                    }
+                                }
                             }
                         }
                     }
 
-                    // このアプリの情報
+                    // 9. このアプリの情報
                     settingsCard(title: "このアプリの情報", icon: "info.circle.fill") {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
@@ -1511,9 +1629,10 @@ struct SettingsTabView: View {
 }
 
 
-// MARK: - 続きから：直近5件の履歴から選んで同じ機種・店舗で再開
+// MARK: - 続きから：直近5件の履歴から選んで同じ機種・店舗で再開（復元不可時）
 struct ContinuePlaySelectionView: View {
     @Bindable var log: GameLog
+    var restoreFailed: Bool = false
     var onStart: () -> Void
     var onCancel: () -> Void
 
@@ -1523,6 +1642,7 @@ struct ContinuePlaySelectionView: View {
     @Query(sort: \Shop.name) private var shops: [Shop]
 
     @State private var alertMessage: String?
+    @State private var showRestoreFailedAlert = false
 
     private var recentSessions: [GameSession] { Array(allSessions.prefix(5)) }
 
@@ -1564,7 +1684,8 @@ struct ContinuePlaySelectionView: View {
                                             Spacer()
                                             Text(session.date, style: .date)
                                                 .font(.caption)
-                                                .foregroundStyle(.white.opacity(0.7))
+                                                .foregroundColor(.white.opacity(0.95))
+                                                .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                                         }
                                         Text(session.shopName)
                                             .font(.subheadline)
@@ -1597,6 +1718,14 @@ struct ContinuePlaySelectionView: View {
                 Button("OK", role: .cancel) { alertMessage = nil }
             } message: {
                 if let m = alertMessage { Text(m) }
+            }
+            .alert("前回の状態から復元できません", isPresented: $showRestoreFailedAlert) {
+                Button("OK", role: .cancel) { showRestoreFailedAlert = false }
+            } message: {
+                Text("前回の機種・店舗がマイリストに登録されていません。履歴から選んで再開してください。")
+            }
+            .onAppear {
+                if restoreFailed { showRestoreFailedAlert = true }
             }
         }
     }
@@ -1639,31 +1768,35 @@ struct HistoryListView: View {
             ScrollView(showsIndicators: false) {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     ForEach(sessionsByDate, id: \.0) { item in
-                    Text(item.0)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.white.opacity(0.7))
-                        .padding(.horizontal, 4)
-                    ForEach(item.1) { session in
-                        NavigationLink(destination: SessionDetailView(session: session)) {
-                            HistorySessionCard(session: session)
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            Button {
-                                sessionToEdit = session
-                            } label: { Label("編集", systemImage: "pencil") }
-                            Button(role: .destructive) {
-                                modelContext.delete(session)
-                            } label: { Label("削除", systemImage: "trash") }
-                        }
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                            Button(role: .destructive) {
-                                modelContext.delete(session)
-                            } label: { Label("削除", systemImage: "trash") }
-                            Button {
-                                sessionToEdit = session
-                            } label: { Label("編集", systemImage: "pencil") }
-                                .tint(AppGlassStyle.accent)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.0)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.white.opacity(0.95))
+                                .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
+                                .padding(.horizontal, 4)
+                            ForEach(item.1) { session in
+                                NavigationLink(destination: SessionDetailView(session: session)) {
+                                    HistorySessionCard(session: session)
+                                }
+                                .buttonStyle(.plain)
+                                .contextMenu {
+                                    Button {
+                                        sessionToEdit = session
+                                    } label: { Label("編集", systemImage: "pencil") }
+                                    Button(role: .destructive) {
+                                        modelContext.delete(session)
+                                    } label: { Label("削除", systemImage: "trash") }
+                                }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) {
+                                        modelContext.delete(session)
+                                    } label: { Label("削除", systemImage: "trash") }
+                                    Button {
+                                        sessionToEdit = session
+                                    } label: { Label("編集", systemImage: "pencil") }
+                                        .tint(AppGlassStyle.accent)
+                                }
+                            }
                         }
                     }
                 }
@@ -1692,11 +1825,15 @@ struct HistoryListView: View {
     }
 }
 
-// MARK: - 履歴詳細（タップで表示）
+// MARK: - 履歴詳細（タップで表示）。各パネルは角丸・不透明度85％・ラベル可読性向上
 struct SessionDetailView: View {
     let session: GameSession
     @Environment(\.dismiss) private var dismiss
     @State private var showEditSheet = false
+
+    private let panelBg = Color.black.opacity(0.85)
+    private let labelColor = Color.white.opacity(0.95)
+    private let labelShadow = (color: Color.black.opacity(0.7), radius: CGFloat(2), x: CGFloat(0), y: CGFloat(1))
 
     /// 回収額（円換算）
     private var recoveryYen: Int { Int(Double(session.totalHoldings) * session.exchangeRate) }
@@ -1709,85 +1846,105 @@ struct SessionDetailView: View {
     var body: some View {
         ZStack {
             StaticHomeBackgroundView()
-            List {
-                Section("記録日時") {
-                    Text(session.date, style: .date)
-                        .font(.body)
-                        .listRowBackground(AppGlassStyle.rowBackground)
-                    Text(session.date, style: .time)
-                        .font(.body)
-                        .listRowBackground(AppGlassStyle.rowBackground)
-                }
-                Section("機種・店舗") {
-                LabeledContent("機種", value: session.machineName)
-                    .listRowBackground(AppGlassStyle.rowBackground)
-                LabeledContent("店舗", value: session.shopName)
-                    .listRowBackground(AppGlassStyle.rowBackground)
-                if !session.manufacturerName.isEmpty {
-                    LabeledContent("メーカー", value: session.manufacturerName)
-                        .listRowBackground(AppGlassStyle.rowBackground)
-                }
-            }
-            Section("収支の推移") {
-                HStack(spacing: 12) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("投資（現金）").font(.caption).foregroundStyle(.secondary)
-                        Text("\(session.investmentCash) 円").font(.subheadline.monospacedDigit())
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    detailPanel(title: "記録日時") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(session.date, style: .date)
+                                .font(.body)
+                                .foregroundColor(labelColor)
+                                .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
+                            Text(session.date, style: .time)
+                                .font(.body)
+                                .foregroundColor(labelColor)
+                                .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
+                        }
                     }
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("回収（円換算）").font(.caption).foregroundStyle(.secondary)
-                        Text("\(recoveryYen) 円").font(.subheadline.monospacedDigit())
+
+                    detailPanel(title: "機種・店舗") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            detailRow(label: "機種", value: session.machineName)
+                            detailRow(label: "店舗", value: session.shopName)
+                            if !session.manufacturerName.isEmpty {
+                                detailRow(label: "メーカー", value: session.manufacturerName)
+                            }
+                        }
+                    }
+
+                    detailPanel(title: "収支の推移") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack(spacing: 12) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("投資（現金）")
+                                        .font(.caption)
+                                        .foregroundColor(labelColor)
+                                        .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
+                                    Text("\(session.investmentCash.formattedYen) 円")
+                                        .font(.subheadline.monospacedDigit())
+                                        .foregroundColor(.white)
+                                }
+                                Spacer()
+                                VStack(alignment: .trailing, spacing: 4) {
+                                    Text("回収（円換算）")
+                                        .font(.caption)
+                                        .foregroundColor(labelColor)
+                                        .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
+                                    Text("\(recoveryYen.formattedYen) 円")
+                                        .font(.subheadline.monospacedDigit())
+                                        .foregroundColor(.white)
+                                }
+                            }
+                            GeometryReader { geo in
+                                let w = geo.size.width
+                                let total = max(session.investmentCash + recoveryYen, 1)
+                                let investW = w * CGFloat(session.investmentCash) / CGFloat(total)
+                                HStack(spacing: 0) {
+                                    Rectangle()
+                                        .fill(Color.orange.opacity(0.7))
+                                        .frame(width: max(4, investW))
+                                    Rectangle()
+                                        .fill(Color.green.opacity(0.7))
+                                        .frame(width: max(4, w - investW))
+                                }
+                            }
+                            .frame(height: 24)
+                        }
+                    }
+
+                    detailPanel(title: "数値サマリ") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            detailRow(label: "総回転数", value: "\(session.normalRotations)")
+                            detailRow(label: "総投資額（現金）", value: "\(session.investmentCash.formattedYen) 円")
+                            detailRow(label: "回収出球", value: "\(session.totalHoldings) 玉")
+                            detailRow(label: "回収額（円換算）", value: "\(recoveryYen.formattedYen) 円")
+                            detailRow(label: "理論期待値", value: "\(session.theoreticalProfit >= 0 ? "+" : "")\(session.theoreticalProfit.formattedYen) 円")
+                            detailRow(label: "欠損・余剰", value: "\(session.deficitSurplus >= 0 ? "+" : "")\(session.deficitSurplus.formattedYen) 円")
+                            HStack {
+                                Text("実収支")
+                                    .font(.subheadline)
+                                    .foregroundColor(labelColor)
+                                    .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
+                                Spacer()
+                                Text("\(session.profit >= 0 ? "+" : "")\(session.profit.formattedYen) 円")
+                                    .font(.body.weight(.semibold).monospacedDigit())
+                                    .foregroundColor(session.profit >= 0 ? .green : .red)
+                            }
+                        }
+                    }
+
+                    detailPanel(title: "分析（入力データから算出）") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            detailRow(label: "期待値比（保存時）", value: session.expectationRatioAtSave > 0 ? String(format: "%.2f%%", session.expectationRatioAtSave * 100) : "—")
+                            detailRow(label: "実質回転率", value: String(format: "%.1f 回/千円", rotationPer1k))
+                            detailRow(label: "RUSH大当たり", value: "\(session.rushWinCount) 回")
+                            detailRow(label: "通常大当たり", value: "\(session.normalWinCount) 回")
+                        }
                     }
                 }
-                .listRowBackground(AppGlassStyle.rowBackground)
-                GeometryReader { geo in
-                    let w = geo.size.width
-                    let total = max(session.investmentCash + recoveryYen, 1)
-                    let investW = w * CGFloat(session.investmentCash) / CGFloat(total)
-                    HStack(spacing: 0) {
-                        Rectangle()
-                            .fill(Color.orange.opacity(0.7))
-                            .frame(width: max(4, investW))
-                        Rectangle()
-                            .fill(Color.green.opacity(0.7))
-                            .frame(width: max(4, w - investW))
-                    }
-                }
-                .frame(height: 24)
-                .listRowBackground(AppGlassStyle.rowBackground)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 32)
             }
-            Section("数値サマリ") {
-                LabeledContent("総回転数", value: "\(session.normalRotations)")
-                    .listRowBackground(AppGlassStyle.rowBackground)
-                LabeledContent("総投資額（現金）", value: "\(session.investmentCash) 円")
-                    .listRowBackground(AppGlassStyle.rowBackground)
-                LabeledContent("回収出球", value: "\(session.totalHoldings) 玉")
-                    .listRowBackground(AppGlassStyle.rowBackground)
-                LabeledContent("回収額（円換算）", value: "\(recoveryYen) 円")
-                    .listRowBackground(AppGlassStyle.rowBackground)
-                LabeledContent("理論期待値", value: "\(session.theoreticalProfit >= 0 ? "+" : "")\(session.theoreticalProfit) 円")
-                    .listRowBackground(AppGlassStyle.rowBackground)
-                LabeledContent("欠損・余剰", value: "\(session.deficitSurplus >= 0 ? "+" : "")\(session.deficitSurplus) 円")
-                    .listRowBackground(AppGlassStyle.rowBackground)
-                LabeledContent("実収支", value: "\(session.profit >= 0 ? "+" : "")\(session.profit) 円")
-                    .font(.body.weight(.semibold))
-                    .foregroundColor(session.profit >= 0 ? .green : .red)
-                    .listRowBackground(AppGlassStyle.rowBackground)
-            }
-            Section("分析（入力データから算出）") {
-                LabeledContent("期待値比（保存時）", value: session.expectationRatioAtSave > 0 ? String(format: "%.2f", session.expectationRatioAtSave) : "—")
-                    .listRowBackground(AppGlassStyle.rowBackground)
-                LabeledContent("実質回転率", value: String(format: "%.1f 回/千円", rotationPer1k))
-                    .listRowBackground(AppGlassStyle.rowBackground)
-                LabeledContent("RUSH大当たり", value: "\(session.rushWinCount) 回")
-                    .listRowBackground(AppGlassStyle.rowBackground)
-                LabeledContent("通常大当たり", value: "\(session.normalWinCount) 回")
-                    .listRowBackground(AppGlassStyle.rowBackground)
-            }
-            }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
         }
         .navigationTitle("履歴詳細")
         .navigationBarTitleDisplayMode(.inline)
@@ -1811,6 +1968,35 @@ struct SessionDetailView: View {
             .background(AppGlassStyle.background)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
+        }
+    }
+
+    private func detailPanel<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(labelColor)
+                .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
+            content()
+                .foregroundColor(.white.opacity(0.9))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(panelBg)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+    }
+
+    private func detailRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.subheadline)
+                .foregroundColor(labelColor)
+                .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
+            Spacer()
+            Text(value)
+                .font(.subheadline.monospacedDigit())
+                .foregroundColor(.white)
         }
     }
 }
@@ -1845,7 +2031,7 @@ struct HistorySessionCard: View {
                     .foregroundColor(.white.opacity(0.8))
             }
             HStack(spacing: 16) {
-                Text("実収支 \(session.profit >= 0 ? "+" : "")\(session.profit) 円")
+                Text("実収支 \(session.profit >= 0 ? "+" : "")\(session.profit.formattedYen) 円")
                     .font(.subheadline.monospacedDigit().weight(.medium))
                     .foregroundColor(session.profit >= 0 ? .green : .red)
                 Text("大当たり RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount)")
@@ -1855,7 +2041,7 @@ struct HistorySessionCard: View {
             HStack(spacing: 12) {
                 labelValue("総回転", "\(session.normalRotations)")
                 Text("・").foregroundColor(.white.opacity(0.5))
-                labelValue("投資", "\(session.investmentCash)円")
+                labelValue("投資", "\(session.investmentCash.formattedYen)円")
                 Text("・").foregroundColor(.white.opacity(0.5))
                 labelValue("回収玉", "\(session.totalHoldings)")
             }
@@ -1863,14 +2049,14 @@ struct HistorySessionCard: View {
             .foregroundColor(.white.opacity(0.85))
             HStack(alignment: .top, spacing: 16) {
                 miniblock("実践回転率", value: rotationRateDisplay, valueColor: .white)
-                miniblock("理論期待値", value: "\(session.theoreticalProfit >= 0 ? "+" : "")\(session.theoreticalProfit)円", valueColor: .white.opacity(0.9))
+                miniblock("理論期待値", value: "\(session.theoreticalProfit >= 0 ? "+" : "")\(session.theoreticalProfit.formattedYen)円", valueColor: .white.opacity(0.9))
                 deficitSurplusBlock
             }
             .font(.caption)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AppGlassStyle.cardBackground)
+        .background(Color.black.opacity(0.85))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
@@ -1881,9 +2067,9 @@ struct HistorySessionCard: View {
     private var deficitSurplusBlock: some View {
         Group {
             if session.deficitSurplus > 0 {
-                miniblock("余剰", value: "+\(session.deficitSurplus)円", valueColor: .green.opacity(0.9))
+                miniblock("余剰", value: "+\(session.deficitSurplus.formattedYen)円", valueColor: .green.opacity(0.9))
             } else if session.deficitSurplus < 0 {
-                miniblock("欠損", value: "\(session.deficitSurplus)円", valueColor: .red.opacity(0.9))
+                miniblock("欠損", value: "\(session.deficitSurplus.formattedYen)円", valueColor: .red.opacity(0.9))
             } else {
                 miniblock("余剰・欠損", value: "0円", valueColor: .white.opacity(0.8))
             }
@@ -2082,6 +2268,5 @@ struct SessionEditView: View {
                 session.totalRealCost = Double(session.investmentCash)
             }
         }
-    }
     }
 }

@@ -1,8 +1,7 @@
 import Foundation
 
-/// 管理人用マスターデータの取得元URL。管理人だけがこのURLのJSONを編集する。
-/// ユーザーはここから機種を検索してマイリストに追加できる（参照のみ）。
-/// 空ならアプリ内プリセット（PresetMachine）をマスタとして表示。
+/// マスターデータの取得元。GitHub の machines.json（raw URL）または JSON/CSV の URL。設定で変更可能。
 enum PresetServiceConfig {
-    static var presetListURL: String { "" }
+    /// 機種マスターデータのデフォルト取得元（GitHub リポジトリの machines.json）。
+    static let defaultMachineMasterDataURL = "https://raw.githubusercontent.com/kzkymr-afk/P-stats/main/machines.json"
 }

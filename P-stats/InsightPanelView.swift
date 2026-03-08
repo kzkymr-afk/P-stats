@@ -9,7 +9,9 @@ struct InsightPanelView: View {
     var onCorrectInitialRotation: (() -> Void)? = nil
     var onCorrectCash: (() -> Void)? = nil
     var onCorrectHoldings: (() -> Void)? = nil
+    var onCorrectWinCount: (() -> Void)? = nil
     var onOpenHistory: (() -> Void)? = nil
+    var onOpenEventHistory: (() -> Void)? = nil
     var onOpenAnalytics: (() -> Void)? = nil
     var onOpenPowerSaving: (() -> Void)? = nil
     var onOpenSettings: (() -> Void)? = nil
@@ -59,16 +61,69 @@ struct InsightPanelView: View {
             .padding(.bottom, 8)
 
             VStack(alignment: .leading, spacing: 8) {
-                // 閲覧：履歴・分析（遊戯中でも開ける）
-                if onOpenHistory != nil || onOpenAnalytics != nil {
+                // 設定（通常モード中も常に表示）
+                if let onOpenSettings = onOpenSettings {
+                    Button(action: onOpenSettings) {
+                        HStack(alignment: .center) {
+                            Image(systemName: "gearshape.fill")
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("設定")
+                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                Text("機種・店舗・テーマなどのアプリ設定")
+                                    .font(.system(size: 10, weight: .regular))
+                                    .foregroundColor(cyan.opacity(0.6))
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundColor(cyan.opacity(0.6))
+                        }
+                        .foregroundColor(cyan)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                    }
+                    .buttonStyle(.plain)
+                    .background(AppGlassStyle.rowBackground)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(cyan.opacity(0.2), lineWidth: 1))
+                }
+
+                // 閲覧：履歴・分析・大当たり・投資履歴（遊戯中でも開ける）
+                if onOpenHistory != nil || onOpenEventHistory != nil || onOpenAnalytics != nil {
                     VStack(alignment: .leading, spacing: 4) {
                         panelTitle("閲覧")
                         if let onOpenHistory = onOpenHistory {
                             Button(action: onOpenHistory) {
-                                HStack {
+                                HStack(alignment: .center) {
                                     Image(systemName: "calendar")
-                                    Text("実戦履歴")
-                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("実戦履歴")
+                                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                        Text("日付ごとの実戦一覧・保存した記録")
+                                            .font(.system(size: 10, weight: .regular))
+                                            .foregroundColor(cyan.opacity(0.6))
+                                    }
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption2)
+                                        .foregroundColor(cyan.opacity(0.6))
+                                }
+                                .foregroundColor(cyan)
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 10)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        if let onOpenEventHistory = onOpenEventHistory {
+                            Button(action: onOpenEventHistory) {
+                                HStack(alignment: .center) {
+                                    Image(systemName: "list.bullet")
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("大当たり・投資履歴")
+                                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                        Text("今回の大当たり・投資の時系列")
+                                            .font(.system(size: 10, weight: .regular))
+                                            .foregroundColor(cyan.opacity(0.6))
+                                    }
                                     Spacer()
                                     Image(systemName: "chevron.right")
                                         .font(.caption2)
@@ -82,10 +137,15 @@ struct InsightPanelView: View {
                         }
                         if let onOpenAnalytics = onOpenAnalytics {
                             Button(action: onOpenAnalytics) {
-                                HStack {
+                                HStack(alignment: .center) {
                                     Image(systemName: "chart.bar")
-                                    Text("データ分析")
-                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("データ分析")
+                                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                        Text("収支・回転率・稼働ヒートマップなど")
+                                            .font(.system(size: 10, weight: .regular))
+                                            .foregroundColor(cyan.opacity(0.6))
+                                    }
                                     Spacer()
                                     Image(systemName: "chevron.right")
                                         .font(.caption2)
@@ -107,20 +167,26 @@ struct InsightPanelView: View {
                 // 今回の収支
                 VStack(alignment: .leading, spacing: 6) {
                     panelTitle("今回の収支")
-                    // 収支：改行して表示し、その下に算出根拠
+                    // 上段：実際の収支（現金投資に対する回収金額）
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(log.balanceYen >= 0 ? "+\(log.balanceYen) 円" : "\(log.balanceYen) 円")
+                        Text("実際の収支")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundColor(cyan.opacity(0.75))
+                        Text(log.balanceYen >= 0 ? "+\(log.balanceYen.formattedYen) 円" : "\(log.balanceYen.formattedYen) 円")
                             .font(.system(size: 20, weight: .bold, design: .monospaced))
                             .foregroundColor(log.balanceYen >= 0 ? cyan : Color.orange.opacity(0.95))
                         Text("収入−現金投資（収入＝出玉×交換率・500円刻み端数切捨て）")
                             .font(.system(size: 9, weight: .regular, design: .rounded))
                             .foregroundColor(cyan.opacity(0.5))
                     }
-                    // 今回の期待値：改行して表示し、その下に算出根拠
+                    // 下段：期待値収支（理論上の損益）
                     VStack(alignment: .leading, spacing: 2) {
+                        Text("期待値収支（理論上の損益）")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundColor(cyan.opacity(0.75))
                         if log.effectiveUnitsForBorder > 0 && log.dynamicBorder > 0 {
                             let yen = theoreticalExpectationYen
-                            Text(yen >= 0 ? "+\(yen) 円" : "\(yen) 円")
+                            Text(yen >= 0 ? "+\(yen.formattedYen) 円" : "\(yen.formattedYen) 円")
                                 .font(.system(size: 18, weight: .semibold, design: .monospaced))
                                 .foregroundColor(yen >= 0 ? cyan : Color.orange.opacity(0.95))
                         } else {
@@ -142,37 +208,49 @@ struct InsightPanelView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     panelTitle("今回の遊技情報")
                     HStack {
-                        labelText("総回転数")
+                        HStack(spacing: 4) {
+                            labelText("総回転数")
+                            InfoIconView(explanation: "通常回転のみの累積（時短・電サポ除く）。", tint: cyan.opacity(0.7))
+                        }
                         Spacer()
-                        Text("\(log.totalRotations)")
+                        Text("\(log.normalRotations)")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
                     HStack {
                         labelText("現金投資額")
                         Spacer()
-                        Text("\(log.investment) 円")
+                        Text("\(log.investment.formattedYen) 円")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
                     HStack {
-                        labelText("公式ボーダー")
+                        HStack(spacing: 4) {
+                            labelText("公式ボーダー")
+                            InfoIconView(explanation: "メーカー公表の等価ボーダー（回/1000円）。通常回転のみ。", tint: cyan.opacity(0.7))
+                        }
                         Spacer()
                         Text(log.formulaBorderValue > 0 ? String(format: "%.1f 回/千円", log.formulaBorderValue) : "—")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
                     HStack {
-                        labelText("実質ボーダー")
+                        HStack(spacing: 4) {
+                            labelText("実質ボーダー")
+                            InfoIconView(explanation: "店の貸玉料金・交換率で補正したボーダー（回/1000円）。", tint: cyan.opacity(0.7))
+                        }
                         Spacer()
                         Text(log.dynamicBorder > 0 ? String(format: "%.1f 回/千円", log.dynamicBorder) : "—")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
                     HStack {
-                        labelText("期待値比")
+                        HStack(spacing: 4) {
+                            labelText("期待値比")
+                            InfoIconView(explanation: "実質回転率÷実戦ボーダー。1.0でボーダー。", tint: cyan.opacity(0.7))
+                        }
                         Spacer()
-                        Text(String(format: "%.1f%%", log.expectationRatio * 100))
+                        Text(String(format: "%.2f%%", log.expectationRatio * 100))
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
@@ -200,12 +278,22 @@ struct InsightPanelView: View {
                 // あとから修正
                 VStack(alignment: .leading, spacing: 4) {
                     panelTitle("修正")
+                    Text("入力ミスや記録漏れをあとから直せます")
+                        .font(.system(size: 10, weight: .regular))
+                        .foregroundColor(cyan.opacity(0.6))
+                        .padding(.horizontal, 10)
+                        .padding(.bottom, 2)
                     if let onCorrectInitialRotation = onCorrectInitialRotation {
                         Button(action: onCorrectInitialRotation) {
-                            HStack {
-                                Text("開始ゲーム数を修正")
-                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                    .foregroundColor(cyan)
+                            HStack(alignment: .center) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("開始ゲーム数を修正")
+                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    Text("遊技開始時の表示回転数")
+                                        .font(.system(size: 10, weight: .regular))
+                                        .foregroundColor(cyan.opacity(0.6))
+                                }
+                                .foregroundColor(cyan)
                                 Spacer()
                                 Image(systemName: "chevron.right")
                                     .font(.caption2)
@@ -218,10 +306,15 @@ struct InsightPanelView: View {
                     }
                     if let onCorrectCash = onCorrectCash {
                         Button(action: onCorrectCash) {
-                            HStack {
-                                Text("現金投資を修正")
-                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                    .foregroundColor(cyan)
+                            HStack(alignment: .center) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("現金投資を修正")
+                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    Text("投入した現金の合計")
+                                        .font(.system(size: 10, weight: .regular))
+                                        .foregroundColor(cyan.opacity(0.6))
+                                }
+                                .foregroundColor(cyan)
                                 Spacer()
                                 Image(systemName: "chevron.right")
                                     .font(.caption2)
@@ -234,10 +327,36 @@ struct InsightPanelView: View {
                     }
                     if let onCorrectHoldings = onCorrectHoldings {
                         Button(action: onCorrectHoldings) {
-                            HStack {
-                                Text("持ち玉投資を修正")
-                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                    .foregroundColor(cyan)
+                            HStack(alignment: .center) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("持ち玉投資を修正")
+                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    Text("使った持ち玉の玉数")
+                                        .font(.system(size: 10, weight: .regular))
+                                        .foregroundColor(cyan.opacity(0.6))
+                                }
+                                .foregroundColor(cyan)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2)
+                                    .foregroundColor(cyan.opacity(0.6))
+                            }
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 10)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if let onCorrectWinCount = onCorrectWinCount {
+                        Button(action: onCorrectWinCount) {
+                            HStack(alignment: .center) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("大当たり回数を修正")
+                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    Text("RUSH・通常の当選回数を直す")
+                                        .font(.system(size: 10, weight: .regular))
+                                        .foregroundColor(cyan.opacity(0.6))
+                                }
+                                .foregroundColor(cyan)
                                 Spacer()
                                 Image(systemName: "chevron.right")
                                     .font(.caption2)
@@ -254,16 +373,21 @@ struct InsightPanelView: View {
                 .background(AppGlassStyle.rowBackground)
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(cyan.opacity(0.2), lineWidth: 1))
 
-                // モード切替：左手/右手・省エネモード・設定
-                if onToggleRightHandMode != nil || onOpenPowerSaving != nil || onOpenSettings != nil {
+                // モード切替：左手/右手・省エネモード（設定は上段に1つのみ）
+                if onToggleRightHandMode != nil || onOpenPowerSaving != nil {
                     VStack(alignment: .leading, spacing: 4) {
                         panelTitle("モード切替")
                         if let onToggle = onToggleRightHandMode {
                             Button(action: onToggle) {
-                                HStack {
+                                HStack(alignment: .center) {
                                     Image(systemName: isRightHandMode ? "hand.point.right.fill" : "hand.point.left.fill")
-                                    Text(isRightHandMode ? "右手操作" : "左手操作（現在）")
-                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(isRightHandMode ? "右手操作" : "左手操作（現在）")
+                                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                        Text("ボタン配置の左右反転")
+                                            .font(.system(size: 10, weight: .regular))
+                                            .foregroundColor(cyan.opacity(0.6))
+                                    }
                                     Spacer()
                                     Text("タップで切り替え")
                                         .font(.system(size: 10, weight: .regular, design: .monospaced))
@@ -277,10 +401,15 @@ struct InsightPanelView: View {
                         }
                         if let onOpenPowerSaving = onOpenPowerSaving {
                             Button(action: onOpenPowerSaving) {
-                                HStack {
+                                HStack(alignment: .center) {
                                     Image(systemName: "leaf.fill")
-                                    Text("省エネモード")
-                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("省エネモード")
+                                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                        Text("省電力表示・シンプルな画面")
+                                            .font(.system(size: 10, weight: .regular))
+                                            .foregroundColor(cyan.opacity(0.6))
+                                    }
                                     Spacer()
                                     Image(systemName: "chevron.right")
                                         .font(.caption2)
@@ -292,23 +421,6 @@ struct InsightPanelView: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityLabel("省エネモード")
-                        }
-                        if let onOpenSettings = onOpenSettings {
-                            Button(action: onOpenSettings) {
-                                HStack {
-                                    Image(systemName: "gearshape.fill")
-                                    Text("設定")
-                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption2)
-                                        .foregroundColor(cyan.opacity(0.6))
-                                }
-                                .foregroundColor(cyan)
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 10)
-                            }
-                            .buttonStyle(.plain)
                         }
                     }
                     .padding(12)
