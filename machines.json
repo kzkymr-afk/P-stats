@@ -1,5 +1,290 @@
 [
   {
+    "name": "eフィーバーキン肉マン",
+    "probability": "1/399.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/04/20"
+  },
+  {
+    "name": "e86-エイティシックス-",
+    "probability": "1/239.1",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/04/20"
+  },
+  {
+    "name": "eリング 最恐領域",
+    "probability": "-",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "オレンジ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/04/20"
+  },
+  {
+    "name": "eラグナドール 妖しき皇帝と終焉の夜叉姫",
+    "probability": "1/239.5",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "メーシー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/04/06"
+  },
+  {
+    "name": "e 終末のワルキューレ",
+    "probability": "1/219.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/04/06"
+  },
+  {
+    "name": "eリコリス・リコイル",
+    "probability": "2026/03",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/04/06"
+  },
+  {
+    "name": "P にゃんこ大戦争 多様性のネコ 神さまにおまかせ 88ver.",
+    "probability": "1/88.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/04/06"
+  },
+  {
+    "name": "PAコマコマ倶楽部 with 坂本冬美 89確変ループ10ラウンド極",
+    "probability": "1/89.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/04/06"
+  },
+  {
+    "name": "e転生したらスライムだった件2",
+    "probability": "1/399.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/04/06"
+  },
+  {
+    "name": "P ウルトラマンメビウス デカヘソ319",
+    "probability": "1/319.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "OK!!",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/04/06"
+  },
+  {
+    "name": "Pえとたま2 神祭 干支甘",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "メーシー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/16"
+  },
+  {
+    "name": "P モモキュンソード 速撃99ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ソフィア",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/16"
+  },
+  {
+    "name": "e 乃木坂46 Ⅱ SWEET Version",
+    "probability": "1/129.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/16"
+  },
+  {
+    "name": "PキングモンスターRUSH 67Ver.",
+    "probability": "1/67.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "竹屋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/16"
+  },
+  {
+    "name": "スマパチ SSSS.GRIDMAN メガSTART 159ver.",
+    "probability": "1/159.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "七匠",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/03/16"
+  },
+  {
     "name": "e 甲鉄城のカバネリ2 咲かせや燦然",
     "probability": "1/319.7",
     "border": "",
@@ -228,101 +513,6 @@
     "introductionDateRaw": "2026/03/02"
   },
   {
-    "name": "Pえとたま2 神祭 干支甘",
-    "probability": "1/99.90",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "メーシー",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2026/03/16"
-  },
-  {
-    "name": "P モモキュンソード 速撃99ver.",
-    "probability": "1/99.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "ソフィア",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2026/03/16"
-  },
-  {
-    "name": "e 乃木坂46 Ⅱ SWEET Version",
-    "probability": "1/129.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "京楽",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2026/03/16"
-  },
-  {
-    "name": "PキングモンスターRUSH 67Ver.",
-    "probability": "1/67.6",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "竹屋",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2026/03/16"
-  },
-  {
-    "name": "スマパチ SSSS.GRIDMAN メガSTART 159ver.",
-    "probability": "1/159.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "七匠",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2026/03/16"
-  },
-  {
     "name": "eフィーバーBASTARD!! -暗黒の破壊神-",
     "probability": "1/399.9",
     "border": "",
@@ -511,6 +701,63 @@
       }
     ],
     "introductionDateRaw": "2026/02/02"
+  },
+  {
+    "name": "e範馬刃牙 199ver.",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/01/19"
+  },
+  {
+    "name": "P閃乱カグラ189大入りver.",
+    "probability": "1/189.4",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/01/19"
+  },
+  {
+    "name": "e ULTRAMAN 4500 超ライト",
+    "probability": "1/111.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "OK!!",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2026/01/19"
   },
   {
     "name": "e盾の勇者の成り上がり アルティメット199ver.",
@@ -722,14 +969,14 @@
     "introductionDateRaw": "2026/01/05"
   },
   {
-    "name": "e範馬刃牙 199ver.",
-    "probability": "1/199.8",
+    "name": "e 新世紀エヴァンゲリオン 〜はじまりの記憶〜",
+    "probability": "1/399.9",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "アムテックス",
+    "manufacturer": "ビスティ",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -738,17 +985,17 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2026/01/19"
+    "introductionDateRaw": "2025/12/22"
   },
   {
-    "name": "P閃乱カグラ189大入りver.",
-    "probability": "1/189.4",
+    "name": "P沖ドキ！ドキドキ弾丸ツアー",
+    "probability": "1/22.2",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "D-light",
+    "manufacturer": "メーシー",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -757,17 +1004,17 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2026/01/19"
+    "introductionDateRaw": "2025/12/22"
   },
   {
-    "name": "e ULTRAMAN 4500 超ライト",
-    "probability": "1/111.9",
+    "name": "P少女☆歌劇 レヴュースタァライト 99 LT3000",
+    "probability": "1/99.9",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "OK!!",
+    "manufacturer": "豊丸",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -776,7 +1023,7 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2026/01/19"
+    "introductionDateRaw": "2025/12/22"
   },
   {
     "name": "Pフィーバーからくりサーカス2 Light ver.",
@@ -950,27 +1197,8 @@
     "introductionDateRaw": "2025/12/08"
   },
   {
-    "name": "e 新世紀エヴァンゲリオン 〜はじまりの記憶〜",
-    "probability": "1/399.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "ビスティ",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/12/22"
-  },
-  {
-    "name": "P沖ドキ！ドキドキ弾丸ツアー",
-    "probability": "1/22.2",
+    "name": "Pメイドインアビス 奈落の連環蝕",
+    "probability": "1/129.7",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
@@ -985,17 +1213,17 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/12/22"
+    "introductionDateRaw": "2025/11/17"
   },
   {
-    "name": "P少女☆歌劇 レヴュースタァライト 99 LT3000",
-    "probability": "1/99.9",
+    "name": "PA GoGo富士山",
+    "probability": "-",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "豊丸",
+    "manufacturer": "A-gon",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -1004,7 +1232,7 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/12/22"
+    "introductionDateRaw": "2025/11/04"
   },
   {
     "name": "eノーゲーム・ノーライフ 319Ver.",
@@ -1235,14 +1463,14 @@
     "introductionDateRaw": "2025/11/04"
   },
   {
-    "name": "Pメイドインアビス 奈落の連環蝕",
-    "probability": "1/129.7",
+    "name": "Pはねものファインプレー",
+    "probability": "-",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "メーシー",
+    "manufacturer": "マルホン",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -1251,7 +1479,45 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/11/17"
+    "introductionDateRaw": "2025/10/20"
+  },
+  {
+    "name": "Pはねものファインプレー",
+    "probability": "-",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/10/20"
+  },
+  {
+    "name": "Pゴッドイーター199ゴッドトリガーVER.",
+    "probability": "1/199.5",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/10/20"
   },
   {
     "name": "Pスーパー海物語IN沖縄6",
@@ -1425,8 +1691,27 @@
     "introductionDateRaw": "2025/10/06"
   },
   {
-    "name": "Pはねものファインプレー",
-    "probability": "-",
+    "name": "Pルパン三世 ONE COLLECTION 100ver.",
+    "probability": "1/100.1",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/09/22"
+  },
+  {
+    "name": "〜廻るヘソワイド〜PホワイトシャカRUSH",
+    "probability": "1/199.8",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
@@ -1441,26 +1726,7 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/10/20"
-  },
-  {
-    "name": "Pゴッドイーター199ゴッドトリガーVER.",
-    "probability": "1/199.5",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "サンセイR&amp;D",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/10/20"
+    "introductionDateRaw": "2025/09/22"
   },
   {
     "name": "eフィーバーブルーロック",
@@ -1634,14 +1900,14 @@
     "introductionDateRaw": "2025/09/08"
   },
   {
-    "name": "Pルパン三世 ONE COLLECTION 100ver.",
-    "probability": "1/100.1",
+    "name": "P【超甘LT】豊丸のとあるパチンコにしみけん参戦 感度UP1/39",
+    "probability": "1/39.9",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "平和",
+    "manufacturer": "豊丸",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -1650,17 +1916,17 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/09/22"
+    "introductionDateRaw": "2025/08/18"
   },
   {
-    "name": "〜廻るヘソワイド〜PホワイトシャカRUSH",
-    "probability": "1/199.8",
+    "name": "eGODZILLA7 TYPE-CRASH",
+    "probability": "1/229.95",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "マルホン",
+    "manufacturer": "ニューギン",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -1669,7 +1935,26 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/09/22"
+    "introductionDateRaw": "2025/08/18"
+  },
+  {
+    "name": "e女神のカフェテラス",
+    "probability": "1/399",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "JFJ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/08/18"
   },
   {
     "name": "eシャーマンキング",
@@ -1843,14 +2128,14 @@
     "introductionDateRaw": "2025/08/04"
   },
   {
-    "name": "P【超甘LT】豊丸のとあるパチンコにしみけん参戦 感度UP1/39",
-    "probability": "1/39.9",
+    "name": "Pワイの佐野ラーメン",
+    "probability": "1/24.3",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "豊丸",
+    "manufacturer": "A-gon",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -1859,11 +2144,11 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/08/18"
+    "introductionDateRaw": "2025/07/28"
   },
   {
-    "name": "eGODZILLA7 TYPE-CRASH",
-    "probability": "1/229.95",
+    "name": "デカスタe花の慶次〜傾奇一転",
+    "probability": "1/348.60",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
@@ -1878,17 +2163,17 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/08/18"
+    "introductionDateRaw": "2025/07/22"
   },
   {
-    "name": "e女神のカフェテラス",
+    "name": "e マギアレコード 魔法少女まどか☆マギカ外伝",
     "probability": "1/399",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "JFJ",
+    "manufacturer": "京楽",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -1897,7 +2182,26 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/08/18"
+    "introductionDateRaw": "2025/07/22"
+  },
+  {
+    "name": "PAコマコマ倶楽部 with 坂本冬美 89STver.",
+    "probability": "1/89.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/07/22"
   },
   {
     "name": "e東京リベンジャーズ",
@@ -2069,82 +2373,6 @@
       }
     ],
     "introductionDateRaw": "2025/07/07"
-  },
-  {
-    "name": "デカスタe花の慶次〜傾奇一転",
-    "probability": "1/348.60",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "ニューギン",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/07/22"
-  },
-  {
-    "name": "e マギアレコード 魔法少女まどか☆マギカ外伝",
-    "probability": "1/399",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "京楽",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/07/22"
-  },
-  {
-    "name": "PAコマコマ倶楽部 with 坂本冬美 89STver.",
-    "probability": "1/89.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "豊丸",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/07/22"
-  },
-  {
-    "name": "Pワイの佐野ラーメン",
-    "probability": "1/24.3",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "A-gon",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/07/28"
   },
   {
     "name": "Pフィーバーマクロスフロンティア5 LT-Light ver.",
@@ -2356,6 +2584,44 @@
     "introductionDateRaw": "2025/06/02"
   },
   {
+    "name": "〜回るヘソワイド〜Pファンキードクター 7200ループver.",
+    "probability": "1/69.4",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/05/19"
+  },
+  {
+    "name": "〜回るヘソワイド〜Pファンキードクター 11000ver.",
+    "probability": "1/79.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/05/19"
+  },
+  {
     "name": "P海物語 極JAPAN",
     "probability": "1/319.6",
     "border": "",
@@ -2565,14 +2831,14 @@
     "introductionDateRaw": "2025/05/07"
   },
   {
-    "name": "〜回るヘソワイド〜Pファンキードクター 7200ループver.",
-    "probability": "1/69.4",
+    "name": "Pゾンビランドサガ",
+    "probability": "1/159.8",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "マルホン",
+    "manufacturer": "サミー",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -2581,17 +2847,17 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/05/19"
+    "introductionDateRaw": "2025/04/21"
   },
   {
-    "name": "〜回るヘソワイド〜Pファンキードクター 11000ver.",
-    "probability": "1/79.8",
+    "name": "P痛いのは嫌なので防御力に極振りしたいと思います。",
+    "probability": "1/399.6",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "マルホン",
+    "manufacturer": "藤商事",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -2600,7 +2866,26 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/05/19"
+    "introductionDateRaw": "2025/04/21"
+  },
+  {
+    "name": "e 東京喰種",
+    "probability": "1/399",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/04/21"
   },
   {
     "name": "Pアナザーゴッドハーデス-獄炎-",
@@ -2736,27 +3021,8 @@
     "introductionDateRaw": "2025/04/07"
   },
   {
-    "name": "Pゾンビランドサガ",
-    "probability": "1/159.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "サミー",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/04/21"
-  },
-  {
-    "name": "P痛いのは嫌なので防御力に極振りしたいと思います。",
-    "probability": "1/399.6",
+    "name": "PA魔王学院の不適合者 魔王再臨 99Ver",
+    "probability": "1/99.9",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
@@ -2771,17 +3037,17 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/04/21"
+    "introductionDateRaw": "2025/03/17"
   },
   {
-    "name": "e 東京喰種",
-    "probability": "1/399",
+    "name": "Pうまい棒2",
+    "probability": "1/38.4",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "ビスティ",
+    "manufacturer": "アムテックス",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -2790,7 +3056,64 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/04/21"
+    "introductionDateRaw": "2025/03/17"
+  },
+  {
+    "name": "e真・北斗無双 第5章 ドデカSTART",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/03/17"
+  },
+  {
+    "name": "PAひぐらしのなく頃に 輪廻転生99ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/03/17"
+  },
+  {
+    "name": "P モモキュンソード 速撃3000+",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ソフィア",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/03/17"
   },
   {
     "name": "P 俺の妹がこんなに可愛いわけがない。",
@@ -2945,8 +3268,65 @@
     "introductionDateRaw": "2025/03/03"
   },
   {
-    "name": "PA魔王学院の不適合者 魔王再臨 99Ver",
+    "name": "Pクイーンズブレイド4 ナナエルver.",
     "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/02/17"
+  },
+  {
+    "name": "Pデビルマン THE FINAL",
+    "probability": "1/129.77",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/02/17"
+  },
+  {
+    "name": "Pこの素晴らしい世界に祝福を！ラッキートリガー129緊急クエスト",
+    "probability": "1/129.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/02/17"
+  },
+  {
+    "name": "P緋弾のアリア～緋緋神降臨～199Ver.",
+    "probability": "1/199.8",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
@@ -2961,83 +3341,7 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/03/17"
-  },
-  {
-    "name": "Pうまい棒2",
-    "probability": "1/38.4",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "アムテックス",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/03/17"
-  },
-  {
-    "name": "e真・北斗無双 第5章 ドデカSTART",
-    "probability": "1/319.7",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "サミー",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/03/17"
-  },
-  {
-    "name": "PAひぐらしのなく頃に 輪廻転生99ver.",
-    "probability": "1/99.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "D-light",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/03/17"
-  },
-  {
-    "name": "P モモキュンソード 速撃3000+",
-    "probability": "1/319.7",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "ソフィア",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/03/17"
+    "introductionDateRaw": "2025/02/17"
   },
   {
     "name": "Pフィーバー戦姫絶唱シンフォギア4 199ver.",
@@ -3249,14 +3553,14 @@
     "introductionDateRaw": "2025/02/03"
   },
   {
-    "name": "Pクイーンズブレイド4 ナナエルver.",
-    "probability": "1/99.9",
+    "name": "Pブラックラグーン4 EXTRA BULLET 129ver.",
+    "probability": "1/129.8",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "高尾",
+    "manufacturer": "サミー",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -3265,10 +3569,48 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/02/17"
+    "introductionDateRaw": "2025/01/20"
   },
   {
-    "name": "Pデビルマン THE FINAL",
+    "name": "Pハネモノ ファミリースタジアム",
+    "probability": "-",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ミズホ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/01/20"
+  },
+  {
+    "name": "PA花の慶次 裂 99ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2025/01/20"
+  },
+  {
+    "name": "P花の慶次 裂 蓮極129ver.",
     "probability": "1/129.77",
     "border": "",
     "machineTypeRaw": "kakugen",
@@ -3284,17 +3626,17 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/02/17"
+    "introductionDateRaw": "2025/01/20"
   },
   {
-    "name": "Pこの素晴らしい世界に祝福を！ラッキートリガー129緊急クエスト",
-    "probability": "1/129.8",
+    "name": "Pゲゲゲの鬼太郎 獅子奮迅99Ver.",
+    "probability": "1/99.9",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "豊丸",
+    "manufacturer": "オレンジ",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -3303,26 +3645,7 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/02/17"
-  },
-  {
-    "name": "P緋弾のアリア～緋緋神降臨～199Ver.",
-    "probability": "1/199.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "藤商事",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/02/17"
+    "introductionDateRaw": "2025/01/20"
   },
   {
     "name": "eフィーバー戦姫絶唱シンフォギア4 キャロルver.",
@@ -3477,46 +3800,8 @@
     "introductionDateRaw": "2025/01/06"
   },
   {
-    "name": "Pブラックラグーン4 EXTRA BULLET 129ver.",
-    "probability": "1/129.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "サミー",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/01/20"
-  },
-  {
-    "name": "Pハネモノ ファミリースタジアム",
-    "probability": "-",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "ミズホ",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2025/01/20"
-  },
-  {
-    "name": "PA花の慶次 裂 99ver.",
-    "probability": "1/99.9",
+    "name": "Pシュタインズ・ゲート ゼロ",
+    "probability": "1/319.68",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
@@ -3531,17 +3816,17 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/01/20"
+    "introductionDateRaw": "2024/12/16"
   },
   {
-    "name": "P花の慶次 裂 蓮極129ver.",
-    "probability": "1/129.77",
+    "name": "e ソードアート・オンライン 閃光の軌跡",
+    "probability": "1/199.9",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "ニューギン",
+    "manufacturer": "京楽",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -3550,17 +3835,55 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/01/20"
+    "introductionDateRaw": "2024/12/16"
   },
   {
-    "name": "Pゲゲゲの鬼太郎 獅子奮迅99Ver.",
+    "name": "e ゴジラ対エヴァンゲリオン セカンドインパクト G 破壊神覚醒",
+    "probability": "1/499.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/12/16"
+  },
+  {
+    "name": "Pネオモンスターハウス199Ver.",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "竹屋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/12/16"
+  },
+  {
+    "name": "Pネオモンスターハウス99Ver.",
     "probability": "1/99.9",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "オレンジ",
+    "manufacturer": "竹屋",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -3569,7 +3892,26 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2025/01/20"
+    "introductionDateRaw": "2024/12/16"
+  },
+  {
+    "name": "eA夏色日記GO",
+    "probability": "1/89.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸×ごらく",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/12/16"
   },
   {
     "name": "Pフィーバー機動戦士ガンダムSEED LT-Light ver.",
@@ -3743,27 +4085,8 @@
     "introductionDateRaw": "2024/12/02"
   },
   {
-    "name": "Pシュタインズ・ゲート ゼロ",
-    "probability": "1/319.68",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "ニューギン",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/12/16"
-  },
-  {
-    "name": "e ソードアート・オンライン 閃光の軌跡",
-    "probability": "1/199.9",
+    "name": "P にゃんこ大戦争 多様性のネコ",
+    "probability": "1/155",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
@@ -3778,83 +4101,7 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2024/12/16"
-  },
-  {
-    "name": "e ゴジラ対エヴァンゲリオン セカンドインパクト G 破壊神覚醒",
-    "probability": "1/499.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "ビスティ",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/12/16"
-  },
-  {
-    "name": "Pネオモンスターハウス199Ver.",
-    "probability": "1/199.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "竹屋",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/12/16"
-  },
-  {
-    "name": "Pネオモンスターハウス99Ver.",
-    "probability": "1/99.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "竹屋",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/12/16"
-  },
-  {
-    "name": "eA夏色日記GO",
-    "probability": "1/89.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "豊丸×ごらく",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/12/16"
+    "introductionDateRaw": "2024/11/18"
   },
   {
     "name": "Pラブ嬢 〜極嬢のハーレム体験〜 129ver.",
@@ -4104,14 +4351,14 @@
     "introductionDateRaw": "2024/11/05"
   },
   {
-    "name": "P にゃんこ大戦争 多様性のネコ",
-    "probability": "1/155",
+    "name": "P弾球黙示録カイジ沼5 ざわっ…79Ver.",
+    "probability": "1/79.9",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "京楽",
+    "manufacturer": "高尾",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -4120,7 +4367,26 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2024/11/18"
+    "introductionDateRaw": "2024/10/21"
+  },
+  {
+    "name": "P江頭2:50inナナシーLT",
+    "probability": "1/129.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/10/21"
   },
   {
     "name": "PAわんわんパラダイスCELEBRATION",
@@ -4275,14 +4541,14 @@
     "introductionDateRaw": "2024/10/07"
   },
   {
-    "name": "P弾球黙示録カイジ沼5 ざわっ…79Ver.",
-    "probability": "1/79.9",
+    "name": "Pいくさの子 織田三郎信長伝",
+    "probability": "1/319.7",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "高尾",
+    "manufacturer": "サミー",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -4291,17 +4557,17 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2024/10/21"
+    "introductionDateRaw": "2024/09/17"
   },
   {
-    "name": "P江頭2:50inナナシーLT",
-    "probability": "1/129.7",
+    "name": "Pメイドインアビス 虹の黄金域",
+    "probability": "1/319.69",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "豊丸",
+    "manufacturer": "メーシー",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -4310,7 +4576,45 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2024/10/21"
+    "introductionDateRaw": "2024/09/17"
+  },
+  {
+    "name": "P攻殻機動隊SAC_2045 199LTver.",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/09/17"
+  },
+  {
+    "name": "Pバイオハザード RE:2 ごらくバージョン",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス×ごらく",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/09/17"
   },
   {
     "name": "P DD北斗の拳3",
@@ -4465,177 +4769,6 @@
     "introductionDateRaw": "2024/09/02"
   },
   {
-    "name": "Pいくさの子 織田三郎信長伝",
-    "probability": "1/319.7",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "サミー",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/09/17"
-  },
-  {
-    "name": "Pメイドインアビス 虹の黄金域",
-    "probability": "1/319.69",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "メーシー",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/09/17"
-  },
-  {
-    "name": "P攻殻機動隊SAC_2045 199LTver.",
-    "probability": "1/199.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "D-light",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/09/17"
-  },
-  {
-    "name": "Pバイオハザード RE:2 ごらくバージョン",
-    "probability": "1/99.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "アムテックス×ごらく",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/09/17"
-  },
-  {
-    "name": "e北斗の拳10",
-    "probability": "1/348.6",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "サミー",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/08/05"
-  },
-  {
-    "name": "PAスーパー海物語IN地中海2",
-    "probability": "1/89.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "三洋",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/08/05"
-  },
-  {
-    "name": "Pフィーバー機動戦士ガンダムユニコーン 再来-白き一角獣と黒き獅子-",
-    "probability": "1/319.7",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "SANKYO",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/08/05"
-  },
-  {
-    "name": "eフィーバー機動戦士ガンダムユニコーン 再来-白き一角獣と黒き獅子-",
-    "probability": "1/349.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "SANKYO",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/08/05"
-  },
-  {
-    "name": "P 百花繚乱 ご奉仕129ver.",
-    "probability": "1/129.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "D-light",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/08/05"
-  },
-  {
     "name": "P七つの美徳 ゴールデンエンジェルタイム スイート99Ver.",
     "probability": "1/99.9",
     "border": "",
@@ -4748,6 +4881,120 @@
       }
     ],
     "introductionDateRaw": "2024/08/19"
+  },
+  {
+    "name": "e北斗の拳10",
+    "probability": "1/348.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/08/05"
+  },
+  {
+    "name": "PAスーパー海物語IN地中海2",
+    "probability": "1/89.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/08/05"
+  },
+  {
+    "name": "Pフィーバー機動戦士ガンダムユニコーン 再来-白き一角獣と黒き獅子-",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/08/05"
+  },
+  {
+    "name": "eフィーバー機動戦士ガンダムユニコーン 再来-白き一角獣と黒き獅子-",
+    "probability": "1/349.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/08/05"
+  },
+  {
+    "name": "P 百花繚乱 ご奉仕129ver.",
+    "probability": "1/129.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/08/05"
+  },
+  {
+    "name": "PAこの素晴らしい世界に祝福を！「このゆる甘99に祝福を！」",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/07/22"
   },
   {
     "name": "Pフィーバーありふれた職業で世界最強 Light ver.",
@@ -4864,14 +5111,14 @@
     "introductionDateRaw": "2024/07/08"
   },
   {
-    "name": "PAこの素晴らしい世界に祝福を！「このゆる甘99に祝福を！」",
-    "probability": "1/99.9",
+    "name": "Pファンキードクター 天使ver.",
+    "probability": "1/69.4",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "豊丸",
+    "manufacturer": "マルホン",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -4880,7 +5127,7 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2024/07/22"
+    "introductionDateRaw": "2024/06/17"
   },
   {
     "name": "Pクイーンズブレイド4 UNLIMITED",
@@ -5054,25 +5301,6 @@
     "introductionDateRaw": "2024/06/03"
   },
   {
-    "name": "Pファンキードクター 天使ver.",
-    "probability": "1/69.4",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "マルホン",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/06/17"
-  },
-  {
     "name": "P七つの大罪2 神千斬りVER.",
     "probability": "1/199.8",
     "border": "",
@@ -5185,120 +5413,6 @@
       }
     ],
     "introductionDateRaw": "2024/05/07"
-  },
-  {
-    "name": "P化物語 319ver.",
-    "probability": "1/319.7",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "サミー",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/04/08"
-  },
-  {
-    "name": "P化物語 199ver.",
-    "probability": "1/199.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "サミー",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/04/08"
-  },
-  {
-    "name": "P大工の源さん超韋駄天2極源LighT",
-    "probability": "1/129.7",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "三洋",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/04/08"
-  },
-  {
-    "name": "Pバイオハザード RE:2 LTver.",
-    "probability": "1/199.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "アムテックス",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/04/08"
-  },
-  {
-    "name": "Pひぐらしのなく頃に 輪廻転生",
-    "probability": "1/319.6",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "D-light",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/04/08"
-  },
-  {
-    "name": "ぱちんこ GANTZ 覚醒 Sweet2000",
-    "probability": "1/129.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "OK!!",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/04/08"
   },
   {
     "name": "Pフィーバーマクロスフロンティア5",
@@ -5432,6 +5546,177 @@
       }
     ],
     "introductionDateRaw": "2024/04/22"
+  },
+  {
+    "name": "P化物語 319ver.",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/04/08"
+  },
+  {
+    "name": "P化物語 199ver.",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/04/08"
+  },
+  {
+    "name": "P大工の源さん超韋駄天2極源LighT",
+    "probability": "1/129.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/04/08"
+  },
+  {
+    "name": "Pバイオハザード RE:2 LTver.",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/04/08"
+  },
+  {
+    "name": "Pひぐらしのなく頃に 輪廻転生",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/04/08"
+  },
+  {
+    "name": "ぱちんこ GANTZ 覚醒 Sweet2000",
+    "probability": "1/129.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "OK!!",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/04/08"
+  },
+  {
+    "name": "P咲-Saki-全国編 テンパイ即リーver.",
+    "probability": "1/119.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/03/18"
+  },
+  {
+    "name": "Pファンキードクター 悪魔12000ver.",
+    "probability": "1/69.4",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/03/18"
+  },
+  {
+    "name": "P sin 七つの大罪 強甘 2400Ver.",
+    "probability": "1/129.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2024/03/18"
   },
   {
     "name": "ぱちんこGⅠ優駿倶楽部2 ラッキートリガーver",
@@ -5662,14 +5947,14 @@
     "introductionDateRaw": "2024/03/04"
   },
   {
-    "name": "P咲-Saki-全国編 テンパイ即リーver.",
-    "probability": "1/119.9",
+    "name": "Pルパン三世 THE FIRST 99ver.",
+    "probability": "1/99.9",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "三洋",
+    "manufacturer": "平和",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -5678,17 +5963,17 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2024/03/18"
+    "introductionDateRaw": "2024/02/19"
   },
   {
-    "name": "Pファンキードクター 悪魔12000ver.",
-    "probability": "1/69.4",
+    "name": "PAルパン三世 THE FIRST 不二子89ver.",
+    "probability": "1/89.8",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "マルホン",
+    "manufacturer": "平和×ごらく",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -5697,26 +5982,7 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2024/03/18"
-  },
-  {
-    "name": "P sin 七つの大罪 強甘 2400Ver.",
-    "probability": "1/129.7",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "高尾",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "10R 1500玉",
-        "rounds": 10,
-        "balls": 1500
-      }
-    ],
-    "introductionDateRaw": "2024/03/18"
+    "introductionDateRaw": "2024/02/19"
   },
   {
     "name": "デジハネP聖戦士ダンバイン2 ZEROSONIC",
@@ -5890,14 +6156,14 @@
     "introductionDateRaw": "2024/02/05"
   },
   {
-    "name": "Pルパン三世 THE FIRST 99ver.",
+    "name": "P真・花の慶次3 99ver.",
     "probability": "1/99.9",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "平和",
+    "manufacturer": "ニューギン",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -5906,17 +6172,17 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2024/02/19"
+    "introductionDateRaw": "2024/01/22"
   },
   {
-    "name": "PAルパン三世 THE FIRST 不二子89ver.",
-    "probability": "1/89.8",
+    "name": "P弾球黙示録カイジ沼5",
+    "probability": "1/319.6",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "平和×ごらく",
+    "manufacturer": "高尾",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -5925,7 +6191,7 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2024/02/19"
+    "introductionDateRaw": "2024/01/22"
   },
   {
     "name": "Pフィーバー革命機ヴァルヴレイヴ3",
@@ -6118,8 +6384,84 @@
     "introductionDateRaw": "2024/01/09"
   },
   {
-    "name": "P真・花の慶次3 99ver.",
+    "name": "スマパチ シン・エヴァンゲリオン Type カヲル",
+    "probability": "1/349.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/12/18"
+  },
+  {
+    "name": "ぱちんこ シン・エヴァンゲリオン Type レイ",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/12/18"
+  },
+  {
+    "name": "P真・一騎当千 Light Ver.",
+    "probability": "1/129.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "Daiichi",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/12/18"
+  },
+  {
+    "name": "PフィーバーからくりサーカスLight ver.",
     "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/12/04"
+  },
+  {
+    "name": "Pワンパンマン 199ver.",
+    "probability": "1/199.80",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
@@ -6134,10 +6476,1644 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2024/01/22"
+    "introductionDateRaw": "2023/12/04"
   },
   {
-    "name": "P弾球黙示録カイジ沼5",
+    "name": "P交響詩篇エウレカセブン ANEMONE",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/12/04"
+  },
+  {
+    "name": "P大海物語5 ブラック",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/12/04"
+  },
+  {
+    "name": "P yes！高須クリニック～超整形PINK～",
+    "probability": "1/9.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/12/04"
+  },
+  {
+    "name": "P天龍∞ SEVEN Blue Ver.",
+    "probability": "1/39.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/12/04"
+  },
+  {
+    "name": "P天龍∞ SEVEN Light Ver.",
+    "probability": "1/19.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/12/04"
+  },
+  {
+    "name": "eルパン三世 銭形からの招待状",
+    "probability": "1/349.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/11/20"
+  },
+  {
+    "name": "PA豊丸ととある企業の最新作2 SOD 99ver.",
+    "probability": "1/99.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/11/20"
+  },
+  {
+    "name": "e Re:ゼロから始める異世界生活 season2",
+    "probability": "1/349.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "大都技研",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/11/20"
+  },
+  {
+    "name": "P真・北斗無双 第4章 下剋上闘",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/11/06"
+  },
+  {
+    "name": "Pフィーバーありふれた職業で世界最強",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/11/06"
+  },
+  {
+    "name": "Pベルセルク無双 119ver.",
+    "probability": "1/119.80",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/11/06"
+  },
+  {
+    "name": "P覇穹 封神演義",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/11/06"
+  },
+  {
+    "name": "スマパチゲゲゲの鬼太郎 獅子奮迅SP",
+    "probability": "1/349.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "JFJ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/11/06"
+  },
+  {
+    "name": "Pゲゲゲの鬼太郎 獅子奮迅",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "オレンジ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/11/06"
+  },
+  {
+    "name": "ぱちんこ 水戸黄門 超極上",
+    "probability": "1/319.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/11/06"
+  },
+  {
+    "name": "Pギルティクラウン2",
+    "probability": "1/239.1",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "メーシー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/10/16"
+  },
+  {
+    "name": "PストリートファイターⅤ K.O.RUSH",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/10/16"
+  },
+  {
+    "name": "Pゴジラ対エヴァンゲリオン〜G細胞覚醒〜 PREMIUM MODEL",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/10/16"
+  },
+  {
+    "name": "e義風堂々!!〜兼続と慶次〜3",
+    "probability": "1/348.59",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/10/02"
+  },
+  {
+    "name": "P頭文字D Non-Stop 3000Edition",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/10/02"
+  },
+  {
+    "name": "e新海物語349",
+    "probability": "1/348.5",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/10/02"
+  },
+  {
+    "name": "Pフィーバーかぐや様は告らせたい",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/10/02"
+  },
+  {
+    "name": "P世紀末・天才バカボン〜神SPEC 凱旋〜",
+    "probability": "1/319.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/10/02"
+  },
+  {
+    "name": "PA激デジ ジューシーハニーハーレム",
+    "probability": "1/77.74",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/10/02"
+  },
+  {
+    "name": "ぱちんこ GANTZ 覚醒 RUSH180",
+    "probability": "1/199.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "OK!!",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/10/02"
+  },
+  {
+    "name": "Pプロゴルファー猿 強甘119ver.",
+    "probability": "1/119.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/10/02"
+  },
+  {
+    "name": "PA満開爛漫 GO",
+    "probability": "1/77.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸×ごらく",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/10/02"
+  },
+  {
+    "name": "Pルパン三世 消されたルパン2022 99ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/09/19"
+  },
+  {
+    "name": "Pフィーバー戦姫絶唱シンフォギア3黄金絶唱Light ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/09/19"
+  },
+  {
+    "name": "Pリング 呪いの7日間3",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "JFJ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/09/19"
+  },
+  {
+    "name": "ぱちんこ戦国コレクション 天魔99",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "コナミアミューズメント",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/09/19"
+  },
+  {
+    "name": "P新世紀エヴァンゲリオン〜未来への咆哮〜SPECIAL EDITION",
+    "probability": "1/199.2",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/09/19"
+  },
+  {
+    "name": "Pハイスクール・フリート オールスター",
+    "probability": "1/229.95",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "メーシー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/09/04"
+  },
+  {
+    "name": "P 百花繚乱",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/09/04"
+  },
+  {
+    "name": "P咲-Saki-全国編",
+    "probability": "1/319.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/09/04"
+  },
+  {
+    "name": "スマートぱちんこ ソードアート・オンライン",
+    "probability": "1/319.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/09/04"
+  },
+  {
+    "name": "P聖闘士星矢 超流星LIGHT",
+    "probability": "1/129.5",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/08/21"
+  },
+  {
+    "name": "Pシティーハンター 俺の心を震わせた日 凄ライトミドル",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/08/21"
+  },
+  {
+    "name": "P七つの美徳 ゴールデンエンジェルタイム",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/08/21"
+  },
+  {
+    "name": "Pビッグドリーム3 77ver.",
+    "probability": "1/77.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/08/07"
+  },
+  {
+    "name": "Pフィーバー機動戦士ガンダムSEED",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/08/07"
+  },
+  {
+    "name": "P GO!GO!マリン 3000",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンスリー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/08/07"
+  },
+  {
+    "name": "P真・一騎当千～桃園の誓い～",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/08/07"
+  },
+  {
+    "name": "Pデビルマン黄金黙示録",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/08/07"
+  },
+  {
+    "name": "PフィーバークィーンⅡ 30th ANNIVERSARY EDITION",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ジェイビー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/07/18"
+  },
+  {
+    "name": "PA大海物語5 Withアグネス・ラム",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/07/03"
+  },
+  {
+    "name": "Pブラックラグーン4",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/07/03"
+  },
+  {
+    "name": "e花の慶次 裂 一刀両断",
+    "probability": "1/348.59",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/07/03"
+  },
+  {
+    "name": "P貞子3D3",
+    "probability": "1/57.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/07/03"
+  },
+  {
+    "name": "Pアナザーゴッドハーデス-狂乱-",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "メーシー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/07/03"
+  },
+  {
+    "name": "eキャッツ・アイ",
+    "probability": "1/349.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/07/03"
+  },
+  {
+    "name": "スマパチ RAVE 覚聖ループ",
+    "probability": "1/299",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "JFJ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/07/03"
+  },
+  {
+    "name": "P銀河鉄道999 Next Journey 1/100ver.",
+    "probability": "1/100.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/06/19"
+  },
+  {
+    "name": "P ベルセルク無双 冥府魔道ver.",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/06/19"
+  },
+  {
+    "name": "ぱちんこ 乃木坂46 キュンキュンLIGHT ver.",
+    "probability": "1/129.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/06/19"
+  },
+  {
+    "name": "Pフィーバー蒼穹のファフナー3 EXODUS 織姫Light ver.",
+    "probability": "1/69.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/06/05"
+  },
+  {
+    "name": "P甲鉄城のカバネリ ～4,000連激ver.～",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/06/05"
+  },
+  {
+    "name": "P yes！高須クリニック青天 はじまりは4500",
+    "probability": "1/38.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/06/05"
+  },
+  {
+    "name": "Pフィーバースプラッシュ×スプラッシュ",
+    "probability": "1/199.805",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/06/05"
+  },
+  {
+    "name": "Pわんニャンアドベンチャー",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンスリー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/06/05"
+  },
+  {
+    "name": "P地獄少女 Light",
+    "probability": "1/129.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/06/05"
+  },
+  {
+    "name": "ぱちんこ ウルトラマンティガ ウルトラ超光ライトver.",
+    "probability": "1/129.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "OK!!",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/06/05"
+  },
+  {
+    "name": "Pフィーバー 機動戦士ガンダムユニコーン LIGHT ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/05/22"
+  },
+  {
+    "name": "Pやじきた道中記",
+    "probability": "1/159.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "メーシー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/05/22"
+  },
+  {
+    "name": "P大線香花火",
+    "probability": "1/72",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "A-gon",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/05/22"
+  },
+  {
+    "name": "P北斗の拳 暴凶星",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/05/08"
+  },
+  {
+    "name": "Pバイオハザード RE:2",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/05/08"
+  },
+  {
+    "name": "PA元祖ギンギラパラダイス 強99ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンスリー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/05/08"
+  },
+  {
+    "name": "Pゴブリンスレイヤー",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "JFJ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/05/08"
+  },
+  {
+    "name": "PA真・怪獣王ゴジラ2",
+    "probability": "1/78.86",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/05/08"
+  },
+  {
+    "name": "P新・遠山の金さん 77Ver.",
+    "probability": "1/77.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "JFJ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/05/08"
+  },
+  {
+    "name": "Pジューシーハニーハーレム",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/05/08"
+  },
+  {
+    "name": "P哲也",
+    "probability": "1/197.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/05/08"
+  },
+  {
+    "name": "P コードギアス 反逆のルルーシュ Rebellion to Re;surrection",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/05/08"
+  },
+  {
+    "name": "ぱちんこ 新・必殺仕置人S",
+    "probability": "1/349.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/04/24"
+  },
+  {
+    "name": "P天龍∞ SEVEN",
+    "probability": "1/39.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/04/17"
+  },
+  {
+    "name": "Pフィーバー炎炎ノ消防隊",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/04/17"
+  },
+  {
+    "name": "eルパン三世 THE FIRST",
+    "probability": "1/349.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/04/17"
+  },
+  {
+    "name": "P聖戦士ダンバイン2 -ZEROLIMIT HYPER-",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/04/03"
+  },
+  {
+    "name": "Pプロゴルファー猿 EMPEROR MODEL",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/04/03"
+  },
+  {
+    "name": "P銭形平次3 お静99",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/04/03"
+  },
+  {
+    "name": "P Go!Go!郷 comeback stage",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/04/03"
+  },
+  {
+    "name": "e聖闘士星矢 超流星CliMAX349",
+    "probability": "1/348.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/04/03"
+  },
+  {
+    "name": "Pバベル5000",
+    "probability": "1/1.0",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ミズホ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/03/20"
+  },
+  {
+    "name": "Pとある科学の超電磁砲 最強御坂ver.",
+    "probability": "1/119",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "オレンジ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/03/20"
+  },
+  {
+    "name": "Pルパン三世 THE FIRST",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/03/06"
+  },
+  {
+    "name": "Psin 七つの大罪 X-TREME",
     "probability": "1/319.6",
     "border": "",
     "machineTypeRaw": "kakugen",
@@ -6153,6 +8129,2837 @@
         "balls": 1500
       }
     ],
-    "introductionDateRaw": "2024/01/22"
+    "introductionDateRaw": "2023/03/06"
+  },
+  {
+    "name": "Pルパン三世 2000カラットの涙 129ver.",
+    "probability": "1/129.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/03/06"
+  },
+  {
+    "name": "P麻雀物語4 77ver.",
+    "probability": "1/77.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/03/06"
+  },
+  {
+    "name": "Pフィーバーアクエリオン極合体",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/03/06"
+  },
+  {
+    "name": "P真・北斗無双 第3章 覚醒闘舞",
+    "probability": "1/129.3",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/03/06"
+  },
+  {
+    "name": "P009 RE:CYBORG ACCELERATOR EDITION 99ver.",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/03/06"
+  },
+  {
+    "name": "ぱちんこ 乃木坂46 トレジャースペック",
+    "probability": "1/319.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/03/06"
+  },
+  {
+    "name": "P地獄少女覚醒3000Ver.",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/02/20"
+  },
+  {
+    "name": "P戦国乙女 LEGEND BATTLE 99ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/02/06"
+  },
+  {
+    "name": "Pフィーバーダンベル何キロ持てる？",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/02/06"
+  },
+  {
+    "name": "P真・北斗無双 第4章",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/02/06"
+  },
+  {
+    "name": "P真バジリスク～甲賀忍法帖～豪塊W319ver.",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "メーシー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/02/06"
+  },
+  {
+    "name": "P大海物語5",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/02/06"
+  },
+  {
+    "name": "P真速のガッチャマン",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "七匠",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/02/06"
+  },
+  {
+    "name": "Pだるまっしゅ2 119ver.",
+    "probability": "1/119.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/02/06"
+  },
+  {
+    "name": "P神・天才バカボン〜甘神SPEC〜",
+    "probability": "1/129.77",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "Daiichi",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/02/06"
+  },
+  {
+    "name": "P宇宙戦艦ヤマト2202 -ONLY ONE- LIGHT Ver.",
+    "probability": "1/89.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/02/06"
+  },
+  {
+    "name": "PA戦国乙女レジェンドバトル ときめき89バージョン",
+    "probability": "1/89.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス×ごらく",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/02/06"
+  },
+  {
+    "name": "PA祭2",
+    "probability": "-",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "APS APS",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/02/06"
+  },
+  {
+    "name": "P真・花の慶次3 -黄金一閃-",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/01/23"
+  },
+  {
+    "name": "P桃剣閃撃 極",
+    "probability": "1/319.69",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "西陣",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/01/23"
+  },
+  {
+    "name": "P牙狼GOLD IMPACT",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/01/23"
+  },
+  {
+    "name": "P大開王",
+    "probability": "1/319.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ジェイビー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/01/10"
+  },
+  {
+    "name": "PAスーパー海物語 IN 沖縄5 夜桜超旋風 99ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/01/10"
+  },
+  {
+    "name": "Pシティーハンター 俺の心を震わせた日",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/01/10"
+  },
+  {
+    "name": "Pビッグドリーム3",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/01/10"
+  },
+  {
+    "name": "PハイスクールD×D 真紅GCA",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "西陣",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/01/10"
+  },
+  {
+    "name": "PA緋弾のアリア～緋弾覚醒編～甘デジver. FRA",
+    "probability": "1/99",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/01/10"
+  },
+  {
+    "name": "PA SUPER電役ナナシーSPECIAL66 Ver2.0",
+    "probability": "1/66.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2023/01/10"
+  },
+  {
+    "name": "Pゴジラ対エヴァンゲリオン〜G細胞覚醒〜",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/12/19"
+  },
+  {
+    "name": "Pゴッドイーター神がかりVer.",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/12/19"
+  },
+  {
+    "name": "P TIGER ＆ BUNNY ～完全無欠WILDスペック～",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/12/19"
+  },
+  {
+    "name": "P銀河鉄道999 Next Journey",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/12/05"
+  },
+  {
+    "name": "P聖闘士星矢 超流星 星矢ゴールドver.92％",
+    "probability": "1/318.13",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/12/05"
+  },
+  {
+    "name": "P聖闘士星矢 超流星 女神ゴールドver.1500",
+    "probability": "1/318.13",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/12/05"
+  },
+  {
+    "name": "Pもっとあぶない刑事",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/12/05"
+  },
+  {
+    "name": "ぱちんこ アズールレーン THE ANIMATION",
+    "probability": "1/46.0",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/12/05"
+  },
+  {
+    "name": "Pダイナマイトキング～無敵SPEC～",
+    "probability": "1/304.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "Daiichi",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/12/05"
+  },
+  {
+    "name": "Pネオモンスターハウス MXL",
+    "probability": "1/319.69",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "竹屋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/12/05"
+  },
+  {
+    "name": "PAコマコマ倶楽部 with 坂本冬美 ごらくバージョン",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸×ごらく",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/12/05"
+  },
+  {
+    "name": "PモンキーターンⅥ超抜ZDa",
+    "probability": "1/319.69",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "西陣",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "PフィーバークィーンRUSH",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ジェイビー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "Pワンパンマン",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "ぱちんこGⅠ優駿倶楽部2 超限界突破",
+    "probability": "1/219.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "コナミアミューズメント",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "P GO!GO!マリン超連撃BATTLE",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンスリー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "Pターミネーター2 TYPE7500",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "P七つの大罪2",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "P弾球黙示録カイジ5 ざわっ…Ver.",
+    "probability": "1/89.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "P新・遠山の金さん",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "JFJ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "P10カウントチャージ絶狼 神撃135Ver.",
+    "probability": "1/135.96",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "PバーストエンジェルEX 99Ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "PA獅子王Jr.99",
+    "probability": "1/98.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "P華牌RRwith清水あいり ごらくバージョン",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸×ごらく",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "PAゴールデン鳳凰∞Jr.99",
+    "probability": "1/98.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/11/07"
+  },
+  {
+    "name": "P緋弾のアリア～緋弾覚醒編～319ver. JMZ",
+    "probability": "1/319",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "JFJ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/10/17"
+  },
+  {
+    "name": "Pうしおととら～超獣SPEC～",
+    "probability": "1/319.69",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/10/03"
+  },
+  {
+    "name": "PAフィーバーマクロスフロンティア4 88ver.",
+    "probability": "1/88.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/10/03"
+  },
+  {
+    "name": "Pストライクウィッチーズ2 129ver.",
+    "probability": "1/129.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/10/03"
+  },
+  {
+    "name": "Pデビルマン疾風迅雷 129ver.",
+    "probability": "1/129.77",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/10/03"
+  },
+  {
+    "name": "Pルパン三世 消されたルパン2022",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/10/03"
+  },
+  {
+    "name": "P真・牙狼2",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/10/03"
+  },
+  {
+    "name": "ぱちんこ ウルトラマンティガ 1500×84",
+    "probability": "1/319.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "OK!!",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/10/03"
+  },
+  {
+    "name": "P華牌RRwith清水あいり 150de遊タイム",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/09/20"
+  },
+  {
+    "name": "Pモモキュンソード閃撃GCA",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "西陣",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/09/05"
+  },
+  {
+    "name": "Pフィーバー戦姫絶唱シンフォギア3黄金絶唱",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/09/05"
+  },
+  {
+    "name": "PA元祖大工の源さん2",
+    "probability": "1/89.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/09/05"
+  },
+  {
+    "name": "Pバジリスク 〜桜花忍法帖〜早咲き桜99ver.",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "メーシー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/09/05"
+  },
+  {
+    "name": "P牙狼MUSEUM",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/09/05"
+  },
+  {
+    "name": "P銭形平次3 DENKOUSEKKA 平次Ver.",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/09/05"
+  },
+  {
+    "name": "Pシンデレラブレイド",
+    "probability": "1/141.1",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "JFJ JFJ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/09/05"
+  },
+  {
+    "name": "P犬夜叉2",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/09/05"
+  },
+  {
+    "name": "P野生の王国 GO 199ver.",
+    "probability": "1/199.80",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/09/05"
+  },
+  {
+    "name": "ぱちんこキン肉マン3 キン肉星王位争奪編 特盛ミートくんver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/09/05"
+  },
+  {
+    "name": "P宇宙戦艦ヤマト2202 愛の戦士たち Light ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/09/05"
+  },
+  {
+    "name": "PA新海物語",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/22"
+  },
+  {
+    "name": "P刀使ノ巫女 ZCa［319ver.］",
+    "probability": "1/319.69",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "西陣",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/22"
+  },
+  {
+    "name": "P刀使ノ巫女 GCAa［甘デジver.］",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "西陣",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/22"
+  },
+  {
+    "name": "Pひぐらしのなく頃に〜蕾〜",
+    "probability": "1/129.77",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "Daiichi",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/22"
+  },
+  {
+    "name": "Pフィーバーからくりサーカス",
+    "probability": "1/319.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/08"
+  },
+  {
+    "name": "PAアニマルマンション GO",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸×ごらく 豊丸×ごらく",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/01"
+  },
+  {
+    "name": "Pモンスターハンターダブルクロス 連続狩猟ver.",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/01"
+  },
+  {
+    "name": "P ANOTHER WILD RODEO～スギちゃんっス～",
+    "probability": "1/38.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/01"
+  },
+  {
+    "name": "P黄門ちゃま 神盛2",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/01"
+  },
+  {
+    "name": "P激デジ真・牙狼",
+    "probability": "1/77.74",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/01"
+  },
+  {
+    "name": "Pサラリーマン金太郎",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/01"
+  },
+  {
+    "name": "ぱちんこ GANTZ:3 LAST BATTLE",
+    "probability": "1/319.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "OK!! OK!!",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/01"
+  },
+  {
+    "name": "P真・怪獣王ゴジラ2",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/08/01"
+  },
+  {
+    "name": "Pあっぱれ！夏物語 ドカン!!と一発7000Ver.",
+    "probability": "1/27.3",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/07/25"
+  },
+  {
+    "name": "Pスーパー海物語 IN 沖縄5 夜桜超旋風",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/07/19"
+  },
+  {
+    "name": "Pルパン三世～復活のマモー～ 甘デジ",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/07/19"
+  },
+  {
+    "name": "Pゴールデン鳳凰∞",
+    "probability": "1/312.5",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/07/19"
+  },
+  {
+    "name": "P結城友奈は勇者であるALLRUSH GCAa",
+    "probability": "1/77.74",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "西陣",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/07/19"
+  },
+  {
+    "name": "P宇宙戦艦ヤマト2202 -ONLY ONE-",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/07/19"
+  },
+  {
+    "name": "P真・一騎当千",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "Daiichi",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/07/04"
+  },
+  {
+    "name": "P戦国乙女 LEGEND BATTLE",
+    "probability": "1/222.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/07/04"
+  },
+  {
+    "name": "Pだるまっしゅ2",
+    "probability": "1/225.98",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/07/04"
+  },
+  {
+    "name": "PAビビッドレッドオペレーション Sweetもも99ver.",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/07/04"
+  },
+  {
+    "name": "P世界でいちばん強くなりたい！ W悶STAR Ver",
+    "probability": "1/119.80",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/07/04"
+  },
+  {
+    "name": "Pめぞん一刻～Wedding Story～ 甘デジ",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/20"
+  },
+  {
+    "name": "P真シャカRUSH Jr.",
+    "probability": "1/117.2",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/20"
+  },
+  {
+    "name": "P真シャカRUSH Jr. 遊タイムなしver.",
+    "probability": "1/117.2",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/20"
+  },
+  {
+    "name": "Pフィーバー蒼穹のファフナー3 EXODUS 超蒼穹3800ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/06"
+  },
+  {
+    "name": "P中森明菜・歌姫伝説～THE BEST LEGEND～199ver",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/06"
+  },
+  {
+    "name": "P真バジリスク～甲賀忍法帖～",
+    "probability": "1/199.80",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "メーシー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/06"
+  },
+  {
+    "name": "PAコマコマ倶楽部 with 坂本冬美 99ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/06"
+  },
+  {
+    "name": "Pコマコマ倶楽部 with 坂本冬美 199ver.",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/06"
+  },
+  {
+    "name": "デジハネPA火曜サスペンス劇場 最後の推理",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/06"
+  },
+  {
+    "name": "P麻雀物語4",
+    "probability": "1/219.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/06"
+  },
+  {
+    "name": "Pあぶない刑事 129ver.",
+    "probability": "1/129.77",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/06"
+  },
+  {
+    "name": "PストリートファイターⅤ",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/06"
+  },
+  {
+    "name": "Pジューシーハニー3 てんこ盛り連写RUSH",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/06"
+  },
+  {
+    "name": "Pリアル鬼ごっこ2 全力疾走チャージ王様Ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/06/06"
+  },
+  {
+    "name": "Pフィーバー アイドルマスター ミリオンライブ！ Light ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/05/09"
+  },
+  {
+    "name": "Pミリオンゴッド-一撃-",
+    "probability": "1/5",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ミズホ ミズホ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/05/09"
+  },
+  {
+    "name": "P元祖ギンギラパラダイス",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンスリー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/05/09"
+  },
+  {
+    "name": "P頭文字D",
+    "probability": "1/256.0",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/05/09"
+  },
+  {
+    "name": "Pフィーバーダンジョンに出会いを求めるのは間違っているだろうか",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/05/09"
+  },
+  {
+    "name": "Pはぐれ刑事純情派",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/05/09"
+  },
+  {
+    "name": "PA真・暴れん坊将軍 99Ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/05/09"
+  },
+  {
+    "name": "Pキャプテン翼 若林甘えんなよ！Ver.",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/05/09"
+  },
+  {
+    "name": "Pらんま1/2 熱血格闘遊戯 99Ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/05/09"
+  },
+  {
+    "name": "P牙狼 月虹ノ旅人 58％の衝撃Ver.",
+    "probability": "1/319.68",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/04/25"
+  },
+  {
+    "name": "P一球魂GOLDピラミッ伝",
+    "probability": "1/179.5",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/04/18"
+  },
+  {
+    "name": "Pフィーバー アイドルマスター ミリオンライブ！ 39フェスver.",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/04/18"
+  },
+  {
+    "name": "デジハネP蒼天の拳 双龍",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/04/18"
+  },
+  {
+    "name": "P結城友奈は勇者であるALLRUSH",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "西陣",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/04/18"
+  },
+  {
+    "name": "P獅子王",
+    "probability": "1/220.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "マルホン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/04/18"
+  },
+  {
+    "name": "P大工の源さん 超韋駄天 BLACK",
+    "probability": "1/318.13",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/04/04"
+  },
+  {
+    "name": "PA真・花の慶次2〜漆黒の衝撃 99ver.",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/04/04"
+  },
+  {
+    "name": "P花満開 月光 THE FINAL GCA",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "西陣",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/04/04"
+  },
+  {
+    "name": "Pアレジン プレミアム",
+    "probability": "1/319",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/04/04"
+  },
+  {
+    "name": "PA巨人の星 明子2000Ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/04/04"
+  },
+  {
+    "name": "ぱちんこ 仮面ライダー 闇のライダーver.",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/04/04"
+  },
+  {
+    "name": "ぱちんこ戦国コレクションBLACK",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "コナミアミューズメント",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/22"
+  },
+  {
+    "name": "Pどないやねん",
+    "probability": "1/39.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/22"
+  },
+  {
+    "name": "PA激デジ 笑ゥせぇるすまん最後の忠告",
+    "probability": "1/77.74",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR&amp;D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/22"
+  },
+  {
+    "name": "Pとある魔術の禁書目録 Light PREMIUM ver.",
+    "probability": "1/129.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "JFJ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "P新鬼武者 DAWN OF DREAMS 甘デジ",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "平和",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "Pストライクウィッチーズ2",
+    "probability": "1/229.1",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "Pナムココレクション2",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "メーシー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "PAナムココレクション2 スイートゲームver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "メーシー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "PハイスクールD×D 真紅",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "西陣",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "P真・北斗無双 第3章 ジャギの逆襲",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "Cの衝撃!! P弾球黙示録カイジ5 電撃チャージ和也Ver.",
+    "probability": "1/159.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "PA野生の王国どらむサファリN-K1 YT299",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "P野生の王国どらむサファリS-K1 YT470",
+    "probability": "1/159.84",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "P満開まつり GO1",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "豊丸×ごらく",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "ぱちんこキン肉マン3 キン肉星王位争奪編 火事場ゴールド",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "ぱちんこキン肉マン3 キン肉星王位争奪編 友情シルバー",
+    "probability": "1/229.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
+  },
+  {
+    "name": "Pコードギアス 反逆のルルーシュ Light ver.",
+    "probability": "1/89.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "10R 1500玉",
+        "rounds": 10,
+        "balls": 1500
+      }
+    ],
+    "introductionDateRaw": "2022/03/07"
   }
 ]
