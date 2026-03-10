@@ -99,6 +99,8 @@ final class Machine {
     var heso_prizes: String = ""
     /// P-Sync/GAS用：RUSH時の特図2内訳。カンマ区切り（例: "10R(1500個)-RUSH,300個-RUSH,10R(1500個)-天国"）。空なら prizeEntries を利用。
     var denchu_prizes: String = ""
+    /// 通常時（ヘソ）からいきなりLTに突入できる機種か。false のときは RUSH からのみ LT へ。
+    var ltFromNormal: Bool = false
 
     /// 従来のボーナス種類。heso_prizes/denchu_prizes が空のときのフォールバック。GAS連携時は非推奨。
     @Relationship(deleteRule: .cascade, inverse: \MachinePrize.machine)
@@ -117,6 +119,12 @@ final class Machine {
 
     /// STタイプなら true（電サポ回数カウントダウンで自動復帰）
     var isST: Bool { machineType == .st }
+
+    /// RUSH時にLT（上位RUSH・天国）がある機種か。denchu_prizes に「天国」「LT」を含むかで判定
+    var hasLT: Bool {
+        let d = denchu_prizes.trimmingCharacters(in: .whitespaces)
+        return !d.isEmpty && (d.contains("天国") || d.contains("LT"))
+    }
 
     /// 当たり1回のR数（先頭のボーナス種類。なければ10R想定）
     var defaultRoundsPerHit: Int {
@@ -273,11 +281,13 @@ final class MyMachinePreset {
 enum WinType: String, Codable, CaseIterable {
     case rush = "確変/RUSH"
     case normal = "通常"
+    case lt = "LT"
 }
 
 enum PlayState: String, Codable {
     case normal = "通常"
     case support = "電サポ"
+    case lt = "LT"
 }
 
 enum LendingType: String, Codable {
@@ -367,10 +377,11 @@ final class GameSession {
     var theoreticalProfit: Int = 0     // 理論期待値（利益・円）
     var rushWinCount: Int = 0          // 実践で入力したRUSH大当たり回数
     var normalWinCount: Int = 0        // 実践で入力した通常大当たり回数
+    var ltWinCount: Int = 0            // 実践で入力したLT（上位RUSH）大当たり回数
     /// 保存時の公式ボーダー（回/千円・等価）。実践回転率との差表示用
     var formulaBorderPer1k: Double = 0
 
-    init(machineName: String, shopName: String, manufacturerName: String = "", investmentCash: Int, totalHoldings: Int, normalRotations: Int, totalUsedBalls: Int, exchangeRate: Double, totalRealCost: Double = 0, expectationRatioAtSave: Double = 0, rushWinCount: Int = 0, normalWinCount: Int = 0, formulaBorderPer1k: Double = 0) {
+    init(machineName: String, shopName: String, manufacturerName: String = "", investmentCash: Int, totalHoldings: Int, normalRotations: Int, totalUsedBalls: Int, exchangeRate: Double, totalRealCost: Double = 0, expectationRatioAtSave: Double = 0, rushWinCount: Int = 0, normalWinCount: Int = 0, ltWinCount: Int = 0, formulaBorderPer1k: Double = 0) {
         self.machineName = machineName
         self.shopName = shopName
         self.manufacturerName = manufacturerName
@@ -384,6 +395,7 @@ final class GameSession {
         self.theoreticalProfit = Int(round(totalRealCost * (expectationRatioAtSave - 1)))
         self.rushWinCount = rushWinCount
         self.normalWinCount = normalWinCount
+        self.ltWinCount = ltWinCount
         self.formulaBorderPer1k = formulaBorderPer1k
     }
 

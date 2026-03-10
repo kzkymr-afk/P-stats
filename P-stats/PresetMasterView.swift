@@ -207,6 +207,7 @@ struct PresetMachineEditView: View {
             .background(AppGlassStyle.background)
             .navigationTitle(isNew ? "マスタ機種を追加" : "マスタ機種を編集")
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardDismissToolbar()
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
             .toolbar {

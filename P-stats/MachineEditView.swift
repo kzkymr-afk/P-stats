@@ -61,6 +61,7 @@ struct MachineEditView: View, Equatable {
     @State private var border: String = ""
     @State private var countPerRoundStr: String = "10"
     @State private var manufacturerStr: String = ""
+    @State private var dmmMachineID: String = ""
     
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
@@ -78,6 +79,8 @@ struct MachineEditView: View, Equatable {
 
     /// この機種データをCloudKitでみんなとシェアする（保存時のみ送信）
     @State private var shareWithEveryone = false
+    /// 通常時（ヘソ）からいきなりLTに突入できる機種か
+    @State private var ltFromNormal = false
 
     @State private var presetSearchText: String = ""
     /// true のとき「新台から探す」で最新20件を表示するモード
@@ -92,6 +95,10 @@ struct MachineEditView: View, Equatable {
     @State private var machineMasterItems: [MachineMasterItem] = []
     @State private var showMasterPicker = false
     @State private var masterSearchText: String = ""
+    
+    @State private var isDMMPanelExpanded = false
+    /// 機種を検索で選んだプリセットの id（選択中をハイライトする用）
+    @State private var selectedPresetId: String? = nil
 
     struct DraftPrize: Identifiable {
         let id = UUID()
@@ -112,6 +119,7 @@ struct MachineEditView: View, Equatable {
                         editPanel(title: "機種名・メーカー") { machineNamePanel }
                         presetPanel
                         editPanel(title: "通常時の大当たり確率") { probabilityPanel }
+                        editPanel(title: "公式ボーダー（等価ベース）") { borderPanel }
                         editPanel(title: "大当たり種類（ヘソ・通常時）") { bonusHesoPanel }
                         if hasLT {
                             editPanel(title: "大当たり種類（RUSH）") { bonusRushPanel }
@@ -122,7 +130,13 @@ struct MachineEditView: View, Equatable {
                         editPanel(title: "賞球数（カウント）") { countPerRoundPanel }
                         editPanel(title: "電サポ回数（STゲーム数）") { supportLimitPanel }
                         editPanel(title: "時短ゲーム数") { timeShortPanel }
-                        editPanel(title: "公表ボーダー（等価ベース）") { borderPanel }
+                        editPanel(title: "LT仕様") {
+                            Toggle("通常時からLTに突入できる", isOn: $ltFromNormal)
+                                .tint(accent)
+                            Text("ONのとき、通常モードで「RUSH」を押すとRUSHかLTを選べます。OFFのときはRUSHからのみLTへ移行できます。")
+                                .font(.caption)
+                                .foregroundStyle(.white.opacity(0.7))
+                        }
                         editPanel(title: "データの共有") {
                             Toggle("この機種データをみんなとシェアする", isOn: $shareWithEveryone)
                                 .tint(accent)
@@ -132,11 +146,17 @@ struct MachineEditView: View, Equatable {
                         }
                     }
                     .padding(16)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 140)
                 }
+                VStack {
+                    Spacer()
+                    dmmSwipePanel
+                }
+                .ignoresSafeArea(edges: .bottom)
             }
             .navigationTitle(editing == nil ? "新規機種登録" : "機種を編集")
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardDismissToolbar()
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
             .tint(accent)
@@ -292,7 +312,7 @@ struct MachineEditView: View, Equatable {
     private var presetPanel: some View {
         let keyEmpty = presetSearchText.trimmingCharacters(in: .whitespaces).isEmpty
         let showListArea = showNewest20 || !keyEmpty || isLoadingPresets
-        editPanel(title: "マスタから選ぶ", trailing: { InfoIconView(explanation: "設定のマスターデータURLから取得した一覧。検索するか「新台から探す」で表示。選ぶと機種名・メーカー以下が自動入力されます。", tint: .white.opacity(0.6)) }) {
+        editPanel(title: "機種を検索", trailing: { InfoIconView(explanation: "設定のマスターデータURLから取得した一覧。検索するか「新台から探す」で表示。選ぶと機種名・メーカー以下が自動入力されます。", tint: .white.opacity(0.6)) }) {
             HStack(spacing: 10) {
                 TextField("機種名で検索", text: $presetSearchText)
                     .textContentType(.none)
@@ -339,22 +359,33 @@ struct MachineEditView: View, Equatable {
                     ScrollView(.vertical, showsIndicators: true) {
                         LazyVStack(spacing: 0) {
                             ForEach(Array(displayPresetsCache.enumerated()), id: \.offset) { _, item in
+                                let isSelected = selectedPresetId == item.id
                                 Button {
                                     adoptPreset(item)
+                                    selectedPresetId = item.id
                                 } label: {
                                     HStack {
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(item.displayName).font(.subheadline)
+                                                .foregroundColor(isSelected ? accent : .primary)
                                             Text(item.displaySubtitle)
                                                 .font(.caption2)
-                                                .foregroundStyle(.secondary)
+                                                .foregroundStyle(isSelected ? .white.opacity(0.85) : .secondary)
                                         }
                                         Spacer()
-                                        Image(systemName: "checkmark.circle.fill")
+                                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                                             .font(.caption)
-                                            .foregroundStyle(.green)
+                                            .foregroundStyle(isSelected ? accent : .secondary)
                                     }
-                                    .padding(.vertical, 6)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 10)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .background(isSelected ? accent.opacity(0.22) : Color.clear)
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .stroke(isSelected ? accent.opacity(0.6) : Color.clear, lineWidth: 1.5)
+                                    )
                                     .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
@@ -615,22 +646,27 @@ struct MachineEditView: View, Equatable {
 
     @ViewBuilder
     private var borderPanel: some View {
-        HStack {
-            HStack(spacing: 4) {
-                Text("回転/1000円")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
-                InfoIconView(explanation: "等価（4円/玉・250玉/1000円）の場合。店の貸玉料金・交換率で実戦ボーダーは自動補正されます。", tint: .white.opacity(0.6))
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                HStack(spacing: 4) {
+                    Text("回転/1000円")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.9))
+                    InfoIconView(explanation: "等価（4円/玉・250玉/1000円）の場合。店の貸玉料金・交換率で実戦ボーダーは自動補正されます。", tint: .white.opacity(0.6))
+                }
+                Spacer()
+                TextField("16.5", text: $border)
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 72)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
+                    .background(Color.white.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            Spacer()
-            TextField("16.5", text: $border)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 72)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 10)
-                .background(Color.white.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            Text("店舗設定に基づいて自動的に調整されます。")
+                .font(.caption)
+                .foregroundColor(.white.opacity(0.7))
         }
     }
 
@@ -727,6 +763,7 @@ struct MachineEditView: View, Equatable {
 
     private func loadMachineIntoForm(_ machine: Machine) {
         machineName = machine.name
+        selectedPresetId = nil
         copyFromMachine(machine)
     }
 
@@ -739,6 +776,8 @@ struct MachineEditView: View, Equatable {
         border = machine.border
         manufacturerStr = machine.manufacturer
         countPerRoundStr = "\(machine.countPerRound)"
+        dmmMachineID = machine.masterID ?? ""
+        ltFromNormal = machine.ltFromNormal
         if !machine.heso_prizes.isEmpty {
             draftHesoPrizes = PrizeStringParser.parseHesoPrizes(machine.heso_prizes).map { draftPrizeFromHeso($0) }
         } else {
@@ -801,6 +840,8 @@ struct MachineEditView: View, Equatable {
             existing.border = border
             existing.countPerRound = cPerRound
             existing.manufacturer = manufacturerStr.trimmingCharacters(in: .whitespaces)
+            existing.masterID = dmmMachineID.trimmingCharacters(in: .whitespaces)
+            existing.ltFromNormal = ltFromNormal
             existing.heso_prizes = hesoStr
             existing.denchu_prizes = denchuStr
             for p in existing.prizeEntries {
@@ -812,13 +853,14 @@ struct MachineEditView: View, Equatable {
                 modelContext.insert(mp)
             }
         } else {
-            let machine = Machine(name: name, supportLimit: sup, defaultPrize: prize)
+            let machine = Machine(name: name, supportLimit: sup, defaultPrize: prize, masterID: dmmMachineID.trimmingCharacters(in: .whitespaces))
             machine.timeShortRotations = timeShort
             machine.machineTypeRaw = inferredType.rawValue
             machine.probability = probability
             machine.border = border
             machine.countPerRound = cPerRound
             machine.manufacturer = manufacturerStr.trimmingCharacters(in: .whitespaces)
+            machine.ltFromNormal = ltFromNormal
             machine.heso_prizes = hesoStr
             machine.denchu_prizes = denchuStr
             modelContext.insert(machine)
@@ -877,6 +919,76 @@ struct MachineEditView: View, Equatable {
         if let v = Double(s) { return v }
         let numStr = s.filter { $0.isNumber || $0 == "." || $0 == "-" }
         return Double(numStr) ?? 0
+    }
+    
+    private var dmmMachineURL: URL? {
+        let id = dmmMachineID.trimmingCharacters(in: .whitespaces)
+        guard !id.isEmpty else { return nil }
+        return URL(string: "https://p-town.dmm.com/machines/\(id)")
+    }
+    
+    @ViewBuilder
+    private var dmmSwipePanel: some View {
+        let handleHeight: CGFloat = 44
+        let maxHeight: CGFloat = 360
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white.opacity(0.95))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("DMMぱちタウン機種ページ")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.white.opacity(0.98))
+                    if dmmMachineURL == nil {
+                        Text("機種ID未連携のため表示できません")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.7))
+                    } else {
+                        Text("スワイプでブラウザを開閉します（再読み込みなし）")
+                            .font(.caption)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                }
+                Spacer()
+                Image(systemName: isDMMPanelExpanded ? "chevron.down" : "chevron.up")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white.opacity(0.95))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 5)
+                    .onEnded { value in
+                        if value.translation.height < -40 {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                isDMMPanelExpanded = true
+                            }
+                        } else if value.translation.height > 40 {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                isDMMPanelExpanded = false
+                            }
+                        }
+                    }
+            )
+            
+            if let url = dmmMachineURL {
+                InAppWebView(url: url)
+                    .frame(height: isDMMPanelExpanded ? maxHeight - handleHeight : 0)
+                    .clipped()
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .background(Color.black.opacity(0.92))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
+        )
+        .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
     }
 }
 

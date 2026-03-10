@@ -10,6 +10,7 @@ struct PowerSavingModeView: View {
     let onExit: () -> Void
     let onOpenRush: () -> Void
     let onOpenNormal: () -> Void
+    var onOpenLt: (() -> Void)? = nil
 
     @State private var ripplePoint: CGPoint?
     @State private var rippleScale: CGFloat = 0.3
@@ -68,7 +69,7 @@ struct PowerSavingModeView: View {
                     mainActionRow(geo: geo, totalWidth: w, totalHeight: mainH)
                     .frame(maxHeight: .infinity)
 
-                    // 下部: RUSH / 通常（画面内に必ず収める）
+                    // 下部: RUSH / LT（ltFromNormal時） / 通常（画面内に必ず収める）
                     HStack(spacing: 0) {
                         Button(action: {
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -82,6 +83,21 @@ struct PowerSavingModeView: View {
                         .buttonStyle(.plain)
                         .background(AppGlassStyle.rushColor.opacity(0.2))
                         .overlay(RoundedRectangle(cornerRadius: 0).stroke(AppGlassStyle.rushColor.opacity(0.6), lineWidth: 1))
+
+                        if log.selectedMachine.ltFromNormal, let onOpenLt = onOpenLt {
+                            Button(action: {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                onOpenLt()
+                            }) {
+                                Text("LT")
+                                    .font(.system(size: 20, weight: .bold, design: .monospaced))
+                                    .foregroundColor(AppGlassStyle.ltColor)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            }
+                            .buttonStyle(.plain)
+                            .background(AppGlassStyle.ltColor.opacity(0.2))
+                            .overlay(RoundedRectangle(cornerRadius: 0).stroke(AppGlassStyle.ltColor.opacity(0.6), lineWidth: 1))
+                        }
 
                         Button(action: {
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -133,6 +149,7 @@ struct PowerSavingModeView: View {
                 HStack(spacing: 12) {
                     row(label: "RUSH", value: "\(log.rushWinCount)回")
                     row(label: "通常", value: "\(log.normalWinCount)回")
+                    row(label: "LT", value: "\(log.ltWinCount)回")
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

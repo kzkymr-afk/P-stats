@@ -66,6 +66,7 @@ struct ChainResultInputView: View {
             }
         }
         .font(.system(size: 15, weight: .medium, design: .monospaced))
+        .keyboardDismissToolbar()
     }
 
     private var inputContent: some View {
@@ -108,7 +109,10 @@ struct ChainResultInputView: View {
             }
             .padding(.horizontal, 24)
 
-            Button(action: submit) {
+            Button(action: {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                submit()
+            }) {
                 Text("確定")
                     .font(.system(size: 15, weight: .semibold, design: .monospaced))
                     .foregroundColor(.black)

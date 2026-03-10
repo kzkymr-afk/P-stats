@@ -20,6 +20,7 @@ struct GameSessionEditView: View {
     @State private var normalRotations: String = ""
     @State private var rushWinCount: String = ""
     @State private var normalWinCount: String = ""
+    @State private var ltWinCount: String = ""
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
 
@@ -68,10 +69,14 @@ struct GameSessionEditView: View {
                     
                     TextField("通常回数", text: $normalWinCount)
                         .keyboardType(.numberPad)
+                    
+                    TextField("LT回数", text: $ltWinCount)
+                        .keyboardType(.numberPad)
                 }
             }
             .navigationTitle(sessionToEdit == nil ? "過去データを入力" : "履歴を編集")
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardDismissToolbar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("キャンセル") { dismiss() }
@@ -88,7 +93,7 @@ struct GameSessionEditView: View {
                             showErrorAlert = true
                             return
                         }
-                        if (Int(investmentCash) ?? 0) < 0 || (Int(holdingsInvestedBalls) ?? 0) < 0 || (Int(totalHoldings) ?? 0) < 0 || (Int(normalRotations) ?? 0) < 0 || (Int(rushWinCount) ?? 0) < 0 || (Int(normalWinCount) ?? 0) < 0 {
+                        if (Int(investmentCash) ?? 0) < 0 || (Int(holdingsInvestedBalls) ?? 0) < 0 || (Int(totalHoldings) ?? 0) < 0 || (Int(normalRotations) ?? 0) < 0 || (Int(rushWinCount) ?? 0) < 0 || (Int(normalWinCount) ?? 0) < 0 || (Int(ltWinCount) ?? 0) < 0 {
                             errorMessage = "負の数は入力できません"
                             showErrorAlert = true
                             return
@@ -112,6 +117,7 @@ struct GameSessionEditView: View {
                     normalRotations = "\(s.normalRotations)"
                     rushWinCount = "\(s.rushWinCount)"
                     normalWinCount = "\(s.normalWinCount)"
+                    ltWinCount = "\(s.ltWinCount)"
                     // holdingsInvestedBalls は厳密な復元が難しいが、totalUsedBalls から現金分を引いて近似する
                     let ballsPer1k = selectedShop.map { Double($0.ballsPerCashUnit * 2) } ?? 250.0
                     let cashBalls = Double(s.investmentCash) / 1000.0 * ballsPer1k
@@ -140,13 +146,14 @@ struct GameSessionEditView: View {
         let nRotations = Int(normalRotations) ?? 0
         let rWin = Int(rushWinCount) ?? 0
         let nWin = Int(normalWinCount) ?? 0
-        if invCash < 0 || holdBalls < 0 || tHoldings < 0 || nRotations < 0 || rWin < 0 || nWin < 0 {
+        let lWin = Int(ltWinCount) ?? 0
+        if invCash < 0 || holdBalls < 0 || tHoldings < 0 || nRotations < 0 || rWin < 0 || nWin < 0 || lWin < 0 {
             errorMessage = "負の数は入力できません"
             showErrorAlert = true
             return
         }
         
-        if invCash < 0 || holdBalls < 0 || tHoldings < 0 || nRotations < 0 || rWin < 0 || nWin < 0 {
+        if invCash < 0 || holdBalls < 0 || tHoldings < 0 || nRotations < 0 || rWin < 0 || nWin < 0 || lWin < 0 {
             errorMessage = "負の数は入力できません"
             showErrorAlert = true
             return
@@ -198,6 +205,7 @@ struct GameSessionEditView: View {
             s.theoreticalProfit = Int(round(realCost * (expectationRatio - 1)))
             s.rushWinCount = rWin
             s.normalWinCount = nWin
+            s.ltWinCount = lWin
             s.formulaBorderPer1k = formula > 0 ? formula : 0
         } else {
             // 新規
@@ -214,6 +222,7 @@ struct GameSessionEditView: View {
                 expectationRatioAtSave: expectationRatio,
                 rushWinCount: rWin,
                 normalWinCount: nWin,
+                ltWinCount: lWin,
                 formulaBorderPer1k: formula > 0 ? formula : 0
             )
             newSession.date = date

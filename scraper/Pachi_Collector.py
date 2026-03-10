@@ -1,5 +1,6 @@
 import time
 import re
+from datetime import datetime
 import requests
 from playwright.sync_api import sync_playwright
 
@@ -24,9 +25,27 @@ def run_archive_scan():
     done_set = get_done_ids()
     print(f"✅ {len(done_set)}件のデータをスキップ対象としてロードしました。")
 
-    scan_list = [
-        (2024, range(1, 13)), (2025, range(1, 13)), (2026, range(1, 4))
-    ]
+    # 当月の翌月を最新、今から4年前の同じ月まで遡る
+    now = datetime.now()
+    current_year, current_month = now.year, now.month
+    if current_month == 12:
+        end_year, end_month = current_year + 1, 1
+    else:
+        end_year, end_month = current_year, current_month + 1
+    start_year, start_month = current_year - 4, current_month
+
+    scan_list = []
+    for y in range(start_year, end_year + 1):
+        if y == start_year and y == end_year:
+            months = range(start_month, end_month + 1)
+        elif y == start_year:
+            months = range(start_month, 13)
+        elif y == end_year:
+            months = range(1, end_month + 1)
+        else:
+            months = range(1, 13)
+        scan_list.append((y, months))
+    print(f"📅 取得期間: {start_year}年{start_month}月 ～ {end_year}年{end_month}月")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
@@ -60,15 +79,17 @@ def run_archive_scan():
                         try:
                             print(f"  🚚 {m_id}: 解析中...")
                             page.goto(url, wait_until="domcontentloaded", timeout=60000)
-                            
-                            raw_html = page.evaluate("() => document.body.innerHTML")
-                            # (省略：既存の正規表現クレンジング)
+
+                            # ページ全体のHTMLを取得（表面上のテキストではなくソース）
+                            raw_html = page.content()
                             clean_html = re.sub(r'<script[\s\S]*?<\/script>', '', raw_html)
                             clean_html = re.sub(r'<style[\s\S]*?<\/style>', '', clean_html)
                             clean_html = re.sub(r'\s(?:class|id|style|data-[\w-]+|target|rel)="[^"]*"', '', clean_html)
                             clean_html = re.sub(r'\s+', ' ', clean_html).strip()
+                            if "ゲームフロー" in clean_html:
+                                clean_html = clean_html.split("ゲームフロー")[0]
 
-                            # GASへ送信
+                            # GASへ送信（HTMLを送る）
                             res = requests.post(GAS_URL, data={'text': clean_html, 'id': m_id})
                             print(f"  └ {m_id}: {res.text}")
                             

@@ -103,15 +103,19 @@ enum AppGlassStyle {
     static let cardBackground = Color.black.opacity(0.70)
     static let accent = Color(red: 0, green: 0.83, blue: 1.0)
 
-    /// RUSH／通常ボタン用（背景・枠・文字の統一）
+    /// RUSH／通常／LTボタン用（背景・枠・文字の統一）
     static let rushColor = Color.red
     static let normalColor = Color.blue
+    static let ltColor = Color(red: 0.95, green: 0.75, blue: 0.2)
     static let rushBackgroundOpacity: Double = 0.12
     static let rushStrokeOpacity: Double = 0.4
     static let normalBackgroundOpacity: Double = 0.12
     static let normalStrokeOpacity: Double = 0.4
+    static let ltBackgroundOpacity: Double = 0.12
+    static let ltStrokeOpacity: Double = 0.4
     static let rushTitleOpacity: Double = 0.95
     static let normalTitleOpacity: Double = 0.95
+    static let ltTitleOpacity: Double = 0.95
 
     /// 実質回転率とボーダーの差に応じたエッジ発光色（±0.5=白、+0.5〜+1.5=水色、+1.5超=青、-0.5〜-1.5=黄オレンジ、-1.5未満=赤）
     static func edgeGlowColor(border: Double, realRate: Double) -> Color {
@@ -134,6 +138,22 @@ enum AppGlassStyle {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+    }
+}
+
+// MARK: - キーボード・テンキー用：右上に閉じるボタンを表示（全画面で統一）
+extension View {
+    func keyboardDismissToolbar() -> some View {
+        self.toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer(minLength: 0)
+                Button("閉じる") {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+                .font(.body.weight(.medium))
+                .foregroundColor(AppGlassStyle.accent)
+            }
+        }
     }
 }
 
@@ -1361,7 +1381,7 @@ struct SettingsTabView: View {
                     // 4b. 機種マスタ（機種名・メーカー一覧の取得元URL・編集画面用）
                     settingsCard(title: "機種マスタ（名前・メーカー一覧）", icon: "list.bullet") {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("機種編集画面で「マスタから選ぶ」に表示する、機種名・メーカー一覧のJSONのURL。空なら非表示。")
+                            Text("機種編集画面で「機種を検索」に表示する、機種名・メーカー一覧のJSONのURL。空なら非表示。")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.7))
                             TextField("https://...", text: $machineMasterListURL)
@@ -1554,6 +1574,7 @@ struct SettingsTabView: View {
                 .padding(.bottom, 120)
                 }
         }
+        .keyboardDismissToolbar()
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
         .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 84) }
@@ -1938,6 +1959,7 @@ struct SessionDetailView: View {
                             detailRow(label: "実質回転率", value: String(format: "%.1f 回/千円", rotationPer1k))
                             detailRow(label: "RUSH大当たり", value: "\(session.rushWinCount) 回")
                             detailRow(label: "通常大当たり", value: "\(session.normalWinCount) 回")
+                            detailRow(label: "LT大当たり", value: "\(session.ltWinCount) 回")
                         }
                     }
                 }
@@ -2034,7 +2056,7 @@ struct HistorySessionCard: View {
                 Text("実収支 \(session.profit >= 0 ? "+" : "")\(session.profit.formattedYen) 円")
                     .font(.subheadline.monospacedDigit().weight(.medium))
                     .foregroundColor(session.profit >= 0 ? .green : .red)
-                Text("大当たり RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount)")
+                Text("大当たり RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount) LT:\(session.ltWinCount)")
                     .font(.subheadline.monospacedDigit())
                     .foregroundColor(.white.opacity(0.85))
             }
@@ -2206,6 +2228,14 @@ struct SessionEditView: View {
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
+                    Text("LT大当たり回数")
+                    Spacer()
+                    TextField("0", value: $session.ltWinCount, format: .number)
+                        .keyboardType(.numberPad)
+                        .multilineTextAlignment(.trailing)
+                }
+                .listRowBackground(AppGlassStyle.rowBackground)
+                HStack {
                     Text("交換率（円/玉）")
                     Spacer()
                     TextField("4.0", value: $session.exchangeRate, format: .number)
@@ -2254,6 +2284,7 @@ struct SessionEditView: View {
         }
         .navigationTitle("履歴を編集")
         .navigationBarTitleDisplayMode(.inline)
+        .keyboardDismissToolbar()
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
         .onAppear {

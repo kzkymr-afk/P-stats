@@ -48,7 +48,14 @@ enum PrizeStringParser {
 
     private static func parseHesoSegment(_ segment: String) -> ParsedHesoItem? {
         guard !segment.isEmpty else { return nil }
-        let winType: WinType = segment.contains("RUSH") ? .rush : .normal
+        let winType: WinType
+        if segment.contains("LT") || segment.contains("天国") {
+            winType = .lt
+        } else if segment.contains("RUSH") {
+            winType = .rush
+        } else {
+            winType = .normal
+        }
         let displayLabel = labelFromSegment(segment)
         let (rounds, balls) = extractRoundsAndBalls(segment)
         return ParsedHesoItem(displayLabel: displayLabel, rounds: rounds, balls: balls, winType: winType)

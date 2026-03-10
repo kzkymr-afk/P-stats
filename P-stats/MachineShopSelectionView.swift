@@ -492,6 +492,7 @@ struct MachineShopSelectionView: View {
             }
             .navigationTitle(gateMode ? "新規遊技" : "マイリスト")
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardDismissToolbar()
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
             .toolbar {
@@ -964,6 +965,7 @@ struct ShopEditView: View {
             }
             .navigationTitle(isNew ? "新規店舗登録" : "店舗を編集")
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardDismissToolbar()
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
             .tint(accent)

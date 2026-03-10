@@ -70,8 +70,8 @@ final class GameLog {
                 totalRotations += 1
                 normalRotations += 1
                 remaining -= 1
-            } else if currentState == .support, remainingSupportCount > 0 {
-                // 時短またはST電サポ：残り回数カウントダウン、0で通常へ（総回転数は加算しない）
+            } else if (currentState == .support || currentState == .lt), remainingSupportCount > 0 {
+                // 時短またはST電サポ（RUSH/LT）：残り回数カウントダウン、0で通常へ（総回転数は加算しない）
                 remainingSupportCount -= 1
                 remaining -= 1
                 if remainingSupportCount <= 0 {
@@ -161,6 +161,16 @@ final class GameLog {
                 supportPhaseInitialCount = 0
                 isTimeShortMode = false
             }
+        } else if type == .lt {
+            currentState = .lt
+            isTimeShortMode = false
+            if selectedMachine.isST {
+                remainingSupportCount = selectedMachine.supportLimit
+                supportPhaseInitialCount = selectedMachine.supportLimit
+            } else {
+                remainingSupportCount = 0
+                supportPhaseInitialCount = 0
+            }
         } else {
             currentState = .support
             isTimeShortMode = false
@@ -181,7 +191,7 @@ final class GameLog {
             return totalRotations
         }
         let normalSinceWin = totalRotations - lastRot
-        let supportPlayed = currentState == .support
+        let supportPlayed = (currentState == .support || currentState == .lt)
             ? (supportPhaseInitialCount - remainingSupportCount)
             : supportPhaseInitialCount
         return normalSinceWin + supportPlayed
@@ -193,6 +203,8 @@ final class GameLog {
     var rushWinCount: Int { winRecords.filter { $0.type == .rush }.count }
     /// 通常大当たり回数
     var normalWinCount: Int { winRecords.filter { $0.type == .normal }.count }
+    /// LT（上位RUSH）大当たり回数
+    var ltWinCount: Int { winRecords.filter { $0.type == .lt }.count }
     var totalUsedBalls: Int {
         let cashBalls = lendingRecords.filter { $0.type == .cash }.count * selectedShop.ballsPerCashUnit
         let holdingsBalls = lendingRecords.filter { $0.type == .holdings }.reduce(0) { $0 + ($1.balls ?? holdingsBallsPerTap) }
@@ -418,6 +430,19 @@ final class GameLog {
         isTimeShortMode = false
     }
 
+    /// フォーカスモードで「LT終了」押下時。通常へ復帰
+    func endLtAndReturnToNormal() {
+        currentState = .normal
+        remainingSupportCount = 0
+        isTimeShortMode = false
+    }
+
+    /// RUSHモードからLTモードへ切り替え（機種がRUSH→LT可のとき）
+    func switchToLtMode() {
+        currentState = .lt
+        // remainingSupportCount / supportPhaseInitialCount はそのまま
+    }
+
     /// 手動で電サポ中に切り替え（STのときは残り回数をセットしてカウントダウン開始）
     func enterSupportManually() {
         currentState = .support
@@ -581,6 +606,23 @@ final class GameLog {
         }
     }
 
+    /// 最後に記録した通常大当たりをLT大当たりに昇格させ、LTモードへ移行する
+    func promoteLastNormalToLt() {
+        if let lastNormalIndex = winRecords.lastIndex(where: { $0.type == .normal }) {
+            winRecords[lastNormalIndex].type = .lt
+        }
+        
+        currentState = .lt
+        isTimeShortMode = false
+        if selectedMachine.isST {
+            remainingSupportCount = selectedMachine.supportLimit
+            supportPhaseInitialCount = selectedMachine.supportLimit
+        } else {
+            remainingSupportCount = 0
+            supportPhaseInitialCount = 0
+        }
+    }
+
     /// 投資1件の内容を差し替え（履歴編集用・timestamp は維持）
     func replaceLendingRecord(id: UUID, type: LendingType, balls: Int?) {
         guard let index = lendingRecords.firstIndex(where: { $0.id == id }) else { return }
@@ -619,6 +661,9 @@ final class GameLog {
         winRecords = []
         lendingRecords = []
     }
+
+    /// 現在LTモード（上位RUSH）中か
+    var isLtMode: Bool { currentState == .lt }
 
     /// 続きから：永続化した状態をログに反映する。機種・店舗は呼び出し元で解決済みのものを渡す
     func applyResumableState(_ state: ResumableState, machine: Machine, shop: Shop) {

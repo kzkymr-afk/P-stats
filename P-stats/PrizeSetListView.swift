@@ -118,6 +118,7 @@ struct PrizeSetEditSheet: View {
                 }
             }
             .navigationTitle(title)
+            .keyboardDismissToolbar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("キャンセル") { onSave() }
@@ -158,6 +159,7 @@ struct PrizeSetEditSheetExisting: View {
                 }
             }
             .navigationTitle("編集")
+            .keyboardDismissToolbar()
             .onAppear {
                 name = existing.name
                 rounds = "\(existing.rounds)"

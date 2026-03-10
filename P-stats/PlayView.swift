@@ -36,7 +36,11 @@ struct PlayView: View {
     /// ドロワー「ロック解除」ハプティックを1回だけ発火する用
     @State private var didFireUnlockHaptic = false
     @State private var showRushFocusMode = false
+    @State private var showLtFocusMode = false
     @State private var showChanceMode = false
+    @State private var showRushLtChoiceSheet = false
+    /// 続きから復帰時に RUSH/LT/時短 のフルスクリーンを一度だけ自動表示したか
+    @State private var hasRestoredFocusView = false
     /// 省エネモードから大当たりを開いた場合、入力完了・RUSH終了後に省エネに戻す
     @State private var returnToPowerSavingModeAfterExit = false
     @State private var showInitialRotationCorrectSheet = false
@@ -415,6 +419,8 @@ struct PlayView: View {
                             if resolvedWinType == .rush {
                                 OrganicHaptics.playRushHeartbeat()
                                 showRushFocusMode = true
+                            } else if resolvedWinType == .lt {
+                                showLtFocusMode = true
                             } else if resolvedWinType == .normal {
                                 showChanceMode = true
                             }
@@ -437,6 +443,19 @@ struct PlayView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: showWinInputSheet)
+        .onAppear {
+            guard !hasRestoredFocusView else { return }
+            if log.currentState == .support {
+                showRushFocusMode = true
+                hasRestoredFocusView = true
+            } else if log.currentState == .lt {
+                showLtFocusMode = true
+                hasRestoredFocusView = true
+            } else if log.isTimeShortMode {
+                showChanceMode = true
+                hasRestoredFocusView = true
+            }
+        }
         .sheet(isPresented: $showSyncSheet) { SyncInputView(title: "ゲーム数同期", label: "データランプの現在表示数（自分の回転数と合わせる・回転率に反映されます）", val: $tempLampValue, focus: $focusedField, fieldType: .sync) { if let v = Int(tempLampValue) { log.syncTotalRotations(newTotal: v) }; showSyncSheet = false } }
         .sheet(isPresented: $showTrayAdjustSheet) { SyncInputView(title: "上皿精算", label: "ランプ回転数", val: $tempAdjustValue, focus: $focusedField, fieldType: .adjust) { if let v = Int(tempAdjustValue) { log.adjustForZeroTray(syncRotation: v) }; showTrayAdjustSheet = false } }
         .sheet(isPresented: $showHoldingsSyncSheet) {
@@ -509,11 +528,22 @@ struct PlayView: View {
                         showWinInputSheet = true
                         haptic(.medium)
                     }
+                },
+                onOpenLt: {
+                    returnToPowerSavingModeAfterExit = true
+                    showPowerSavingMode = false
+                    prepareWinInput(type: .lt)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                        showWinInputSheet = true
+                    }
                 }
             )
         }
         .fullScreenCover(isPresented: $showRushFocusMode) {
-            RushFocusView(log: log) {
+            RushFocusView(log: log, onSwitchToLt: {
+                showRushFocusMode = false
+                showLtFocusMode = true
+            }) {
                 showRushFocusMode = false
                 if returnToPowerSavingModeAfterExit {
                     showPowerSavingMode = true
@@ -521,8 +551,35 @@ struct PlayView: View {
                 }
             }
         }
+        .fullScreenCover(isPresented: $showLtFocusMode) {
+            LtFocusView(log: log) {
+                showLtFocusMode = false
+                if returnToPowerSavingModeAfterExit {
+                    showPowerSavingMode = true
+                    returnToPowerSavingModeAfterExit = false
+                }
+            }
+        }
         .fullScreenCover(isPresented: $showChanceMode) {
-            ChanceModeView(log: log) { showChanceMode = false }
+            ChanceModeView(log: log, onRushExit: {
+                showChanceMode = false
+                showRushFocusMode = true
+            }, onLtExit: {
+                showChanceMode = false
+                showLtFocusMode = true
+            }, onTimeShortEnd: { showChanceMode = false })
+        }
+        .confirmationDialog("RUSH / LT", isPresented: $showRushLtChoiceSheet, titleVisibility: .visible) {
+            Button("RUSH") {
+                handleWinSelection(type: .rush)
+                OrganicHaptics.playRushHeartbeat()
+            }
+            Button("LT（上位RUSH）") {
+                handleWinSelection(type: .lt)
+            }
+            Button("キャンセル", role: .cancel) { }
+        } message: {
+            Text("RUSH または LT を選んでください")
         }
         .fullScreenCover(isPresented: $showHistoryFromPlay) {
             NavigationStack {
@@ -1145,7 +1202,14 @@ struct PlayView: View {
     }
 
     private func rushButton(height: CGFloat, curveRadius: CGFloat) -> some View {
-        Button(action: { handleWinSelection(type: .rush); OrganicHaptics.playRushHeartbeat() }) {
+        Button(action: {
+            if log.selectedMachine.ltFromNormal {
+                showRushLtChoiceSheet = true
+            } else {
+                handleWinSelection(type: .rush)
+                OrganicHaptics.playRushHeartbeat()
+            }
+        }) {
             ZStack {
                 RoundedRectangle(cornerRadius: buttonCornerRadius)
                     .fill(playPanelBackground)
@@ -1243,6 +1307,7 @@ struct PlayView: View {
             expectationRatioAtSave: ratio,
             rushWinCount: log.rushWinCount,
             normalWinCount: log.normalWinCount,
+            ltWinCount: log.ltWinCount,
             formulaBorderPer1k: formulaBorder > 0 ? formulaBorder : 0
         )
         modelContext.insert(session)
@@ -1558,8 +1623,10 @@ struct WinHistoryBarChartView: View {
         .frame(height: maxHeight)
     }
 
+    private var ltColor: Color { AppGlassStyle.ltColor }
+
     private func singleBar(record: WinRecord) -> some View {
-        let color = record.type == .rush ? rushColor : normalColor
+        let color: Color = record.type == .rush ? rushColor : (record.type == .lt ? ltColor : normalColor)
         let ratio = maxRotation > 0 ? CGFloat(record.rotationAtWin) / CGFloat(maxRotation) : 0
         let height = ratio * effectiveBarHeight
 
@@ -1628,9 +1695,17 @@ struct WinInputSheetView: View {
         winType == .rush && !denchuItems.isEmpty
     }
 
+    /// LT時：denchu のうち「天国」「LT」等（isSpecial）のみ
+    private var ltItems: [ParsedDenchuItem] {
+        denchuItems.filter { $0.isSpecial }
+    }
+    private var useLtDynamic: Bool {
+        winType == .lt && !ltItems.isEmpty
+    }
+
     /// 動的ボタンも従来ボタンもないとき → カスタム当たり追加フォールバック
     private var useCustomFallback: Bool {
-        if useHesoDynamic || useDenchuDynamic { return false }
+        if useHesoDynamic || useDenchuDynamic || useLtDynamic { return false }
         if !prizeEntries.isEmpty { return false }
         return true
     }
@@ -1639,7 +1714,7 @@ struct WinInputSheetView: View {
         VStack(alignment: .leading, spacing: 0) {
             // ヘッダー：タイトル＋キャンセル（コンパクト）
             HStack {
-                Text(winType == .rush ? "RUSH大当たり" : "通常大当たり")
+                Text(winType == .lt ? "LT大当たり" : (winType == .rush ? "RUSH大当たり" : "通常大当たり"))
                     .font(.title3.weight(.bold))
                     .foregroundColor(.white)
                 Spacer()
@@ -1671,6 +1746,14 @@ struct WinInputSheetView: View {
                         } else if useDenchuDynamic {
                             VStack(spacing: 8) {
                                 ForEach(Array(denchuItems.enumerated()), id: \.element.id) { index, item in
+                                    denchuPrizeButton(item: item, isSelected: index == selectedPrizeIndex) {
+                                        selectedPrizeIndex = index
+                                    }
+                                }
+                            }
+                        } else if useLtDynamic {
+                            VStack(spacing: 8) {
+                                ForEach(Array(ltItems.enumerated()), id: \.element.id) { index, item in
                                     denchuPrizeButton(item: item, isSelected: index == selectedPrizeIndex) {
                                         selectedPrizeIndex = index
                                     }
@@ -1751,6 +1834,7 @@ struct WinInputSheetView: View {
         .background(AppGlassStyle.background)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.15), lineWidth: 1))
+        .keyboardDismissToolbar()
         .alert("入力エラー", isPresented: $showErrorAlert) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -1837,6 +1921,7 @@ struct WinInputSheetView: View {
     }
 
     private func confirmAction() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         if rotation.trimmingCharacters(in: .whitespaces).isEmpty {
             errorMessage = "回転数を入力してください"
             showErrorAlert = true
@@ -1868,6 +1953,12 @@ struct WinInputSheetView: View {
             let r = item.rounds ?? machine.defaultRoundsPerHit
             let b = item.balls ?? machine.defaultPrize
             prizeBalls = machine.netBallsForPrize(rounds: r, payoutBalls: b)
+        } else if useLtDynamic, selectedPrizeIndex < ltItems.count {
+            resolvedWinType = .lt
+            let item = ltItems[selectedPrizeIndex]
+            let r = item.rounds ?? machine.defaultRoundsPerHit
+            let b = item.balls ?? machine.defaultPrize
+            prizeBalls = machine.netBallsForPrize(rounds: r, payoutBalls: b)
         } else if !prizeEntries.isEmpty, selectedPrizeIndex < prizeEntries.count {
             let entry = prizeEntries[selectedPrizeIndex]
             prizeBalls = machine.netBallsForPrize(rounds: entry.rounds, payoutBalls: entry.balls)
@@ -1885,6 +1976,7 @@ struct SyncInputView: View {
             Text(title).bold(); Text(label).font(.caption).foregroundColor(.gray)
             TextField("", text: $val).keyboardType(.numberPad).textFieldStyle(.roundedBorder).multilineTextAlignment(.center).font(.largeTitle).focused(focus, equals: fieldType)
             Button("確定") {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                 if let v = Int(val), v < 0 {
                     showErrorAlert = true
                 } else {
@@ -1895,6 +1987,7 @@ struct SyncInputView: View {
             Spacer()
         }
         .padding()
+        .keyboardDismissToolbar()
         .onAppear { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { focus.wrappedValue = fieldType } }
         .presentationDetents([.height(280)])
         .alert("入力エラー", isPresented: $showErrorAlert) {
@@ -1933,6 +2026,7 @@ struct WinCountCorrectView: View {
                     .multilineTextAlignment(.center)
             }
             Button("確定") {
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                 if let r = Int(rushCount), r < 0 {
                     showErrorAlert = true
                     return
@@ -1947,6 +2041,7 @@ struct WinCountCorrectView: View {
             Spacer()
         }
         .padding()
+        .keyboardDismissToolbar()
         .presentationDetents([.height(320)])
         .alert("入力エラー", isPresented: $showErrorAlert) {
             Button("OK", role: .cancel) { }

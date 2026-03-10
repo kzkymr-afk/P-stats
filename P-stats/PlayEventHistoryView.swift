@@ -38,6 +38,7 @@ struct PlayEventHistoryView: View {
             }
             .navigationTitle("大当たり・投資履歴")
             .navigationBarTitleDisplayMode(.inline)
+            .keyboardDismissToolbar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("閉じる") {
@@ -147,12 +148,14 @@ struct PlayEventHistoryView: View {
                 }
                 .navigationTitle("大当たりを編集")
                 .navigationBarTitleDisplayMode(.inline)
+                .keyboardDismissToolbar()
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("キャンセル") { editWinId = nil }
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("完了") {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             if let r = Int(editRotation), let p = Int(editPrize), r >= 0, p >= 0 {
                                 log.updateWinRotation(id: winId, rotationAtWin: r)
                                 log.updatePrize(id: winId, newPrize: p)
@@ -192,12 +195,14 @@ struct PlayEventHistoryView: View {
                 }
                 .navigationTitle("投資を編集")
                 .navigationBarTitleDisplayMode(.inline)
+                .keyboardDismissToolbar()
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("キャンセル") { editLendingId = nil }
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("完了") {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                             let balls: Int? = editLendingType == .holdings ? Int(editLendingBalls).map { max(0, $0) } : nil
                             log.replaceLendingRecord(id: lendingId, type: editLendingType, balls: balls ?? (editLendingType == .holdings ? 125 : nil))
                             editLendingId = nil

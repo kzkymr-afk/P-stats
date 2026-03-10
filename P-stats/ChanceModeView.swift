@@ -1,10 +1,12 @@
 import SwiftUI
 import SwiftData
 
-/// 通常大当たり後のチャンスモード：フォーカスモードに準じた構成。上3/8＝折れ線、1/8＝履歴、下1/2＝左2/3 RUSH・右1/3 時短終了
+/// 通常大当たり後のチャンスモード：フォーカスモードに準じた構成。上3/8＝折れ線、1/8＝履歴、下1/2＝左2/3 RUSH・右1/3 昇格/時短終了
 struct ChanceModeView: View {
     @Bindable var log: GameLog
-    let onExit: () -> Void
+    var onRushExit: () -> Void
+    var onLtExit: () -> Void
+    var onTimeShortEnd: () -> Void
 
     private let accent = AppGlassStyle.accent
     private let bg = AppGlassStyle.background
@@ -82,13 +84,13 @@ struct ChanceModeView: View {
                         .buttonStyle(.plain)
                         .frame(maxWidth: .infinity)
 
-                        // 右半分: 上下2分割
+                        // 右半分: RUSH昇格 / LT昇格（hasLT時） / 時短終了
                         VStack(spacing: 6) {
                             // 上: RUSH昇格
                             Button(action: {
                                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                 log.promoteLastNormalToRush()
-                                onExit() // RUSH view へ移行
+                                onRushExit()
                             }) {
                                 ZStack {
                                     AppGlassStyle.cardBackground
@@ -106,11 +108,34 @@ struct ChanceModeView: View {
                             }
                             .buttonStyle(.plain)
 
+                            if log.selectedMachine.hasLT {
+                                Button(action: {
+                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                    log.promoteLastNormalToLt()
+                                    onLtExit()
+                                }) {
+                                    ZStack {
+                                        AppGlassStyle.cardBackground
+                                        HStack(spacing: 6) {
+                                            Text("LT")
+                                                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                            Text("昇格")
+                                                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                        }
+                                        .foregroundColor(AppGlassStyle.ltColor)
+                                    }
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltStrokeOpacity), lineWidth: 1))
+                                }
+                                .buttonStyle(.plain)
+                            }
+
                             // 下: 時短終了
                             Button(action: {
                                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                 log.endTimeShortAndReturnToNormal()
-                                onExit()
+                                onTimeShortEnd()
                             }) {
                                 ZStack {
                                     AppGlassStyle.cardBackground

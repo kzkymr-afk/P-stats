@@ -1090,7 +1090,7 @@ private struct AnalyticsSessionCardView: View {
                 Text("実収支 \(session.profit >= 0 ? "+" : "")\(session.profit.formattedYen) 円")
                     .font(.subheadline.monospacedDigit().weight(.medium))
                     .foregroundColor(session.profit >= 0 ? .green : .red)
-                Text("大当たり RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount)")
+                Text("大当たり RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount) LT:\(session.ltWinCount)")
                     .font(.subheadline.monospacedDigit())
                     .foregroundColor(.white.opacity(0.85))
             }
@@ -1187,7 +1187,7 @@ private struct AnalyticsSessionDetailView: View {
             }
             Section("数値サマリ") {
                 LabeledContent("総回転数", value: "\(session.normalRotations)").listRowBackground(AnalyticsPanelStyle.rowBackground)
-                LabeledContent("大当たり", value: "RUSH: \(session.rushWinCount) / 通常: \(session.normalWinCount)").listRowBackground(AnalyticsPanelStyle.rowBackground)
+                LabeledContent("大当たり", value: "RUSH: \(session.rushWinCount) / 通常: \(session.normalWinCount) / LT: \(session.ltWinCount)").listRowBackground(AnalyticsPanelStyle.rowBackground)
                 LabeledContent("総投資額（現金）", value: "\(session.investmentCash.formattedYen) 円").listRowBackground(AnalyticsPanelStyle.rowBackground)
                 LabeledContent("回収出球", value: "\(session.totalHoldings) 玉").listRowBackground(AnalyticsPanelStyle.rowBackground)
                 LabeledContent("回収額（円換算）", value: "\(recoveryYen.formattedYen) 円").listRowBackground(AnalyticsPanelStyle.rowBackground)
