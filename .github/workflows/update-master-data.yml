@@ -7,6 +7,8 @@ on:
   workflow_dispatch:  # 手動実行用（Actions タブから「Run workflow」）
 
 env:
+  # Node.js 20 非推奨に備え、JavaScript アクションを Node.js 24 で実行する（2026年6月以降のデフォルトに先行対応）
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   # スクリプトの書き込み先を明示（リポジトリルートの machines.json に確実に書く）
   MACHINES_JSON_PATH: ${{ github.workspace }}/machines.json
 
@@ -45,9 +47,8 @@ jobs:
         run: |
           git add "$MACHINES_JSON_PATH"
           if git diff --staged --quiet; then
-            echo "::error::machines.json に変更がありません。取得データが既存と同一か、スプレッドシートの取得に失敗している可能性があります。"
-            echo "現在の取得件数: $(python -c "import json; d=json.load(open('$MACHINES_JSON_PATH')); print(len(d))")"
-            exit 1
+            echo "machines.json に変更がありません（取得件数: $(python -c "import json; d=json.load(open('$MACHINES_JSON_PATH')); print(len(d))")）。スプレッドシートが未更新のためコミットはスキップします。"
+            exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
