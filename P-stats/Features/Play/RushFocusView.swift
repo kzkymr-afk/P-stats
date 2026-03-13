@@ -71,7 +71,7 @@ struct RushFocusView: View {
             }
         }
         .sheet(isPresented: $showRushEndSheet) {
-            RushEndInputSheet(log: log, onConfirm: {
+            RushEndInputSheet(log: log, machineDetail: machineDetail, onConfirm: {
                 showRushEndSheet = false
                 log.endRushAndReturnToNormal()
                 onExit()
@@ -159,6 +159,7 @@ struct RushFocusView: View {
     private func profitLineChartView(height: CGFloat, availableWidth: CGFloat = .infinity) -> some View {
         let safeHeight: CGFloat = (height.isFinite && height > 0) ? height : 44
         let chartH: CGFloat = max(1, safeHeight - 44)
+        let safeChartH: CGFloat = (chartH.isFinite && chartH > 0) ? chartH : 1
         let totalRot = log.normalRotations
         let leftRot = totalRot > 1000 ? ((totalRot - 1) / 100) * 100 : 0
         let rightRot = leftRot + 1000
@@ -172,13 +173,13 @@ struct RushFocusView: View {
         let minY = (rawMinY - 200).roundedRush(downTo: 1000)
         let maxY = (rawMaxY + 200).roundedRush(upTo: 1000)
         let yRange = max(maxY - minY, 1000.0)
-        let axisLabelWidth: CGFloat = min(54, (availableWidth.isFinite ? availableWidth : 300) * 0.14)
+        let axisLabelWidth: CGFloat = max(1, min(54, (availableWidth.isFinite && availableWidth > 0 ? availableWidth : 300) * 0.14))
 
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Image(systemName: "chart.line.uptrend.xyaxis")
                     .font(.system(size: 14, weight: .bold))
-                Text("収支グラフ")
+                Text("成績グラフ")
                     .font(.system(size: 14, weight: .bold, design: .default))
             }
             .foregroundColor(accent.opacity(0.9))
@@ -189,23 +190,23 @@ struct RushFocusView: View {
                 // 縦軸ラベル
                 ZStack(alignment: .trailing) {
                     ForEach(yAxisLabelValuesRush(minY: minY, maxY: maxY), id: \.self) { yVal in
-                        let y = chartH - CGFloat((Double(yVal) - minY) / yRange) * chartH
+                        let y = safeChartH - CGFloat((Double(yVal) - minY) / yRange) * safeChartH
                         Text(yAxisLabelStringRush(yVal))
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                             .foregroundColor(accent.opacity(0.8))
                             .position(x: axisLabelWidth - 6, y: y)
                     }
                 }
-                .frame(width: axisLabelWidth, height: max(1, chartH))
+                .frame(width: axisLabelWidth, height: safeChartH)
                 
                 Rectangle()
                     .fill(accent.opacity(0.3))
-                    .frame(width: 1, height: max(1, chartH))
+                    .frame(width: 1, height: safeChartH)
                 
                 ZStack(alignment: .center) {
                     Rectangle()
                         .fill(AppGlassStyle.rowBackground)
-                        .frame(height: max(1, chartH))
+                        .frame(height: safeChartH)
                     
                     GeometryReader { g in
                         let w = max(1, g.size.width)
@@ -298,13 +299,13 @@ struct RushFocusView: View {
                             }
                         }
                     }
-                    .frame(height: max(1, chartH))
+                    .frame(height: safeChartH)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: max(1, chartH))
+                .frame(height: safeChartH)
                 Spacer(minLength: 0)
             }
-            .frame(height: max(1, chartH))
+            .frame(height: safeChartH)
             
             // 横軸ラベル（回転数）
             HStack(spacing: 0) {
@@ -372,34 +373,44 @@ struct RushFocusView: View {
     }
 }
 
-// MARK: - RUSH終了入力（獲得出玉＋終了時回転数）
+// MARK: - RUSH終了入力（獲得出玉＋終了時回転数＋RUSHのゲーム数）
 private struct RushEndInputSheet: View {
     @Bindable var log: GameLog
+    var machineDetail: MachineDetail? = nil
     let onConfirm: () -> Void
     let onCancel: () -> Void
 
     @State private var payoutText: String = ""
     @State private var selectedRotation: Int
+    @State private var selectedRushGames: Int
     @FocusState private var payoutFocused: Bool
 
-    private var rotationOptions: [Int] {
-        let support = log.selectedMachine.supportLimit
-        let common = [50, 100, 150, 200, 250, 300, 500]
-        let set = Set(common + [support])
-        return set.sorted()
+    private static let commonRotations = [50, 100, 150, 200, 250, 300, 500]
+
+    /// 終了時回転数・RUSHゲーム数の選択肢。JSONのRUSHモード bonuses の densapo を重複除いてソート。なければ機種の supportLimit + 共通値
+    private var stBasedOptions: [Int] {
+        let fallback = Set(Self.commonRotations + [log.selectedMachine.supportLimit]).sorted()
+        guard let rushMode = machineDetail?.modes.first(where: { $0.modeId == 1 }) else { return fallback }
+        let fromJson = Set(rushMode.bonuses.map(\.densapo).filter { $0 > 0 })
+        if fromJson.isEmpty { return fallback }
+        return (fromJson.union(Set(Self.commonRotations))).sorted()
     }
 
-    init(log: GameLog, onConfirm: @escaping () -> Void, onCancel: @escaping () -> Void) {
+    init(log: GameLog, machineDetail: MachineDetail? = nil, onConfirm: @escaping () -> Void, onCancel: @escaping () -> Void) {
         self.log = log
+        self.machineDetail = machineDetail
         self.onConfirm = onConfirm
         self.onCancel = onCancel
-        _selectedRotation = State(initialValue: log.selectedMachine.supportLimit)
+        let support = log.selectedMachine.supportLimit
+        _selectedRotation = State(initialValue: support)
+        _selectedRushGames = State(initialValue: support)
     }
 
     private var payoutValue: Int? { Int(payoutText.trimmingCharacters(in: .whitespaces)) }
     private var canConfirm: Bool { payoutValue != nil && (payoutValue ?? 0) >= 0 }
 
     var body: some View {
+        let options = stBasedOptions
         NavigationStack {
             Form {
                 Section {
@@ -414,7 +425,7 @@ private struct RushEndInputSheet: View {
 
                 Section {
                     Picker("終了時回転数", selection: $selectedRotation) {
-                        ForEach(rotationOptions, id: \.self) { rot in
+                        ForEach(options, id: \.self) { rot in
                             Text("\(rot) 回").tag(rot)
                         }
                     }
@@ -422,7 +433,20 @@ private struct RushEndInputSheet: View {
                 } header: {
                     Text("RUSH終了時の回転数")
                 } footer: {
-                    Text("マスターで複数ある場合はここで選択。元データはマスターに入力しておきます。")
+                    Text("データランプの表示に合わせて選択。マスターのST回数が選択肢になります。")
+                }
+
+                Section {
+                    Picker("RUSHのゲーム数", selection: $selectedRushGames) {
+                        ForEach(options, id: \.self) { games in
+                            Text("\(games) ゲーム").tag(games)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                } header: {
+                    Text("RUSHのゲーム数")
+                } footer: {
+                    Text("このRUSHで遊んだ総ゲーム数（時短抜け含む）。マスターのST回数から選ぶか、近い値を選んでください。")
                 }
             }
             .navigationTitle("RUSH終了")
@@ -434,13 +458,22 @@ private struct RushEndInputSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("確定") {
                         let total = payoutValue ?? 0
-                        log.fixTotalChainPrize(finalTotal: total, rotationAtEnd: selectedRotation)
+                        log.fixTotalChainPrize(finalTotal: total, rotationAtEnd: selectedRotation, rushGamesPlayed: selectedRushGames)
                         onConfirm()
                     }
                     .disabled(!canConfirm)
                 }
             }
             .keyboardDismissToolbar()
+            .onAppear {
+                if options.isEmpty { return }
+                if selectedRushGames <= 0 || !options.contains(selectedRushGames) {
+                    selectedRushGames = options.first ?? log.selectedMachine.supportLimit
+                }
+                if selectedRotation <= 0 || !options.contains(selectedRotation) {
+                    selectedRotation = options.first ?? log.selectedMachine.supportLimit
+                }
+            }
         }
     }
 }
@@ -584,6 +617,7 @@ struct LtFocusView: View {
     private func profitLineChartView(height: CGFloat, availableWidth: CGFloat = .infinity) -> some View {
         let safeHeight: CGFloat = (height.isFinite && height > 0) ? height : 44
         let chartH: CGFloat = max(1, safeHeight - 44)
+        let safeChartH: CGFloat = (chartH.isFinite && chartH > 0) ? chartH : 1
         let totalRot = log.normalRotations
         let leftRot = totalRot > 1000 ? ((totalRot - 1) / 100) * 100 : 0
         let rightRot = leftRot + 1000
@@ -597,13 +631,13 @@ struct LtFocusView: View {
         let minY = (rawMinY - 200).roundedRush(downTo: 1000)
         let maxY = (rawMaxY + 200).roundedRush(upTo: 1000)
         let yRange = max(maxY - minY, 1000.0)
-        let axisLabelWidth: CGFloat = min(54, (availableWidth.isFinite ? availableWidth : 300) * 0.14)
+        let axisLabelWidth: CGFloat = max(1, min(54, (availableWidth.isFinite && availableWidth > 0 ? availableWidth : 300) * 0.14))
 
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Image(systemName: "chart.line.uptrend.xyaxis")
                     .font(.system(size: 14, weight: .bold))
-                Text("収支グラフ")
+                Text("成績グラフ")
                     .font(.system(size: 14, weight: .bold, design: .default))
             }
             .foregroundColor(accent.opacity(0.9))
@@ -613,21 +647,21 @@ struct LtFocusView: View {
                 Spacer(minLength: 0)
                 ZStack(alignment: .trailing) {
                     ForEach(yAxisLabelValuesLt(minY: minY, maxY: maxY), id: \.self) { yVal in
-                        let y = chartH - CGFloat((Double(yVal) - minY) / yRange) * chartH
+                        let y = safeChartH - CGFloat((Double(yVal) - minY) / yRange) * safeChartH
                         Text(yAxisLabelStringLt(yVal))
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                             .foregroundColor(accent.opacity(0.8))
                             .position(x: axisLabelWidth - 6, y: y)
                     }
                 }
-                .frame(width: axisLabelWidth, height: max(1, chartH))
+                .frame(width: axisLabelWidth, height: safeChartH)
                 Rectangle()
                     .fill(accent.opacity(0.3))
-                    .frame(width: 1, height: max(1, chartH))
+                    .frame(width: 1, height: safeChartH)
                 ZStack(alignment: .center) {
                     Rectangle()
                         .fill(AppGlassStyle.rowBackground)
-                        .frame(height: max(1, chartH))
+                        .frame(height: safeChartH)
                     GeometryReader { g in
                         let w = max(1, g.size.width)
                         let h = max(1, g.size.height)
@@ -708,13 +742,13 @@ struct LtFocusView: View {
                             }
                         }
                     }
-                    .frame(height: max(1, chartH))
+                    .frame(height: safeChartH)
                 }
                 .frame(maxWidth: .infinity)
-                .frame(height: max(1, chartH))
+                .frame(height: safeChartH)
                 Spacer(minLength: 0)
             }
-            .frame(height: max(1, chartH))
+            .frame(height: safeChartH)
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
                 HStack(spacing: 0) {

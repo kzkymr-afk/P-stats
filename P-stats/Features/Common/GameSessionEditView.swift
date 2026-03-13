@@ -53,7 +53,7 @@ struct GameSessionEditView: View {
                     TextField("通常回転数", text: $normalRotations)
                         .keyboardType(.numberPad)
                     
-                    TextField("現金投資 (円)", text: $investmentCash)
+                    TextField("投入 (pt)", text: $investmentCash)
                         .keyboardType(.numberPad)
                     
                     TextField("持ち玉投資 (玉)", text: $holdingsInvestedBalls)
@@ -63,7 +63,7 @@ struct GameSessionEditView: View {
                         .keyboardType(.numberPad)
                 }
                 
-                Section("大当たり回数") {
+                Section("当選回数") {
                     TextField("RUSH回数", text: $rushWinCount)
                         .keyboardType(.numberPad)
                     
@@ -112,7 +112,7 @@ struct GameSessionEditView: View {
                     date = s.date
                     selectedMachine = machines.first(where: { $0.name == s.machineName })
                     selectedShop = shops.first(where: { $0.name == s.shopName })
-                    investmentCash = "\(s.investmentCash)"
+                    investmentCash = "\(s.inputCash)"
                     totalHoldings = "\(s.totalHoldings)"
                     normalRotations = "\(s.normalRotations)"
                     rushWinCount = "\(s.rushWinCount)"
@@ -120,7 +120,7 @@ struct GameSessionEditView: View {
                     ltWinCount = "\(s.ltWinCount)"
                     // holdingsInvestedBalls は厳密な復元が難しいが、totalUsedBalls から現金分を引いて近似する
                     let ballsPer1k = selectedShop.map { Double($0.ballsPerCashUnit * 2) } ?? 250.0
-                    let cashBalls = Double(s.investmentCash) / 1000.0 * ballsPer1k
+                    let cashBalls = Double(s.inputCash) / 1000.0 * ballsPer1k
                     let hBalls = max(0, Int(Double(s.totalUsedBalls) - cashBalls))
                     holdingsInvestedBalls = "\(hBalls)"
                 }
@@ -160,7 +160,7 @@ struct GameSessionEditView: View {
         }
 
         // 計算ロジック
-        let rate = shop.exchangeRate
+        let rate = shop.payoutCoefficient
         let realCost = Double(invCash) + Double(holdBalls) * rate
         let ballsPer1000 = Double(shop.ballsPerCashUnit * 2)
         let cashUnits = ballsPer1000 > 0 ? Double(invCash) * ballsPer1000 / 250000.0 : Double(invCash) / 1000.0
@@ -195,14 +195,14 @@ struct GameSessionEditView: View {
             s.machineName = machine.name
             s.shopName = shop.name
             s.manufacturerName = machine.manufacturer
-            s.investmentCash = invCash
+            s.inputCash = invCash
             s.totalHoldings = tHoldings
             s.normalRotations = nRotations
             s.totalUsedBalls = totalUsedBalls
-            s.exchangeRate = rate
+            s.payoutCoefficient = rate
             s.totalRealCost = realCost
             s.expectationRatioAtSave = expectationRatio
-            s.theoreticalProfit = Int(round(realCost * (expectationRatio - 1)))
+            s.theoreticalValue = Int(round(realCost * (expectationRatio - 1)))
             s.rushWinCount = rWin
             s.normalWinCount = nWin
             s.ltWinCount = lWin
@@ -213,11 +213,11 @@ struct GameSessionEditView: View {
                 machineName: machine.name,
                 shopName: shop.name,
                 manufacturerName: machine.manufacturer,
-                investmentCash: invCash,
+                inputCash: invCash,
                 totalHoldings: tHoldings,
                 normalRotations: nRotations,
                 totalUsedBalls: totalUsedBalls,
-                exchangeRate: rate,
+                payoutCoefficient: rate,
                 totalRealCost: realCost,
                 expectationRatioAtSave: expectationRatio,
                 rushWinCount: rWin,

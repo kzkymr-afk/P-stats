@@ -249,8 +249,8 @@ enum AnalyticsEngine {
             if s.totalRealCost > 0 {
                 sumRate += (Double(s.normalRotations) / s.totalRealCost) * 1000.0
             }
-            sumTheoretical += s.theoreticalProfit
-            sumProfit += s.profit
+            sumTheoretical += s.theoreticalValue
+            sumProfit += s.performance
             if s.expectationRatioAtSave > 0 {
                 sumRatio += s.expectationRatioAtSave
                 ratioCount += 1
@@ -290,8 +290,8 @@ enum AnalyticsEngine {
         var cumTheoretical = 0
         return sortedKeys.map { key in
             let list = byMonth[key] ?? []
-            cumProfit += list.reduce(0) { $0 + $1.profit }
-            cumTheoretical += list.reduce(0) { $0 + $1.theoreticalProfit }
+            cumProfit += list.reduce(0) { $0 + $1.performance }
+            cumTheoretical += list.reduce(0) { $0 + $1.theoreticalValue }
             return (month: key, cumulativeProfit: cumProfit, cumulativeTheoretical: cumTheoretical)
         }
     }

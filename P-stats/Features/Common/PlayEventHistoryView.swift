@@ -82,7 +82,7 @@ struct PlayEventHistoryView: View {
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
             Spacer()
             if record.type == .cash {
-                Text("500円")
+                Text("500pt")
                     .font(.system(size: 12, design: .monospaced))
                     .foregroundColor(.secondary)
             } else {

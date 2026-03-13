@@ -172,7 +172,7 @@ struct ChanceModeView: View {
             HStack(spacing: 6) {
                 Image(systemName: "chart.line.uptrend.xyaxis")
                     .font(.system(size: 14, weight: .bold))
-                Text("収支グラフ")
+                Text("成績グラフ")
                     .font(.system(size: 14, weight: .bold, design: .default))
             }
             .foregroundColor(accent.opacity(0.9))

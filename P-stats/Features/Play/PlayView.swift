@@ -311,7 +311,7 @@ struct PlayView: View {
                             tempInitialRotationCorrect = "\(log.initialDisplayRotation)"
                             showInitialRotationCorrectSheet = true
                         }, onCorrectCash: {
-                            tempCashCorrect = "\(log.investment)"
+                            tempCashCorrect = "\(log.totalInput)"
                             showCashCorrectSheet = true
                         }, onCorrectHoldings: {
                             tempHoldingsCorrectValue = "\(log.holdingsInvestedBalls)"
@@ -372,6 +372,7 @@ struct PlayView: View {
             }
         }
         .ignoresSafeArea(edges: .all)
+        .keyboardDismissToolbar()
         // --- シート類 ---
         .sheet(isPresented: $showSettingsSheet) {
             MachineShopSelectionView(log: log)
@@ -487,9 +488,9 @@ struct PlayView: View {
             }
         }
         .sheet(isPresented: $showCashCorrectSheet) {
-            SyncInputView(title: "現金投資修正", label: "総現金投資額（円・500円単位で記録されます）", val: $tempCashCorrect, focus: $focusedField, fieldType: .adjust) {
+            SyncInputView(title: "投入修正", label: "総投入額（pt・500pt単位で記録されます）", val: $tempCashCorrect, focus: $focusedField, fieldType: .adjust) {
                 if let v = Int(tempCashCorrect) {
-                    log.setCashInvestment(yen: v)
+                    log.setCashInput(pt: v)
                 }
                 showCashCorrectSheet = false
             }
@@ -514,7 +515,7 @@ struct PlayView: View {
             BonusMonitorView(
                 machine: log.selectedMachine,
                 ballsPer1000: Double(log.selectedShop.ballsPerCashUnit * 2),
-                exchangeRate: log.selectedShop.exchangeRate
+                payoutCoefficient: log.selectedShop.payoutCoefficient
             ) { val in
                 log.adjustedNetPerRound = val
                 showBonusMonitor = false
@@ -597,7 +598,7 @@ struct PlayView: View {
             ChainResultInputView(
                 machine: log.selectedMachine,
                 ballsPer1000: Double(log.selectedShop.ballsPerCashUnit * 2),
-                exchangeRate: log.selectedShop.exchangeRate,
+                payoutCoefficient: log.selectedShop.payoutCoefficient,
                 totalRealCost: log.totalRealCost,
                 normalRotations: log.normalRotations,
                 onDismiss: { showChainResult = false; isBonusStandby = false },
@@ -833,7 +834,7 @@ struct PlayView: View {
                 formulaBorderLabel: log.dynamicBorder > 0 ? String(format: "%.1f", log.dynamicBorder) : "—",
                 accent: focusAccent
             )
-            .id("\(log.normalRotations)-\(log.investment)-\(log.holdingsInvestedBalls)-\(gaugeRefreshId)")
+            .id("\(log.normalRotations)-\(log.totalInput)-\(log.holdingsInvestedBalls)-\(gaugeRefreshId)")
             .frame(width: meterR * 2, height: height)
             .background(playPanelBackground)
             .clipShape(RoundedRectangle(cornerRadius: infoPanelCornerRadius))
@@ -859,10 +860,10 @@ struct PlayView: View {
                 infoStatPanel {
                     HStack {
                         HStack(spacing: 4) {
-                            Text("期待値")
+                            Text("理論値")
                                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                                 .foregroundColor(focusAccent.opacity(0.7))
-                            InfoIconView(explanation: "実質回転率÷実戦ボーダー。1.0でボーダー、1.0超で期待値プラス。", tint: focusAccent.opacity(0.6))
+                            InfoIconView(explanation: "実質回転率÷実戦基準値。1.0で基準、1.0超で理論値プラス。", tint: focusAccent.opacity(0.6))
                         }
                         Spacer()
                         Text(log.dynamicBorder > 0 && log.effectiveUnitsForBorder > 0 ? String(format: "%.2f%%", log.expectationRatio * 100) : "—")
@@ -874,11 +875,11 @@ struct PlayView: View {
                 }
                 infoStatPanel {
                     HStack {
-                        Text("総現金投資")
+                        Text("総投入")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(focusAccent.opacity(0.7))
                         Spacer()
-                        Text("\(log.investment.formattedYen)円")
+                        Text(log.totalInput.formattedPtWithUnit)
                             .font(.system(size: 16, weight: .bold, design: .monospaced))
                             .foregroundColor(focusAccent)
                     }
@@ -963,7 +964,7 @@ struct PlayView: View {
                         content: {
                             VStack(spacing: 4) {
                                 Text("現金").font(.system(size: 18, weight: .bold, design: .monospaced)).foregroundColor(.red.opacity(0.95))
-                                Text("500円").font(.system(size: 14, weight: .medium, design: .monospaced)).foregroundColor(.red.opacity(0.9))
+                                Text("500pt").font(.system(size: 14, weight: .medium, design: .monospaced)).foregroundColor(.red.opacity(0.9))
                             }
                         },
                         onTap: { log.addLending(type: .cash); haptic(.medium); triggerRipple() },
@@ -990,7 +991,7 @@ struct PlayView: View {
                     content: {
                         VStack(spacing: 4) {
                             Text("現金").font(.system(size: 18, weight: .bold, design: .monospaced)).foregroundColor(.red.opacity(0.95))
-                            Text("500円").font(.system(size: 14, weight: .medium, design: .monospaced)).foregroundColor(.red.opacity(0.9))
+                            Text("500pt").font(.system(size: 14, weight: .medium, design: .monospaced)).foregroundColor(.red.opacity(0.9))
                         }
                     },
                     onTap: { log.addLending(type: .cash); haptic(.medium); triggerRipple() },
@@ -1110,7 +1111,7 @@ struct PlayView: View {
         .padding(.bottom, bottomPadding + geo.safeAreaInsets.bottom)
         .confirmationDialog("実戦を終了", isPresented: $showEndConfirm, titleVisibility: .visible) {
             Button("保存して終了") {
-                let isEmpty = log.normalRotations == 0 && log.investment == 0
+                let isEmpty = log.normalRotations == 0 && log.totalInput == 0
                 if isEmpty {
                     showEmptySaveConfirm = true
                 } else if log.totalHoldings > 0 {
@@ -1219,7 +1220,7 @@ struct PlayView: View {
                         .fill(playPanelBackground)
                     RoundedRectangle(cornerRadius: curveRadius)
                         .fill(AppGlassStyle.normalColor.opacity(playPanelTintOverlayOpacity))
-                    Text("通常\n大当たり")
+                    Text("通常\n当選")
                         .font(.system(size: 15, weight: .bold, design: .monospaced))
                         .foregroundColor(AppGlassStyle.normalColor.opacity(AppGlassStyle.normalTitleOpacity))
                         .multilineTextAlignment(.center)
@@ -1260,7 +1261,7 @@ struct PlayView: View {
     private func prepareWinInput(type: WinType) {
         tempWinType = type
         tempWinRotation = "\(log.gamesSinceLastWin)"
-        tempWinCashYen = "\(log.investment)"
+        tempWinCashYen = "\(log.totalInput)"
         tempWinHoldingsBalls = "\(log.holdingsInvestedBalls)"
         tempWinHoldingsCount = "\(log.totalHoldings)"
     }
@@ -1305,18 +1306,18 @@ struct PlayView: View {
         // 理論期待値計算用：実質投資が0の場合は現金＋持ち玉円換算で補正（記録漏れ対策）
         let realCost = log.totalRealCost > 0
             ? log.totalRealCost
-            : Double(log.investment) + Double(log.holdingsInvestedBalls) * log.selectedShop.exchangeRate
+            : Double(log.totalInput) + Double(log.holdingsInvestedBalls) * log.selectedShop.payoutCoefficient
         let ratio = log.expectationRatio > 0 ? log.expectationRatio : 1.0
         let formulaBorder = parseFormulaBorder(log.selectedMachine.border)
         let session = GameSession(
             machineName: log.selectedMachine.name,
             shopName: log.selectedShop.name,
             manufacturerName: log.selectedMachine.manufacturer,
-            investmentCash: log.investment,
+            inputCash: log.totalInput,
             totalHoldings: log.totalHoldings,
             normalRotations: log.normalRotations,
             totalUsedBalls: log.totalUsedBalls,
-            exchangeRate: log.selectedShop.exchangeRate,
+            payoutCoefficient: log.selectedShop.payoutCoefficient,
             totalRealCost: realCost,
             expectationRatioAtSave: ratio,
             rushWinCount: log.rushWinCount,
@@ -1854,8 +1855,8 @@ struct WinInputSheetView: View {
                     // 投資額・持ち玉（折りたたみ）
                     DisclosureGroup(isExpanded: $showExtraFields) {
                         VStack(spacing: 10) {
-                            labeledField("投資額（現金）円", text: $cashYen)
-                            labeledField("投資額（持ち玉）玉", text: $holdingsBalls)
+                            labeledField("投入額（現金）pt", text: $cashYen)
+                            labeledField("投入額（持ち玉）玉", text: $holdingsBalls)
                             labeledField("持ち玉数", text: $holdingsCount)
                         }
                         .padding(12)
@@ -1863,7 +1864,7 @@ struct WinInputSheetView: View {
                         .background(panelBg)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                     } label: {
-                        Text("投資・持ち玉を変更")
+                        Text("投入・持ち玉を変更")
                             .font(.subheadline.weight(.medium))
                             .foregroundColor(.white.opacity(0.7))
                     }
@@ -2069,10 +2070,10 @@ struct WinCountCorrectView: View {
     @State private var showErrorAlert = false
     var body: some View {
         VStack(spacing: 20) {
-            Text("大当たり回数を修正")
+            Text("当選回数を修正")
                 .font(.headline)
             VStack(alignment: .leading, spacing: 4) {
-                Text("RUSH 大当たり回数")
+                Text("RUSH 当選回数")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 TextField("0", text: $rushCount)
@@ -2081,7 +2082,7 @@ struct WinCountCorrectView: View {
                     .multilineTextAlignment(.center)
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text("通常大当たり回数")
+                Text("通常当選回数")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 TextField("0", text: $normalCount)

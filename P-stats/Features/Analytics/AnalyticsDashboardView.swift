@@ -246,8 +246,8 @@ struct AnalyticsDashboardView: View {
         }
     }
 
-    /// 通算実収支（現在の対象セッションの合計実収支）
-    private var totalProfit: Int { sessionsForSummary.reduce(0) { $0 + $1.profit } }
+    /// 通算実成績（現在の対象セッションの合計実成績）
+    private var totalProfit: Int { sessionsForSummary.reduce(0) { $0 + $1.performance } }
     /// 通算実践回転率（加重平均）＝ 総回転数 ÷ (総実質投資/1000)
     private var weightedAvgRotationPer1k: Double {
         let list = sessionsForSummary
@@ -256,7 +256,7 @@ struct AnalyticsDashboardView: View {
         guard totalCost > 0 else { return 0 }
         return Double(totalRotations) / (totalCost / 1000.0)
     }
-    /// 公式ボーダーとの差の平均（回/千円）。公式未設定のセッションは除外して平均
+    /// 公式基準値との差の平均（回/千pt）。公式未設定のセッションは除外して平均
     private var avgDiffFromFormulaBorder: Double? {
         let list = sessionsForSummary.filter { $0.formulaBorderPer1k > 0 }
         guard !list.isEmpty else { return nil }
@@ -272,7 +272,7 @@ struct AnalyticsDashboardView: View {
         if let label = selectedFilterLabel, let g = allGroups.first(where: { $0.label == label }) {
             return (g.totalDeficitSurplus, g.deficitSurplusRate)
         }
-        let totalTheoretical = sessionsQuery.reduce(0) { $0 + $1.theoreticalProfit }
+        let totalTheoretical = sessionsQuery.reduce(0) { $0 + $1.theoreticalValue }
         let totalDS = sessionsQuery.reduce(0) { $0 + $1.deficitSurplus }
         let rate = totalTheoretical != 0 ? Double(totalDS) / Double(abs(totalTheoretical)) : 0
         return (totalDS, rate)
@@ -377,15 +377,15 @@ struct AnalyticsDashboardView: View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 summaryRow(
-                    title: "通算実収支",
-                    value: sessionsForSummary.isEmpty ? "—" : "\(totalProfit >= 0 ? "+" : "")\(totalProfit.formattedYen) 円",
+                    title: "通算実成績",
+                    value: sessionsForSummary.isEmpty ? "—" : "\(totalProfit >= 0 ? "+" : "")\(totalProfit.formattedPtWithUnit)",
                     valueColor: totalProfit >= 0 ? .green : .red
                 )
                 summaryRow(
-                    title: "理論上収支",
+                    title: "理論上成績",
                     value: sessionsForSummary.isEmpty ? "—" : {
-                        let totalTheoretical = sessionsForSummary.reduce(0) { $0 + $1.theoreticalProfit }
-                        return "\(totalTheoretical >= 0 ? "+" : "")\(totalTheoretical.formattedYen) 円"
+                        let totalTheoretical = sessionsForSummary.reduce(0) { $0 + $1.theoreticalValue }
+                        return "\(totalTheoretical >= 0 ? "+" : "")\(totalTheoretical.formattedPtWithUnit)"
                     }(),
                     valueColor: .white.opacity(0.9)
                 )
@@ -394,15 +394,15 @@ struct AnalyticsDashboardView: View {
             VStack(alignment: .leading, spacing: 8) {
                 summaryRow(
                     title: "通算実践回転率",
-                    value: sessionsForSummary.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/千円", weightedAvgRotationPer1k),
+                    value: sessionsForSummary.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/千pt", weightedAvgRotationPer1k),
                     valueColor: .white,
-                    explanation: "総回転数（通常のみ）÷実質投資千円単位。"
+                    explanation: "総回転数（通常のみ）÷実質投入千pt単位。"
                 )
                 summaryRow(
-                    title: "平均ボーダー差",
-                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/千円", $0) } ?? "—",
+                    title: "平均基準値差",
+                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/千pt", $0) } ?? "—",
                     valueColor: (avgDiffFromFormulaBorder ?? 0) >= 0 ? cyan : Color.orange,
-                    explanation: "実践回転率−公式ボーダー。プラスでボーダー上回り。"
+                    explanation: "実践回転率−公式基準値。プラスでボーダー上回り。"
                 )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -554,7 +554,7 @@ private func sessionsGroupedByDay(_ sessions: [GameSession]) -> [(day: Date, ses
 /// 金額表示用：符号付きでカンマ区切り（例: 12345 → "+12,345", -1500 → "-1,500"）
 private func compactIntegerLabel(_ n: Int) -> String {
     let sign = n >= 0 ? "+" : "-"
-    return "\(sign)\(abs(n).formattedYen)"
+    return "\(sign)\(abs(n).formattedPtWithUnit)"
 }
 
 // MARK: - 曜日傾向（SwiftCharts: ゼロ中央・回転率0〜max、自動スケール・アニメーション）
@@ -570,7 +570,7 @@ private struct WeekdayTendencySection: View {
                 .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                 .padding(.horizontal, 4)
             VStack(alignment: .leading, spacing: 14) {
-                chartRow(title: "実収支") {
+                chartRow(title: "実成績") {
                     Chart {
                         RuleMark(y: .value("ゼロ", 0))
                             .foregroundStyle(Color.white.opacity(0.4))
@@ -578,7 +578,7 @@ private struct WeekdayTendencySection: View {
                         ForEach(groups) { g in
                             BarMark(
                                 x: .value("曜日", g.label),
-                                y: .value("円", g.totalProfit)
+                                y: .value("pt", g.totalProfit)
                             )
                             .foregroundStyle(g.totalProfit >= 0 ? Color.green : Color.orange)
                         }
@@ -596,11 +596,11 @@ private struct WeekdayTendencySection: View {
                         }
                     }
                 }
-                chartRow(title: "回転率（回/千円）") {
+                chartRow(title: "回転率（回/千pt）") {
                     Chart(groups) { g in
                         BarMark(
                             x: .value("曜日", g.label),
-                            y: .value("回/千円", g.avgRotationRate)
+                            y: .value("回/千pt", g.avgRotationRate)
                         )
                         .foregroundStyle(accent)
                     }
@@ -624,7 +624,7 @@ private struct WeekdayTendencySection: View {
                         ForEach(groups) { g in
                             BarMark(
                                 x: .value("曜日", g.label),
-                                y: .value("円", g.totalDeficitSurplus)
+                                y: .value("pt", g.totalDeficitSurplus)
                             )
                             .foregroundStyle(g.totalDeficitSurplus >= 0 ? Color.cyan : Color.orange)
                         }
@@ -682,7 +682,7 @@ private struct SpecificDayBarChartSection: View {
                 .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                 .padding(.horizontal, 4)
             VStack(alignment: .leading, spacing: 14) {
-                chartRow(title: "実収支") {
+                chartRow(title: "実成績") {
                     Chart {
                         RuleMark(y: .value("ゼロ", 0))
                             .foregroundStyle(Color.white.opacity(0.4))
@@ -690,7 +690,7 @@ private struct SpecificDayBarChartSection: View {
                         ForEach(displayGroups) { g in
                             BarMark(
                                 x: .value("区分", g.label),
-                                y: .value("円", g.label.hasPrefix("_pad") ? 0 : g.totalProfit)
+                                y: .value("pt", g.label.hasPrefix("_pad") ? 0 : g.totalProfit)
                             )
                             .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : (g.totalProfit >= 0 ? Color.green : Color.orange))
                         }
@@ -703,11 +703,11 @@ private struct SpecificDayBarChartSection: View {
                         AxisValueLabel { if let s = value.as(String.self), !s.hasPrefix("_pad") { Text(s).foregroundStyle(Color.white.opacity(0.8)) } }
                     } }
                 }
-                chartRow(title: "回転率（回/千円）") {
+                chartRow(title: "回転率（回/千pt）") {
                     Chart(displayGroups) { g in
                         BarMark(
                             x: .value("区分", g.label),
-                            y: .value("回/千円", g.label.hasPrefix("_pad") ? 0 : g.avgRotationRate)
+                            y: .value("回/千pt", g.label.hasPrefix("_pad") ? 0 : g.avgRotationRate)
                         )
                         .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : accent)
                     }
@@ -727,7 +727,7 @@ private struct SpecificDayBarChartSection: View {
                         ForEach(displayGroups) { g in
                             BarMark(
                                 x: .value("区分", g.label),
-                                y: .value("円", g.label.hasPrefix("_pad") ? 0 : g.totalDeficitSurplus)
+                                y: .value("pt", g.label.hasPrefix("_pad") ? 0 : g.totalDeficitSurplus)
                             )
                             .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : (g.totalDeficitSurplus >= 0 ? Color.cyan : Color.orange))
                         }
@@ -757,7 +757,7 @@ private struct SpecificDayBarChartSection: View {
     }
 }
 
-// MARK: - 月間収支トレンド（累計実収支・累計理論期待値の折れ線＋エリア）
+// MARK: - 月間収支トレンド（累計実成績・累計理論期待値の折れ線＋エリア）
 private struct MonthlyTrendChartSection: View {
     let sessions: [GameSession]
     let cyan: Color
@@ -779,7 +779,7 @@ private struct MonthlyTrendChartSection: View {
                 Chart(trendData, id: \.month) { d in
                     AreaMark(
                         x: .value("月", d.month),
-                        y: .value("実収支", d.cumulativeProfit)
+                        y: .value("実成績", d.cumulativeProfit)
                     )
                     .foregroundStyle(
                         LinearGradient(
@@ -790,14 +790,14 @@ private struct MonthlyTrendChartSection: View {
                     )
                     LineMark(
                         x: .value("月", d.month),
-                        y: .value("実収支", d.cumulativeProfit)
+                        y: .value("実成績", d.cumulativeProfit)
                     )
                     .foregroundStyle(cyan)
                     .lineStyle(StrokeStyle(lineWidth: 2))
                     .symbol(.circle)
                     LineMark(
                         x: .value("月", d.month),
-                        y: .value("期待値", d.cumulativeTheoretical)
+                        y: .value("理論値", d.cumulativeTheoretical)
                     )
                     .foregroundStyle(Color.white.opacity(0.85))
                     .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
@@ -817,8 +817,8 @@ private struct MonthlyTrendChartSection: View {
                 .frame(height: 180)
                 .chartLegend(.hidden)
                 HStack(spacing: 16) {
-                    legendDot(cyan, label: "累計実収支")
-                    legendDot(Color.white.opacity(0.85), label: "累計期待値", dashed: true)
+                    legendDot(cyan, label: "累計実成績")
+                    legendDot(Color.white.opacity(0.85), label: "累計理論値", dashed: true)
                 }
                 .font(.caption)
                 .foregroundColor(.white.opacity(0.8))
@@ -867,7 +867,7 @@ private struct CalendarHeatmapSection: View {
     private var profitByDay: [Date: Int] {
         let grouped = Dictionary(grouping: sessions) { cal.startOfDay(for: $0.date) }
         return Dictionary(uniqueKeysWithValues: grouped.map { day, list in
-            (day, list.reduce(0) { $0 + $1.profit })
+            (day, list.reduce(0) { $0 + $1.performance })
         })
     }
 
@@ -1065,10 +1065,10 @@ private struct AnalyticsSessionCardView: View {
         guard session.totalRealCost > 0 else { return 0 }
         return (Double(session.normalRotations) / session.totalRealCost) * 1000
     }
-    /// 実践回転率の表示文字列（公式ボーダーとの差を括弧内に表示）
+    /// 実践回転率の表示文字列（公式基準値との差を括弧内に表示）
     private var rotationRateDisplay: String {
         if rotationPer1k <= 0 { return "—" }
-        var s = String(format: "%.1f 回/千円", rotationPer1k)
+        var s = String(format: "%.1f 回/千pt", rotationPer1k)
         if session.formulaBorderPer1k > 0 {
             let diff = rotationPer1k - session.formulaBorderPer1k
             s += " (\(diff >= 0 ? "+" : "")\(String(format: "%.1f", diff)))"
@@ -1087,17 +1087,17 @@ private struct AnalyticsSessionCardView: View {
                     .foregroundColor(.white.opacity(0.8))
             }
             HStack(spacing: 16) {
-                Text("実収支 \(session.profit >= 0 ? "+" : "")\(session.profit.formattedYen) 円")
+                Text("実成績 \(session.performance >= 0 ? "+" : "")\(session.performance.formattedPtWithUnit)")
                     .font(.subheadline.monospacedDigit().weight(.medium))
-                    .foregroundColor(session.profit >= 0 ? .green : .red)
-                Text("大当たり RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount) LT:\(session.ltWinCount)")
+                    .foregroundColor(session.performance >= 0 ? .green : .red)
+                Text("当選 RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount) LT:\(session.ltWinCount)")
                     .font(.subheadline.monospacedDigit())
                     .foregroundColor(.white.opacity(0.85))
             }
             HStack(spacing: 12) {
                 labelVal("総回転", "\(session.normalRotations)")
                 Text("・").foregroundColor(.white.opacity(0.5))
-                labelVal("投資", "\(session.investmentCash.formattedYen)円")
+                labelVal("投入", session.inputCash.formattedPtWithUnit)
                 Text("・").foregroundColor(.white.opacity(0.5))
                 labelVal("回収玉", "\(session.totalHoldings)")
             }
@@ -1105,7 +1105,7 @@ private struct AnalyticsSessionCardView: View {
             .foregroundColor(.white.opacity(0.85))
             HStack(alignment: .top, spacing: 16) {
                 miniblock("実践回転率", value: rotationRateDisplay, valueColor: .white)
-                miniblock("理論期待値", value: "\(session.theoreticalProfit >= 0 ? "+" : "")\(session.theoreticalProfit.formattedYen)円", valueColor: .white.opacity(0.9))
+                miniblock("理論値", value: "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)", valueColor: .white.opacity(0.9))
                 deficitSurplusBlock
             }
             .font(.caption)
@@ -1122,11 +1122,11 @@ private struct AnalyticsSessionCardView: View {
     private var deficitSurplusBlock: some View {
         Group {
             if session.deficitSurplus > 0 {
-                miniblock("余剰", value: "+\(session.deficitSurplus.formattedYen)円", valueColor: .green.opacity(0.9))
+                miniblock("余剰", value: "+\(session.deficitSurplus.formattedPtWithUnit)", valueColor: .green.opacity(0.9))
             } else if session.deficitSurplus < 0 {
-                miniblock("欠損", value: "\(session.deficitSurplus.formattedYen)円", valueColor: .red.opacity(0.9))
+                miniblock("欠損", value: session.deficitSurplus.formattedPtWithUnit, valueColor: .red.opacity(0.9))
             } else {
-                miniblock("余剰・欠損", value: "0円", valueColor: .white.opacity(0.8))
+                miniblock("余剰・欠損", value: "0 pt", valueColor: .white.opacity(0.8))
             }
         }
     }
@@ -1163,10 +1163,10 @@ private struct AnalyticsSessionDetailView: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    private var recoveryYen: Int { Int(Double(session.totalHoldings) * session.exchangeRate) }
+    private var recoveryPt: Int { Int(Double(session.totalHoldings) * session.payoutCoefficient) }
     private var rotationPer1k: Double {
-        guard session.investmentCash > 0 else { return 0 }
-        return Double(session.normalRotations) / (Double(session.investmentCash) / 1000.0)
+        guard session.inputCash > 0 else { return 0 }
+        return Double(session.normalRotations) / (Double(session.inputCash) / 1000.0)
     }
     @State private var showEditSheet = false
     var body: some View {
@@ -1187,20 +1187,20 @@ private struct AnalyticsSessionDetailView: View {
             }
             Section("数値サマリ") {
                 LabeledContent("総回転数", value: "\(session.normalRotations)").listRowBackground(AnalyticsPanelStyle.rowBackground)
-                LabeledContent("大当たり", value: "RUSH: \(session.rushWinCount) / 通常: \(session.normalWinCount) / LT: \(session.ltWinCount)").listRowBackground(AnalyticsPanelStyle.rowBackground)
-                LabeledContent("総投資額（現金）", value: "\(session.investmentCash.formattedYen) 円").listRowBackground(AnalyticsPanelStyle.rowBackground)
+                LabeledContent("当選", value: "RUSH: \(session.rushWinCount) / 通常: \(session.normalWinCount) / LT: \(session.ltWinCount)").listRowBackground(AnalyticsPanelStyle.rowBackground)
+                LabeledContent("総投入額（現金）", value: "\(session.inputCash.formattedPtWithUnit)").listRowBackground(AnalyticsPanelStyle.rowBackground)
                 LabeledContent("回収出球", value: "\(session.totalHoldings) 玉").listRowBackground(AnalyticsPanelStyle.rowBackground)
-                LabeledContent("回収額（円換算）", value: "\(recoveryYen.formattedYen) 円").listRowBackground(AnalyticsPanelStyle.rowBackground)
-                LabeledContent("理論期待値", value: "\(session.theoreticalProfit >= 0 ? "+" : "")\(session.theoreticalProfit.formattedYen) 円").listRowBackground(AnalyticsPanelStyle.rowBackground)
-                LabeledContent("欠損・余剰", value: "\(session.deficitSurplus >= 0 ? "+" : "")\(session.deficitSurplus.formattedYen) 円").listRowBackground(AnalyticsPanelStyle.rowBackground)
-                LabeledContent("実収支", value: "\(session.profit >= 0 ? "+" : "")\(session.profit.formattedYen) 円")
+                LabeledContent("回収額（pt換算）", value: "\(recoveryPt.formattedPtWithUnit)").listRowBackground(AnalyticsPanelStyle.rowBackground)
+                LabeledContent("理論値", value: "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)").listRowBackground(AnalyticsPanelStyle.rowBackground)
+                LabeledContent("欠損・余剰", value: "\(session.deficitSurplus >= 0 ? "+" : "")\(session.deficitSurplus.formattedPtWithUnit)").listRowBackground(AnalyticsPanelStyle.rowBackground)
+                LabeledContent("実成績", value: "\(session.performance >= 0 ? "+" : "")\(session.performance.formattedPtWithUnit)")
                     .font(.body.weight(.semibold))
-                    .foregroundColor(session.profit >= 0 ? .green : .red)
+                    .foregroundColor(session.performance >= 0 ? .green : .red)
                     .listRowBackground(AnalyticsPanelStyle.rowBackground)
             }
             Section("分析") {
-                LabeledContent("期待値比（保存時）", value: session.expectationRatioAtSave > 0 ? String(format: "%.2f%%", session.expectationRatioAtSave * 100) : "—").listRowBackground(AnalyticsPanelStyle.rowBackground)
-                LabeledContent("実質回転率", value: String(format: "%.1f 回/千円", rotationPer1k)).listRowBackground(AnalyticsPanelStyle.rowBackground)
+                LabeledContent("理論値比（保存時）", value: session.expectationRatioAtSave > 0 ? String(format: "%.2f%%", session.expectationRatioAtSave * 100) : "—").listRowBackground(AnalyticsPanelStyle.rowBackground)
+                LabeledContent("実質回転率", value: String(format: "%.1f 回/千pt", rotationPer1k)).listRowBackground(AnalyticsPanelStyle.rowBackground)
             }
         }
         .listStyle(.plain)
@@ -1384,7 +1384,7 @@ private struct AnalyticsShopDetailView: View {
         return labels.map { byLabel[$0] ?? AnalyticsEngine.emptyGroup(label: $0) }
     }
 
-    private var totalProfit: Int { shopSessions.reduce(0) { $0 + $1.profit } }
+    private var totalProfit: Int { shopSessions.reduce(0) { $0 + $1.performance } }
     private var weightedAvgRotationPer1k: Double {
         let totalRotations = shopSessions.reduce(0) { $0 + $1.normalRotations }
         let totalCost = shopSessions.reduce(0.0) { $0 + $1.totalRealCost }
@@ -1403,7 +1403,7 @@ private struct AnalyticsShopDetailView: View {
     private var displaySummary: (total: Int, rate: Double) {
         let g = AnalyticsEngine.byShop(sessions).first { $0.label == shopName }
         guard let g = g else {
-            let totalTheoretical = shopSessions.reduce(0) { $0 + $1.theoreticalProfit }
+            let totalTheoretical = shopSessions.reduce(0) { $0 + $1.theoreticalValue }
             let totalDS = shopSessions.reduce(0) { $0 + $1.deficitSurplus }
             let rate = totalTheoretical != 0 ? Double(totalDS) / Double(abs(totalTheoretical)) : 0
             return (totalDS, rate)
@@ -1437,15 +1437,15 @@ private struct AnalyticsShopDetailView: View {
                     HStack(alignment: .top, spacing: 16) {
                         VStack(alignment: .leading, spacing: 8) {
                             summaryRow(
-                                title: "通算実収支",
-                                value: shopSessions.isEmpty ? "—" : "\(totalProfit >= 0 ? "+" : "")\(totalProfit.formattedYen) 円",
+                                title: "通算実成績",
+                                value: shopSessions.isEmpty ? "—" : "\(totalProfit >= 0 ? "+" : "")\(totalProfit.formattedPtWithUnit)",
                                 valueColor: totalProfit >= 0 ? .green : .red
                             )
                             summaryRow(
-                                title: "理論上収支",
+                                title: "理論上成績",
                                 value: shopSessions.isEmpty ? "—" : {
-                                    let totalTheoretical = shopSessions.reduce(0) { $0 + $1.theoreticalProfit }
-                                    return "\(totalTheoretical >= 0 ? "+" : "")\(totalTheoretical.formattedYen) 円"
+                                    let totalTheoretical = shopSessions.reduce(0) { $0 + $1.theoreticalValue }
+                                    return "\(totalTheoretical >= 0 ? "+" : "")\(totalTheoretical.formattedPtWithUnit)"
                                 }(),
                                 valueColor: .white.opacity(0.9)
                             )
@@ -1454,12 +1454,12 @@ private struct AnalyticsShopDetailView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             summaryRow(
                                 title: "通算実践回転率",
-                                value: shopSessions.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/千円", weightedAvgRotationPer1k),
+                                value: shopSessions.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/千pt", weightedAvgRotationPer1k),
                                 valueColor: .white
                             )
                             summaryRow(
-                                title: "平均ボーダー差",
-                                value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/千円", $0) } ?? "—",
+                                title: "平均基準値差",
+                                value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/千pt", $0) } ?? "—",
                                 valueColor: (avgDiffFromFormulaBorder ?? 0) >= 0 ? cyan : Color.orange
                             )
                         }
@@ -1552,7 +1552,7 @@ private struct AnalyticsMachineDetailView: View {
         let byLabel = Dictionary(uniqueKeysWithValues: fromAttr.map { ($0.label, $0) })
         return AnalyticsFixedSpecificDayLabels.list.map { byLabel[$0] ?? AnalyticsEngine.emptyGroup(label: $0) }
     }
-    private var totalProfit: Int { machineSessions.reduce(0) { $0 + $1.profit } }
+    private var totalProfit: Int { machineSessions.reduce(0) { $0 + $1.performance } }
     private var weightedAvgRotationPer1k: Double {
         let totalRotations = machineSessions.reduce(0) { $0 + $1.normalRotations }
         let totalCost = machineSessions.reduce(0.0) { $0 + $1.totalRealCost }
@@ -1570,7 +1570,7 @@ private struct AnalyticsMachineDetailView: View {
     private var displaySummary: (total: Int, rate: Double) {
         let g = AnalyticsEngine.byMachine(sessions).first { $0.label == machineName }
         guard let g = g else {
-            let totalTheoretical = machineSessions.reduce(0) { $0 + $1.theoreticalProfit }
+            let totalTheoretical = machineSessions.reduce(0) { $0 + $1.theoreticalValue }
             let totalDS = machineSessions.reduce(0) { $0 + $1.deficitSurplus }
             let rate = totalTheoretical != 0 ? Double(totalDS) / Double(abs(totalTheoretical)) : 0
             return (totalDS, rate)
@@ -1599,15 +1599,15 @@ private struct AnalyticsMachineDetailView: View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 summaryRow(
-                    title: "通算実収支",
-                    value: machineSessions.isEmpty ? "—" : "\(totalProfit >= 0 ? "+" : "")\(totalProfit.formattedYen) 円",
+                    title: "通算実成績",
+                    value: machineSessions.isEmpty ? "—" : "\(totalProfit >= 0 ? "+" : "")\(totalProfit.formattedPtWithUnit)",
                     valueColor: totalProfit >= 0 ? .green : .red
                 )
                 summaryRow(
-                    title: "理論上収支",
+                    title: "理論上成績",
                     value: machineSessions.isEmpty ? "—" : {
-                        let totalTheoretical = machineSessions.reduce(0) { $0 + $1.theoreticalProfit }
-                        return "\(totalTheoretical >= 0 ? "+" : "")\(totalTheoretical.formattedYen) 円"
+                        let totalTheoretical = machineSessions.reduce(0) { $0 + $1.theoreticalValue }
+                        return "\(totalTheoretical >= 0 ? "+" : "")\(totalTheoretical.formattedPtWithUnit)"
                     }(),
                     valueColor: .white.opacity(0.9)
                 )
@@ -1616,12 +1616,12 @@ private struct AnalyticsMachineDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 summaryRow(
                     title: "通算実践回転率",
-                    value: machineSessions.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/千円", weightedAvgRotationPer1k),
+                    value: machineSessions.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/千pt", weightedAvgRotationPer1k),
                     valueColor: .white
                 )
                 summaryRow(
-                    title: "平均ボーダー差",
-                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/千円", $0) } ?? "—",
+                    title: "平均基準値差",
+                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/千pt", $0) } ?? "—",
                     valueColor: (avgDiffFromFormulaBorder ?? 0) >= 0 ? cyan : Color.orange
                 )
             }
@@ -1719,7 +1719,7 @@ private struct AnalyticsManufacturerDetailView: View {
         let byLabel = Dictionary(uniqueKeysWithValues: fromAttr.map { ($0.label, $0) })
         return AnalyticsFixedSpecificDayLabels.list.map { byLabel[$0] ?? AnalyticsEngine.emptyGroup(label: $0) }
     }
-    private var totalProfit: Int { manufacturerSessions.reduce(0) { $0 + $1.profit } }
+    private var totalProfit: Int { manufacturerSessions.reduce(0) { $0 + $1.performance } }
     private var weightedAvgRotationPer1k: Double {
         let totalRotations = manufacturerSessions.reduce(0) { $0 + $1.normalRotations }
         let totalCost = manufacturerSessions.reduce(0.0) { $0 + $1.totalRealCost }
@@ -1737,7 +1737,7 @@ private struct AnalyticsManufacturerDetailView: View {
     private var displaySummary: (total: Int, rate: Double) {
         let g = AnalyticsEngine.byManufacturer(sessions).first { $0.label == manufacturerName }
         guard let g = g else {
-            let totalTheoretical = manufacturerSessions.reduce(0) { $0 + $1.theoreticalProfit }
+            let totalTheoretical = manufacturerSessions.reduce(0) { $0 + $1.theoreticalValue }
             let totalDS = manufacturerSessions.reduce(0) { $0 + $1.deficitSurplus }
             let rate = totalTheoretical != 0 ? Double(totalDS) / Double(abs(totalTheoretical)) : 0
             return (totalDS, rate)
@@ -1766,15 +1766,15 @@ private struct AnalyticsManufacturerDetailView: View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
                 summaryRow(
-                    title: "通算実収支",
-                    value: manufacturerSessions.isEmpty ? "—" : "\(totalProfit >= 0 ? "+" : "")\(totalProfit.formattedYen) 円",
+                    title: "通算実成績",
+                    value: manufacturerSessions.isEmpty ? "—" : "\(totalProfit >= 0 ? "+" : "")\(totalProfit.formattedPtWithUnit)",
                     valueColor: totalProfit >= 0 ? .green : .red
                 )
                 summaryRow(
-                    title: "理論上収支",
+                    title: "理論上成績",
                     value: manufacturerSessions.isEmpty ? "—" : {
-                        let totalTheoretical = manufacturerSessions.reduce(0) { $0 + $1.theoreticalProfit }
-                        return "\(totalTheoretical >= 0 ? "+" : "")\(totalTheoretical.formattedYen) 円"
+                        let totalTheoretical = manufacturerSessions.reduce(0) { $0 + $1.theoreticalValue }
+                        return "\(totalTheoretical >= 0 ? "+" : "")\(totalTheoretical.formattedPtWithUnit)"
                     }(),
                     valueColor: .white.opacity(0.9)
                 )
@@ -1783,12 +1783,12 @@ private struct AnalyticsManufacturerDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 summaryRow(
                     title: "通算実践回転率",
-                    value: manufacturerSessions.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/千円", weightedAvgRotationPer1k),
+                    value: manufacturerSessions.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/千pt", weightedAvgRotationPer1k),
                     valueColor: .white
                 )
                 summaryRow(
-                    title: "平均ボーダー差",
-                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/千円", $0) } ?? "—",
+                    title: "平均基準値差",
+                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/千pt", $0) } ?? "—",
                     valueColor: (avgDiffFromFormulaBorder ?? 0) >= 0 ? cyan : Color.orange
                 )
             }
@@ -1858,7 +1858,7 @@ private struct AnalyticsManufacturerDetailView: View {
 }
 
 /// 分析1行をグラスカードでラップ（実戦履歴UIと統一）
-/// 店舗分析時はパネル全体を実収支に応じてシアン〜マゼンタのグラデーションで tint（透明度維持）
+/// 店舗分析時はパネル全体を実成績に応じてシアン〜マゼンタのグラデーションで tint（透明度維持）
 struct AnalyticsGroupCard: View {
     let group: AnalyticsGroup
     let accent: Color
@@ -1867,7 +1867,7 @@ struct AnalyticsGroupCard: View {
 
     private static let magenta = Color(red: 1, green: 0, blue: 0.55)
 
-    /// 店舗分析用：パネルオーバー用グラデーション（実収支プラス＝シアン寄り、マイナス＝マゼンタ寄り）。透明度は弱めに維持
+    /// 店舗分析用：パネルオーバー用グラデーション（実成績プラス＝シアン寄り、マイナス＝マゼンタ寄り）。透明度は弱めに維持
     private var panelGradient: LinearGradient? {
         guard isShopSegment else { return nil }
         let ratio: Double
@@ -1907,11 +1907,11 @@ struct AnalyticsGroupCard: View {
     private var effectiveAccent: Color { shopAccentColor.positive }
     private var effectiveLossColor: Color { shopAccentColor.negative }
 
-    /// 二行目：実践回転率・回数・公式ボーダーとの差（あれば）
+    /// 二行目：実践回転率・回数・公式基準値との差（あれば）
     private var secondLineText: String {
-        var s = "実践回転率 \(String(format: "%.1f", group.avgRotationRate))/1k円 · \(group.sessionCount)回"
+        var s = "実践回転率 \(String(format: "%.1f", group.avgRotationRate))/1kpt · \(group.sessionCount)回"
         if let diff = group.avgDiffFromFormulaBorder {
-            s += " （公式ボーダーとの差: \(String(format: "%+.1f 回/千円", diff))"
+            s += " （公式基準値との差: \(String(format: "%+.1f 回/千pt", diff))"
         }
         return s
     }
@@ -1935,12 +1935,12 @@ struct AnalyticsGroupCard: View {
                 Spacer()
             }
             HStack(alignment: .bottom, spacing: 12) {
-                // 実収支を最前面に（強調）
+                // 実成績を最前面に（強調）
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("実収支")
+                    Text("実成績")
                         .font(.system(size: 10))
                         .foregroundColor(.white.opacity(0.65))
-                    Text("\(group.totalProfit >= 0 ? "+" : "")\(group.totalProfit.formattedYen)")
+                    Text("\(group.totalProfit >= 0 ? "+" : "")\(group.totalProfit.formattedPtWithUnit)")
                         .font(.subheadline.monospacedDigit().weight(.semibold))
                         .foregroundColor(group.totalProfit >= 0 ? effectiveAccent : effectiveLossColor)
                 }
@@ -1956,7 +1956,7 @@ struct AnalyticsGroupCard: View {
                     Text("期待比")
                         .font(.system(size: 10))
                         .foregroundColor(.white.opacity(0.65))
-                    Text("\(group.totalDeficitSurplus >= 0 ? "+" : "")\(group.totalDeficitSurplus.formattedYen)")
+                    Text("\(group.totalDeficitSurplus >= 0 ? "+" : "")\(group.totalDeficitSurplus.formattedPtWithUnit)")
                         .font(.caption.monospacedDigit().weight(.semibold))
                         .foregroundColor(group.totalDeficitSurplus >= 0 ? effectiveAccent : effectiveLossColor)
                 }
@@ -1996,18 +1996,18 @@ struct AnalyticsGroupCard: View {
 
 // MARK: - 理論との差（余剰・欠損）をゼロ中心の1本バーで表示
 // 代替案メモ:
-// - 旧: 理論・実収支の2本並び → 長さの意味が伝わりにくい
-// - 案A: 共通ゼロ軸で理論・実収支を左右に同じスケールで描く（情報量多め）
+// - 旧: 理論・実成績の2本並び → 長さの意味が伝わりにくい
+// - 案A: 共通ゼロ軸で理論・実成績を左右に同じスケールで描く（情報量多め）
 // - 案B: 理論を100%とする達成率バー（理論0や負のときは要工夫）
 // 採用: 差だけ表示＝「理論よりどれだけ出た/損したか」がひと目で分かる
 struct DeficitSurplusBarView: View {
     let deficitSurplus: Int
     let accent: Color
     var lossColor: Color = Color.orange
-    /// 店舗分析時のみ指定。実収支がマイナスなら右伸びの棒も lossColor に（「理論よりマシだが実収支は赤字」と分かる）
+    /// 店舗分析時のみ指定。実成績がマイナスなら右伸びの棒も lossColor に（「理論よりマシだが実成績は赤字」と分かる）
     var barColorByActualProfit: Int? = nil
 
-    /// 右方向の棒（理論との差プラス）の色。実収支マイナスならマゼンタ
+    /// 右方向の棒（理論との差プラス）の色。実成績マイナスならマゼンタ
     private var rightBarColor: Color {
         if let actual = barColorByActualProfit, actual < 0 { return lossColor }
         return accent
@@ -2026,7 +2026,7 @@ struct DeficitSurplusBarView: View {
                     .fill(Color.white.opacity(0.35))
                     .frame(width: 2)
                 if deficitSurplus > 0 {
-                    // 余剰: 中央から右へ（実収支マイナスならマゼンタで「理論よりマシだがまだ赤字」）
+                    // 余剰: 中央から右へ（実成績マイナスならマゼンタで「理論よりマシだがまだ赤字」）
                     RoundedRectangle(cornerRadius: 3)
                         .fill(rightBarColor.opacity(0.9))
                         .frame(width: max(4, barW), height: 14)

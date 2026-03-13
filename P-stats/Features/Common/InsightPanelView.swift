@@ -21,20 +21,20 @@ struct InsightPanelView: View {
     private let cyan = AppGlassStyle.accent
     private let darkNavy = AppGlassStyle.background
 
-    /// 理論上の今の期待値（円）。正=黒字側、負=欠損側
-    private var theoreticalExpectationYen: Int {
+    /// 理論上の今の理論値（pt）。正=黒字側、負=欠損側
+    private var theoreticalExpectationPt: Int {
         guard log.totalRealCost > 0, log.dynamicBorder > 0 else { return 0 }
         let ratio = log.expectationRatio
         return Int(round(log.totalRealCost * (ratio - 1)))
     }
 
-    /// ボーダーに達するのに必要な通常回転数（現金1000円・持ち玉250玉単位の実質コストに対する）
+    /// 基準値に達するのに必要な通常回転数（現金1000pt・持ち玉250玉単位の実質コストに対する）
     private var borderRotations: Double {
         guard log.dynamicBorder > 0, log.effectiveUnitsForBorder > 0 else { return 0 }
         return log.effectiveUnitsForBorder * log.dynamicBorder
     }
 
-    /// あと何回回せばプラス転換（ボーダー突破）。既に超えていれば 0
+    /// あと何回回せばプラス転換（基準値突破）。既に超えていれば 0
     private var spinsToBreakEven: Int {
         let need = borderRotations
         let current = Double(log.normalRotations)
@@ -119,9 +119,9 @@ struct InsightPanelView: View {
                                 HStack(alignment: .center) {
                                     Image(systemName: "list.bullet")
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("大当たり・投資履歴")
+                                        Text("当選・投入履歴")
                                             .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                        Text("今回の大当たり・投資の時系列")
+                                        Text("今回の当選・投入の時系列")
                                             .font(.system(size: 10, weight: .regular))
                                             .foregroundColor(cyan.opacity(0.6))
                                     }
@@ -167,35 +167,35 @@ struct InsightPanelView: View {
 
                 // 今回の収支
                 VStack(alignment: .leading, spacing: 6) {
-                    panelTitle("今回の収支")
-                    // 上段：実際の収支（現金投資に対する回収金額）
+                    panelTitle("今回の成績")
+                    // 上段：実際の成績（投入に対する回収）
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("実際の収支")
+                        Text("実際の成績")
                             .font(.system(size: 10, weight: .semibold, design: .rounded))
                             .foregroundColor(cyan.opacity(0.75))
-                        Text(log.balanceYen >= 0 ? "+\(log.balanceYen.formattedYen) 円" : "\(log.balanceYen.formattedYen) 円")
+                        Text(log.balancePt >= 0 ? "+\(log.balancePt.formattedPtWithUnit)" : "\(log.balancePt.formattedPtWithUnit)")
                             .font(.system(size: 20, weight: .bold, design: .monospaced))
-                            .foregroundColor(log.balanceYen >= 0 ? cyan : Color.orange.opacity(0.95))
-                        Text("収入−現金投資（収入＝出玉×交換率・500円刻み端数切捨て）")
+                            .foregroundColor(log.balancePt >= 0 ? cyan : Color.orange.opacity(0.95))
+                        Text("収入−投入（収入＝出玉×払出係数・500pt刻み端数切捨て）")
                             .font(.system(size: 9, weight: .regular, design: .rounded))
                             .foregroundColor(cyan.opacity(0.5))
                     }
-                    // 下段：期待値収支（理論上の損益）
+                    // 下段：理論値収支（理論上の損益）
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("期待値収支（理論上の損益）")
+                        Text("理論値収支（理論上の損益）")
                             .font(.system(size: 10, weight: .semibold, design: .rounded))
                             .foregroundColor(cyan.opacity(0.75))
                         if log.effectiveUnitsForBorder > 0 && log.dynamicBorder > 0 {
-                            let yen = theoreticalExpectationYen
-                            Text(yen >= 0 ? "+\(yen.formattedYen) 円" : "\(yen.formattedYen) 円")
+                            let pt = theoreticalExpectationPt
+                            Text(pt >= 0 ? "+\(pt.formattedPtWithUnit)" : "\(pt.formattedPtWithUnit)")
                                 .font(.system(size: 18, weight: .semibold, design: .monospaced))
-                                .foregroundColor(yen >= 0 ? cyan : Color.orange.opacity(0.95))
+                                .foregroundColor(pt >= 0 ? cyan : Color.orange.opacity(0.95))
                         } else {
                             Text("—")
                                 .font(.system(size: 18, weight: .semibold, design: .monospaced))
                                 .foregroundColor(cyan.opacity(0.6))
                         }
-                        Text("実費×（期待値比−1）。実費＝現金投資＋持ち玉投資の円換算")
+                        Text("実費×（理論値比−1）。実費＝投入＋持ち玉投入のpt換算")
                             .font(.system(size: 9, weight: .regular, design: .rounded))
                             .foregroundColor(cyan.opacity(0.5))
                     }
@@ -219,36 +219,36 @@ struct InsightPanelView: View {
                             .foregroundColor(cyan.opacity(0.95))
                     }
                     HStack {
-                        labelText("現金投資額")
+                        labelText("投入額")
                         Spacer()
-                        Text("\(log.investment.formattedYen) 円")
+                        Text(log.totalInput.formattedPtWithUnit)
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
                     HStack {
                         HStack(spacing: 4) {
-                            labelText("公式ボーダー")
-                            InfoIconView(explanation: "メーカー公表の等価ボーダー（回/1000円）。通常回転のみ。", tint: cyan.opacity(0.7))
+                            labelText("公式基準値")
+                            InfoIconView(explanation: "メーカー公表の等価基準値（回/1000pt）。通常回転のみ。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
-                        Text(log.formulaBorderValue > 0 ? String(format: "%.1f 回/千円", log.formulaBorderValue) : "—")
+                        Text(log.formulaBorderValue > 0 ? String(format: "%.1f 回/千pt", log.formulaBorderValue) : "—")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
                     HStack {
                         HStack(spacing: 4) {
-                            labelText("実質ボーダー")
-                            InfoIconView(explanation: "店の貸玉料金・交換率で補正したボーダー（回/1000円）。", tint: cyan.opacity(0.7))
+                            labelText("実質基準値")
+                            InfoIconView(explanation: "店の貸玉料金・払出係数で補正した基準値（回/1000pt）。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
-                        Text(log.dynamicBorder > 0 ? String(format: "%.1f 回/千円", log.dynamicBorder) : "—")
+                        Text(log.dynamicBorder > 0 ? String(format: "%.1f 回/千pt", log.dynamicBorder) : "—")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
                     HStack {
                         HStack(spacing: 4) {
-                            labelText("期待値比")
-                            InfoIconView(explanation: "実質回転率÷実戦ボーダー。1.0でボーダー。", tint: cyan.opacity(0.7))
+                            labelText("理論値比")
+                            InfoIconView(explanation: "実質回転率÷実戦基準値。1.0で基準。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
                         Text(String(format: "%.2f%%", log.expectationRatio * 100))
@@ -260,7 +260,7 @@ struct InsightPanelView: View {
                             labelText("プラス転換まであと")
                             Spacer()
                             if spinsToBreakEven == 0 {
-                                Text("ボーダー到達")
+                                Text("基準値到達")
                                     .font(.system(size: 13, weight: .medium, design: .monospaced))
                                     .foregroundColor(cyan)
                             } else {
@@ -309,7 +309,7 @@ struct InsightPanelView: View {
                         Button(action: onCorrectCash) {
                             HStack(alignment: .center) {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("現金投資を修正")
+                                    Text("投入を修正")
                                         .font(.system(size: 13, weight: .medium, design: .monospaced))
                                     Text("投入した現金の合計")
                                         .font(.system(size: 10, weight: .regular))
@@ -351,7 +351,7 @@ struct InsightPanelView: View {
                         Button(action: onCorrectWinCount) {
                             HStack(alignment: .center) {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("大当たり回数を修正")
+                                    Text("当選回数を修正")
                                         .font(.system(size: 13, weight: .medium, design: .monospaced))
                                     Text("RUSH・通常の当選回数を直す")
                                         .font(.system(size: 10, weight: .regular))
@@ -429,6 +429,7 @@ struct InsightPanelView: View {
                     .background(AppGlassStyle.rowBackground)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(cyan.opacity(0.2), lineWidth: 1))
                 }
+            }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 12)

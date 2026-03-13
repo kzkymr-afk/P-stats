@@ -120,7 +120,7 @@ struct MachineEditView: View, Equatable {
                         VStack(spacing: 16) {
                             editPanel(title: "機種名・メーカー") { machineNamePanel }
                             presetPanel
-                            editPanel(title: "通常時の大当たり確率") { probabilityPanel }
+                            editPanel(title: "通常時の当選確率") { probabilityPanel }
                             editPanel(title: "公式ボーダー（等価ベース）") { borderPanel }
                             editPanel(title: "大当たり種類（ヘソ・通常時）") { bonusHesoPanel }
                             editPanel(title: "時短ゲーム数") { timeShortPanel }
@@ -138,7 +138,7 @@ struct MachineEditView: View, Equatable {
                     }
                     .opacity(isDMMPanelExpanded ? 0 : 1)
                     .allowsHitTesting(!isDMMPanelExpanded)
-                    .animation(.easeInOut(duration: 0.25), value: isDMMPanelExpanded)
+                    .animation(isDMMPanelExpanded ? nil : .easeInOut(duration: 0.25), value: isDMMPanelExpanded)
 
                     if let url = dmmMachineURL {
                         InAppWebView(url: url)
@@ -146,21 +146,16 @@ struct MachineEditView: View, Equatable {
                             .background(AppGlassStyle.background)
                             .opacity(isDMMPanelExpanded ? 1 : 0)
                             .allowsHitTesting(isDMMPanelExpanded)
+                            .animation(isDMMPanelExpanded ? nil : .easeInOut(duration: 0.25), value: isDMMPanelExpanded)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .animation(.spring(response: 0.35, dampingFraction: 0.82), value: isDMMPanelExpanded)
+                .animation(isDMMPanelExpanded ? nil : .spring(response: 0.35, dampingFraction: 0.82), value: isDMMPanelExpanded)
 
                 dmmSwipeBar
             }
             .ignoresSafeArea(edges: .bottom)
-            .onChange(of: displayPresetsCache.count) { _, newCount in
-                if newCount > 0, isPresetSearchFocused {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    }
-                }
-            }
+            // キーボードは .scrollDismissesKeyboard(.interactively) でリストスクロール時にのみ閉じる（検索結果表示で自動で閉じない）
             .navigationTitle(editing == nil ? "新規機種登録" : "機種を編集")
             .navigationBarTitleDisplayMode(.inline)
             .keyboardDismissToolbar()
@@ -444,25 +439,7 @@ struct MachineEditView: View, Equatable {
                     .background(Color.white.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            HStack(alignment: .top) {
-                Text("DMM機種ID")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
-                    .frame(width: 72, alignment: .leading)
-                VStack(alignment: .leading, spacing: 4) {
-                    TextField("例: e-keiji-ougon（下部スワイプでDMMページ表示）", text: $dmmMachineID)
-                        .textContentType(.URL)
-                        .autocapitalization(.none)
-                        .multilineTextAlignment(.trailing)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 12)
-                        .background(Color.white.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
-                    Text("機種を検索で選ぶと自動入力されます。空欄だと下部スワイプでDMMを開けません。")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-            }
+            // DMM機種ID は裏で取得・保持のみ（機種を検索で選んだときに adoptPreset で dmmMachineID にセット）。UIには表示しない。
             if !machineMasterListURL.isEmpty {
                 Button {
                     masterSearchText = ""
@@ -482,10 +459,10 @@ struct MachineEditView: View, Equatable {
     private var probabilityPanel: some View {
         HStack(alignment: .firstTextBaseline) {
             HStack(spacing: 4) {
-                Text("通常時の大当たり確率")
+                Text("通常時の当選確率")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.9))
-                InfoIconView(explanation: "通常回転時の大当たり確率。1/399.5のように分母のみ入力。", tint: .white.opacity(0.6))
+                InfoIconView(explanation: "通常回転時の当選確率。1/399.5のように分母のみ入力。", tint: .white.opacity(0.6))
             }
             Spacer(minLength: 12)
             HStack(spacing: 0) {
@@ -682,12 +659,9 @@ struct MachineEditView: View, Equatable {
     private var borderPanel: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                HStack(spacing: 4) {
-                    Text("回転/1000円")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.9))
-                    InfoIconView(explanation: "等価（4円/玉・250玉/1000円）の場合。店の貸玉料金・交換率で実戦ボーダーは自動補正されます。", tint: .white.opacity(0.6))
-                }
+                Text("回転/1000pt")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.9))
                 Spacer()
                 TextField("16.5", text: $border)
                     .keyboardType(.decimalPad)
@@ -989,11 +963,11 @@ struct MachineEditView: View, Equatable {
             .opacity(isDMMPanelExpanded ? 1 : 0.7)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("DMMぱちタウン機種ページ")
+                Text("スペックを調べる")
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(.white.opacity(0.98))
                 if dmmMachineURL == nil {
-                    Text("機種を検索で選ぶか、DMM機種IDを上で入力してください")
+                    Text("機種を検索で選ぶとスペックページを開けます")
                         .font(.caption2)
                         .foregroundStyle(.white.opacity(0.7))
                 } else {
@@ -1006,9 +980,8 @@ struct MachineEditView: View, Equatable {
 
             Button {
                 guard dmmMachineURL != nil else { return }
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-                    isDMMPanelExpanded = true
-                }
+                // 読み込み完了を待たず、タップしたら即ブラウザ表示に切り替える
+                isDMMPanelExpanded = true
             } label: {
                 Label("ブラウザ", systemImage: "safari")
                     .font(.caption.weight(.semibold))

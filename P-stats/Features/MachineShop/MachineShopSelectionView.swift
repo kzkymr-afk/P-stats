@@ -80,7 +80,7 @@ struct MachineShopSelectionView: View {
                 if let s = $0 {
                     log.selectedShop = s
                 } else {
-                    log.selectedShop = Shop(name: "未選択", ballsPerCashUnit: 125, exchangeRate: 4.0)
+                    log.selectedShop = Shop(name: "未選択", ballsPerCashUnit: 125, payoutCoefficient: 4.0)
                 }
             }
         )
@@ -731,15 +731,15 @@ private enum SpecificDayRuleType: String, CaseIterable {
     case lastDigit = "Nのつく日"
 }
 
-// MARK: - 交換率プリセット（円/玉 = 100÷玉/100円）
+// MARK: - 払出係数プリセット（pt/玉 = 100÷玉/100pt）
 private enum ExchangeRatePreset: String, CaseIterable {
-    case rate25 = "25.0玉/100円：4.00円交換"
-    case rate27_5 = "27.5玉/100円：約3.63円交換"
-    case rate28 = "28.0玉/100円：約3.57円交換"
-    case rate30 = "30.0玉/100円：約3.33円交換"
-    case rate33_3 = "33.3玉/100円：約3.00円交換"
-    case rate35_7 = "35.7玉/100円：約2.80円交換"
-    case rate40 = "40.0玉/100円：2.50円交換"
+    case rate25 = "25.0玉/100pt：4.00pt交換"
+    case rate27_5 = "27.5玉/100pt：約3.63pt交換"
+    case rate28 = "28.0玉/100pt：約3.57pt交換"
+    case rate30 = "30.0玉/100pt：約3.33pt交換"
+    case rate33_3 = "33.3玉/100pt：約3.00pt交換"
+    case rate35_7 = "35.7玉/100pt：約2.80pt交換"
+    case rate40 = "40.0玉/100pt：2.50pt交換"
     case other = "その他"
 
     var yenPerBall: Double? {
@@ -769,7 +769,7 @@ private enum ExchangeRatePreset: String, CaseIterable {
     }
 }
 
-// MARK: - 店舗の新規登録・編集（貸玉料金・交換率を実戦ボーダー算出に利用）
+// MARK: - 店舗の新規登録・編集（貸玉料金・払出係数を実戦基準値算出に利用）
 struct ShopEditView: View {
     /// 編集時は既存の店舗を渡す。nil のときは新規登録。
     let shop: Shop?
@@ -994,10 +994,11 @@ struct ShopEditView: View {
                                 .disabled(placeSearchService.isLoadingMore)
                             }
                         }
-                        shopEditPanel(title: "貸玉料金・交換率（実戦ボーダー算出に使用）", trailing: { InfoIconView(explanation: "貸玉料金: 1000円で何玉借りられるか（等価250玉）。交換率: 1玉何円で換金か。玉/100円か円交換のどちらかを入力するともう片方も自動計算されます。", tint: .white.opacity(0.7)) }) {
+                        shopEditPanel(title: "貸玉料金・払出係数（実戦基準値算出に使用）", trailing: { InfoIconView(explanation: "貸玉数: 500ptで何玉借りられるか（等価125玉）。払出係数: 1玉何ptで換金か。玉/100ptかpt交換のどちらかを入力するともう片方も自動計算されます。", tint: .white.opacity(0.7)) }) {
                             HStack {
-                                Text("貸玉料金（500円あたり）")
+                                Text("貸玉数（500ptあたり）")
                                     .foregroundColor(.white.opacity(0.9))
+                                    .fixedSize(horizontal: true, vertical: false)
                                 Spacer()
                                 TextField("125", text: $ballsPerCashUnitStr)
                                     .keyboardType(.numberPad)
@@ -1005,9 +1006,9 @@ struct ShopEditView: View {
                                     .foregroundColor(.white)
                             }
                             VStack(alignment: .leading, spacing: 10) {
-                                Text("交換率（円/玉）")
+                                Text("払出係数（pt/玉）")
                                     .foregroundColor(.white.opacity(0.9))
-                                Picker("交換率", selection: $exchangeRatePreset) {
+                                Picker("払出係数", selection: $exchangeRatePreset) {
                                     ForEach(ExchangeRatePreset.allCases, id: \.self) { preset in
                                         Text(preset.rawValue).tag(preset)
                                     }
@@ -1016,7 +1017,7 @@ struct ShopEditView: View {
                                 .tint(accent)
                                 if exchangeRatePreset == .other {
                                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                        Text("玉/100円")
+                                        Text("玉/100pt")
                                             .foregroundColor(.white.opacity(0.85))
                                         TextField("25.0", text: $customBallsPer100YenStr)
                                             .keyboardType(.decimalPad)
@@ -1028,12 +1029,12 @@ struct ShopEditView: View {
                                                 customYenPerBallStr = String(format: "%.2f", y)
                                                 DispatchQueue.main.async { isSyncingCustomRate = false }
                                             }
-                                        Text(customYenPerBallFromBalls.map { "→ \(String(format: "%.2f", $0))円/玉" } ?? "→ — 円/玉")
+                                        Text(customYenPerBallFromBalls.map { "→ \(String(format: "%.2f", $0))pt/玉" } ?? "→ — pt/玉")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
                                     HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                        Text("円交換")
+                                        Text("pt交換")
                                             .foregroundColor(.white.opacity(0.85))
                                         TextField("4.00", text: $customYenPerBallStr)
                                             .keyboardType(.decimalPad)
@@ -1045,49 +1046,66 @@ struct ShopEditView: View {
                                                 customBallsPer100YenStr = String(format: "%.1f", b)
                                                 DispatchQueue.main.async { isSyncingCustomRate = false }
                                             }
-                                        Text(customBallsPer100FromYen.map { "→ \(String(format: "%.1f", $0))玉/100円" } ?? "→ — 玉/100円")
+                                        Text(customBallsPer100FromYen.map { "→ \(String(format: "%.1f", $0))玉/100pt" } ?? "→ — 玉/100pt")
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
                                 }
                             }
                         }
-                        shopEditPanel(title: "特定日ルール（分析で使用・最大4つ）", trailing: { InfoIconView(explanation: "種類を選び、右に数字を入力。個別店舗分析の「特定日傾向」に追加順で表示されます。", tint: .white.opacity(0.7)) }) {
-                            ForEach(0..<4, id: \.self) { i in
-                                HStack(spacing: 12) {
-                                    Text("特定日\(["①", "②", "③", "④"][i])")
-                                        .foregroundColor(.white.opacity(0.9))
-                                    Picker("", selection: Binding(
-                                        get: { specificDayEntries[i].type },
-                                        set: { newVal in
-                                            var arr = specificDayEntries
-                                            arr[i].type = newVal
-                                            specificDayEntries = arr
+                        shopEditPanel(title: "特定日ルール（分析で使用・最大4つ）", trailing: { InfoIconView(explanation: "種類で「毎月N日」か「Nのつく日」を選び、右のN欄に数字を入力。個別店舗分析の「特定日傾向」に追加順で表示されます。", tint: .white.opacity(0.7)) }) {
+                            VStack(alignment: .leading, spacing: 12) {
+                                HStack(spacing: 6) {
+                                    Text("種類")
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.7))
+                                        .frame(width: 36, alignment: .leading)
+                                    Text("N")
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.7))
+                                        .frame(width: 28, alignment: .center)
+                                }
+                                .padding(.leading, 28)
+                                ForEach(0..<4, id: \.self) { i in
+                                    HStack(spacing: 8) {
+                                        Text(["①", "②", "③", "④"][i])
+                                            .font(.subheadline.weight(.medium))
+                                            .foregroundColor(.white.opacity(0.9))
+                                            .frame(width: 20, alignment: .center)
+                                        Picker("", selection: Binding(
+                                            get: { specificDayEntries[i].type },
+                                            set: { newVal in
+                                                var arr = specificDayEntries
+                                                arr[i].type = newVal
+                                                specificDayEntries = arr
+                                            }
+                                        )) {
+                                            ForEach(SpecificDayRuleType.allCases, id: \.self) { t in
+                                                Text(t.rawValue).tag(t)
+                                            }
                                         }
-                                    )) {
-                                        ForEach(SpecificDayRuleType.allCases, id: \.self) { t in
-                                            Text(t.rawValue).tag(t)
+                                        .pickerStyle(.menu)
+                                        .labelsHidden()
+                                        .tint(accent)
+                                        .fixedSize(horizontal: true, vertical: false)
+                                        TextField(specificDayEntries[i].type == .monthDay ? "1〜31" : "0〜9", text: Binding(
+                                            get: { specificDayEntries[i].value },
+                                            set: { newVal in
+                                                var arr = specificDayEntries
+                                                arr[i].value = newVal
+                                                specificDayEntries = arr
+                                            }
+                                        ))
+                                        .keyboardType(.numberPad)
+                                        .multilineTextAlignment(.center)
+                                        .foregroundColor(.white)
+                                        .frame(width: 48)
+                                        if !displayLabel(for: i).isEmpty {
+                                            Text(displayLabel(for: i))
+                                                .font(.caption)
+                                                .foregroundColor(.white.opacity(0.7))
+                                                .lineLimit(1)
                                         }
-                                    }
-                                    .pickerStyle(.menu)
-                                    .labelsHidden()
-                                    .tint(accent)
-                                    TextField(specificDayEntries[i].type == .monthDay ? "1〜31" : "0〜9", text: Binding(
-                                        get: { specificDayEntries[i].value },
-                                        set: { newVal in
-                                            var arr = specificDayEntries
-                                            arr[i].value = newVal
-                                            specificDayEntries = arr
-                                        }
-                                    ))
-                                    .keyboardType(.numberPad)
-                                    .multilineTextAlignment(.trailing)
-                                    .foregroundColor(.white)
-                                    .frame(width: 56)
-                                    if !displayLabel(for: i).isEmpty {
-                                        Text(displayLabel(for: i))
-                                            .font(.caption)
-                                            .foregroundColor(.white.opacity(0.7))
                                     }
                                 }
                             }
@@ -1117,12 +1135,12 @@ struct ShopEditView: View {
                             return
                         }
                         if (Int(ballsPerCashUnitStr) ?? 125) <= 0 {
-                            errorMessage = "貸玉料金は1以上にしてください"
+                            errorMessage = "貸玉数は1以上にしてください"
                             showErrorAlert = true
                             return
                         }
                         guard let rate = effectiveExchangeRate, rate > 0 else {
-                            errorMessage = exchangeRatePreset == .other ? "その他の場合は玉/100円か円交換を入力してください" : "交換率を選択してください"
+                            errorMessage = exchangeRatePreset == .other ? "その他の場合は玉/100ptかpt交換を入力してください" : "払出係数を選択してください"
                             showErrorAlert = true
                             return
                         }
@@ -1146,7 +1164,7 @@ struct ShopEditView: View {
                     address = s.address
                     placeID = s.placeID
                     ballsPerCashUnitStr = "\(s.ballsPerCashUnit)"
-                    applyExchangeRateToPreset(s.exchangeRate)
+                    applyExchangeRateToPreset(s.payoutCoefficient)
                     loadSpecificDayEntries(from: s)
                 } else {
                     address = ""
@@ -1206,12 +1224,12 @@ struct ShopEditView: View {
         }
         let balls = Int(ballsPerCashUnitStr) ?? 125
         guard let rate = effectiveExchangeRate, rate > 0 else {
-            errorMessage = "交換率を選択するか、その他の場合は玉/100円か円交換を入力してください"
+            errorMessage = "払出係数を選択するか、その他の場合は玉/100ptかpt交換を入力してください"
             showErrorAlert = true
             return
         }
         if balls <= 0 {
-            errorMessage = "貸玉料金は1以上にしてください"
+            errorMessage = "貸玉数は1以上にしてください"
             showErrorAlert = true
             return
         }
@@ -1232,13 +1250,13 @@ struct ShopEditView: View {
             existing.address = address.trimmingCharacters(in: .whitespaces)
             existing.placeID = placeID
             existing.ballsPerCashUnit = balls
-            existing.exchangeRate = rate
+            existing.payoutCoefficient = rate
             existing.specificDayRulesStorage = rulesStorage
         } else {
             let newShop = Shop(
                 name: n,
                 ballsPerCashUnit: balls,
-                exchangeRate: rate,
+                payoutCoefficient: rate,
                 placeID: placeID,
                 address: address.trimmingCharacters(in: .whitespaces)
             )

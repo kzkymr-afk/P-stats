@@ -36,8 +36,8 @@ struct BonusStandbyOverlay: View {
 /// Set Count と Total Gain のみ。銀行振込のような清潔なUI。完了後は期待値フィードバックでメンタルサポート。
 struct ChainResultInputView: View {
     @Bindable var machine: Machine
-    let ballsPer1000: Double   // 貸玉料金（1000円あたりの玉数）
-    let exchangeRate: Double   // 交換率（円/玉）
+    let ballsPer1000: Double   // 貸玉料金（1000ptあたりの玉数）
+    let payoutCoefficient: Double   // 払出係数（pt/玉）
     let totalRealCost: Double
     let normalRotations: Int
     let onDismiss: () -> Void
@@ -47,7 +47,7 @@ struct ChainResultInputView: View {
     @State private var setCountStr: String = ""
     @State private var totalGainStr: String = ""
     @State private var phase: Phase = .input
-    @State private var theoreticalProfit: Int = 0
+    @State private var theoreticalValue: Int = 0
     @FocusState private var focusedField: Field?
     enum Field { case setCount, totalGain }
     enum Phase { case input, feedback }
@@ -135,7 +135,7 @@ struct ChainResultInputView: View {
             Text("今回の期待値（仕事量）")
                 .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .foregroundColor(cyan.opacity(0.8))
-            Text(theoreticalProfit >= 0 ? "+\(theoreticalProfit.formattedYen) 円" : "\(theoreticalProfit.formattedYen) 円")
+            Text(theoreticalValue >= 0 ? "+\(theoreticalValue.formattedPtWithUnit)" : "\(theoreticalValue.formattedPtWithUnit)")
                 .font(.system(size: 42, weight: .bold, design: .monospaced))
                 .foregroundColor(cyan)
             Text("収支は運、期待値は実力")
@@ -169,23 +169,23 @@ struct ChainResultInputView: View {
         onAppliedNetPerRound?(clamped)
 
         // 今回の期待値（仕事量）: 実質コスト × (現在回転率/新ボーダー - 1)。貸玉料金・交換率を考慮
-        let rate = exchangeRate > 0 ? exchangeRate : 4.0
+        let rate = payoutCoefficient > 0 ? payoutCoefficient : 4.0
         let balls = ballsPer1000 > 0 ? ballsPer1000 : 250.0
         let prob = machine.probabilityDenominator
         guard prob > 0 else {
-            theoreticalProfit = 0
+            theoreticalValue = 0
             phase = .feedback
             return
         }
         let newBorder = prob * balls / clamped * (4.0 / rate)
         guard totalRealCost > 0, newBorder > 0, normalRotations >= 0 else {
-            theoreticalProfit = 0
+            theoreticalValue = 0
             phase = .feedback
             return
         }
         let currentRate = (Double(normalRotations) / totalRealCost) * 1000.0
         let ratio = currentRate / newBorder
-        theoreticalProfit = Int(round(totalRealCost * (ratio - 1)))
+        theoreticalValue = Int(round(totalRealCost * (ratio - 1)))
 
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         phase = .feedback

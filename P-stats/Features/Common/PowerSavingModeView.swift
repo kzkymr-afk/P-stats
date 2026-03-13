@@ -140,7 +140,7 @@ struct PowerSavingModeView: View {
             VStack(alignment: .leading, spacing: 0) {
                 row(label: "現在の回転数", value: "\(log.gamesSinceLastWin)回")
                 Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
-                row(label: "総現金投資", value: "\(log.investment.formattedYen)円")
+                row(label: "総投入", value: log.totalInput.formattedPtWithUnit)
                 Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
                 row(label: "総持ち玉投資", value: "\(log.holdingsInvestedBalls)玉")
                 Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
@@ -184,7 +184,7 @@ struct PowerSavingModeView: View {
         let halfH = max(36, rowH / 2)
         HStack(spacing: 0) {
             VStack(spacing: 0) {
-                investmentZone(width: leftW, height: halfH, isCash: true, label: "現金 500円", sub: "タップ or スワイプ")
+                investmentZone(width: leftW, height: halfH, isCash: true, label: "現金 500pt", sub: "タップ or スワイプ")
                 investmentZone(width: leftW, height: halfH, isCash: false, label: "持ち玉 125玉", sub: "タップ or スワイプ")
             }
             .frame(width: leftW, height: rowH)
@@ -230,7 +230,7 @@ struct PowerSavingModeView: View {
                         .onEnded { value in
                             guard value.translation.width > swipeThreshold else { return }
                             if isCash {
-                                log.addCashInvestment(yen: cashYenPerSwipe)
+                                log.addCashInput(pt: cashYenPerSwipe)
                             } else {
                                 log.addHoldingsInvestment(balls: holdingsBallsPerSwipe)
                             }

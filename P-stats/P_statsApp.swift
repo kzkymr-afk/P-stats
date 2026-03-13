@@ -5,10 +5,12 @@ import LocalAuthentication
 import Security
 import Combine
 
-// MARK: - 金額表示（1000円単位のカンマ区切り）
+// MARK: - ポイント表示（統計シミュレーション用・カンマ区切り + pt）
 extension Int {
-    /// 表示用：金額をカンマ区切りで返す（例: 12345 → "12,345"）
-    var formattedYen: String { formatted(.number) }
+    /// 表示用：数値をカンマ区切りで返す（例: 12345 → "12,345"）
+    var formattedPt: String { formatted(.number) }
+    /// 表示用：数値 + " pt" 単位（例: 12345 → "12,345 pt"）
+    var formattedPtWithUnit: String { formatted(.number) + " pt" }
 }
 
 // MARK: - キーボード・テンキー用：テンキー枠内右上にチェックマークで閉じる（全画面で統一）
@@ -423,10 +425,10 @@ struct StaticHomeBackgroundView: View {
 
 // MARK: - 収支表示期間（タップで切り替え）
 enum EarningsPeriod: String, CaseIterable {
-    case month = "今月の収支"
-    case year = "今年の収支"
-    case week = "今週の収支"
-    case day = "今日の収支"
+    case month = "今月の成績"
+    case year = "今年の成績"
+    case week = "今週の成績"
+    case day = "今日の成績"
 
     var calendarComponent: Calendar.Component {
         switch self {
@@ -440,10 +442,10 @@ enum EarningsPeriod: String, CaseIterable {
     /// ボーダー差パネル用ラベル（期間ごとの数字）
     var borderDiffTitle: String {
         switch self {
-        case .month: return "今月のボーダー差"
-        case .year: return "今年のボーダー差"
-        case .week: return "今週のボーダー差"
-        case .day: return "今日のボーダー差"
+        case .month: return "今月の基準値差"
+        case .year: return "今年の基準値差"
+        case .week: return "今週の基準値差"
+        case .day: return "今日の基準値差"
         }
     }
 }
@@ -511,7 +513,7 @@ struct HomeView: View {
         let cal = Calendar.current
         return allSessions
             .filter { cal.isDate($0.date, equalTo: Date(), toGranularity: earningsPeriod.calendarComponent) }
-            .reduce(0) { $0 + $1.profit }
+            .reduce(0) { $0 + $1.performance }
     }
 
     private var periodDeficitSurplus: Int {
@@ -521,7 +523,7 @@ struct HomeView: View {
             .reduce(0) { $0 + $1.deficitSurplus }
     }
 
-    /// 期間内の公式ボーダーとの差の平均（回/千円）。実質回転率 − 公式ボーダー。nil は対象なし
+    /// 期間内の公式基準値との差の平均（回/千pt）。実質回転率 − 公式基準値。nil は対象なし
     private var periodBorderDiff: Double? {
         let cal = Calendar.current
         let list = allSessions
@@ -788,13 +790,13 @@ struct HomeView: View {
                 Text(earningsPeriod.rawValue)
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundColor(.white.opacity(0.92))
-                Text("\(periodProfit >= 0 ? "+" : "")\(periodProfit.formattedYen)円")
+                Text("\(periodProfit >= 0 ? "+" : "")\(periodProfit.formattedPtWithUnit)")
                     .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
                     .foregroundStyle(periodProfit >= 0 ? cyan : Color(red: 0.95, green: 0.3, blue: 0.5))
                     .frame(maxWidth: .infinity)
                 HStack {
                     Spacer(minLength: 0)
-                    Text(periodDeficitSurplus >= 0 ? "余剰 +\(periodDeficitSurplus.formattedYen)円" : "欠損 \(periodDeficitSurplus.formattedYen)円")
+                    Text(periodDeficitSurplus >= 0 ? "余剰 +\(periodDeficitSurplus.formattedPtWithUnit)" : "欠損 \(periodDeficitSurplus.formattedPtWithUnit)")
                         .font(.system(size: 14, weight: .semibold, design: .rounded).monospacedDigit())
                         .foregroundColor(periodDeficitSurplus >= 0 ? Color(red: 0.3, green: 0.95, blue: 0.5) : Color.orange)
                 }
@@ -821,7 +823,7 @@ struct HomeView: View {
         .buttonStyle(.plain)
     }
 
-    /// 公式ボーダーと実質回転率の差分パネル（収支パネルと同じ大きさ・フォント。タップで期間切替）
+    /// 公式基準値と実質回転率の差分パネル（成績パネルと同じ大きさ・フォント。タップで期間切替）
     private func borderDiffCard(padding cardPad: CGFloat = 16) -> some View {
         Button {
             HapticUtil.impact(.light)
@@ -836,7 +838,7 @@ struct HomeView: View {
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundColor(.white.opacity(0.92))
                 if let diff = periodBorderDiff {
-                    Text(String(format: "%+.1f 回/千円", diff))
+                    Text(String(format: "%+.1f 回/千pt", diff))
                         .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
                         .foregroundStyle(diff >= 0 ? cyan : Color(red: 0.95, green: 0.3, blue: 0.5))
                         .frame(maxWidth: .infinity)
@@ -1205,7 +1207,7 @@ struct SettingsTabView: View {
     @AppStorage("playViewStartWithPowerSaving") private var playViewStartWithPowerSaving = false
     @AppStorage("startWithZeroHoldings") private var startWithZeroHoldings = false
     @AppStorage("hapticEnabled") private var hapticEnabled = true
-    @AppStorage("defaultExchangeRate") private var defaultExchangeRateStr = "4.0"  // 交換率（円/玉）文字列
+    @AppStorage("defaultExchangeRate") private var defaultExchangeRateStr = "4.0"  // 払出係数（pt/玉）文字列
     @AppStorage("defaultBallsPerCash") private var defaultBallsPerCashStr = "125"
     @AppStorage("defaultMachineName") private var defaultMachineName = ""
     @AppStorage("defaultShopName") private var defaultShopName = ""
@@ -1282,11 +1284,11 @@ struct SettingsTabView: View {
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.7))
                             Toggle(isOn: $alwaysShowBothInvestmentButtons) {
-                                Text("常に現金投資・持ち玉投資両方を表示")
+                                Text("常に現金投入・持ち玉投入両方を表示")
                                     .foregroundColor(.white.opacity(0.9))
                             }
                             .tint(cyan)
-                            Text("オフの場合、持ち玉0のときは現金投資のみ、持ち玉があるときは持ち玉投資のみを表示します（ボタンは2つ分の大きさ）。")
+                            Text("オフの場合、持ち玉0のときは現金投入のみ、持ち玉があるときは持ち玉投入のみを表示します（ボタンは2つ分の大きさ）。")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.7))
                         }
@@ -1308,10 +1310,10 @@ struct SettingsTabView: View {
                     }
 
                     // 店舗選択なしの場合のデフォルト交換率
-                    settingsCard(title: "店舗選択なしの場合のデフォルト交換率", icon: "yensign.circle.fill") {
+                    settingsCard(title: "店舗選択なしの場合のデフォルト払出係数", icon: "yensign.circle.fill") {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
-                                Text("交換率（円/玉）")
+                                Text("払出係数（pt/玉）")
                                     .foregroundColor(.white.opacity(0.85))
                                 Spacer()
                                 TextField("4.0", text: $defaultExchangeRateStr)
@@ -1325,7 +1327,7 @@ struct SettingsTabView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
                             HStack {
-                                Text("貸玉料金（500円あたりの玉数）")
+                                Text("貸玉料金（500ptあたりの玉数）")
                                     .foregroundColor(.white.opacity(0.85))
                                 Spacer()
                                 TextField("125", text: $defaultBallsPerCashStr)
@@ -1767,12 +1769,12 @@ struct SessionDetailView: View {
     private let labelColor = Color.white.opacity(0.95)
     private let labelShadow = (color: Color.black.opacity(0.7), radius: CGFloat(2), x: CGFloat(0), y: CGFloat(1))
 
-    /// 回収額（円換算）
-    private var recoveryYen: Int { Int(Double(session.totalHoldings) * session.exchangeRate) }
-    /// 実質回転率（回転/千円）
+    /// 回収額（pt換算）
+    private var recoveryPt: Int { Int(Double(session.totalHoldings) * session.payoutCoefficient) }
+    /// 実質回転率（回転/千pt）
     private var rotationPer1k: Double {
-        guard session.investmentCash > 0 else { return 0 }
-        return Double(session.normalRotations) / (Double(session.investmentCash) / 1000.0)
+        guard session.inputCash > 0 else { return 0 }
+        return Double(session.normalRotations) / (Double(session.inputCash) / 1000.0)
     }
 
     var body: some View {
@@ -1803,33 +1805,33 @@ struct SessionDetailView: View {
                         }
                     }
 
-                    detailPanel(title: "収支の推移") {
+                    detailPanel(title: "成績の推移") {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(spacing: 12) {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("投資（現金）")
+                                    Text("投入（現金）")
                                         .font(.caption)
                                         .foregroundColor(labelColor)
                                         .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
-                                    Text("\(session.investmentCash.formattedYen) 円")
+                                    Text(session.inputCash.formattedPtWithUnit)
                                         .font(.subheadline.monospacedDigit())
                                         .foregroundColor(.white)
                                 }
                                 Spacer()
                                 VStack(alignment: .trailing, spacing: 4) {
-                                    Text("回収（円換算）")
+                                    Text("回収（pt換算）")
                                         .font(.caption)
                                         .foregroundColor(labelColor)
                                         .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
-                                    Text("\(recoveryYen.formattedYen) 円")
+                                    Text(recoveryPt.formattedPtWithUnit)
                                         .font(.subheadline.monospacedDigit())
                                         .foregroundColor(.white)
                                 }
                             }
                             GeometryReader { geo in
                                 let w = geo.size.width
-                                let total = max(session.investmentCash + recoveryYen, 1)
-                                let investW = w * CGFloat(session.investmentCash) / CGFloat(total)
+                                let total = max(session.inputCash + recoveryPt, 1)
+                                let investW = w * CGFloat(session.inputCash) / CGFloat(total)
                                 HStack(spacing: 0) {
                                     Rectangle()
                                         .fill(Color.orange.opacity(0.7))
@@ -1846,31 +1848,31 @@ struct SessionDetailView: View {
                     detailPanel(title: "数値サマリ") {
                         VStack(alignment: .leading, spacing: 8) {
                             detailRow(label: "総回転数", value: "\(session.normalRotations)")
-                            detailRow(label: "総投資額（現金）", value: "\(session.investmentCash.formattedYen) 円")
+                            detailRow(label: "総投入額（現金）", value: session.inputCash.formattedPtWithUnit)
                             detailRow(label: "回収出球", value: "\(session.totalHoldings) 玉")
-                            detailRow(label: "回収額（円換算）", value: "\(recoveryYen.formattedYen) 円")
-                            detailRow(label: "理論期待値", value: "\(session.theoreticalProfit >= 0 ? "+" : "")\(session.theoreticalProfit.formattedYen) 円")
-                            detailRow(label: "欠損・余剰", value: "\(session.deficitSurplus >= 0 ? "+" : "")\(session.deficitSurplus.formattedYen) 円")
+                            detailRow(label: "回収額（pt換算）", value: recoveryPt.formattedPtWithUnit)
+                            detailRow(label: "理論値", value: "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)")
+                            detailRow(label: "欠損・余剰", value: "\(session.deficitSurplus >= 0 ? "+" : "")\(session.deficitSurplus.formattedPtWithUnit)")
                             HStack {
-                                Text("実収支")
+                                Text("実成績")
                                     .font(.subheadline)
                                     .foregroundColor(labelColor)
                                     .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
                                 Spacer()
-                                Text("\(session.profit >= 0 ? "+" : "")\(session.profit.formattedYen) 円")
+                                Text("\(session.performance >= 0 ? "+" : "")\(session.performance.formattedPtWithUnit)")
                                     .font(.body.weight(.semibold).monospacedDigit())
-                                    .foregroundColor(session.profit >= 0 ? .green : .red)
+                                    .foregroundColor(session.performance >= 0 ? .green : .red)
                             }
                         }
                     }
 
                     detailPanel(title: "分析（入力データから算出）") {
                         VStack(alignment: .leading, spacing: 8) {
-                            detailRow(label: "期待値比（保存時）", value: session.expectationRatioAtSave > 0 ? String(format: "%.2f%%", session.expectationRatioAtSave * 100) : "—")
-                            detailRow(label: "実質回転率", value: String(format: "%.1f 回/千円", rotationPer1k))
-                            detailRow(label: "RUSH大当たり", value: "\(session.rushWinCount) 回")
-                            detailRow(label: "通常大当たり", value: "\(session.normalWinCount) 回")
-                            detailRow(label: "LT大当たり", value: "\(session.ltWinCount) 回")
+                            detailRow(label: "理論値比（保存時）", value: session.expectationRatioAtSave > 0 ? String(format: "%.2f%%", session.expectationRatioAtSave * 100) : "—")
+                            detailRow(label: "実質回転率", value: String(format: "%.1f 回/千pt", rotationPer1k))
+                            detailRow(label: "RUSH当選", value: "\(session.rushWinCount) 回")
+                            detailRow(label: "通常当選", value: "\(session.normalWinCount) 回")
+                            detailRow(label: "LT当選", value: "\(session.ltWinCount) 回")
                         }
                     }
                 }
@@ -1944,7 +1946,7 @@ struct HistorySessionCard: View {
     }
     private var rotationRateDisplay: String {
         if rotationPer1k <= 0 { return "—" }
-        var s = String(format: "%.1f 回/千円", rotationPer1k)
+        var s = String(format: "%.1f 回/千pt", rotationPer1k)
         if session.formulaBorderPer1k > 0 {
             let diff = rotationPer1k - session.formulaBorderPer1k
             s += " (\(diff >= 0 ? "+" : "")\(String(format: "%.1f", diff)))"
@@ -1964,17 +1966,17 @@ struct HistorySessionCard: View {
                     .foregroundColor(.white.opacity(0.8))
             }
             HStack(spacing: 16) {
-                Text("実収支 \(session.profit >= 0 ? "+" : "")\(session.profit.formattedYen) 円")
+                Text("実成績 \(session.performance >= 0 ? "+" : "")\(session.performance.formattedPtWithUnit)")
                     .font(.subheadline.monospacedDigit().weight(.medium))
-                    .foregroundColor(session.profit >= 0 ? .green : .red)
-                Text("大当たり RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount) LT:\(session.ltWinCount)")
+                    .foregroundColor(session.performance >= 0 ? .green : .red)
+                Text("当選 RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount) LT:\(session.ltWinCount)")
                     .font(.subheadline.monospacedDigit())
                     .foregroundColor(.white.opacity(0.85))
             }
             HStack(spacing: 12) {
                 labelValue("総回転", "\(session.normalRotations)")
                 Text("・").foregroundColor(.white.opacity(0.5))
-                labelValue("投資", "\(session.investmentCash.formattedYen)円")
+                labelValue("投入", session.inputCash.formattedPtWithUnit)
                 Text("・").foregroundColor(.white.opacity(0.5))
                 labelValue("回収玉", "\(session.totalHoldings)")
             }
@@ -1982,7 +1984,7 @@ struct HistorySessionCard: View {
             .foregroundColor(.white.opacity(0.85))
             HStack(alignment: .top, spacing: 16) {
                 miniblock("実践回転率", value: rotationRateDisplay, valueColor: .white)
-                miniblock("理論期待値", value: "\(session.theoreticalProfit >= 0 ? "+" : "")\(session.theoreticalProfit.formattedYen)円", valueColor: .white.opacity(0.9))
+                miniblock("理論値", value: "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)", valueColor: .white.opacity(0.9))
                 deficitSurplusBlock
             }
             .font(.caption)
@@ -2000,11 +2002,11 @@ struct HistorySessionCard: View {
     private var deficitSurplusBlock: some View {
         Group {
             if session.deficitSurplus > 0 {
-                miniblock("余剰", value: "+\(session.deficitSurplus.formattedYen)円", valueColor: .green.opacity(0.9))
+                miniblock("余剰", value: "+\(session.deficitSurplus.formattedPtWithUnit)", valueColor: .green.opacity(0.9))
             } else if session.deficitSurplus < 0 {
-                miniblock("欠損", value: "\(session.deficitSurplus.formattedYen)円", valueColor: .red.opacity(0.9))
+                miniblock("欠損", value: session.deficitSurplus.formattedPtWithUnit, valueColor: .red.opacity(0.9))
             } else {
-                miniblock("余剰・欠損", value: "0円", valueColor: .white.opacity(0.8))
+                miniblock("余剰・欠損", value: "0 pt", valueColor: .white.opacity(0.8))
             }
         }
     }
@@ -2083,7 +2085,7 @@ struct SessionEditView: View {
                     .onChange(of: selectedShop) { _, new in
                         if let s = new {
                             session.shopName = s.name
-                            session.exchangeRate = s.exchangeRate
+                            session.payoutCoefficient = s.payoutCoefficient
                         }
                     }
                     .listRowBackground(AppGlassStyle.rowBackground)
@@ -2099,9 +2101,9 @@ struct SessionEditView: View {
 
             Section("数値") {
                 HStack {
-                    Text("現金投資（円）")
+                    Text("投入（pt）")
                     Spacer()
-                    TextField("0", value: $session.investmentCash, format: .number)
+                    TextField("0", value: $session.inputCash, format: .number)
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.trailing)
                 }
@@ -2123,7 +2125,7 @@ struct SessionEditView: View {
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
-                    Text("RUSH大当たり回数")
+                    Text("RUSH当選回数")
                     Spacer()
                     TextField("0", value: $session.rushWinCount, format: .number)
                         .keyboardType(.numberPad)
@@ -2131,7 +2133,7 @@ struct SessionEditView: View {
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
-                    Text("通常大当たり回数")
+                    Text("通常当選回数")
                     Spacer()
                     TextField("0", value: $session.normalWinCount, format: .number)
                         .keyboardType(.numberPad)
@@ -2139,7 +2141,7 @@ struct SessionEditView: View {
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
-                    Text("LT大当たり回数")
+                    Text("LT当選回数")
                     Spacer()
                     TextField("0", value: $session.ltWinCount, format: .number)
                         .keyboardType(.numberPad)
@@ -2147,18 +2149,18 @@ struct SessionEditView: View {
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
-                    Text("交換率（円/玉）")
+                    Text("払出係数（pt/玉）")
                     Spacer()
-                    TextField("4.0", value: $session.exchangeRate, format: .number)
+                    TextField("4.0", value: $session.payoutCoefficient, format: .number)
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
             }
 
-            Section("計算用（変更時は理論期待値を再計算）") {
+            Section("計算用（変更時は理論値を再計算）") {
                 HStack {
-                    Text("実質投資（円）")
+                    Text("実質投入（pt）")
                     Spacer()
                     TextField("0", value: $session.totalRealCost, format: .number)
                         .keyboardType(.decimalPad)
@@ -2166,7 +2168,7 @@ struct SessionEditView: View {
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
-                    Text("ボーダー比（保存時）")
+                    Text("基準値比（保存時）")
                     Spacer()
                     TextField("1.0", value: $session.expectationRatioAtSave, format: .number)
                         .keyboardType(.decimalPad)
@@ -2174,17 +2176,17 @@ struct SessionEditView: View {
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 if session.expectationRatioAtSave == 0 || session.totalRealCost == 0 {
-                    Text("理論期待値を出すには「実質投資」と「ボーダー比」を入力し、「理論期待値を再計算」をタップしてください。1.0＝ボーダー、1.1＝10%上回り。")
+                    Text("理論値を出すには「実質投入」と「基準値比」を入力し、「理論値を再計算」をタップしてください。1.0＝基準、1.1＝10%上回り。")
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.7))
                         .listRowBackground(AppGlassStyle.rowBackground)
                 }
-                Button("理論期待値を再計算") {
+                Button("理論値を再計算") {
                     let ratio = session.expectationRatioAtSave > 0 ? session.expectationRatioAtSave : 1.0
-                    let cost = session.totalRealCost > 0 ? session.totalRealCost : Double(session.investmentCash)
-                    session.theoreticalProfit = Int(round(cost * (ratio - 1)))
-                    if session.totalRealCost == 0 && session.investmentCash > 0 {
-                        session.totalRealCost = Double(session.investmentCash)
+                    let cost = session.totalRealCost > 0 ? session.totalRealCost : Double(session.inputCash)
+                    session.theoreticalValue = Int(round(cost * (ratio - 1)))
+                    if session.totalRealCost == 0 && session.inputCash > 0 {
+                        session.totalRealCost = Double(session.inputCash)
                     }
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
@@ -2205,9 +2207,9 @@ struct SessionEditView: View {
             if selectedShop == nil {
                 selectedShop = shops.first { $0.name == session.shopName }
             }
-            // 実質投資が未入力で総投資額がある場合は、現金投資を実質投資として補正（理論期待値計算のため）
-            if session.totalRealCost == 0 && session.investmentCash > 0 {
-                session.totalRealCost = Double(session.investmentCash)
+            // 実質投入が未入力で総投入額がある場合は、現金投入を実質投入として補正（理論値計算のため）
+            if session.totalRealCost == 0 && session.inputCash > 0 {
+                session.totalRealCost = Double(session.inputCash)
             }
         }
     }

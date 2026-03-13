@@ -233,7 +233,8 @@ final class PresetMachine {
 final class Shop {
     var name: String = ""
     var ballsPerCashUnit: Int = 125
-    var exchangeRate: Double = 4.0
+    /// 払出係数（1玉あたりのpt換算）。統計シミュレーション用
+    var payoutCoefficient: Double = 4.0
     /// Google Places API から取得した場所の一意なID（重複登録防止など）
     var placeID: String?
     /// 店舗の住所
@@ -244,10 +245,10 @@ final class Shop {
     var specificLastDigitsStorage: String = ""
     /// 特定日ルールの追加順（最大4つ）。形式: "M13,L5,L7,L8" → M=毎月N日, L=Nのつく日。空なら旧2フィールドから復元
     var specificDayRulesStorage: String = ""
-    init(name: String, ballsPerCashUnit: Int, exchangeRate: Double, placeID: String? = nil, address: String = "") {
+    init(name: String, ballsPerCashUnit: Int, payoutCoefficient: Double, placeID: String? = nil, address: String = "") {
         self.name = name
         self.ballsPerCashUnit = ballsPerCashUnit
-        self.exchangeRate = exchangeRate
+        self.payoutCoefficient = payoutCoefficient
         self.placeID = placeID
         self.address = address
     }
@@ -310,6 +311,8 @@ struct WinRecord: Identifiable, Codable {
     var nextModeId: Int? = nil
     /// フェーズ3: 当たり名称（データ駆動用）。既存データは nil
     var bonusName: String? = nil
+    /// RUSH終了時にユーザーが入力した「このRUSHで遊んだ総ゲーム数」（時短抜け含む）。RUSH 1 run のみ使用
+    var rushGamesPlayed: Int? = nil
 }
 
 struct LendingRecord: Identifiable, Codable {
@@ -375,45 +378,45 @@ final class GameSession {
     var machineName: String = ""
     var shopName: String = ""
     var manufacturerName: String = ""  // 保存時メーカー（分析用）
-    var investmentCash: Int = 0        // 現金投資
+    var inputCash: Int = 0             // 投入（現金）
     var totalHoldings: Int = 0         // 回収玉数
     var normalRotations: Int = 0       // 総回転数（通常）
     var totalUsedBalls: Int = 0        // 総消費玉数
-    var exchangeRate: Double = 0.0     // 交換率
-    var totalRealCost: Double = 0      // 実質投資（円換算）
-    var expectationRatioAtSave: Double = 0  // 保存時ボーダー比
-    var theoreticalProfit: Int = 0     // 理論期待値（利益・円）
-    var rushWinCount: Int = 0          // 実践で入力したRUSH大当たり回数
-    var normalWinCount: Int = 0        // 実践で入力した通常大当たり回数
-    var ltWinCount: Int = 0            // 実践で入力したLT（上位RUSH）大当たり回数
-    /// 保存時の公式ボーダー（回/千円・等価）。実践回転率との差表示用
+    var payoutCoefficient: Double = 0.0 // 払出係数（統計シミュレーション用）
+    var totalRealCost: Double = 0      // 実質投入（pt換算）
+    var expectationRatioAtSave: Double = 0  // 保存時基準値比
+    var theoreticalValue: Int = 0      // 理論値（pt）
+    var rushWinCount: Int = 0          // 実践で入力したRUSH当選回数
+    var normalWinCount: Int = 0        // 実践で入力した通常当選回数
+    var ltWinCount: Int = 0            // 実践で入力したLT（上位RUSH）当選回数
+    /// 保存時の公式基準値（回/千pt・等価）。実践回転率との差表示用
     var formulaBorderPer1k: Double = 0
 
-    init(machineName: String, shopName: String, manufacturerName: String = "", investmentCash: Int, totalHoldings: Int, normalRotations: Int, totalUsedBalls: Int, exchangeRate: Double, totalRealCost: Double = 0, expectationRatioAtSave: Double = 0, rushWinCount: Int = 0, normalWinCount: Int = 0, ltWinCount: Int = 0, formulaBorderPer1k: Double = 0) {
+    init(machineName: String, shopName: String, manufacturerName: String = "", inputCash: Int, totalHoldings: Int, normalRotations: Int, totalUsedBalls: Int, payoutCoefficient: Double, totalRealCost: Double = 0, expectationRatioAtSave: Double = 0, rushWinCount: Int = 0, normalWinCount: Int = 0, ltWinCount: Int = 0, formulaBorderPer1k: Double = 0) {
         self.machineName = machineName
         self.shopName = shopName
         self.manufacturerName = manufacturerName
-        self.investmentCash = investmentCash
+        self.inputCash = inputCash
         self.totalHoldings = totalHoldings
         self.normalRotations = normalRotations
         self.totalUsedBalls = totalUsedBalls
-        self.exchangeRate = exchangeRate
+        self.payoutCoefficient = payoutCoefficient
         self.totalRealCost = totalRealCost
         self.expectationRatioAtSave = expectationRatioAtSave
-        self.theoreticalProfit = Int(round(totalRealCost * (expectationRatioAtSave - 1)))
+        self.theoreticalValue = Int(round(totalRealCost * (expectationRatioAtSave - 1)))
         self.rushWinCount = rushWinCount
         self.normalWinCount = normalWinCount
         self.ltWinCount = ltWinCount
         self.formulaBorderPer1k = formulaBorderPer1k
     }
 
-    /// 実収支（円）
-    var profit: Int {
-        let recovery = Int(Double(totalHoldings) * exchangeRate)
-        return recovery - investmentCash
+    /// 成績（回収 − 投入・pt）
+    var performance: Int {
+        let recovery = Int(Double(totalHoldings) * payoutCoefficient)
+        return recovery - inputCash
     }
 
-    /// 欠損・余剰（実収支 − 理論期待値）。正＝理論より得、負＝理論より損
-    var deficitSurplus: Int { profit - theoreticalProfit }
+    /// 欠損・余剰（成績 − 理論値）。正＝理論より得、負＝理論より損
+    var deficitSurplus: Int { performance - theoreticalValue }
 }
 

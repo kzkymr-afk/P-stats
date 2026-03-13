@@ -5,8 +5,8 @@ import SwiftData
 /// ダークネイビー・水色ネオン・約定モニター風。1R純増をリアルタイム調整し、実効ボーダーを再計算。
 struct BonusMonitorView: View {
     @Bindable var machine: Machine
-    let ballsPer1000: Double   // 貸玉料金（1000円あたりの玉数）
-    let exchangeRate: Double   // 交換率（円/玉）
+    let ballsPer1000: Double   // 貸玉料金（1000ptあたりの玉数）
+    let payoutCoefficient: Double   // 払出係数（pt/玉）
     let onFinish: (Double) -> Void
     @Environment(\.dismiss) private var dismiss
 
@@ -23,10 +23,10 @@ struct BonusMonitorView: View {
 
     /// 実効ボーダー（現在の1R純増ベース）。貸玉料金・交換率を考慮: prob × 貸玉料金/純増 × (4/交換率)
     private var effectiveBorder: Double {
-        guard exchangeRate > 0, currentNetPerRound > 0, ballsPer1000 > 0 else { return 0 }
+        guard payoutCoefficient > 0, currentNetPerRound > 0, ballsPer1000 > 0 else { return 0 }
         let prob = machine.probabilityDenominator
         guard prob > 0 else { return 0 }
-        return prob * ballsPer1000 / currentNetPerRound * (4.0 / exchangeRate)
+        return prob * ballsPer1000 / currentNetPerRound * (4.0 / payoutCoefficient)
     }
 
     /// 公表値に対する獲得期待度（0.5〜1.5 → ゲージ表示用）

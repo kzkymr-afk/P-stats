@@ -5,7 +5,7 @@ import Observation
 final class GameLog {
     // 初期値としての仮データ（SelectionViewで上書きされます）
     var selectedMachine: Machine = Machine(name: "未選択", supportLimit: 100, defaultPrize: 1500)
-    var selectedShop: Shop = Shop(name: "未選択", ballsPerCashUnit: 125, exchangeRate: 4.0)
+    var selectedShop: Shop = Shop(name: "未選択", ballsPerCashUnit: 125, payoutCoefficient: 4.0)
     
     /// 初期持ち玉（syncHoldings/syncToSnapshot で調整され、totalHoldings 計算のベースになる）
     var initialHoldings: Int = 0
@@ -103,9 +103,9 @@ final class GameLog {
         }
     }
 
-    /// クイック投資：指定円額（500円単位）を一括で現金投資として追加。例: addCashInvestment(5000) で 5k
-    func addCashInvestment(yen: Int) {
-        let units = max(0, yen / 500)
+    /// クイック投入：指定pt（500pt単位）を一括で現金投入として追加。例: addCashInput(5000) で 5k
+    func addCashInput(pt: Int) {
+        let units = max(0, pt / 500)
         guard units > 0 else { return }
         for _ in 0..<units {
             let record = LendingRecord(type: .cash, timestamp: Date())
@@ -228,12 +228,12 @@ final class GameLog {
     }
 
     // 計算用
-    var investment: Int { lendingRecords.filter { $0.type == .cash }.count * 500 }
-    /// RUSH 大当たり回数
+    var totalInput: Int { lendingRecords.filter { $0.type == .cash }.count * 500 }
+    /// RUSH 当選回数
     var rushWinCount: Int { winRecords.filter { $0.type == .rush }.count }
-    /// 通常大当たり回数
+    /// 通常当選回数
     var normalWinCount: Int { winRecords.filter { $0.type == .normal }.count }
-    /// LT（上位RUSH）大当たり回数
+    /// LT（上位RUSH）当選回数
     var ltWinCount: Int { winRecords.filter { $0.type == .lt }.count }
     var totalUsedBalls: Int {
         let cashBalls = lendingRecords.filter { $0.type == .cash }.count * selectedShop.ballsPerCashUnit
@@ -247,33 +247,33 @@ final class GameLog {
 
     var totalRealCost: Double {
         let cashCost = Double(lendingRecords.filter { $0.type == .cash }.count * 500)
-        let holdingsCost = Double(holdingsInvestedBalls) * selectedShop.exchangeRate
+        let holdingsCost = Double(holdingsInvestedBalls) * selectedShop.payoutCoefficient
         return cashCost + holdingsCost
     }
 
-    /// 収入（円）。出玉×交換率を五百円刻みで端数切り捨て
-    var incomeYen500Step: Int {
-        let raw = Double(totalHoldings) * selectedShop.exchangeRate
+    /// 収入（pt）。出玉×払出係数を500pt刻みで端数切り捨て
+    var incomePt500Step: Int {
+        let raw = Double(totalHoldings) * selectedShop.payoutCoefficient
         return Int(raw / 500) * 500
     }
 
-    /// 今回の収支（円）。収入 − 現金投資
-    var balanceYen: Int { incomeYen500Step - investment }
+    /// 今回の成績（pt）。収入 − 投入
+    var balancePt: Int { incomePt500Step - totalInput }
 
-    /// 現在の損益（円）。現金投資＋持ち玉投資（交換率で円換算）に対する、現在の持ち玉（交換率で円換算）の差。正＝黒字側
-    var chartProfitYen: Double {
-        let rate = selectedShop.exchangeRate
+    /// 現在の損益（pt）。投入＋持ち玉投入（払出係数でpt換算）に対する、現在の持ち玉（払出係数でpt換算）の差。正＝黒字側
+    var chartProfitPt: Double {
+        let rate = selectedShop.payoutCoefficient
         let currentValue = Double(totalHoldings) * rate
-        let cost = Double(investment) + Double(holdingsInvestedBalls) * rate
+        let cost = Double(totalInput) + Double(holdingsInvestedBalls) * rate
         return currentValue - cost
     }
 
-    /// 収支グラフ用プロット。横軸＝総回転数（電サポ・時短を除く通常ゲーム累積）。縦軸＝損益（円）
+    /// 成績グラフ用プロット。横軸＝総回転数（電サポ・時短を除く通常ゲーム累積）。縦軸＝損益（pt）
     var liveChartPoints: [(Int, Double)] {
         if let cached = _cachedLiveChartPoints, _lastChartStateHash == chartStateHash {
             return cached
         }
-        let rate = selectedShop.exchangeRate
+        let rate = selectedShop.payoutCoefficient
         var points: [(Int, Double)] = [(0, 0)]
         let winsOrdered = winRecords.sorted { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
         let lendingsOrdered = lendingRecords.sorted { ($0.timestamp) < ($1.timestamp) }
@@ -306,7 +306,7 @@ final class GameLog {
         
         let lastWinNormal = winsOrdered.last.flatMap { $0.normalRotationsAtWin ?? Optional($0.rotationAtWin) } ?? -1
         if normalRotations > lastWinNormal {
-            points.append((normalRotations, chartProfitYen))
+            points.append((normalRotations, chartProfitPt))
         }
         
         _cachedLiveChartPoints = points
@@ -332,7 +332,7 @@ final class GameLog {
         }
         hasher.combine(normalRotations)
         hasher.combine(totalRotations)
-        hasher.combine(selectedShop.exchangeRate)
+        hasher.combine(selectedShop.payoutCoefficient)
         hasher.combine(initialHoldings)
         hasher.combine(initialDisplayRotation)
         hasher.combine(dynamicBorder)
@@ -364,18 +364,18 @@ final class GameLog {
     /// 公式ボーダー（等価時）の数値。UI表示用
     var formulaBorderValue: Double { formulaBorderAsNumber }
 
-    /// 公式ボーダー（回転/1000円）。メーカー公表値（機種マスターまたはユーザー入力の border）に、
-    /// 店舗の貸玉料金（1000円あたり玉数）と交換率（円/玉）を考慮して算出。
-    /// 公式＝等価(4円/玉・250玉/1000円)基準。実戦 = 公式 × (貸玉料金/250) × (4/交換率)
-    /// ※業界でいう「回転/1000円」は通常回転のみ（時短・電サポは含めない）。実質回転率と比較可能。
+    /// 公式基準値（回転/1000pt）。メーカー公表値（機種マスターまたはユーザー入力の border）に、
+    /// 店舗の貸玉料金（1000ptあたり玉数）と払出係数（pt/玉）を考慮して算出。
+    /// 公式＝等価(4pt/玉・250玉/1000pt)基準。実戦 = 公式 × (貸玉料金/250) × (4/払出係数)
+    /// ※通常回転のみ（時短・電サポは含めない）。実質回転率と比較可能。
     var dynamicBorder: Double {
-        let rate = selectedShop.exchangeRate
+        let rate = selectedShop.payoutCoefficient
         guard rate > 0 else { return 0 }
         let ballsPer1000 = Double(selectedShop.ballsPerCashUnit * 2)
         guard ballsPer1000 > 0 else { return 0 }
         let formula = formulaBorderAsNumber
         let loanCorrection = ballsPer1000 / 250.0   // 250玉基準→貸玉料金に変更（230玉なら×0.92）
-        let exchangeCorrection = 4.0 / rate         // 交換率補正（3.5円なら×1.14）
+        let exchangeCorrection = 4.0 / rate         // 払出係数補正
         if formula > 0 {
             return formula * loanCorrection * exchangeCorrection
         }
@@ -387,14 +387,14 @@ final class GameLog {
         return 1000.0 * ballsPer1000 / (effective1RNetPerRound * 250.0 * rate)
     }
 
-    /// 実践ボーダー用：店舗の貸玉料金を考慮した「単位」数。1単位＝等価1000円(250玉)。投資円を貸玉料金で換算
+    /// 実践基準値用：店舗の貸玉料金を考慮した「単位」数。1単位＝等価1000pt(250玉)。投入ptを貸玉料金で換算
     var effectiveUnitsForBorder: Double {
         let ballsPer1000 = Double(selectedShop.ballsPerCashUnit * 2)
-        let cashUnits = ballsPer1000 > 0 ? Double(investment) * ballsPer1000 / 250000.0 : Double(investment) / 1000.0
+        let cashUnits = ballsPer1000 > 0 ? Double(totalInput) * ballsPer1000 / 250000.0 : Double(totalInput) / 1000.0
         return cashUnits + Double(holdingsInvestedBalls) / 250.0
     }
 
-    /// 期待値（実戦ボーダー比）。実質回転率（1000円・250玉単位）÷ 実戦ボーダー。1.0でボーダー、>1で上回り
+    /// 理論値（実戦基準値比）。実質回転率（1000pt・250玉単位）÷ 実戦基準値。1.0で基準、>1で上回り
     var expectationRatio: Double {
         if let cached = _cachedExpectationRatio, _lastExpectationStateHash == expectationStateHash {
             return cached
@@ -415,9 +415,9 @@ final class GameLog {
     
     private var expectationStateHash: Int {
         var hasher = Hasher()
-        hasher.combine(investment)
+        hasher.combine(totalInput)
         hasher.combine(holdingsInvestedBalls)
-        hasher.combine(selectedShop.exchangeRate)
+        hasher.combine(selectedShop.payoutCoefficient)
         hasher.combine(selectedShop.ballsPerCashUnit)
         hasher.combine(formulaBorderAsNumber)
         hasher.combine(effective1RNetPerRound)
@@ -426,13 +426,13 @@ final class GameLog {
         return hasher.finalize()
     }
 
-    /// 実質回転率（回転/単位）。1単位＝現金1000円 または 持ち玉250玉。店舗の貸玉料金・交換率は実戦ボーダー側で参照
-    /// 分子は normalRotations（通常回転のみ・時短・電サポ除く）＝金を払って回した回転数。公式ボーダーと同定義。
+    /// 実質回転率（回転/単位）。1単位＝現金1000pt または 持ち玉250玉。店舗の貸玉料金・払出係数は実戦基準値側で参照
+    /// 分子は normalRotations（通常回転のみ・時短・電サポ除く）。公式基準値と同定義。
     var realRate: Double {
         effectiveUnitsForBorder > 0 ? Double(normalRotations) / effectiveUnitsForBorder : 0.0
     }
 
-    /// 実費ベースの回転率（回転/千円）。現金＋持ち玉（交換率で円換算）の実費で割る。現金のみ 60回転・4000円 → 15。ゲージの補足表示用
+    /// 実費ベースの回転率（回転/千pt）。現金＋持ち玉（払出係数でpt換算）の実費で割る。ゲージの補足表示用
     var rotationPer1000Yen: Double {
         let realCostThousands = totalRealCost / 1000.0
         guard realCostThousands > 0 else { return 0 }
@@ -492,11 +492,12 @@ final class GameLog {
         }
     }
 
-    /// RUSH終了時に獲得出玉と終了時回転数を反映する。RUSH終了UIで確定時に呼び出す。
+    /// RUSH終了時に獲得出玉・終了時回転数・RUSHゲーム数を反映する。RUSH終了UIで確定時に呼び出す。
     /// - Parameters:
     ///   - finalTotal: このRUSHの獲得出玉（玉数）
-    ///   - rotationAtEnd: RUSH終了時の回転数（未指定なら最後の記録の回転数のまま）
-    func fixTotalChainPrize(finalTotal: Int, rotationAtEnd: Int? = nil) {
+    ///   - rotationAtEnd: RUSH終了時の回転数（未指定なら最後の記録のまま）。反映後に totalRotations もこの値に合わせる
+    ///   - rushGamesPlayed: このRUSHで遊んだ総ゲーム数（時短抜け含む）。任意
+    func fixTotalChainPrize(finalTotal: Int, rotationAtEnd: Int? = nil, rushGamesPlayed: Int? = nil) {
         let currentTotal = winRecords.reduce(0) { $0 + ($1.prize ?? 0) }
         let diff = finalTotal - currentTotal
         guard let lastIndex = winRecords.indices.last else { return }
@@ -505,7 +506,12 @@ final class GameLog {
         if let rot = rotationAtEnd, rot >= 0 {
             last.rotationAtWin = rot
         }
+        last.rushGamesPlayed = rushGamesPlayed
         winRecords[lastIndex] = last
+        // RUSH終了後の表示整合：総回転数を終了時回転数に合わせる（RUSH中は加算していないため）
+        if let rot = rotationAtEnd, rot >= 0 {
+            totalRotations = rot
+        }
     }
 
     func adjustForZeroTray(syncRotation: Int) {
@@ -561,9 +567,9 @@ final class GameLog {
         if currentState == .normal { normalRotations = v }
     }
 
-    /// 現金投資額をあとから修正（500円単位。持ち玉投資はそのまま）
-    func setCashInvestment(yen: Int) {
-        let cashUnits = max(0, yen / 500)
+    /// 現金投入額をあとから修正（500pt単位。持ち玉投入はそのまま）
+    func setCashInput(pt: Int) {
+        let cashUnits = max(0, pt / 500)
         let holdingsOnly = lendingRecords.filter { $0.type == .holdings }
         lendingRecords = (0..<cashUnits).map { _ in LendingRecord(type: .cash, timestamp: Date()) } + holdingsOnly
     }
@@ -579,7 +585,7 @@ final class GameLog {
         }
     }
 
-    /// 大当たり回数をあとから修正（RUSH回数・通常回数）。持ち玉数は変更しない
+    /// 当選回数をあとから修正（RUSH回数・通常回数）。持ち玉数は変更しない
     func setWinCounts(rush: Int, normal: Int) {
         let r = max(0, rush)
         let n = max(0, normal)

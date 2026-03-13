@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// ⓘ アイコン。タップでポップオーバーに説明を表示。注釈をシンプルにまとめる用
+/// ⓘ アイコン。タップで注釈を小さく・フォント大きく、タップ位置付近にポップアップ表示
 struct InfoIconView: View {
     let explanation: String
     var tint: Color = .white.opacity(0.7)
@@ -15,13 +15,14 @@ struct InfoIconView: View {
                 .foregroundColor(tint)
         }
         .buttonStyle(.plain)
-        .popover(isPresented: $showPopover) {
+        .popover(isPresented: $showPopover, attachmentAnchor: .point(.bottom)) {
             Text(explanation)
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundColor(.primary)
-                .padding(12)
-                .frame(maxWidth: 280)
+                .padding(14)
+                .frame(width: 200)
         }
+        .presentationCompactAdaptation(.popover)
     }
 }
 
