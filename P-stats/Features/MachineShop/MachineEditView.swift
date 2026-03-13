@@ -99,6 +99,7 @@ struct MachineEditView: View, Equatable {
     @State private var isDMMPanelExpanded = false
     /// 機種を検索で選んだプリセットの id（選択中をハイライトする用）
     @State private var selectedPresetId: String? = nil
+    @FocusState private var isPresetSearchFocused: Bool
 
     struct DraftPrize: Identifiable {
         let id = UUID()
@@ -112,47 +113,53 @@ struct MachineEditView: View, Equatable {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                AppGlassStyle.background.ignoresSafeArea()
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        editPanel(title: "機種名・メーカー") { machineNamePanel }
-                        presetPanel
-                        editPanel(title: "通常時の大当たり確率") { probabilityPanel }
-                        editPanel(title: "公式ボーダー（等価ベース）") { borderPanel }
-                        editPanel(title: "大当たり種類（ヘソ・通常時）") { bonusHesoPanel }
-                        if hasLT {
-                            editPanel(title: "大当たり種類（RUSH）") { bonusRushPanel }
-                            editPanel(title: "大当たり種類（LT）") { bonusLtPanel }
-                        } else {
-                            editPanel(title: "大当たり種類（電チュー・RUSH時）") { bonusDenchuPanel }
+            VStack(spacing: 0) {
+                ZStack {
+                    AppGlassStyle.background.ignoresSafeArea()
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 16) {
+                            editPanel(title: "機種名・メーカー") { machineNamePanel }
+                            presetPanel
+                            editPanel(title: "通常時の大当たり確率") { probabilityPanel }
+                            editPanel(title: "公式ボーダー（等価ベース）") { borderPanel }
+                            editPanel(title: "大当たり種類（ヘソ・通常時）") { bonusHesoPanel }
+                            editPanel(title: "時短ゲーム数") { timeShortPanel }
+                            editPanel(title: "電サポ回数（STゲーム数）") { supportLimitPanel }
+                            editPanel(title: "データの共有") {
+                                Toggle("この機種データをみんなとシェアする", isOn: $shareWithEveryone)
+                                    .tint(accent)
+                                Text("ONにすると、他のユーザーがマスタから検索したときにあなたの機種データ（1R純増など）を参照できます。")
+                                    .font(.caption)
+                                    .foregroundStyle(.white.opacity(0.7))
+                            }
                         }
-                        editPanel(title: "賞球数（カウント）") { countPerRoundPanel }
-                        editPanel(title: "電サポ回数（STゲーム数）") { supportLimitPanel }
-                        editPanel(title: "時短ゲーム数") { timeShortPanel }
-                        editPanel(title: "LT仕様") {
-                            Toggle("通常時からLTに突入できる", isOn: $ltFromNormal)
-                                .tint(accent)
-                            Text("ONのとき、通常モードで「RUSH」を押すとRUSHかLTを選べます。OFFのときはRUSHからのみLTへ移行できます。")
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.7))
-                        }
-                        editPanel(title: "データの共有") {
-                            Toggle("この機種データをみんなとシェアする", isOn: $shareWithEveryone)
-                                .tint(accent)
-                            Text("ONにすると、他のユーザーがマスタから検索したときにあなたの機種データ（1R純増など）を参照できます。")
-                                .font(.caption)
-                                .foregroundStyle(.white.opacity(0.7))
-                        }
+                        .padding(16)
+                        .padding(.bottom, 100)
                     }
-                    .padding(16)
-                    .padding(.bottom, 140)
+                    .opacity(isDMMPanelExpanded ? 0 : 1)
+                    .allowsHitTesting(!isDMMPanelExpanded)
+                    .animation(.easeInOut(duration: 0.25), value: isDMMPanelExpanded)
+
+                    if let url = dmmMachineURL {
+                        InAppWebView(url: url)
+                            .id(url.absoluteString)
+                            .background(AppGlassStyle.background)
+                            .opacity(isDMMPanelExpanded ? 1 : 0)
+                            .allowsHitTesting(isDMMPanelExpanded)
+                    }
                 }
-                VStack {
-                    Spacer()
-                    dmmSwipePanel
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .animation(.spring(response: 0.35, dampingFraction: 0.82), value: isDMMPanelExpanded)
+
+                dmmSwipeBar
+            }
+            .ignoresSafeArea(edges: .bottom)
+            .onChange(of: displayPresetsCache.count) { _, newCount in
+                if newCount > 0, isPresetSearchFocused {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
                 }
-                .ignoresSafeArea(edges: .bottom)
             }
             .navigationTitle(editing == nil ? "新規機種登録" : "機種を編集")
             .navigationBarTitleDisplayMode(.inline)
@@ -165,6 +172,7 @@ struct MachineEditView: View, Equatable {
                     Button("キャンセル") { dismiss() }
                         .foregroundColor(accent)
                         .buttonStyle(.plain)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(editing == nil ? "登録" : "保存") {
@@ -317,6 +325,7 @@ struct MachineEditView: View, Equatable {
                 TextField("機種名で検索", text: $presetSearchText)
                     .textContentType(.none)
                     .autocapitalization(.none)
+                    .focused($isPresetSearchFocused)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 12)
                     .background(Color.white.opacity(0.08))
@@ -393,6 +402,7 @@ struct MachineEditView: View, Equatable {
                         }
                         .padding(.horizontal, 4)
                     }
+                    .scrollDismissesKeyboard(.interactively)
                     .frame(maxHeight: 220)
                     if displayPresetsCache.isEmpty {
                         Text(keyEmpty ? "新台20件の取得に失敗しているか、マスタが空です。" : "該当する機種がありません。")
@@ -433,6 +443,25 @@ struct MachineEditView: View, Equatable {
                     .padding(.horizontal, 12)
                     .background(Color.white.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            HStack(alignment: .top) {
+                Text("DMM機種ID")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.9))
+                    .frame(width: 72, alignment: .leading)
+                VStack(alignment: .leading, spacing: 4) {
+                    TextField("例: e-keiji-ougon（下部スワイプでDMMページ表示）", text: $dmmMachineID)
+                        .textContentType(.URL)
+                        .autocapitalization(.none)
+                        .multilineTextAlignment(.trailing)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(Color.white.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    Text("機種を検索で選ぶと自動入力されます。空欄だと下部スワイプでDMMを開けません。")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             if !machineMasterListURL.isEmpty {
                 Button {
@@ -622,25 +651,30 @@ struct MachineEditView: View, Equatable {
 
     @ViewBuilder
     private var timeShortPanel: some View {
-        HStack(alignment: .firstTextBaseline) {
-            HStack(spacing: 4) {
-                Text("時短ゲーム数")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
-                InfoIconView(explanation: "通常大当たり後の時短ゲーム数。この間は球消費なしで回転のみカウント。", tint: .white.opacity(0.6))
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline) {
+                HStack(spacing: 4) {
+                    Text("時短ゲーム数")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.9))
+                    InfoIconView(explanation: "通常大当たり後の時短ゲーム数。この間は球消費なしで回転のみカウント。機種を検索で選ぶとマスターから自動入力予定（取得は改めて実装）。", tint: .white.opacity(0.6))
+                }
+                Spacer(minLength: 12)
+                TextField("0", text: $timeShortRotations)
+                    .keyboardType(.numberPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 56)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
+                    .background(Color.white.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                Text("G")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.6))
             }
-            Spacer(minLength: 12)
-            TextField("0", text: $timeShortRotations)
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 56)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 10)
-                .background(Color.white.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            Text("G")
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.6))
+            Text("機種を検索で選ぶとマスターから自動入力されます（取得は改めて実装）。")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -688,6 +722,7 @@ struct MachineEditView: View, Equatable {
         case .server(let s):
             machineName = s.name
             manufacturerStr = s.manufacturer ?? ""
+            dmmMachineID = s.machineId ?? ""
             selectedMachineType = MachineType(rawValue: s.machineTypeRaw ?? "") ?? .kakugen
             supportLimit = "\(s.supportLimit ?? 160)"
             timeShortRotations = "\(s.timeShortRotations ?? 0)"
@@ -927,68 +962,94 @@ struct MachineEditView: View, Equatable {
         return URL(string: "https://p-town.dmm.com/machines/\(id)")
     }
     
+    /// 最下部に常時表示。左右のタブで「登録画面」「DMMブラウザ」を切り替え。スワイプは補助。
     @ViewBuilder
-    private var dmmSwipePanel: some View {
-        let handleHeight: CGFloat = 44
-        let maxHeight: CGFloat = 360
-        VStack(spacing: 0) {
-            HStack(spacing: 10) {
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.white.opacity(0.95))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("DMMぱちタウン機種ページ")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.white.opacity(0.98))
-                    if dmmMachineURL == nil {
-                        Text("機種ID未連携のため表示できません")
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.7))
-                    } else {
-                        Text("スワイプでブラウザを開閉します（再読み込みなし）")
-                            .font(.caption)
-                            .foregroundStyle(.white.opacity(0.8))
-                    }
+    private var dmmSwipeBar: some View {
+        let handleHeight: CGFloat = 60
+        VStack(spacing: 6) {
+            Text(isDMMPanelExpanded ? "表示中: DMMブラウザ" : "表示中: 登録画面")
+                .font(.caption2.weight(.semibold))
+                .foregroundColor(.white.opacity(0.8))
+
+            HStack(spacing: 12) {
+            Button {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                    isDMMPanelExpanded = false
                 }
-                Spacer()
-                Image(systemName: isDMMPanelExpanded ? "chevron.down" : "chevron.up")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.white.opacity(0.95))
+            } label: {
+                        Label("登録画面", systemImage: "doc.text")
+                    .font(.caption.weight(.semibold))
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
+                    .background(isDMMPanelExpanded ? Color.white.opacity(0.08) : AppGlassStyle.accent.opacity(0.35))
+                    .clipShape(Capsule())
+                    .foregroundColor(.white)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .contentShape(Rectangle())
-            .gesture(
-                DragGesture(minimumDistance: 5)
-                    .onEnded { value in
-                        if value.translation.height < -40 {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                isDMMPanelExpanded = true
-                            }
-                        } else if value.translation.height > 40 {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                isDMMPanelExpanded = false
-                            }
-                        }
-                    }
-            )
-            
-            if let url = dmmMachineURL {
-                InAppWebView(url: url)
-                    .frame(height: isDMMPanelExpanded ? maxHeight - handleHeight : 0)
-                    .clipped()
+            .buttonStyle(.plain)
+            .opacity(isDMMPanelExpanded ? 1 : 0.7)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("DMMぱちタウン機種ページ")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white.opacity(0.98))
+                if dmmMachineURL == nil {
+                    Text("機種を検索で選ぶか、DMM機種IDを上で入力してください")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.7))
+                } else {
+                    Text("タブをタップして切り替えます")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                guard dmmMachineURL != nil else { return }
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                    isDMMPanelExpanded = true
+                }
+            } label: {
+                Label("ブラウザ", systemImage: "safari")
+                    .font(.caption.weight(.semibold))
+                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
+                    .background(isDMMPanelExpanded && dmmMachineURL != nil ? AppGlassStyle.accent.opacity(0.35) : Color.white.opacity(0.08))
+                    .clipShape(Capsule())
+                    .foregroundColor(.white.opacity(dmmMachineURL == nil ? 0.4 : 1.0))
+            }
+            .buttonStyle(.plain)
+            .disabled(dmmMachineURL == nil)
             }
         }
-        .frame(maxWidth: .infinity)
-        .background(Color.black.opacity(0.92))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.white.opacity(0.5), lineWidth: 1.5)
-        )
-        .shadow(color: .black.opacity(0.4), radius: 8, x: 0, y: 4)
         .padding(.horizontal, 16)
-        .padding(.bottom, 8)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity)
+        .frame(height: handleHeight)
+        .contentShape(Rectangle())
+        .highPriorityGesture(
+            DragGesture(minimumDistance: 50)
+                .onEnded { value in
+                    let dx = value.translation.width
+                    let dy = value.translation.height
+                    guard abs(dx) > abs(dy) * 1.2 else { return }
+                    if dx < -40 {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                            isDMMPanelExpanded = true
+                        }
+                    } else if dx > 40 {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                            isDMMPanelExpanded = false
+                        }
+                    }
+                }
+        )
+        .background(Color.black.opacity(0.92))
+        .overlay(
+            RoundedRectangle(cornerRadius: 0)
+                .stroke(Color.white.opacity(0.35), lineWidth: 1)
+                .padding(1)
+        )
     }
 }
 
@@ -1031,6 +1092,7 @@ struct MachineMasterPickerSheet: View {
                     .buttonStyle(.plain)
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("機種マスタから選ぶ")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -1130,15 +1192,29 @@ struct PrizePickerSheet: View {
     }
 }
 
-// MARK: - 分割画面用アプリ内ブラウザ（WKWebView）
+// MARK: - 分割画面用アプリ内ブラウザ（WKWebView）。URL が変わったら再読み込み。
 struct InAppWebView: UIViewRepresentable {
     let url: URL
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
 
     func makeUIView(context: Context) -> WKWebView {
         let webView = WKWebView()
         webView.load(URLRequest(url: url))
+        context.coordinator.lastLoadedURL = url
         return webView
     }
 
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        if context.coordinator.lastLoadedURL != url {
+            context.coordinator.lastLoadedURL = url
+            uiView.load(URLRequest(url: url))
+        }
+    }
+
+    final class Coordinator {
+        var lastLoadedURL: URL?
+    }
 }

@@ -5,153 +5,25 @@ import LocalAuthentication
 import Security
 import Combine
 
-// MARK: - ホーム背景の保存・読み込み
-enum HomeBackgroundStore {
-    static let defaultStyle = "cyber"
-    static let customImageFileName = "HomeBackground.jpg"
-
-    nonisolated static var documentsURL: URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    }
-
-    nonisolated static func saveCustomImage(_ image: UIImage) -> String? {
-        let name = "HomeBackground.jpg"
-        guard let data = image.jpegData(compressionQuality: 0.85) else { return nil }
-        let url = documentsURL.appendingPathComponent(name)
-        try? data.write(to: url)
-        return name
-    }
-
-    nonisolated static func loadCustomImage(fileName: String) -> UIImage? {
-        guard !fileName.isEmpty else { return nil }
-        let url = documentsURL.appendingPathComponent(fileName)
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        return UIImage(data: data)
-    }
-}
-
-// MARK: - 実戦画面用背景画像（ホームと別に設定可能）
-enum PlayBackgroundStore {
-    static let imageFileName = "PlayBackground.jpg"
-    nonisolated static var documentsURL: URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-    }
-    nonisolated static func saveCustomImage(_ image: UIImage) -> String? {
-        guard let data = image.jpegData(compressionQuality: 0.85) else { return nil }
-        let name = "PlayBackground.jpg"
-        let url = documentsURL.appendingPathComponent(name)
-        try? data.write(to: url)
-        return name
-    }
-    nonisolated static func loadCustomImage(fileName: String) -> UIImage? {
-        guard !fileName.isEmpty else { return nil }
-        let url = documentsURL.appendingPathComponent(fileName)
-        guard let data = try? Data(contentsOf: url) else { return nil }
-        return UIImage(data: data)
-    }
-}
-
-// MARK: - iPhone風 半透明ドック用ブラー
-struct TranslucentBlurView: UIViewRepresentable {
-    var style: UIBlurEffect.Style = .systemUltraThinMaterialDark
-    var alpha: CGFloat = 0.92
-
-    func makeUIView(context: Context) -> UIVisualEffectView {
-        let v = UIVisualEffectView(effect: UIBlurEffect(style: style))
-        v.alpha = alpha
-        return v
-    }
-
-    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {
-        uiView.alpha = alpha
-    }
-}
-
-// MARK: - Color Hex
-extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default: (a, r, g, b) = (255, 0, 0, 0)
-        }
-        self.init(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue: Double(b) / 255,
-            opacity: Double(a) / 255
-        )
-    }
-}
-
 // MARK: - 金額表示（1000円単位のカンマ区切り）
 extension Int {
     /// 表示用：金額をカンマ区切りで返す（例: 12345 → "12,345"）
     var formattedYen: String { formatted(.number) }
 }
 
-// MARK: - グラスモーフィズム共通（やや不透明で統一）
-enum AppGlassStyle {
-    static let background = Color(hex: "0A0E1A")
-    static let rowBackground = Color.black.opacity(0.65)
-    static let cardBackground = Color.black.opacity(0.70)
-    static let accent = Color(red: 0, green: 0.83, blue: 1.0)
-
-    /// RUSH／通常／LTボタン用（背景・枠・文字の統一）
-    static let rushColor = Color.red
-    static let normalColor = Color.blue
-    static let ltColor = Color(red: 0.95, green: 0.75, blue: 0.2)
-    static let rushBackgroundOpacity: Double = 0.12
-    static let rushStrokeOpacity: Double = 0.4
-    static let normalBackgroundOpacity: Double = 0.12
-    static let normalStrokeOpacity: Double = 0.4
-    static let ltBackgroundOpacity: Double = 0.12
-    static let ltStrokeOpacity: Double = 0.4
-    static let rushTitleOpacity: Double = 0.95
-    static let normalTitleOpacity: Double = 0.95
-    static let ltTitleOpacity: Double = 0.95
-
-    /// 実質回転率とボーダーの差に応じたエッジ発光色（±0.5=白、+0.5〜+1.5=水色、+1.5超=青、-0.5〜-1.5=黄オレンジ、-1.5未満=赤）
-    static func edgeGlowColor(border: Double, realRate: Double) -> Color {
-        guard border > 0 else { return accent }
-        let diff = realRate - border
-        if diff > 1.5 { return Color(red: 0.2, green: 0.45, blue: 1.0) }
-        if diff > 0.5 { return accent }
-        if diff >= -0.5 { return .white }
-        if diff >= -1.5 { return Color(red: 1.0, green: 0.65, blue: 0.2) }
-        return Color(red: 1.0, green: 0.25, blue: 0.25)
-    }
-
-    static var strokeGradient: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color.white.opacity(0.45),
-                Color.white.opacity(0.18),
-                Color.white.opacity(0.1)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-}
-
-// MARK: - キーボード・テンキー用：右上に閉じるボタンを表示（全画面で統一）
+// MARK: - キーボード・テンキー用：テンキー枠内右上にチェックマークで閉じる（全画面で統一）
 extension View {
     func keyboardDismissToolbar() -> some View {
         self.toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer(minLength: 0)
-                Button("閉じる") {
+                Button {
                     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                } label: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(AppGlassStyle.accent)
                 }
-                .font(.body.weight(.medium))
-                .foregroundColor(AppGlassStyle.accent)
             }
         }
     }
@@ -205,7 +77,7 @@ enum HapticUtil {
     }
 }
 
-// MARK: - 旧アプリパスコード用Keychain（本体認証移行後は削除用のみ）
+// MARK: - 旧アプリパスコード用Keychain（本体認証移行済み。removePasscode 時のみ削除に使用）
 private enum KeychainPasscode {
     static let service = "P-stats.app.lock"
 
@@ -226,15 +98,29 @@ final class AppLockState: ObservableObject {
     @AppStorage("appLockEnabled") var lockEnabled = false
     @AppStorage("appLockUseBiometric") var useBiometric = true
 
+    /// 生体認証の可否・種類は body のたびに LAContext を作ると重いため、ロック表示時に1回だけ評価してキャッシュする
+    private var cachedBiometric: (canUse: Bool, name: String)?
+
     var canUseBiometric: Bool {
+        if let c = cachedBiometric { return c.canUse }
         let context = LAContext()
         var error: NSError?
-        return context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
+        let canUse = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
+        let name = biometricTypeName(with: context, canUse: canUse)
+        cachedBiometric = (canUse, name)
+        return canUse
     }
     var biometricTypeName: String {
+        if let c = cachedBiometric { return c.name }
         let context = LAContext()
         var error: NSError?
-        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else { return "生体認証" }
+        let canUse = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
+        let name = biometricTypeName(with: context, canUse: canUse)
+        cachedBiometric = (canUse, name)
+        return name
+    }
+    private func biometricTypeName(with context: LAContext, canUse: Bool) -> String {
+        guard canUse else { return "生体認証" }
         switch context.biometryType {
         case .faceID: return "Face ID"
         case .touchID: return "Touch ID"
@@ -272,6 +158,7 @@ final class AppLockState: ObservableObject {
 
     func lock() {
         isUnlocked = false
+        cachedBiometric = nil
     }
 
     func unlock() {
@@ -280,9 +167,13 @@ final class AppLockState: ObservableObject {
 }
 
 // MARK: - ロック画面（iPhone本体パスコード＋生体認証で解除）
+/// 初回描画で LAContext を呼ばないよう、生体認証の表示文言は onAppear で遅延取得する
 struct AppLockScreenView: View {
     @ObservedObject var lockState: AppLockState
     @State private var errorMessage: String?
+    @State private var biometricLabel: String = "パスコードで解除"
+    @State private var biometricCaption: String = "生体認証"
+    @State private var biometricIcon: String = "lock.open"
 
     private var cyan: Color { AppGlassStyle.accent }
 
@@ -297,7 +188,7 @@ struct AppLockScreenView: View {
                 Text("アプリがロックされています")
                     .font(.headline)
                     .foregroundColor(.white)
-                Text("本体のパスコードまたは\(lockState.biometricTypeName)で解除")
+                Text("本体のパスコードまたは\(biometricCaption)で解除")
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.7))
                     .multilineTextAlignment(.center)
@@ -322,24 +213,29 @@ struct AppLockScreenView: View {
                         }
                     }
                 } label: {
-                    Label(
-                        lockState.canUseBiometric ? (lockState.biometricTypeName + " / パスコードで解除") : "パスコードで解除",
-                        systemImage: lockState.biometricTypeName == "Face ID" ? "faceid" : (lockState.biometricTypeName == "Touch ID" ? "touchid" : "lock.open")
-                    )
-                    .font(.subheadline.weight(.medium))
-                    .foregroundColor(cyan)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
+                    Label(biometricLabel, systemImage: biometricIcon)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(cyan)
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 14)
                 }
                 .padding(.top, 24)
             }
             .padding(40)
         }
         .onAppear {
-            if lockState.useBiometric, lockState.canUseBiometric {
+            // 初回描画後に LAContext を参照（メインスレッドブロックで固まらないよう遅延）
+            DispatchQueue.main.async {
+                let name = lockState.biometricTypeName
+                let canUse = lockState.canUseBiometric
+                biometricCaption = name
+                biometricLabel = canUse ? (name + " / パスコードで解除") : "パスコードで解除"
+                biometricIcon = name == "Face ID" ? "faceid" : (name == "Touch ID" ? "touchid" : "lock.open")
+            }
+            if lockState.useBiometric {
                 Task {
                     try? await Task.sleep(nanoseconds: 400_000_000)
-                    if await lockState.authenticateWithDevice() {
+                    if lockState.canUseBiometric, await lockState.authenticateWithDevice() {
                         await MainActor.run { lockState.unlock(); errorMessage = nil; HapticUtil.notification(.success) }
                     }
                 }
@@ -348,8 +244,52 @@ struct AppLockScreenView: View {
     }
 }
 
-@main
-struct P_statsApp: App {
+// MARK: - 起動直後の固まり防止（実機で Launch Screen のまま固まる対策）
+/// 最初の 1 フレーム用。SwiftData / Models / AppLockState を一切参照しない（参照すると実機でメインスレッドがブロックされる）
+private struct BootstrapLoadingView: View {
+    var body: some View {
+        ZStack {
+            Color(red: 28/255, green: 28/255, blue: 30/255)
+                .ignoresSafeArea()
+            ProgressView()
+                .progressViewStyle(.circular)
+                .tint(.white)
+                .scaleEffect(1.2)
+        }
+    }
+}
+
+// MARK: - ModelContainer 準備後にのみ本編を表示。ローディング中は AppLockState を参照しない
+private struct AppBootstrapView: View {
+    @State private var modelContainer: ModelContainer?
+
+    var body: some View {
+        Group {
+            if let container = modelContainer {
+                MainContentWithContainer(container: container)
+            } else {
+                BootstrapLoadingView()
+            }
+        }
+        .task {
+            guard modelContainer == nil else { return }
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            let container = await Task.detached(priority: .userInitiated) {
+                try? ModelContainer(
+                    for: Machine.self, Shop.self, GameSession.self, PrizeSet.self,
+                    MachinePrize.self, PresetMachine.self, PresetMachinePrize.self, MyMachinePreset.self
+                )
+            }.value
+            await MainActor.run {
+                modelContainer = container
+            }
+        }
+    }
+}
+
+// MARK: - ここから先で初めて AppLockState / LaunchAppearance / HomeView を参照する
+private struct MainContentWithContainer: View {
+    let container: ModelContainer
     @State private var launchFinished = false
     @StateObject private var appLock = AppLockState.shared
     @Environment(\.scenePhase) private var scenePhase
@@ -358,32 +298,44 @@ struct P_statsApp: App {
         launchFinished && appLock.lockEnabled && !appLock.isUnlocked
     }
 
-    var body: some Scene {
-        WindowGroup {
-            ZStack {
-                LaunchAppearance.iconBackgroundColor
-                    .ignoresSafeArea()
+    var body: some View {
+        ZStack {
+            LaunchAppearance.iconBackgroundColor
+                .ignoresSafeArea()
 
-                if launchFinished {
-                    HomeView()
-                        .allowsHitTesting(!showLockScreen)
-                } else {
-                    LaunchView(onFinish: { launchFinished = true })
-                }
-
-                if showLockScreen {
-                    AppLockScreenView(lockState: appLock)
-                        .transition(.opacity)
-                }
+            if !launchFinished {
+                LaunchView(onFinish: { launchFinished = true })
+            } else {
+                HomeView()
+                    .opacity(showLockScreen ? 0 : 1)
+                    .allowsHitTesting(!showLockScreen)
             }
-            .animation(.easeInOut(duration: 0.25), value: showLockScreen)
-            .onChange(of: scenePhase) { _, newPhase in
-                if newPhase == .background, appLock.lockEnabled {
-                    appLock.lock()
-                }
+
+            if showLockScreen {
+                AppGlassStyle.background
+                    .ignoresSafeArea()
+                    .allowsHitTesting(true)
+                AppLockScreenView(lockState: appLock)
+                    .transition(.opacity)
+                    .zIndex(1)
             }
         }
-        .modelContainer(for: [Machine.self, Shop.self, GameSession.self, PrizeSet.self, MachinePrize.self, PresetMachine.self, PresetMachinePrize.self, MyMachinePreset.self])
+        .environment(\.modelContext, container.mainContext)
+        .animation(.easeInOut(duration: 0.25), value: showLockScreen)
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background, appLock.lockEnabled {
+                appLock.lock()
+            }
+        }
+    }
+}
+
+@main
+struct P_statsApp: App {
+    var body: some Scene {
+        WindowGroup {
+            AppBootstrapView()
+        }
     }
 }
 
@@ -1258,8 +1210,6 @@ struct SettingsTabView: View {
     @AppStorage("defaultMachineName") private var defaultMachineName = ""
     @AppStorage("defaultShopName") private var defaultShopName = ""
     @AppStorage("alwaysShowBothInvestmentButtons") private var alwaysShowBothInvestmentButtons = true
-    @AppStorage("machineMasterListURL") private var machineMasterListURL: String = ""
-    @AppStorage("machineMasterDataURL") private var machineMasterDataURL: String = ""
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selectedPlayPhotoItem: PhotosPickerItem?
     @State private var isSavingPhoto = false
@@ -1357,46 +1307,7 @@ struct SettingsTabView: View {
                         }
                     }
 
-                    // 4. マスターデータURL（採用用・マスタから検索で表示する一覧の取得元）
-                    settingsCard(title: "マスターデータURL", icon: "list.bullet.rectangle") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("「マスタから検索」で表示する機種一覧の取得元。デフォルトは GitHub の machines.json（raw URL）です。別の JSON URL を指定することも可能。空欄のときはデフォルトURLを使用します。")
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.7))
-                            TextField("空ならデフォルトURLを使用", text: $machineMasterDataURL)
-                                .keyboardType(.URL)
-                                .textContentType(.URL)
-                                .autocapitalization(.none)
-                                .foregroundColor(.white)
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 12)
-                                .background(Color.white.opacity(0.12))
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                            Text("デフォルト: \(PresetServiceConfig.defaultMachineMasterDataURL)")
-                                .font(.caption2)
-                                .foregroundColor(.white.opacity(0.5))
-                        }
-                    }
-
-                    // 4b. 機種マスタ（機種名・メーカー一覧の取得元URL・編集画面用）
-                    settingsCard(title: "機種マスタ（名前・メーカー一覧）", icon: "list.bullet") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("機種編集画面で「機種を検索」に表示する、機種名・メーカー一覧のJSONのURL。空なら非表示。")
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.7))
-                            TextField("https://...", text: $machineMasterListURL)
-                                .keyboardType(.URL)
-                                .textContentType(.URL)
-                                .autocapitalization(.none)
-                                .foregroundColor(.white)
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 12)
-                                .background(Color.white.opacity(0.12))
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                        }
-                    }
-
-                    // 5. 店舗選択なしの場合のデフォルト交換率
+                    // 店舗選択なしの場合のデフォルト交換率
                     settingsCard(title: "店舗選択なしの場合のデフォルト交換率", icon: "yensign.circle.fill") {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {

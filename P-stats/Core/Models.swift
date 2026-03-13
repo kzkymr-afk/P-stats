@@ -304,6 +304,12 @@ struct WinRecord: Identifiable, Codable {
     var timestamp: Date? = nil
     /// 当選時点の総回転数（電サポ・時短を除く通常ゲーム累積）。収支グラフ横軸用。既存データは nil のとき rotationAtWin で代替
     var normalRotationsAtWin: Int? = nil
+    /// フェーズ3: 当たり発生時の mode_id（0=通常, 1=RUSH, 2=LT）。既存データは nil
+    var modeIdAtWin: Int? = nil
+    /// フェーズ3: この当たり後の遷移先 mode_id。既存データは nil
+    var nextModeId: Int? = nil
+    /// フェーズ3: 当たり名称（データ駆動用）。既存データは nil
+    var bonusName: String? = nil
 }
 
 struct LendingRecord: Identifiable, Codable {
@@ -329,6 +335,8 @@ struct ResumableState: Codable {
     var adjustedNetPerRound: Double?
     var winRecords: [WinRecord]
     var lendingRecords: [LendingRecord]
+    /// フェーズ3: 現在の滞在モードID（0=通常, 1=RUSH, 2=LT）。既存保存データは nil のとき currentState から復元
+    var currentModeID: Int? = nil
 }
 
 // --- 3. テーマ定義 (⚠️ここが1回だけであることを確認！) ---

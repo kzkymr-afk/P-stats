@@ -581,16 +581,38 @@ struct MyListMachinesView: View {
             StaticHomeBackgroundView()
             List {
                 ForEach(sortedMachinesForList) { m in
-                    Button(m.name) {
-                        log.selectedMachine = m
-                        dismiss()
+                    HStack(spacing: 12) {
+                        Button {
+                            log.selectedMachine = m
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Text(m.name)
+                                    .foregroundColor(.white)
+                                if log.selectedMachine.persistentModelID == m.persistentModelID {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.subheadline)
+                                        .foregroundStyle(AppGlassStyle.accent)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        Spacer(minLength: 8)
+                        Button {
+                            machineToEdit = m
+                        } label: {
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.title3)
+                                .foregroundStyle(accent)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .foregroundColor(.white)
                     .listRowBackground(AppGlassStyle.rowBackground)
                     .listSelectionStyle(isSelected: log.selectedMachine.persistentModelID == m.persistentModelID)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button("編集") {
-                            machineToEdit = m
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        Button("選択") {
+                            log.selectedMachine = m
+                            dismiss()
                         }
                     }
                 }
@@ -651,16 +673,29 @@ struct MyListShopsView: View {
             StaticHomeBackgroundView()
             List {
                 ForEach(sortedShopsForList) { s in
-                    Button(s.name) {
-                        log.selectedShop = s
-                        dismiss()
+                    HStack(spacing: 12) {
+                        Button(s.name) {
+                            log.selectedShop = s
+                            dismiss()
+                        }
+                        .foregroundColor(.white)
+                        .buttonStyle(.plain)
+                        Spacer(minLength: 8)
+                        Button {
+                            shopToEdit = s
+                        } label: {
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.title3)
+                                .foregroundStyle(accent)
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .foregroundColor(.white)
                     .listRowBackground(AppGlassStyle.rowBackground)
                     .listSelectionStyle(isSelected: log.selectedShop.persistentModelID == s.persistentModelID)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button("編集") {
-                            shopToEdit = s
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        Button("選択") {
+                            log.selectedShop = s
+                            dismiss()
                         }
                     }
                 }
@@ -696,6 +731,44 @@ private enum SpecificDayRuleType: String, CaseIterable {
     case lastDigit = "Nのつく日"
 }
 
+// MARK: - 交換率プリセット（円/玉 = 100÷玉/100円）
+private enum ExchangeRatePreset: String, CaseIterable {
+    case rate25 = "25.0玉/100円：4.00円交換"
+    case rate27_5 = "27.5玉/100円：約3.63円交換"
+    case rate28 = "28.0玉/100円：約3.57円交換"
+    case rate30 = "30.0玉/100円：約3.33円交換"
+    case rate33_3 = "33.3玉/100円：約3.00円交換"
+    case rate35_7 = "35.7玉/100円：約2.80円交換"
+    case rate40 = "40.0玉/100円：2.50円交換"
+    case other = "その他"
+
+    var yenPerBall: Double? {
+        switch self {
+        case .rate25: return 4.00
+        case .rate27_5: return 100.0 / 27.5
+        case .rate28: return 100.0 / 28.0
+        case .rate30: return 100.0 / 30.0
+        case .rate33_3: return 100.0 / 33.3
+        case .rate35_7: return 100.0 / 35.7
+        case .rate40: return 2.50
+        case .other: return nil
+        }
+    }
+
+    var ballsPer100Yen: Double? {
+        switch self {
+        case .rate25: return 25.0
+        case .rate27_5: return 27.5
+        case .rate28: return 28.0
+        case .rate30: return 30.0
+        case .rate33_3: return 33.3
+        case .rate35_7: return 35.7
+        case .rate40: return 40.0
+        case .other: return nil
+        }
+    }
+}
+
 // MARK: - 店舗の新規登録・編集（貸玉料金・交換率を実戦ボーダー算出に利用）
 struct ShopEditView: View {
     /// 編集時は既存の店舗を渡す。nil のときは新規登録。
@@ -708,7 +781,10 @@ struct ShopEditView: View {
     @State private var address: String = ""
     @State private var placeID: String?
     @State private var ballsPerCashUnitStr: String = "125"
-    @State private var exchangeRateStr: String = "4.0"
+    @State private var exchangeRatePreset: ExchangeRatePreset = .rate25
+    @State private var customBallsPer100YenStr: String = ""
+    @State private var customYenPerBallStr: String = ""
+    @State private var isSyncingCustomRate = false
     /// 特定日ルール最大4件。追加順に 特定日① 毎月13日, 特定日② 5のつく日 のように表示
     @State private var specificDayEntries: [(type: SpecificDayRuleType, value: String)] = Array(repeating: (.lastDigit, ""), count: 4)
 
@@ -718,6 +794,26 @@ struct ShopEditView: View {
 
     private var isNew: Bool { shop == nil }
     private var accent: Color { AppGlassStyle.accent }
+
+    /// その他時：玉/100円から円/玉を算出
+    private var customYenPerBallFromBalls: Double? {
+        guard let v = Double(customBallsPer100YenStr.trimmingCharacters(in: .whitespaces)), v > 0 else { return nil }
+        return 100.0 / v
+    }
+    /// その他時：円/玉から玉/100円を算出
+    private var customBallsPer100FromYen: Double? {
+        guard let v = Double(customYenPerBallStr.trimmingCharacters(in: .whitespaces)), v > 0 else { return nil }
+        return 100.0 / v
+    }
+    /// 保存用の交換率（円/玉）。プリセットまたはその他入力から算出。
+    private var effectiveExchangeRate: Double? {
+        if exchangeRatePreset != .other, let rate = exchangeRatePreset.yenPerBall { return rate }
+        if exchangeRatePreset == .other {
+            if let y = Double(customYenPerBallStr.trimmingCharacters(in: .whitespaces)), y > 0 { return y }
+            return customYenPerBallFromBalls
+        }
+        return nil
+    }
 
     @ViewBuilder
     private func placeCandidateRow(_ candidate: PlaceCandidate) -> some View {
@@ -898,7 +994,7 @@ struct ShopEditView: View {
                                 .disabled(placeSearchService.isLoadingMore)
                             }
                         }
-                        shopEditPanel(title: "貸玉料金・交換率（実戦ボーダー算出に使用）", trailing: { InfoIconView(explanation: "貸玉料金: 1000円で何玉借りられるか（等価250玉）。230玉ならボーダー下がる。交換率: 1玉何円で換金か（等価4円）。3.5円ならボーダー上がる。", tint: .white.opacity(0.7)) }) {
+                        shopEditPanel(title: "貸玉料金・交換率（実戦ボーダー算出に使用）", trailing: { InfoIconView(explanation: "貸玉料金: 1000円で何玉借りられるか（等価250玉）。交換率: 1玉何円で換金か。玉/100円か円交換のどちらかを入力するともう片方も自動計算されます。", tint: .white.opacity(0.7)) }) {
                             HStack {
                                 Text("貸玉料金（500円あたり）")
                                     .foregroundColor(.white.opacity(0.9))
@@ -908,14 +1004,52 @@ struct ShopEditView: View {
                                     .multilineTextAlignment(.trailing)
                                     .foregroundColor(.white)
                             }
-                            HStack {
+                            VStack(alignment: .leading, spacing: 10) {
                                 Text("交換率（円/玉）")
                                     .foregroundColor(.white.opacity(0.9))
-                                Spacer()
-                                TextField("4.0", text: $exchangeRateStr)
-                                    .keyboardType(.decimalPad)
-                                    .multilineTextAlignment(.trailing)
-                                    .foregroundColor(.white)
+                                Picker("交換率", selection: $exchangeRatePreset) {
+                                    ForEach(ExchangeRatePreset.allCases, id: \.self) { preset in
+                                        Text(preset.rawValue).tag(preset)
+                                    }
+                                }
+                                .pickerStyle(.menu)
+                                .tint(accent)
+                                if exchangeRatePreset == .other {
+                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                        Text("玉/100円")
+                                            .foregroundColor(.white.opacity(0.85))
+                                        TextField("25.0", text: $customBallsPer100YenStr)
+                                            .keyboardType(.decimalPad)
+                                            .multilineTextAlignment(.trailing)
+                                            .foregroundColor(.white)
+                                            .onChange(of: customBallsPer100YenStr) { _, new in
+                                                guard !isSyncingCustomRate, !new.isEmpty, let y = customYenPerBallFromBalls else { return }
+                                                isSyncingCustomRate = true
+                                                customYenPerBallStr = String(format: "%.2f", y)
+                                                DispatchQueue.main.async { isSyncingCustomRate = false }
+                                            }
+                                        Text(customYenPerBallFromBalls.map { "→ \(String(format: "%.2f", $0))円/玉" } ?? "→ — 円/玉")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                        Text("円交換")
+                                            .foregroundColor(.white.opacity(0.85))
+                                        TextField("4.00", text: $customYenPerBallStr)
+                                            .keyboardType(.decimalPad)
+                                            .multilineTextAlignment(.trailing)
+                                            .foregroundColor(.white)
+                                            .onChange(of: customYenPerBallStr) { _, new in
+                                                guard !isSyncingCustomRate, !new.isEmpty, let b = customBallsPer100FromYen else { return }
+                                                isSyncingCustomRate = true
+                                                customBallsPer100YenStr = String(format: "%.1f", b)
+                                                DispatchQueue.main.async { isSyncingCustomRate = false }
+                                            }
+                                        Text(customBallsPer100FromYen.map { "→ \(String(format: "%.1f", $0))玉/100円" } ?? "→ — 玉/100円")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
                             }
                         }
                         shopEditPanel(title: "特定日ルール（分析で使用・最大4つ）", trailing: { InfoIconView(explanation: "種類を選び、右に数字を入力。個別店舗分析の「特定日傾向」に追加順で表示されます。", tint: .white.opacity(0.7)) }) {
@@ -987,8 +1121,8 @@ struct ShopEditView: View {
                             showErrorAlert = true
                             return
                         }
-                        if (Double(exchangeRateStr) ?? 4.0) <= 0 {
-                            errorMessage = "交換率は0より大きい数にしてください"
+                        guard let rate = effectiveExchangeRate, rate > 0 else {
+                            errorMessage = exchangeRatePreset == .other ? "その他の場合は玉/100円か円交換を入力してください" : "交換率を選択してください"
                             showErrorAlert = true
                             return
                         }
@@ -1012,17 +1146,30 @@ struct ShopEditView: View {
                     address = s.address
                     placeID = s.placeID
                     ballsPerCashUnitStr = "\(s.ballsPerCashUnit)"
-                    exchangeRateStr = String(format: "%.1f", s.exchangeRate)
+                    applyExchangeRateToPreset(s.exchangeRate)
                     loadSpecificDayEntries(from: s)
                 } else {
                     address = ""
                     placeID = nil
                     let defaultRate = Double(UserDefaults.standard.string(forKey: "defaultExchangeRate") ?? "4.0") ?? 4.0
-                    exchangeRateStr = String(format: "%.1f", defaultRate)
+                    applyExchangeRateToPreset(defaultRate)
                     let defaultBalls = Int(UserDefaults.standard.string(forKey: "defaultBallsPerCash") ?? "125") ?? 125
                     ballsPerCashUnitStr = "\(defaultBalls)"
                 }
             }
+        }
+    }
+
+    private func applyExchangeRateToPreset(_ rate: Double) {
+        let tol = 0.01
+        if let p = ExchangeRatePreset.allCases.first(where: { $0.yenPerBall != nil && abs(($0.yenPerBall ?? 0) - rate) < tol }) {
+            exchangeRatePreset = p
+            customBallsPer100YenStr = ""
+            customYenPerBallStr = ""
+        } else {
+            exchangeRatePreset = .other
+            customYenPerBallStr = String(format: "%.2f", rate)
+            customBallsPer100YenStr = String(format: "%.1f", 100.0 / rate)
         }
     }
 
@@ -1058,15 +1205,13 @@ struct ShopEditView: View {
             return
         }
         let balls = Int(ballsPerCashUnitStr) ?? 125
-        let rate = Double(exchangeRateStr) ?? 4.0
-        
-        if balls <= 0 {
-            errorMessage = "貸玉料金は1以上にしてください"
+        guard let rate = effectiveExchangeRate, rate > 0 else {
+            errorMessage = "交換率を選択するか、その他の場合は玉/100円か円交換を入力してください"
             showErrorAlert = true
             return
         }
-        if rate <= 0 {
-            errorMessage = "交換率は0より大きい数にしてください"
+        if balls <= 0 {
+            errorMessage = "貸玉料金は1以上にしてください"
             showErrorAlert = true
             return
         }

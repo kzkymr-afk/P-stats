@@ -1,13 +1,16 @@
 import SwiftUI
 import SwiftData
 
-/// RUSHフォーカスモード：上3/8＝折れ線、1/8＝大当たり履歴、下1/2＝RUSHボタン、右下＝LT（hasLT時）・RUSH終了
+/// RUSHフォーカスモード：上3/8＝折れ線、1/8＝大当たり履歴、下1/2＝RUSHボタン、右下＝RUSH終了。フェーズ4: machineDetail があればそのモードの bonuses を動的表示。
 struct RushFocusView: View {
     @Bindable var log: GameLog
-    var onSwitchToLt: (() -> Void)? = nil
+    var machineDetail: MachineDetail? = nil
     let onExit: () -> Void
 
+    @State private var showRushEndSheet = false
+
     private let accent = AppGlassStyle.accent
+    private let modeIdRush = 1
     private let bg = AppGlassStyle.background
     private let maxChartHours: Double = 13
 
@@ -36,48 +39,14 @@ struct RushFocusView: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 4)
 
-                    // 下1/2: RUSHボタン＋右下にLT（hasLT時）・RUSH終了
+                    // 下1/2: RUSHボタン（フェーズ4: machineDetail なら bonuses を動的表示）＋右下にRUSH終了
                     ZStack(alignment: .bottomTrailing) {
-                        Button(action: {
-                            OrganicHaptics.playRushHeartbeat()
-                            log.addWin(type: .rush, atRotation: log.totalRotations)
-                        }) {
-                            ZStack {
-                                AppGlassStyle.rushColor.opacity(AppGlassStyle.rushBackgroundOpacity)
-                                Text("RUSH")
-                                    .font(.system(size: 22, weight: .bold, design: .monospaced))
-                                    .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushStrokeOpacity), lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
+                        rushBonusButtons
 
                         HStack(spacing: 8) {
-                            if log.selectedMachine.hasLT, let onSwitchToLt = onSwitchToLt {
-                                Button(action: {
-                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                    log.switchToLtMode()
-                                    onSwitchToLt()
-                                }) {
-                                    ZStack {
-                                        AppGlassStyle.ltColor.opacity(AppGlassStyle.ltBackgroundOpacity)
-                                        Text("LT")
-                                            .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                            .foregroundColor(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltTitleOpacity))
-                                            .multilineTextAlignment(.center)
-                                    }
-                                    .frame(width: exitSquareSize, height: exitSquareSize)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltStrokeOpacity), lineWidth: 1))
-                                }
-                                .buttonStyle(.plain)
-                            }
                             Button(action: {
                                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                log.endRushAndReturnToNormal()
-                                onExit()
+                                showRushEndSheet = true
                             }) {
                                 ZStack {
                                     AppGlassStyle.rushColor.opacity(0.2)
@@ -100,6 +69,75 @@ struct RushFocusView: View {
                 }
                 .frame(minWidth: 0, maxWidth: .infinity)
             }
+        }
+        .sheet(isPresented: $showRushEndSheet) {
+            RushEndInputSheet(log: log, onConfirm: {
+                showRushEndSheet = false
+                log.endRushAndReturnToNormal()
+                onExit()
+            }, onCancel: { showRushEndSheet = false })
+        }
+    }
+
+    @ViewBuilder
+    private var rushBonusButtons: some View {
+        if let mode = machineDetail?.modes.first(where: { $0.modeId == modeIdRush }), !mode.bonuses.isEmpty {
+            if mode.bonuses.count == 1, let bonus = mode.bonuses.first {
+                Button(action: {
+                    OrganicHaptics.playRushHeartbeat()
+                    log.recordHit(bonus: bonus, atRotation: log.totalRotations)
+                }) {
+                    ZStack {
+                        AppGlassStyle.rushColor.opacity(AppGlassStyle.rushBackgroundOpacity)
+                        Text(bonus.name)
+                            .font(.system(size: 22, weight: .bold, design: .monospaced))
+                            .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushStrokeOpacity), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(mode.bonuses) { bonus in
+                        Button(action: {
+                            OrganicHaptics.playRushHeartbeat()
+                            log.recordHit(bonus: bonus, atRotation: log.totalRotations)
+                        }) {
+                            ZStack {
+                                AppGlassStyle.rushColor.opacity(AppGlassStyle.rushBackgroundOpacity)
+                                Text(bonus.name)
+                                    .font(.system(size: 18, weight: .bold, design: .monospaced))
+                                    .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushStrokeOpacity), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        } else {
+            Button(action: {
+                OrganicHaptics.playRushHeartbeat()
+                log.addWin(type: .rush, atRotation: log.totalRotations)
+            }) {
+                ZStack {
+                    AppGlassStyle.rushColor.opacity(AppGlassStyle.rushBackgroundOpacity)
+                    Text("RUSH")
+                        .font(.system(size: 22, weight: .bold, design: .monospaced))
+                        .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushStrokeOpacity), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -334,12 +372,87 @@ struct RushFocusView: View {
     }
 }
 
+// MARK: - RUSH終了入力（獲得出玉＋終了時回転数）
+private struct RushEndInputSheet: View {
+    @Bindable var log: GameLog
+    let onConfirm: () -> Void
+    let onCancel: () -> Void
+
+    @State private var payoutText: String = ""
+    @State private var selectedRotation: Int
+    @FocusState private var payoutFocused: Bool
+
+    private var rotationOptions: [Int] {
+        let support = log.selectedMachine.supportLimit
+        let common = [50, 100, 150, 200, 250, 300, 500]
+        let set = Set(common + [support])
+        return set.sorted()
+    }
+
+    init(log: GameLog, onConfirm: @escaping () -> Void, onCancel: @escaping () -> Void) {
+        self.log = log
+        self.onConfirm = onConfirm
+        self.onCancel = onCancel
+        _selectedRotation = State(initialValue: log.selectedMachine.supportLimit)
+    }
+
+    private var payoutValue: Int? { Int(payoutText.trimmingCharacters(in: .whitespaces)) }
+    private var canConfirm: Bool { payoutValue != nil && (payoutValue ?? 0) >= 0 }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextField("獲得出玉（玉数）", text: $payoutText)
+                        .keyboardType(.numberPad)
+                        .focused($payoutFocused)
+                } header: {
+                    Text("獲得出玉")
+                } footer: {
+                    Text("このRUSHで獲得した出玉数を入力してください。")
+                }
+
+                Section {
+                    Picker("終了時回転数", selection: $selectedRotation) {
+                        ForEach(rotationOptions, id: \.self) { rot in
+                            Text("\(rot) 回").tag(rot)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                } header: {
+                    Text("RUSH終了時の回転数")
+                } footer: {
+                    Text("マスターで複数ある場合はここで選択。元データはマスターに入力しておきます。")
+                }
+            }
+            .navigationTitle("RUSH終了")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("キャンセル") { onCancel() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("確定") {
+                        let total = payoutValue ?? 0
+                        log.fixTotalChainPrize(finalTotal: total, rotationAtEnd: selectedRotation)
+                        onConfirm()
+                    }
+                    .disabled(!canConfirm)
+                }
+            }
+            .keyboardDismissToolbar()
+        }
+    }
+}
+
 // MARK: - LT（上位RUSH）フォーカスモード（ゴールド系・LT当たり/LT終了）
 struct LtFocusView: View {
     @Bindable var log: GameLog
+    var machineDetail: MachineDetail? = nil
     let onExit: () -> Void
 
     private let accent = AppGlassStyle.ltColor
+    private let modeIdLt = 2
     private let bg = AppGlassStyle.background
     private let panelBg = Color.black.opacity(0.85)
     private var glassStroke: LinearGradient {
@@ -378,20 +491,7 @@ struct LtFocusView: View {
                         .padding(.vertical, 4)
 
                     ZStack(alignment: .bottomTrailing) {
-                        Button(action: {
-                            log.addWin(type: .lt, atRotation: log.totalRotations)
-                        }) {
-                            ZStack {
-                                AppGlassStyle.ltColor.opacity(AppGlassStyle.ltBackgroundOpacity)
-                                Text("LT")
-                                    .font(.system(size: 22, weight: .bold, design: .monospaced))
-                                    .foregroundColor(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltTitleOpacity))
-                            }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltStrokeOpacity), lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
+                        ltBonusButtons
 
                         Button(action: {
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -418,6 +518,65 @@ struct LtFocusView: View {
                 }
                 .frame(minWidth: 0, maxWidth: .infinity)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var ltBonusButtons: some View {
+        if let mode = machineDetail?.modes.first(where: { $0.modeId == modeIdLt }), !mode.bonuses.isEmpty {
+            if mode.bonuses.count == 1, let bonus = mode.bonuses.first {
+                Button(action: {
+                    log.recordHit(bonus: bonus, atRotation: log.totalRotations)
+                }) {
+                    ZStack {
+                        AppGlassStyle.ltColor.opacity(AppGlassStyle.ltBackgroundOpacity)
+                        Text(bonus.name)
+                            .font(.system(size: 22, weight: .bold, design: .monospaced))
+                            .foregroundColor(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltTitleOpacity))
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltStrokeOpacity), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(mode.bonuses) { bonus in
+                        Button(action: {
+                            log.recordHit(bonus: bonus, atRotation: log.totalRotations)
+                        }) {
+                            ZStack {
+                                AppGlassStyle.ltColor.opacity(AppGlassStyle.ltBackgroundOpacity)
+                                Text(bonus.name)
+                                    .font(.system(size: 18, weight: .bold, design: .monospaced))
+                                    .foregroundColor(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltTitleOpacity))
+                                    .lineLimit(1)
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltStrokeOpacity), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        } else {
+            Button(action: {
+                log.addWin(type: .lt, atRotation: log.totalRotations)
+            }) {
+                ZStack {
+                    AppGlassStyle.ltColor.opacity(AppGlassStyle.ltBackgroundOpacity)
+                    Text("LT")
+                        .font(.system(size: 22, weight: .bold, design: .monospaced))
+                        .foregroundColor(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltTitleOpacity))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltStrokeOpacity), lineWidth: 1))
+            }
+            .buttonStyle(.plain)
         }
     }
 

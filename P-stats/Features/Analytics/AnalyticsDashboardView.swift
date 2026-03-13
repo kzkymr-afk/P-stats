@@ -1284,7 +1284,7 @@ private struct AnalyticsDayDetailView: View {
     }
 }
 
-/// 分析対象の遊戯履歴一覧（新しい順）。期間タブ削除によりメインからは使わず、必要時用
+/// 分析対象の遊戯履歴一覧（新しい順）。店舗/機種/メーカー別のセッション一覧（NavigationLink）用。メインの期間タブでは使用しない。
 struct AnalyticsSessionListView: View {
     let segment: AnalyticsSegment
     let groupLabel: String

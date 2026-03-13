@@ -1,0 +1,6 @@
+machine_id,machine_name,mode_id,mode_name,bonus_name,payout,ratio,densapo,next_mode_id,notes
+4935,e甲鉄城のカバネリ2GFEA,0,通常時,決戦BONUS,750,50.00%,0,0,
+4935,e甲鉄城のカバネリ2GFEA,0,通常時,決戦BONUS,750,50.00%,134,1,
+4935,e甲鉄城のカバネリ2GFEA,1,KABANERI OF THE IRON FORTRESS 海門決戦,カバネリBONUS,1500,20.00%,134,1,
+4935,e甲鉄城のカバネリ2GFEA,1,KABANERI OF THE IRON FORTRESS 海門決戦,ツラヌキBONUS3000,3000,73.80%,134,1,
+4935,e甲鉄城のカバネリ2GFEA,1,KABANERI OF THE IRON FORTRESS 海門決戦,上乗せ,3000,6.20%,134,1,

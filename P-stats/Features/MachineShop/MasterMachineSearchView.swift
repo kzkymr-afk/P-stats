@@ -110,6 +110,7 @@ struct MasterMachineSearchView: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
+                .scrollDismissesKeyboard(.interactively)
             }
             .background(AppGlassStyle.background)
             .navigationTitle("マスタから検索")

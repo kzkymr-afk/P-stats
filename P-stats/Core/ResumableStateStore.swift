@@ -24,7 +24,8 @@ enum ResumableStateStore {
             isTimeShortMode: log.isTimeShortMode,
             adjustedNetPerRound: log.adjustedNetPerRound,
             winRecords: log.winRecords,
-            lendingRecords: log.lendingRecords
+            lendingRecords: log.lendingRecords,
+            currentModeID: log.currentModeID
         )
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: fileURL)

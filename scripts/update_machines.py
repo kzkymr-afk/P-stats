@@ -11,6 +11,7 @@ import io
 import json
 import os
 import sys
+from typing import Dict, List, Optional
 
 import requests
 
@@ -24,13 +25,13 @@ DEFAULT_CSV_URL = os.environ.get(
 REQUEST_TIMEOUT = 20
 
 
-def _parse_csv_line(line: str) -> list[str]:
+def _parse_csv_line(line: str) -> List[str]:
     """1行を CSV としてパース（ダブルクォート内のカンマは無視）。"""
     reader = csv.reader(io.StringIO(line))
     return next(reader)
 
 
-def _col_index(headers: list[str], *names: str) -> int | None:
+def _col_index(headers: List[str], *names: str) -> Optional[int]:
     """ヘッダーから列名に一致するインデックスを返す（大文字小文字無視）。"""
     h_lower = [h.strip().lower() for h in headers]
     for n in names:
@@ -41,7 +42,7 @@ def _col_index(headers: list[str], *names: str) -> int | None:
     return None
 
 
-def fetch_and_parse_csv(url: str) -> list[dict]:
+def fetch_and_parse_csv(url: str) -> List[Dict]:
     """CSV URL を取得し、アプリ用の辞書リストに変換する。"""
     r = requests.get(url, timeout=REQUEST_TIMEOUT)
     r.raise_for_status()
@@ -82,6 +83,7 @@ def fetch_and_parse_csv(url: str) -> list[dict]:
         manufacturer = v("メーカー", "manufacturer") or ""
         intro_date = v("導入日", "introductionDate", "導入日付") or ""
         lt_yn = v("LT有無", "LT") or ""
+        machine_id = v("機種ID", "machine_id", "machineId", "DMM機種ID", "dmm_id") or ""
 
         count_per_round = 10
         machine_type_raw = "kakugen"
@@ -106,6 +108,8 @@ def fetch_and_parse_csv(url: str) -> list[dict]:
             row["introductionDateRaw"] = intro_date
         if lt_yn:
             row["ltRaw"] = lt_yn
+        if machine_id:
+            row["machineId"] = machine_id.strip()
         result.append(row)
     if not result:
         # 行はあるが1件も採用されなかった（機種名列が空など）

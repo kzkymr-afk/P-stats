@@ -32,6 +32,91 @@ struct PresetFromServer: Codable {
     var introductionDateRaw: String?
     /// LT有無。CSVの「LT有無」列。"あり" のとき RUSH/LT パネルを分けて表示する。
     var ltRaw: String?
+    /// DMMぱちタウン用機種ID。p-town.dmm.com/machines/{machineId} の {machineId} に使用。CSVの「機種ID」「machine_id」等。
+    var machineId: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name, machineTypeRaw, supportLimit, timeShortRotations, defaultPrize, probability, border
+        case prizeEntries, entryRate, continuationRate, countPerRound, netPerRoundBase, manufacturer
+        case heso_prizes, denchu_prizes, introductionDateRaw, ltRaw
+        case machineId = "machineId"
+        case machineIdSnake = "machine_id"
+        case machineID = "machineID"
+        case machineIdJapanese = "機種ID"
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        name = try c.decode(String.self, forKey: .name)
+        machineTypeRaw = try c.decodeIfPresent(String.self, forKey: .machineTypeRaw)
+        supportLimit = try c.decodeIfPresent(Int.self, forKey: .supportLimit)
+        timeShortRotations = try c.decodeIfPresent(Int.self, forKey: .timeShortRotations)
+        defaultPrize = try c.decodeIfPresent(Int.self, forKey: .defaultPrize)
+        probability = try c.decodeIfPresent(String.self, forKey: .probability)
+        border = try c.decodeIfPresent(String.self, forKey: .border)
+        prizeEntries = try c.decodeIfPresent([PrizeEntryFromServer].self, forKey: .prizeEntries)
+        entryRate = try c.decodeIfPresent(Double.self, forKey: .entryRate)
+        continuationRate = try c.decodeIfPresent(Double.self, forKey: .continuationRate)
+        countPerRound = try c.decodeIfPresent(Int.self, forKey: .countPerRound)
+        netPerRoundBase = try c.decodeIfPresent(Double.self, forKey: .netPerRoundBase)
+        manufacturer = try c.decodeIfPresent(String.self, forKey: .manufacturer)
+        heso_prizes = try c.decodeIfPresent(String.self, forKey: .heso_prizes)
+        denchu_prizes = try c.decodeIfPresent(String.self, forKey: .denchu_prizes)
+        introductionDateRaw = try c.decodeIfPresent(String.self, forKey: .introductionDateRaw)
+        ltRaw = try c.decodeIfPresent(String.self, forKey: .ltRaw)
+        func decodeMachineId(_ key: CodingKeys) -> String? {
+            (try? c.decodeIfPresent(String.self, forKey: key))
+                ?? (try? c.decodeIfPresent(Int.self, forKey: key)).map { String($0) }
+        }
+        machineId = decodeMachineId(.machineId)
+            ?? decodeMachineId(.machineIdSnake)
+            ?? decodeMachineId(.machineID)
+            ?? decodeMachineId(.machineIdJapanese)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(name, forKey: .name)
+        try c.encodeIfPresent(machineTypeRaw, forKey: .machineTypeRaw)
+        try c.encodeIfPresent(supportLimit, forKey: .supportLimit)
+        try c.encodeIfPresent(timeShortRotations, forKey: .timeShortRotations)
+        try c.encodeIfPresent(defaultPrize, forKey: .defaultPrize)
+        try c.encodeIfPresent(probability, forKey: .probability)
+        try c.encodeIfPresent(border, forKey: .border)
+        try c.encodeIfPresent(prizeEntries, forKey: .prizeEntries)
+        try c.encodeIfPresent(entryRate, forKey: .entryRate)
+        try c.encodeIfPresent(continuationRate, forKey: .continuationRate)
+        try c.encodeIfPresent(countPerRound, forKey: .countPerRound)
+        try c.encodeIfPresent(netPerRoundBase, forKey: .netPerRoundBase)
+        try c.encodeIfPresent(manufacturer, forKey: .manufacturer)
+        try c.encodeIfPresent(heso_prizes, forKey: .heso_prizes)
+        try c.encodeIfPresent(denchu_prizes, forKey: .denchu_prizes)
+        try c.encodeIfPresent(introductionDateRaw, forKey: .introductionDateRaw)
+        try c.encodeIfPresent(ltRaw, forKey: .ltRaw)
+        try c.encodeIfPresent(machineId, forKey: .machineId)
+    }
+
+    /// CSVパース等で手動構築する用（CodingKeys 使用時は自動の memberwise init がなくなるため）。Task.detached から呼ぶため nonisolated。
+    nonisolated init(name: String, machineTypeRaw: String?, supportLimit: Int?, timeShortRotations: Int?, defaultPrize: Int?, probability: String?, border: String?, prizeEntries: [PrizeEntryFromServer]?, entryRate: Double?, continuationRate: Double?, countPerRound: Int?, netPerRoundBase: Double?, manufacturer: String?, heso_prizes: String?, denchu_prizes: String?, introductionDateRaw: String?, ltRaw: String?, machineId: String?) {
+        self.name = name
+        self.machineTypeRaw = machineTypeRaw
+        self.supportLimit = supportLimit
+        self.timeShortRotations = timeShortRotations
+        self.defaultPrize = defaultPrize
+        self.probability = probability
+        self.border = border
+        self.prizeEntries = prizeEntries
+        self.entryRate = entryRate
+        self.continuationRate = continuationRate
+        self.countPerRound = countPerRound
+        self.netPerRoundBase = netPerRoundBase
+        self.manufacturer = manufacturer
+        self.heso_prizes = heso_prizes
+        self.denchu_prizes = denchu_prizes
+        self.introductionDateRaw = introductionDateRaw
+        self.ltRaw = ltRaw
+        self.machineId = machineId
+    }
 
     struct PrizeEntryFromServer: Codable {
         var label: String?
@@ -89,7 +174,10 @@ enum PresetService {
             let config = URLSessionConfiguration.default
             config.timeoutIntervalForRequest = 15
             config.timeoutIntervalForResource = 20
-            let (data, _) = try await URLSession(configuration: config).data(from: url)
+            config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+            var request = URLRequest(url: url)
+            request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+            let (data, _) = try await URLSession(configuration: config).data(for: request)
             let isCSV = isSpreadsheetCSVURL(urlString)
             let list: [PresetFromServer]? = await Task.detached(priority: .userInitiated) {
                 if isCSV {
@@ -158,6 +246,7 @@ enum PresetService {
             let defaultPrize = Int(defaultPrizeStr) ?? 1500
             let introDate = v("導入日", "introductionDate", "導入日付")
             let ltYn = v("LT有無", "LT")
+            let machineIdStr = v("機種ID", "machine_id", "machineId", "DMM機種ID", "dmm_id")
             list.append(PresetFromServer(
                 name: name,
                 machineTypeRaw: machineTypeRaw?.isEmpty == false ? machineTypeRaw : nil,
@@ -175,7 +264,8 @@ enum PresetService {
                 heso_prizes: heso.isEmpty ? nil : heso,
                 denchu_prizes: denchu.isEmpty ? nil : denchu,
                 introductionDateRaw: introDate.isEmpty ? nil : introDate,
-                ltRaw: ltYn.isEmpty ? nil : ltYn
+                ltRaw: ltYn.isEmpty ? nil : ltYn,
+                machineId: machineIdStr.isEmpty ? nil : machineIdStr
             ))
         }
         return list

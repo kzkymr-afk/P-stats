@@ -62,7 +62,7 @@ function processPachinkoText(rawInput, manualUrl) {
   try {
     var ss = SpreadsheetApp.openById(SS_ID);
     var sheet = ss.getSheets()[0];
-    var parseTarget = rawInput.split("ゲームフロー")[0].split("ユーザー口コミ・評価詳細")[0];
+    var parseTarget = rawInput.split("ユーザー口コミ・評価詳細")[0].split("ゲームフロー")[0];
 
     var mCode = "-";
     if (manualUrl) {
@@ -100,7 +100,7 @@ function processPachinkoText(rawInput, manualUrl) {
       probability = probMatch[1].replace(/[０-９．]/g, function(s) { return String.fromCharCode(s.charCodeAt(0) - 0xFEE0); }).replace(/\s/g, "");
     }
 
-    var specArea = parseTarget.split("ゲームフロー")[0].split("お知らせ一覧")[0];
+    var specArea = parseTarget.split("お知らせ一覧")[0];
     var tagSet = {};
     var isHybrid = false;
     var iconMatches = specArea.match(/alt="([^"]+)"/g) || [];

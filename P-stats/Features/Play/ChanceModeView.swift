@@ -5,7 +5,8 @@ import SwiftData
 struct ChanceModeView: View {
     @Bindable var log: GameLog
     var onRushExit: () -> Void
-    var onLtExit: () -> Void
+    /// LT仕様削除のため未使用。nil のときは LT 昇格ボタンを表示しない。
+    var onLtExit: (() -> Void)? = nil
     var onTimeShortEnd: () -> Void
 
     private let accent = AppGlassStyle.accent
@@ -107,29 +108,6 @@ struct ChanceModeView: View {
                                 .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(0.5), lineWidth: 1))
                             }
                             .buttonStyle(.plain)
-
-                            if log.selectedMachine.hasLT {
-                                Button(action: {
-                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                    log.promoteLastNormalToLt()
-                                    onLtExit()
-                                }) {
-                                    ZStack {
-                                        AppGlassStyle.cardBackground
-                                        HStack(spacing: 6) {
-                                            Text("LT")
-                                                .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                            Text("昇格")
-                                                .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                        }
-                                        .foregroundColor(AppGlassStyle.ltColor)
-                                    }
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltStrokeOpacity), lineWidth: 1))
-                                }
-                                .buttonStyle(.plain)
-                            }
 
                             // 下: 時短終了
                             Button(action: {

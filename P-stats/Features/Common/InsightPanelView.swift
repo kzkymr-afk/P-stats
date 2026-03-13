@@ -60,7 +60,8 @@ struct InsightPanelView: View {
             .padding(.top, 12)
             .padding(.bottom, 8)
 
-            VStack(alignment: .leading, spacing: 8) {
+            ScrollView(showsIndicators: true) {
+                VStack(alignment: .leading, spacing: 8) {
                 // 設定（通常モード中も常に表示）
                 if let onOpenSettings = onOpenSettings {
                     Button(action: onOpenSettings) {

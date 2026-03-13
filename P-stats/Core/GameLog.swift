@@ -14,6 +14,8 @@ final class GameLog {
     /// 新規開始時に設定した台表示数（表示合わせのみ・あとから修正用）
     var initialDisplayRotation: Int = 0
     var currentState: PlayState = .normal
+    /// フェーズ3: 現在の滞在モードID（0=通常, 1=RUSH, 2=LT）。データ駆動の遷移の真実のソース。
+    var currentModeID: Int = 0
     /// 電サポまたは時短の残り回数（0で自動通常復帰）。ST電サポ・通常後の時短の両方で使用
     var remainingSupportCount: Int = 0
     /// 現在の時短/STフェーズ開始時の残り回数（前回大当たり以降のゲーム数表示用）
@@ -76,6 +78,7 @@ final class GameLog {
                 remaining -= 1
                 if remainingSupportCount <= 0 {
                     currentState = .normal
+                    currentModeID = 0
                     isTimeShortMode = false
                 }
             } else {
@@ -138,7 +141,54 @@ final class GameLog {
         return Int(round(Double(rounds) * effective1RNetPerRound))
     }
 
-    /// 大当たりを1件追加。prizeBalls を指定した場合はその玉数（純増）を使用、nil の場合は effectiveBallsPerHit を使用
+    /// mode_id から WinType を返す（0=通常, 1=RUSH, 2=LT）
+    private static func winType(from modeId: Int) -> WinType {
+        switch modeId {
+        case 1: return .rush
+        case 2: return .lt
+        default: return .normal
+        }
+    }
+
+    /// 当たり1回適用後の状態更新（currentModeID / 電サポ・時短 / currentState）。recordHit と addWin の共通処理。
+    private func setStateAfterHit(nextModeId: Int, densapo: Int) {
+        currentModeID = nextModeId
+        remainingSupportCount = max(0, densapo)
+        supportPhaseInitialCount = remainingSupportCount
+        if nextModeId == 0 {
+            currentState = remainingSupportCount > 0 ? .support : .normal
+            isTimeShortMode = remainingSupportCount > 0
+        } else if nextModeId == 1 {
+            currentState = .support
+            isTimeShortMode = false
+        } else {
+            currentState = .lt
+            isTimeShortMode = false
+        }
+    }
+
+    /// フェーズ3: データ駆動の当たり記録。BonusDetail に従い履歴追加・出玉加算・currentModeID と電サポを更新する。既存の addWin と併存。
+    func recordHit(bonus: BonusDetail, atRotation: Int) {
+        let diff = atRotation - totalRotations
+        if diff != 0, currentState == .normal { normalRotations += diff }
+        let prize = bonus.payout > 0 ? bonus.payout : effectiveBallsPerHit
+        var record = WinRecord(
+            type: Self.winType(from: currentModeID),
+            prize: prize,
+            rotationAtWin: atRotation,
+            normalRotationsAtWin: normalRotations
+        )
+        record.timestamp = Date()
+        record.modeIdAtWin = currentModeID
+        record.nextModeId = bonus.nextModeId
+        record.bonusName = bonus.name
+        winRecords.append(record)
+        pushUndo(.removeWin(id: record.id))
+        totalRotations = atRotation
+        setStateAfterHit(nextModeId: bonus.nextModeId, densapo: bonus.densapo)
+    }
+
+    /// 大当たりを1件追加。prizeBalls を指定した場合はその玉数（純増）を使用、nil の場合は effectiveBallsPerHit を使用。従来API・recordHit と併存。
     func addWin(type: WinType, atRotation: Int, prizeBalls: Int? = nil) {
         let diff = atRotation - totalRotations
         if diff != 0 && currentState == .normal { normalRotations += diff }
@@ -148,40 +198,20 @@ final class GameLog {
         winRecords.append(record)
         pushUndo(.removeWin(id: record.id))
         totalRotations = atRotation
+        let (nextModeId, densapo): (Int, Int)
         if type == .normal {
             let timeShort = selectedMachine.timeShortRotations
-            if timeShort > 0 {
-                currentState = .support
-                remainingSupportCount = timeShort
-                supportPhaseInitialCount = timeShort
-                isTimeShortMode = true
-            } else {
-                currentState = .normal
-                remainingSupportCount = 0
-                supportPhaseInitialCount = 0
-                isTimeShortMode = false
-            }
+            nextModeId = 0
+            densapo = timeShort > 0 ? timeShort : 0
         } else if type == .lt {
-            currentState = .lt
-            isTimeShortMode = false
-            if selectedMachine.isST {
-                remainingSupportCount = selectedMachine.supportLimit
-                supportPhaseInitialCount = selectedMachine.supportLimit
-            } else {
-                remainingSupportCount = 0
-                supportPhaseInitialCount = 0
-            }
+            nextModeId = 2
+            densapo = selectedMachine.isST ? selectedMachine.supportLimit : 0
         } else {
-            currentState = .support
-            isTimeShortMode = false
-            if selectedMachine.isST {
-                remainingSupportCount = selectedMachine.supportLimit
-                supportPhaseInitialCount = selectedMachine.supportLimit
-            } else {
-                remainingSupportCount = 0
-                supportPhaseInitialCount = 0
-            }
+            nextModeId = 1
+            densapo = selectedMachine.isST ? selectedMachine.supportLimit : 0
         }
+        currentModeID = nextModeId
+        setStateAfterHit(nextModeId: nextModeId, densapo: densapo)
     }
 
     /// カウントボタン表示用：前回大当たり以降のゲーム数（時短・ST抜けゲーム数含む）
@@ -411,6 +441,7 @@ final class GameLog {
 
     /// 手動で通常へ復帰（確変の「通常落ち」やST・時短の手動切り上げ）
     func backToNormalManually() {
+        currentModeID = 0
         currentState = .normal
         remainingSupportCount = 0
         isTimeShortMode = false
@@ -418,6 +449,7 @@ final class GameLog {
 
     /// チャンスモードで「時短終了」押下時。通常へ復帰（総回転数は時短中加算していないのでそのまま）
     func endTimeShortAndReturnToNormal() {
+        currentModeID = 0
         currentState = .normal
         remainingSupportCount = 0
         isTimeShortMode = false
@@ -425,6 +457,7 @@ final class GameLog {
 
     /// フォーカスモードで「RUSH終了」押下時。通常へ復帰（総回転数はST中加算していないのでそのまま）
     func endRushAndReturnToNormal() {
+        currentModeID = 0
         currentState = .normal
         remainingSupportCount = 0
         isTimeShortMode = false
@@ -432,6 +465,7 @@ final class GameLog {
 
     /// フォーカスモードで「LT終了」押下時。通常へ復帰
     func endLtAndReturnToNormal() {
+        currentModeID = 0
         currentState = .normal
         remainingSupportCount = 0
         isTimeShortMode = false
@@ -439,25 +473,39 @@ final class GameLog {
 
     /// RUSHモードからLTモードへ切り替え（機種がRUSH→LT可のとき）
     func switchToLtMode() {
+        currentModeID = 2
         currentState = .lt
         // remainingSupportCount / supportPhaseInitialCount はそのまま
     }
 
     /// 手動で電サポ中に切り替え（STのときは残り回数をセットしてカウントダウン開始）
     func enterSupportManually() {
+        currentModeID = 1
         currentState = .support
         isTimeShortMode = false
         if selectedMachine.isST {
             remainingSupportCount = selectedMachine.supportLimit
+            supportPhaseInitialCount = selectedMachine.supportLimit
+        } else {
+            remainingSupportCount = 0
+            supportPhaseInitialCount = 0
         }
     }
 
-    func fixTotalChainPrize(finalTotal: Int) {
+    /// RUSH終了時に獲得出玉と終了時回転数を反映する。RUSH終了UIで確定時に呼び出す。
+    /// - Parameters:
+    ///   - finalTotal: このRUSHの獲得出玉（玉数）
+    ///   - rotationAtEnd: RUSH終了時の回転数（未指定なら最後の記録の回転数のまま）
+    func fixTotalChainPrize(finalTotal: Int, rotationAtEnd: Int? = nil) {
         let currentTotal = winRecords.reduce(0) { $0 + ($1.prize ?? 0) }
         let diff = finalTotal - currentTotal
-        if let lastIndex = winRecords.indices.last, diff != 0 {
-            winRecords[lastIndex].prize = (winRecords[lastIndex].prize ?? 0) + diff
+        guard let lastIndex = winRecords.indices.last else { return }
+        var last = winRecords[lastIndex]
+        last.prize = (last.prize ?? 0) + diff
+        if let rot = rotationAtEnd, rot >= 0 {
+            last.rotationAtWin = rot
         }
+        winRecords[lastIndex] = last
     }
 
     func adjustForZeroTray(syncRotation: Int) {
@@ -588,39 +636,24 @@ final class GameLog {
         }
     }
 
-    /// 最後に記録した通常大当たりをRUSH大当たりに昇格させる（チャンスモード等から呼ぶ）
+    /// 最後に記録した通常大当たりをRUSH大当たりに昇格させ、RUSHモードへ移行する（チャンスモード等から呼ぶ）。recordHit 相当の状態遷移に寄せた実装。
     func promoteLastNormalToRush() {
         if let lastNormalIndex = winRecords.lastIndex(where: { $0.type == .normal }) {
             winRecords[lastNormalIndex].type = .rush
+            winRecords[lastNormalIndex].nextModeId = 1
         }
-        
-        // 状態をRUSHモードに更新する
-        currentState = .support
-        isTimeShortMode = false
-        if selectedMachine.isST {
-            remainingSupportCount = selectedMachine.supportLimit
-            supportPhaseInitialCount = selectedMachine.supportLimit
-        } else {
-            remainingSupportCount = 0
-            supportPhaseInitialCount = 0
-        }
+        let densapo = selectedMachine.isST ? selectedMachine.supportLimit : 0
+        setStateAfterHit(nextModeId: 1, densapo: densapo)
     }
 
-    /// 最後に記録した通常大当たりをLT大当たりに昇格させ、LTモードへ移行する
+    /// 最後に記録した通常大当たりをLT大当たりに昇格させ、LTモードへ移行する。recordHit 相当の状態遷移に寄せた実装。
     func promoteLastNormalToLt() {
         if let lastNormalIndex = winRecords.lastIndex(where: { $0.type == .normal }) {
             winRecords[lastNormalIndex].type = .lt
+            winRecords[lastNormalIndex].nextModeId = 2
         }
-        
-        currentState = .lt
-        isTimeShortMode = false
-        if selectedMachine.isST {
-            remainingSupportCount = selectedMachine.supportLimit
-            supportPhaseInitialCount = selectedMachine.supportLimit
-        } else {
-            remainingSupportCount = 0
-            supportPhaseInitialCount = 0
-        }
+        let densapo = selectedMachine.isST ? selectedMachine.supportLimit : 0
+        setStateAfterHit(nextModeId: 2, densapo: densapo)
     }
 
     /// 投資1件の内容を差し替え（履歴編集用・timestamp は維持）
@@ -654,6 +687,7 @@ final class GameLog {
         totalRotations = 0
         normalRotations = 0
         currentState = .normal
+        currentModeID = 0
         remainingSupportCount = 0
         supportPhaseInitialCount = 0
         isTimeShortMode = false
@@ -674,6 +708,7 @@ final class GameLog {
         normalRotations = state.normalRotations
         initialDisplayRotation = state.initialDisplayRotation
         currentState = state.currentState
+        currentModeID = state.currentModeID ?? Self.resolvedModeID(from: state.currentState, isTimeShortMode: state.isTimeShortMode)
         remainingSupportCount = state.remainingSupportCount
         supportPhaseInitialCount = state.supportPhaseInitialCount
         isTimeShortMode = state.isTimeShortMode
@@ -681,5 +716,14 @@ final class GameLog {
         winRecords = state.winRecords
         lendingRecords = state.lendingRecords
         undoStack = []
+    }
+
+    /// 保存データに currentModeID が無いとき、currentState から復元する
+    private static func resolvedModeID(from currentState: PlayState, isTimeShortMode: Bool) -> Int {
+        switch currentState {
+        case .lt: return 2
+        case .support: return isTimeShortMode ? 0 : 1
+        case .normal: return 0
+        }
     }
 }

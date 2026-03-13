@@ -45,7 +45,12 @@ struct SharedMachineFromCloud: Identifiable {
             continuationRate: continuationRate,
             countPerRound: countPerRound,
             netPerRoundBase: netPerRoundBase,
-            manufacturer: manufacturer
+            manufacturer: manufacturer,
+            heso_prizes: nil,
+            denchu_prizes: nil,
+            introductionDateRaw: nil,
+            ltRaw: nil,
+            machineId: nil
         )
     }
 }

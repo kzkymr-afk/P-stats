@@ -36,9 +36,7 @@ struct PlayView: View {
     /// ドロワー「ロック解除」ハプティックを1回だけ発火する用
     @State private var didFireUnlockHaptic = false
     @State private var showRushFocusMode = false
-    @State private var showLtFocusMode = false
     @State private var showChanceMode = false
-    @State private var showRushLtChoiceSheet = false
     /// 続きから復帰時に RUSH/LT/時短 のフルスクリーンを一度だけ自動表示したか
     @State private var hasRestoredFocusView = false
     /// 省エネモードから大当たりを開いた場合、入力完了・RUSH終了後に省エネに戻す
@@ -68,7 +66,9 @@ struct PlayView: View {
     @State private var tempWinCashYen: String = ""
     @State private var tempWinHoldingsBalls: String = ""
     @State private var tempWinHoldingsCount: String = ""
-    
+    /// フェーズ4: 機種のモード・当たり詳細（masterID があるときロード）
+    @State private var machineDetail: MachineDetail? = nil
+
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
 
@@ -81,6 +81,7 @@ struct PlayView: View {
     @State private var gaugeRefreshId = 0
     @AppStorage("playViewRightHandMode") private var rightHandMode = false
     @AppStorage("playViewStartWithPowerSaving") private var playViewStartWithPowerSaving = false
+    @AppStorage("machineDetailBaseURL") private var machineDetailBaseURL: String = ""
     @AppStorage("playViewBackgroundStyle") private var playViewBackgroundStyle = "sameAsHome"
     @AppStorage("playViewBackgroundImagePath") private var playViewBackgroundImagePath = ""
     @AppStorage("homeBackgroundStyle") private var homeBackgroundStyle = HomeBackgroundStore.defaultStyle
@@ -420,7 +421,7 @@ struct PlayView: View {
                                 OrganicHaptics.playRushHeartbeat()
                                 showRushFocusMode = true
                             } else if resolvedWinType == .lt {
-                                showLtFocusMode = true
+                                showRushFocusMode = true
                             } else if resolvedWinType == .normal {
                                 showChanceMode = true
                             }
@@ -431,7 +432,12 @@ struct PlayView: View {
                                 showPowerSavingMode = true
                                 returnToPowerSavingModeAfterExit = false
                             }
-                        }
+                        },
+                        onConfirmRecordHit: { bonus in
+                            applyRecordHitAndNavigate(bonus: bonus)
+                        },
+                        machineDetail: machineDetail,
+                        currentModeID: log.currentModeID
                     )
                     .frame(maxWidth: 400)
                     .padding(.horizontal, 20)
@@ -443,13 +449,21 @@ struct PlayView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: showWinInputSheet)
+        .task(id: "\(log.selectedMachine.masterID ?? "")|\(log.selectedMachine.name)|\(machineDetailBaseURL)") {
+            let base = machineDetailBaseURL.trimmingCharacters(in: .whitespaces)
+            machineDetail = await MachineDetailLoader.fetchMachineDetail(
+                machineId: log.selectedMachine.masterID,
+                machineName: log.selectedMachine.name,
+                baseURL: base.isEmpty ? nil : base
+            )
+        }
         .onAppear {
             guard !hasRestoredFocusView else { return }
             if log.currentState == .support {
                 showRushFocusMode = true
                 hasRestoredFocusView = true
             } else if log.currentState == .lt {
-                showLtFocusMode = true
+                showRushFocusMode = true
                 hasRestoredFocusView = true
             } else if log.isTimeShortMode {
                 showChanceMode = true
@@ -540,20 +554,8 @@ struct PlayView: View {
             )
         }
         .fullScreenCover(isPresented: $showRushFocusMode) {
-            RushFocusView(log: log, onSwitchToLt: {
+            RushFocusView(log: log, machineDetail: machineDetail) {
                 showRushFocusMode = false
-                showLtFocusMode = true
-            }) {
-                showRushFocusMode = false
-                if returnToPowerSavingModeAfterExit {
-                    showPowerSavingMode = true
-                    returnToPowerSavingModeAfterExit = false
-                }
-            }
-        }
-        .fullScreenCover(isPresented: $showLtFocusMode) {
-            LtFocusView(log: log) {
-                showLtFocusMode = false
                 if returnToPowerSavingModeAfterExit {
                     showPowerSavingMode = true
                     returnToPowerSavingModeAfterExit = false
@@ -564,22 +566,7 @@ struct PlayView: View {
             ChanceModeView(log: log, onRushExit: {
                 showChanceMode = false
                 showRushFocusMode = true
-            }, onLtExit: {
-                showChanceMode = false
-                showLtFocusMode = true
-            }, onTimeShortEnd: { showChanceMode = false })
-        }
-        .confirmationDialog("RUSH / LT", isPresented: $showRushLtChoiceSheet, titleVisibility: .visible) {
-            Button("RUSH") {
-                handleWinSelection(type: .rush)
-                OrganicHaptics.playRushHeartbeat()
-            }
-            Button("LT（上位RUSH）") {
-                handleWinSelection(type: .lt)
-            }
-            Button("キャンセル", role: .cancel) { }
-        } message: {
-            Text("RUSH または LT を選んでください")
+            }, onLtExit: nil, onTimeShortEnd: { showChanceMode = false })
         }
         .fullScreenCover(isPresented: $showHistoryFromPlay) {
             NavigationStack {
@@ -1203,12 +1190,8 @@ struct PlayView: View {
 
     private func rushButton(height: CGFloat, curveRadius: CGFloat) -> some View {
         Button(action: {
-            if log.selectedMachine.ltFromNormal {
-                showRushLtChoiceSheet = true
-            } else {
-                handleWinSelection(type: .rush)
-                OrganicHaptics.playRushHeartbeat()
-            }
+            handleWinSelection(type: .rush)
+            OrganicHaptics.playRushHeartbeat()
         }) {
             ZStack {
                 RoundedRectangle(cornerRadius: buttonCornerRadius)
@@ -1284,7 +1267,38 @@ struct PlayView: View {
 
     private func handleWinSelection(type: WinType) {
         prepareWinInput(type: type)
+        if let detail = machineDetail,
+           let mode = detail.modes.first(where: { $0.modeId == log.currentModeID }),
+           mode.bonuses.count == 1,
+           let bonus = mode.bonuses.first {
+            applyRecordHitAndNavigate(bonus: bonus)
+            return
+        }
         showWinInputSheet = true
+    }
+
+    /// フェーズ4: recordHit を実行し、nextModeId に応じて RUSH/LT/時短画面へ遷移する
+    private func applyRecordHitAndNavigate(bonus: BonusDetail) {
+        let rot = Int(tempWinRotation) ?? 0
+        let atRotation = (log.winRecords.last?.rotationAtWin ?? 0) + rot
+        let cash = Int(tempWinCashYen) ?? 0
+        let hBalls = Int(tempWinHoldingsBalls) ?? 0
+        let hCount = Int(tempWinHoldingsCount) ?? 0
+        log.syncToSnapshot(cashYen: cash, holdingsBalls: hBalls, totalHoldingsCount: hCount)
+        log.recordHit(bonus: bonus, atRotation: atRotation)
+        showWinInputSheet = false
+        if bonus.nextModeId == 1 {
+            OrganicHaptics.playRushHeartbeat()
+            showRushFocusMode = true
+        } else if bonus.nextModeId == 2 {
+            showRushFocusMode = true
+        } else if bonus.nextModeId == 0 {
+            showChanceMode = true
+        }
+        if returnToPowerSavingModeAfterExit, bonus.nextModeId == 0 {
+            showPowerSavingMode = true
+            returnToPowerSavingModeAfterExit = false
+        }
     }
     // --- ヘルパー関数を PlayView 構造体の中に追加 ---
     private func saveCurrentSession() {
@@ -1646,7 +1660,7 @@ struct WinHistoryBarChartView: View {
 }
 
 /// 大当たり入力：ボーナス種類（heso_prizes/denchu_prizes または prizeEntries）を動的表示 → 回転数 → 確定。
-/// P-Sync 対応：通常時は heso_prizes をカンマ区切りでパースしてボタン生成し、"RUSH"/"通常" で遷移種別を自動分岐。RUSH時は denchu_prizes で「天国」「上乗せ」を強調。
+/// フェーズ4: machineDetail + currentModeID があるときはそのモードの bonuses を表示し、確定で onConfirmRecordHit を呼ぶ。
 struct WinInputSheetView: View {
     let machine: Machine
     let winType: WinType
@@ -1657,15 +1671,28 @@ struct WinInputSheetView: View {
     /// 確定時: (選択したボーナスの純増, 実際の種別)。heso で選んだボタンが RUSH/通常 を決める。nil の場合は機種デフォルト。
     var onConfirm: (Int?, WinType) -> Void
     var onCancel: () -> Void
+    /// フェーズ4: データ駆動時、確定で選択した BonusDetail のみ渡す。親で recordHit(bonus, atRotation) と遷移を行う。
+    var onConfirmRecordHit: ((BonusDetail) -> Void)? = nil
+    /// フェーズ4: データ駆動用。nil でなければこのモードの bonuses を表示する。
+    var machineDetail: MachineDetail? = nil
+    var currentModeID: Int = 0
 
     private let accent = AppGlassStyle.accent
     private let panelBg = Color.black.opacity(0.75)
     private let panelBgSelected = Color.black.opacity(0.85)
 
     @State private var selectedPrizeIndex: Int = 0
+    @State private var selectedDataDrivenBonusIndex: Int = 0
     @State private var showExtraFields = false
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
+
+    /// フェーズ4: 現在モードの bonuses（2件以上のみ。1件は親でスキップ済み）
+    private var dataDrivenBonuses: (mode: ModeDetail, list: [BonusDetail])? {
+        guard let detail = machineDetail else { return nil }
+        guard let mode = detail.modes.first(where: { $0.modeId == currentModeID }), mode.bonuses.count > 1 else { return nil }
+        return (mode, mode.bonuses)
+    }
 
     /// 通常時: heso_prizes が空でなければパース結果、否则 prizeEntries
     private var hesoItems: [ParsedHesoItem] {
@@ -1705,18 +1732,30 @@ struct WinInputSheetView: View {
 
     /// 動的ボタンも従来ボタンもないとき → カスタム当たり追加フォールバック
     private var useCustomFallback: Bool {
+        if dataDrivenBonuses != nil { return false }
         if useHesoDynamic || useDenchuDynamic || useLtDynamic { return false }
         if !prizeEntries.isEmpty { return false }
         return true
     }
 
+    private var sheetTitle: String {
+        if let pair = dataDrivenBonuses {
+            return pair.mode.name.isEmpty ? "大当たり" : "\(pair.mode.name) 大当たり"
+        }
+        return winType == .lt ? "LT大当たり" : (winType == .rush ? "RUSH大当たり" : "通常大当たり")
+    }
+
+    private var sheetTitleColor: Color {
+        AppGlassStyle.modeColor(modeId: currentModeID)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // ヘッダー：タイトル＋キャンセル（コンパクト）
+            // ヘッダー：タイトル＋キャンセル（コンパクト）。フェーズ4: データ駆動時はモード名・色
             HStack {
-                Text(winType == .lt ? "LT大当たり" : (winType == .rush ? "RUSH大当たり" : "通常大当たり"))
+                Text(sheetTitle)
                     .font(.title3.weight(.bold))
-                    .foregroundColor(.white)
+                    .foregroundColor(dataDrivenBonuses != nil ? sheetTitleColor : .white)
                 Spacer()
                 Button("キャンセル") { onCancel() }
                     .font(.subheadline.weight(.medium))
@@ -1730,12 +1769,32 @@ struct WinInputSheetView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
-                    // 1. ボーナス種類（動的 or 従来 or カスタムフォールバック）
+                    // 1. ボーナス種類（フェーズ4: データ駆動 or 動的 or 従来 or カスタムフォールバック）
                     VStack(alignment: .leading, spacing: 8) {
                         Text("ボーナス種類")
                             .font(.headline.weight(.semibold))
                             .foregroundColor(.white.opacity(0.9))
-                        if useHesoDynamic {
+                        if let pair = dataDrivenBonuses {
+                            VStack(spacing: 8) {
+                                ForEach(Array(pair.list.enumerated()), id: \.element.id) { index, bonus in
+                                    Button(action: { selectedDataDrivenBonusIndex = index }) {
+                                        Text(bonus.name)
+                                            .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                                            .foregroundColor(selectedDataDrivenBonusIndex == index ? sheetTitleColor : .white.opacity(0.9))
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 14)
+                                            .padding(.horizontal, 12)
+                                            .background(selectedDataDrivenBonusIndex == index ? panelBgSelected : panelBg)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 12)
+                                                    .stroke(selectedDataDrivenBonusIndex == index ? sheetTitleColor : Color.white.opacity(0.2), lineWidth: selectedDataDrivenBonusIndex == index ? 2 : 1)
+                                            )
+                                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        } else if useHesoDynamic {
                             VStack(spacing: 8) {
                                 ForEach(Array(hesoItems.enumerated()), id: \.element.id) { index, item in
                                     hesoPrizeButton(item: item, isSelected: index == selectedPrizeIndex) {
@@ -1936,6 +1995,11 @@ struct WinInputSheetView: View {
         if rot < 0 || cash < 0 || hBalls < 0 || hCount < 0 {
             errorMessage = "負の数は入力できません"
             showErrorAlert = true
+            return
+        }
+
+        if let pair = dataDrivenBonuses, let onRecordHit = onConfirmRecordHit, selectedDataDrivenBonusIndex < pair.list.count {
+            onRecordHit(pair.list[selectedDataDrivenBonusIndex])
             return
         }
 
