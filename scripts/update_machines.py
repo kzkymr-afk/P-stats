@@ -11,6 +11,7 @@ import io
 import json
 import os
 import sys
+import unicodedata
 from typing import Dict, List, Optional
 
 import requests
@@ -31,15 +32,40 @@ def _parse_csv_line(line: str) -> List[str]:
     return next(reader)
 
 
+def _normalize_header(h: str) -> str:
+    """ヘッダー文字列を正規化（BOM・前後空白除去、Unicode正規化）。"""
+    s = (h or "").strip().strip("\uFEFF").strip()
+    return unicodedata.normalize("NFKC", s).lower()
+
+
 def _col_index(headers: List[str], *names: str) -> Optional[int]:
-    """ヘッダーから列名に一致するインデックスを返す（大文字小文字無視）。"""
-    h_lower = [h.strip().lower() for h in headers]
+    """ヘッダーから列名に一致するインデックスを返す（正規化して比較）。"""
+    h_norm = [_normalize_header(h) for h in headers]
     for n in names:
-        n_lower = n.strip().lower()
-        for i, h in enumerate(h_lower):
-            if h == n_lower:
+        n_norm = _normalize_header(n)
+        for i, h in enumerate(h_norm):
+            if h == n_norm:
                 return i
     return None
+
+
+def _parse_heso_atari_cell(cell: str) -> Optional[Dict]:
+    """セル書式 出玉/RUSH(0or1)/時短ゲーム数 をパース。空欄・不正は None。"""
+    s = (cell or "").strip()
+    if not s:
+        return None
+    parts = s.split("/")
+    if len(parts) != 3:
+        return None
+    try:
+        payout = int(parts[0].strip())
+        rush = int(parts[1].strip())
+        time_short = int(parts[2].strip())
+    except ValueError:
+        return None
+    if rush not in (0, 1):
+        return None
+    return {"payout": payout, "rush": rush, "timeShort": time_short}
 
 
 def fetch_and_parse_csv(url: str) -> List[Dict]:
@@ -85,6 +111,30 @@ def fetch_and_parse_csv(url: str) -> List[Dict]:
         lt_yn = v("LT有無", "LT") or ""
         machine_id = v("機種ID", "machine_id", "machineId", "DMM機種ID", "dmm_id") or ""
 
+        heso_atari: List[Dict] = []
+        for slot_names in (
+            ("ヘソ当たり1", "ヘソ当たリ1", "heso_atari_1"),
+            ("ヘソ当たり2", "ヘソ当たリ2", "heso_atari_2"),
+            ("ヘソ当たり3", "ヘソ当たリ3", "heso_atari_3"),
+            ("ヘソ当たり4", "ヘソ当たリ4", "heso_atari_4"),
+            ("ヘソ当たり5", "ヘソ当たリ5", "heso_atari_5"),
+        ):
+            for col_name in slot_names:
+                parsed = _parse_heso_atari_cell(v(col_name))
+                if parsed:
+                    heso_atari.append(parsed)
+                    break
+        if not heso_atari:
+            idx_tokucho = _col_index(headers, "特徴タグ", "特徴")
+            if idx_tokucho is not None:
+                for offset in range(5):
+                    col_i = idx_tokucho + 1 + offset
+                    if col_i < len(values):
+                        cell_val = (values[col_i] or "").strip()
+                        parsed = _parse_heso_atari_cell(cell_val)
+                        if parsed:
+                            heso_atari.append(parsed)
+
         count_per_round = 10
         machine_type_raw = "kakugen"
         support_limit = 0
@@ -104,6 +154,8 @@ def fetch_and_parse_csv(url: str) -> List[Dict]:
             "defaultPrize": default_prize,
             "prizeEntries": prize_entries,
         }
+        if heso_atari:
+            row["hesoAtari"] = heso_atari
         if intro_date:
             row["introductionDateRaw"] = intro_date
         if lt_yn:
