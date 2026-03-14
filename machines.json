@@ -16,6 +16,23 @@
         "balls": 1500
       }
     ],
+    "hesoAtari": [
+      {
+        "payout": 1500,
+        "rush": 0,
+        "timeShort": 0
+      },
+      {
+        "payout": 1500,
+        "rush": 1,
+        "timeShort": 134
+      },
+      {
+        "payout": 300,
+        "rush": 1,
+        "timeShort": 134
+      }
+    ],
     "introductionDateRaw": "2026/04/20",
     "machineId": "4958"
   },
@@ -216,6 +233,18 @@
         "balls": 1500
       }
     ],
+    "hesoAtari": [
+      {
+        "payout": 210,
+        "rush": 0,
+        "timeShort": 0
+      },
+      {
+        "payout": 210,
+        "rush": 1,
+        "timeShort": 40
+      }
+    ],
     "introductionDateRaw": "2026/03/16",
     "machineId": "4942"
   },
@@ -234,6 +263,23 @@
         "label": "10R 1500玉",
         "rounds": 10,
         "balls": 1500
+      }
+    ],
+    "hesoAtari": [
+      {
+        "payout": 400,
+        "rush": 0,
+        "timeShort": 0
+      },
+      {
+        "payout": 400,
+        "rush": 1,
+        "timeShort": 1
+      },
+      {
+        "payout": 1000,
+        "rush": 1,
+        "timeShort": 100
       }
     ],
     "introductionDateRaw": "2026/03/16",
@@ -256,6 +302,18 @@
         "balls": 1500
       }
     ],
+    "hesoAtari": [
+      {
+        "payout": 700,
+        "rush": 0,
+        "timeShort": 0
+      },
+      {
+        "payout": 700,
+        "rush": 1,
+        "timeShort": 0
+      }
+    ],
     "introductionDateRaw": "2026/03/16",
     "machineId": "4976"
   },
@@ -274,6 +332,28 @@
         "label": "10R 1500玉",
         "rounds": 10,
         "balls": 1500
+      }
+    ],
+    "hesoAtari": [
+      {
+        "payout": 260,
+        "rush": 0,
+        "timeShort": 0
+      },
+      {
+        "payout": 860,
+        "rush": 1,
+        "timeShort": 0
+      },
+      {
+        "payout": 260,
+        "rush": 1,
+        "timeShort": 0
+      },
+      {
+        "payout": 260,
+        "rush": 1,
+        "timeShort": 0
       }
     ],
     "introductionDateRaw": "2026/03/16",
@@ -296,6 +376,18 @@
         "balls": 1500
       }
     ],
+    "hesoAtari": [
+      {
+        "payout": 300,
+        "rush": 0,
+        "timeShort": 0
+      },
+      {
+        "payout": 300,
+        "rush": 1,
+        "timeShort": 100
+      }
+    ],
     "introductionDateRaw": "2026/03/16",
     "machineId": "4978"
   },
@@ -314,6 +406,18 @@
         "label": "10R 1500玉",
         "rounds": 10,
         "balls": 1500
+      }
+    ],
+    "hesoAtari": [
+      {
+        "payout": 750,
+        "rush": 0,
+        "timeShort": 0
+      },
+      {
+        "payout": 750,
+        "rush": 0,
+        "timeShort": 134
       }
     ],
     "introductionDateRaw": "2026/03/02",
