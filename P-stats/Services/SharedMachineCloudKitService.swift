@@ -46,7 +46,7 @@ struct SharedMachineFromCloud: Identifiable {
             countPerRound: countPerRound,
             netPerRoundBase: netPerRoundBase,
             manufacturer: manufacturer,
-            heso_prizes: nil,
+            hesoAtari: nil,
             denchu_prizes: nil,
             introductionDateRaw: nil,
             ltRaw: nil,
@@ -91,7 +91,7 @@ enum SharedMachineCloudKitService {
         continuationRate: Double,
         countPerRound: Int,
         netPerRoundBase: Double,
-        prizeEntries: [(label: String, rounds: Int, balls: Int)]
+        prizeEntries: [(label: String, balls: Int)]
     ) async throws {
         let record = CKRecord(recordType: recordType)
         record[keyName] = name
@@ -110,10 +110,9 @@ enum SharedMachineCloudKitService {
 
         struct PrizeEntryEncode: Encodable {
             let label: String
-            let rounds: Int
             let balls: Int
         }
-        let entriesData = prizeEntries.map { PrizeEntryEncode(label: $0.label, rounds: $0.rounds, balls: $0.balls) }
+        let entriesData = prizeEntries.map { PrizeEntryEncode(label: $0.label, balls: $0.balls) }
         if let jsonData = try? JSONEncoder().encode(entriesData),
            let jsonString = String(data: jsonData, encoding: .utf8) {
             record[keyPrizeEntriesJSON] = jsonString
@@ -152,11 +151,11 @@ enum SharedMachineCloudKitService {
            let data = jsonString.data(using: .utf8) {
             struct PrizeEntryDecode: Decodable {
                 let label: String?
-                let rounds: Int
                 let balls: Int
+                var rounds: Int? = nil  // 後方互換で読み捨て（デコード時は上書き可能にするため var）
             }
             if let decoded = try? JSONDecoder().decode([PrizeEntryDecode].self, from: data) {
-                prizeEntries = decoded.map { PresetFromServer.PrizeEntryFromServer(label: $0.label, rounds: $0.rounds, balls: $0.balls) }
+                prizeEntries = decoded.map { PresetFromServer.PrizeEntryFromServer(label: $0.label, balls: $0.balls) }
             }
         }
         return SharedMachineFromCloud(

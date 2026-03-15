@@ -3,10 +3,8 @@ import Foundation
 /// P-Sync/GAS の heso_prizes をパースした1件（通常時・特図1）
 struct ParsedHesoItem: Identifiable {
     let id = UUID()
-    /// ボタン表示用（例: "10R(1500個)"）
+    /// ボタン表示用（例: "(1500個)"。R数は含めない）
     let displayLabel: String
-    /// ラウンド数（パースできなければ nil → デフォルト10で純増計算）
-    let rounds: Int?
     /// 払い出し玉数（パースできなければ nil）
     let balls: Int?
     /// キーワード判定: "RUSH" → .rush, "通常" 等 → .normal
@@ -17,7 +15,6 @@ struct ParsedHesoItem: Identifiable {
 struct ParsedDenchuItem: Identifiable {
     let id = UUID()
     let displayLabel: String
-    let rounds: Int?
     let balls: Int?
     /// 「天国」「上乗せ」等を含む場合は true（ボタン強調用）
     let isSpecial: Bool
@@ -57,36 +54,35 @@ enum PrizeStringParser {
             winType = .normal
         }
         let displayLabel = labelFromSegment(segment)
-        let (rounds, balls) = extractRoundsAndBalls(segment)
-        return ParsedHesoItem(displayLabel: displayLabel, rounds: rounds, balls: balls, winType: winType)
+        let balls = extractBalls(segment)
+        return ParsedHesoItem(displayLabel: displayLabel, balls: balls, winType: winType)
     }
 
     private static func parseDenchuSegment(_ segment: String) -> ParsedDenchuItem? {
         guard !segment.isEmpty else { return nil }
         let displayLabel = labelFromSegment(segment)
-        let (rounds, balls) = extractRoundsAndBalls(segment)
+        let balls = extractBalls(segment)
         let isSpecial = segment.contains("天国") || segment.contains("上乗せ")
-        return ParsedDenchuItem(displayLabel: displayLabel, rounds: rounds, balls: balls, isSpecial: isSpecial)
+        return ParsedDenchuItem(displayLabel: displayLabel, balls: balls, isSpecial: isSpecial)
     }
 
-    /// 表示ラベル（"-RUSH" / "-通常" / "-天国" 等の suffix を除いた部分）
+    /// 表示ラベル（"-RUSH" 等の suffix を除き、○R を除去した部分。例: "10R(1500個)" → "(1500個)"）
     private static func labelFromSegment(_ segment: String) -> String {
+        var s = segment
         if let dash = segment.lastIndex(of: "-"), dash != segment.startIndex {
-            return String(segment[..<dash]).trimmingCharacters(in: .whitespaces)
+            s = String(segment[..<dash]).trimmingCharacters(in: .whitespaces)
         }
-        return segment
+        // ○R を除去（表示にR数を使わない）
+        if let r = roundsPattern?.firstMatch(in: s, range: NSRange(s.startIndex..., in: s)),
+           let range = Range(r.range, in: s) {
+            s = s.replacingCharacters(in: range, with: "").trimmingCharacters(in: .whitespaces)
+        }
+        return s
     }
 
-    private static func extractRoundsAndBalls(_ segment: String) -> (Int?, Int?) {
-        var rounds: Int? = nil
+    private static func extractBalls(_ segment: String) -> Int? {
         var balls: Int? = nil
         let nsRange = NSRange(segment.startIndex..., in: segment)
-        if let r = roundsPattern?.firstMatch(in: segment, range: nsRange) {
-            let at1 = r.range(at: 1)
-            if let swiftRange = Range(at1, in: segment) {
-                rounds = Int(segment[swiftRange])
-            }
-        }
         if let b = ballsInParenPattern?.firstMatch(in: segment, range: nsRange) {
             let at1 = b.range(at: 1)
             if let swiftRange = Range(at1, in: segment) {
@@ -99,6 +95,6 @@ enum PrizeStringParser {
                 balls = Int(segment[swiftRange])
             }
         }
-        return (rounds, balls)
+        return balls
     }
 }

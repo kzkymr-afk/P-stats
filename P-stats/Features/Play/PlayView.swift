@@ -15,6 +15,8 @@ struct PlayView: View {
     @State private var showSyncSheet = false
     @State private var showTrayAdjustSheet = false
     @State private var showWinInputSheet = false
+    /// 通常モードでヘソ当たりありのとき、確認なしで開く専用シート（RUSH突入／単発→終了）
+    @State private var showHesoAtariModeSheet = false
     @State private var showEndConfirm = false
     @State private var showEmptySaveConfirm = false
     @State private var showFinalHoldingsInput = false
@@ -448,8 +450,68 @@ struct PlayView: View {
                 .transition(.opacity)
                 .zIndex(100)
             }
+            if showHesoAtariModeSheet {
+                ZStack(alignment: .bottom) {
+                    Color.black.opacity(0.5)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            showHesoAtariModeSheet = false
+                            if returnToPowerSavingModeAfterExit {
+                                showPowerSavingMode = true
+                                returnToPowerSavingModeAfterExit = false
+                            }
+                        }
+                    HesoAtariModeSheet(
+                        machine: log.selectedMachine,
+                        rotationAtOpen: log.gamesSinceLastWin,
+                        onSelectRush: { item in
+                            let atRotation = (log.winRecords.last?.rotationAtWin ?? 0) + log.gamesSinceLastWin
+                            let prizeBalls = log.selectedMachine.netBallsForPrize(payoutBalls: item.payout)
+                            log.addWin(type: .rush, atRotation: atRotation, prizeBalls: prizeBalls)
+                            showHesoAtariModeSheet = false
+                            OrganicHaptics.playRushHeartbeat()
+                            showRushFocusMode = true
+                            if returnToPowerSavingModeAfterExit {
+                                returnToPowerSavingModeAfterExit = false
+                            }
+                        },
+                        onSelectSingle: { item in
+                            let atRotation = (log.winRecords.last?.rotationAtWin ?? 0) + log.gamesSinceLastWin
+                            let prizeBalls = log.selectedMachine.netBallsForPrize(payoutBalls: item.payout)
+                            log.addWin(type: .normal, atRotation: atRotation, prizeBalls: prizeBalls, timeShortFromHit: item.timeShort)
+                            if returnToPowerSavingModeAfterExit {
+                                showHesoAtariModeSheet = false
+                                showPowerSavingMode = true
+                                returnToPowerSavingModeAfterExit = false
+                            }
+                        },
+                        onEndSingle: {
+                            showHesoAtariModeSheet = false
+                            showChanceMode = true
+                            if returnToPowerSavingModeAfterExit {
+                                showPowerSavingMode = true
+                                returnToPowerSavingModeAfterExit = false
+                            }
+                        },
+                        onCancel: {
+                            showHesoAtariModeSheet = false
+                            if returnToPowerSavingModeAfterExit {
+                                showPowerSavingMode = true
+                                returnToPowerSavingModeAfterExit = false
+                            }
+                        }
+                    )
+                    .frame(maxWidth: 400)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 28)
+                    .padding(.top, 16)
+                }
+                .transition(.opacity)
+                .zIndex(101)
+            }
         }
         .animation(.easeInOut(duration: 0.2), value: showWinInputSheet)
+        .animation(.easeInOut(duration: 0.2), value: showHesoAtariModeSheet)
         .task(id: "\(log.selectedMachine.masterID ?? "")|\(log.selectedMachine.name)|\(machineDetailBaseURL)") {
             let base = machineDetailBaseURL.trimmingCharacters(in: .whitespaces)
             machineDetail = await MachineDetailLoader.fetchMachineDetail(
@@ -1087,21 +1149,12 @@ struct PlayView: View {
     private func floatingBottomBar(geo: GeometryProxy, barHeight: CGFloat) -> some View {
         let horizontalMargin = floatingBarHorizontalMargin(geo: geo)
         let contentWidth = geo.size.width - horizontalMargin * 2 - bottomBarSpacing
-        let rushWidth = contentWidth * 0.55
-        let normalEndWidth = contentWidth * 0.45
         let bottomPadding: CGFloat = 8
 
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: bottomBarSpacing) {
-                if rightHandMode {
-                    normalAndEndRow(width: normalEndWidth, height: barHeight, curveRadius: buttonCornerRadius)
-                    rushButton(height: barHeight, curveRadius: buttonCornerRadius)
-                        .frame(width: rushWidth)
-                } else {
-                    rushButton(height: barHeight, curveRadius: buttonCornerRadius)
-                        .frame(width: rushWidth)
-                    normalAndEndRow(width: normalEndWidth, height: barHeight, curveRadius: buttonCornerRadius)
-                }
+                // 通常時は大当たり1ボタン（タップ→回転・投資確認→ヘソ当たりモードで種類選択）
+                normalAndEndRow(width: contentWidth, height: barHeight, curveRadius: buttonCornerRadius)
             }
             .frame(maxHeight: .infinity)
             .padding(.horizontal, horizontalMargin)
@@ -1211,19 +1264,19 @@ struct PlayView: View {
         .clipShape(RoundedRectangle(cornerRadius: buttonCornerRadius))
     }
 
-    /// 通常ボタン（左2/3）と遊技終了（右1/3）を横並び
+    /// 通常時: ヘソ当たりありなら「ヘソ当たり」1ボタン（タップで確認なしに専用シート）。なければ「大当たり」（従来の回転・投資確認シート）。
     private func normalAndEndRow(width: CGFloat, height: CGFloat, curveRadius: CGFloat) -> some View {
-        HStack(spacing: bottomBarSpacing) {
+        let useHesoFlow = !log.selectedMachine.hesoAtari.isEmpty
+        return HStack(spacing: bottomBarSpacing) {
             Button(action: { handleWinSelection(type: .normal); haptic(.medium) }) {
                 ZStack {
                     RoundedRectangle(cornerRadius: curveRadius)
                         .fill(playPanelBackground)
                     RoundedRectangle(cornerRadius: curveRadius)
                         .fill(AppGlassStyle.normalColor.opacity(playPanelTintOverlayOpacity))
-                    Text("通常\n当選")
-                        .font(.system(size: 15, weight: .bold, design: .monospaced))
+                    Text(useHesoFlow ? "ヘソ当たり" : "大当たり")
+                        .font(.system(size: 16, weight: .bold, design: .monospaced))
                         .foregroundColor(AppGlassStyle.normalColor.opacity(AppGlassStyle.normalTitleOpacity))
-                        .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay(RoundedRectangle(cornerRadius: curveRadius).stroke(glassStroke(tint: AppGlassStyle.normalColor), lineWidth: playPanelStrokeLineWidth))
@@ -1273,6 +1326,11 @@ struct PlayView: View {
            mode.bonuses.count == 1,
            let bonus = mode.bonuses.first {
             applyRecordHitAndNavigate(bonus: bonus)
+            return
+        }
+        // 通常モードでヘソ当たりが登録されているときは、回転・投資確認なしでヘソ当たり専用シートを表示
+        if type == .normal && !log.selectedMachine.hesoAtari.isEmpty {
+            showHesoAtariModeSheet = true
             return
         }
         showWinInputSheet = true
@@ -1660,7 +1718,190 @@ struct WinHistoryBarChartView: View {
     }
 }
 
-/// 大当たり入力：ボーナス種類（heso_prizes/denchu_prizes または prizeEntries）を動的表示 → 回転数 → 確定。
+// MARK: - ヘソ当たり専用モード（RUSH突入／単発→終了）
+/// 通常モードで「ヘソ当たり」タップ後、回転・投資確認なしで表示。RUSH突入 or 単発を選び、単発のときは記録後に「終了」で通常へ戻る。
+struct HesoAtariModeSheet: View {
+    let machine: Machine
+    /// シート表示時点の「前回大当たりからのゲーム数」。記録時に使用
+    let rotationAtOpen: Int
+    var onSelectRush: (HesoAtariItem) -> Void
+    var onSelectSingle: (HesoAtariItem) -> Void
+    var onEndSingle: () -> Void
+    var onCancel: () -> Void
+
+    private var hesoItems: [HesoAtariItem] { machine.hesoAtari }
+    private let accent = AppGlassStyle.accent
+    private let panelBg = Color.black.opacity(0.75)
+
+    enum Phase: Equatable {
+        case initial
+        case choosingRush([HesoAtariItem])
+        case choosingSingle([HesoAtariItem])
+        case singleRecorded
+    }
+    @State private var phase: Phase = .initial
+
+    private var rushCandidates: [HesoAtariItem] { hesoItems.filter { $0.rush == 1 } }
+    private var singleCandidates: [HesoAtariItem] { hesoItems.filter { $0.rush == 0 } }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                if case .choosingRush = phase { Button("戻る") { phase = .initial }.font(.subheadline.weight(.medium)).foregroundColor(accent) }
+                else if case .choosingSingle = phase { Button("戻る") { phase = .initial }.font(.subheadline.weight(.medium)).foregroundColor(accent) }
+                Spacer()
+                Text(phaseTitle)
+                    .font(.title3.weight(.bold))
+                    .foregroundColor(.white)
+                Spacer()
+                if phase == .initial || phase == .singleRecorded {
+                    Button("キャンセル") { onCancel() }
+                        .font(.subheadline.weight(.medium))
+                        .foregroundColor(accent)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    switch phase {
+                    case .initial:
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("単発かRUSHか選んでください")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.8))
+                            HStack(spacing: 12) {
+                                Button(action: tapRush) {
+                                    Text("RUSH突入")
+                                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                        .foregroundColor(AppGlassStyle.rushColor)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 16)
+                                        .background(panelBg)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppGlassStyle.rushColor.opacity(0.6), lineWidth: 1))
+                                }
+                                .buttonStyle(.plain)
+                                Button(action: tapSingle) {
+                                    Text("単発")
+                                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                        .foregroundColor(AppGlassStyle.normalColor)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 16)
+                                        .background(panelBg)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(AppGlassStyle.normalColor.opacity(0.6), lineWidth: 1))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            if rushCandidates.isEmpty && singleCandidates.isEmpty {
+                                Text("登録されているヘソ当たりに RUSH(1) / 単発(0) がありません。機種設定を確認してください。")
+                                    .font(.caption)
+                                    .foregroundColor(.orange.opacity(0.9))
+                            }
+                        }
+
+                    case .choosingRush(let list):
+                        Text("RUSH突入の種類を選択")
+                            .font(.headline.weight(.semibold))
+                            .foregroundColor(.white.opacity(0.9))
+                        VStack(spacing: 8) {
+                            ForEach(list, id: \.id) { item in
+                                hesoRow(item: item) { onSelectRush(item) }
+                            }
+                        }
+
+                    case .choosingSingle(let list):
+                        Text("単発の種類を選択")
+                            .font(.headline.weight(.semibold))
+                            .foregroundColor(.white.opacity(0.9))
+                        VStack(spacing: 8) {
+                            ForEach(list, id: \.id) { item in
+                                hesoRow(item: item) {
+                                    onSelectSingle(item)
+                                    phase = .singleRecorded
+                                }
+                            }
+                        }
+
+                    case .singleRecorded:
+                        Text("単発を記録しました。時短に移ります。")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.9))
+                        Button(action: onEndSingle) {
+                            Text("終了")
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(accent)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 8)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
+            }
+        }
+        .background(AppGlassStyle.background)
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.15), lineWidth: 1))
+    }
+
+    private var phaseTitle: String {
+        switch phase {
+        case .initial: return "ヘソ当たり"
+        case .choosingRush: return "RUSH突入"
+        case .choosingSingle: return "単発"
+        case .singleRecorded: return "ヘソ当たり"
+        }
+    }
+
+    private func tapRush() {
+        if rushCandidates.isEmpty {
+            return
+        }
+        if rushCandidates.count == 1 {
+            onSelectRush(rushCandidates[0])
+            return
+        }
+        phase = .choosingRush(rushCandidates)
+    }
+
+    private func tapSingle() {
+        if singleCandidates.isEmpty {
+            return
+        }
+        if singleCandidates.count == 1 {
+            onSelectSingle(singleCandidates[0])
+            phase = .singleRecorded
+            return
+        }
+        phase = .choosingSingle(singleCandidates)
+    }
+
+    private func hesoRow(item: HesoAtariItem, action: @escaping () -> Void) -> some View {
+        let label = "\(item.payout)玉" + (item.timeShort > 0 ? " 時短\(item.timeShort)" : "")
+        return Button(action: action) {
+            Text(label)
+                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .foregroundColor(.white.opacity(0.95))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.vertical, 14)
+                .padding(.horizontal, 12)
+                .background(panelBg)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent.opacity(0.6), lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// 大当たり入力：ヘソ当たり(hesoAtari)または denchu_prizes / prizeEntries を動的表示。通常時は「確認」→「ヘソ当たり選択」の2段階。
 /// フェーズ4: machineDetail + currentModeID があるときはそのモードの bonuses を表示し、確定で onConfirmRecordHit を呼ぶ。
 struct WinInputSheetView: View {
     let machine: Machine
@@ -1669,7 +1910,7 @@ struct WinInputSheetView: View {
     @Binding var cashYen: String
     @Binding var holdingsBalls: String
     @Binding var holdingsCount: String
-    /// 確定時: (選択したボーナスの純増, 実際の種別)。heso で選んだボタンが RUSH/通常 を決める。nil の場合は機種デフォルト。
+    /// 確定時: (選択したボーナスの純増, 実際の種別)。ヘソ当たりで選んだ内容が RUSH/通常 を決める。nil の場合は機種デフォルト。
     var onConfirm: (Int?, WinType) -> Void
     var onCancel: () -> Void
     /// フェーズ4: データ駆動時、確定で選択した BonusDetail のみ渡す。親で recordHit(bonus, atRotation) と遷移を行う。
@@ -1687,6 +1928,8 @@ struct WinInputSheetView: View {
     @State private var showExtraFields = false
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
+    /// 通常時ヘソ当たりモード: 0=回転・投資確認, 1=ヘソ当たり1〜5選択
+    @State private var hesoConfirmStep: Int = 0
 
     /// フェーズ4: 現在モードの bonuses（2件以上のみ。1件は親でスキップ済み）
     private var dataDrivenBonuses: (mode: ModeDetail, list: [BonusDetail])? {
@@ -1695,11 +1938,9 @@ struct WinInputSheetView: View {
         return (mode, mode.bonuses)
     }
 
-    /// 通常時: heso_prizes が空でなければパース結果、否则 prizeEntries
-    private var hesoItems: [ParsedHesoItem] {
-        let raw = machine.heso_prizes.trimmingCharacters(in: .whitespaces)
-        guard !raw.isEmpty else { return [] }
-        return PrizeStringParser.parseHesoPrizes(raw)
+    /// 通常時: ヘソ当たり1〜5（hesoAtari）
+    private var hesoAtariItems: [HesoAtariItem] {
+        machine.hesoAtari
     }
 
     /// RUSH時: denchu_prizes が空でなければパース結果、否则 prizeEntries
@@ -1713,9 +1954,9 @@ struct WinInputSheetView: View {
         machine.prizeEntries
     }
 
-    /// 通常時で heso が有効なとき true
+    /// 通常時でヘソ当たりが有効なとき true（hesoAtari が空でないとき）
     private var useHesoDynamic: Bool {
-        winType == .normal && !hesoItems.isEmpty
+        winType == .normal && !hesoAtariItems.isEmpty
     }
 
     /// RUSH時で denchu が有効なとき true
@@ -1770,12 +2011,29 @@ struct WinInputSheetView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
-                    // 1. ボーナス種類（フェーズ4: データ駆動 or 動的 or 従来 or カスタムフォールバック）
+                    if useHesoDynamic && hesoConfirmStep == 1 {
+                        // ヘソ当たりモード: 種類選択のみ
+                        Text("ヘソ当たりを選択")
+                            .font(.headline.weight(.semibold))
+                            .foregroundColor(.white.opacity(0.9))
+                        VStack(spacing: 8) {
+                            ForEach(Array(hesoAtariItems.enumerated()), id: \.element.id) { index, item in
+                                hesoAtariButton(item: item) {
+                                    applyHesoAtariSelection(item: item)
+                                }
+                            }
+                        }
+                    } else {
+                    // 1. ボーナス種類（フェーズ4: データ駆動 or 動的 or 従来 or カスタムフォールバック）。通常ヘソ時は step0 で非表示
                     VStack(alignment: .leading, spacing: 8) {
                         Text("ボーナス種類")
                             .font(.headline.weight(.semibold))
                             .foregroundColor(.white.opacity(0.9))
-                        if let pair = dataDrivenBonuses {
+                        if useHesoDynamic && hesoConfirmStep == 0 {
+                            Text("回転数・投資を確認して「確定」でヘソ当たり選択へ")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                        } else if let pair = dataDrivenBonuses {
                             VStack(spacing: 8) {
                                 ForEach(Array(pair.list.enumerated()), id: \.element.id) { index, bonus in
                                     Button(action: { selectedDataDrivenBonusIndex = index }) {
@@ -1795,14 +2053,8 @@ struct WinInputSheetView: View {
                                     .buttonStyle(.plain)
                                 }
                             }
-                        } else if useHesoDynamic {
-                            VStack(spacing: 8) {
-                                ForEach(Array(hesoItems.enumerated()), id: \.element.id) { index, item in
-                                    hesoPrizeButton(item: item, isSelected: index == selectedPrizeIndex) {
-                                        selectedPrizeIndex = index
-                                    }
-                                }
-                            }
+                        } else if useHesoDynamic && hesoConfirmStep == 0 {
+                            EmptyView()
                         } else if useDenchuDynamic {
                             VStack(spacing: 8) {
                                 ForEach(Array(denchuItems.enumerated()), id: \.element.id) { index, item in
@@ -1832,7 +2084,9 @@ struct WinInputSheetView: View {
                             customFallbackLabel()
                         }
                     }
+                    }
 
+                    if !(useHesoDynamic && hesoConfirmStep == 1) {
                     // 2. 大当たり時の回転数（デフォルトで現在の回転数が入力済み）
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(spacing: 4) {
@@ -1869,13 +2123,10 @@ struct WinInputSheetView: View {
                             .foregroundColor(.white.opacity(0.7))
                     }
                     .tint(accent)
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 8)
-            }
-            .frame(maxHeight: 220)
+                    }
 
-            // 3. 確定ボタン（最下部・操作性のため下詰め）
+            // 3. 確定ボタン（最下部・操作性のため下詰め）。ヘソ step1 では非表示
+            if !(useHesoDynamic && hesoConfirmStep == 1) {
             Button(action: confirmAction) {
                 Text("確定")
                     .font(.system(size: 18, weight: .bold, design: .rounded))
@@ -1890,6 +2141,13 @@ struct WinInputSheetView: View {
             .padding(.horizontal, 20)
             .padding(.top, 8)
             .padding(.bottom, 20)
+            }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+            }
+            .frame(maxHeight: 220)
+
         }
         .background(AppGlassStyle.background)
         .clipShape(RoundedRectangle(cornerRadius: 20))
@@ -1900,6 +2158,26 @@ struct WinInputSheetView: View {
         } message: {
             Text(errorMessage)
         }
+    }
+
+    private func hesoAtariButton(item: HesoAtariItem, action: @escaping () -> Void) -> some View {
+        let label: String = {
+            let base = "\(item.payout)玉 \(item.rush == 1 ? "RUSH" : "時短へ")"
+            if item.timeShort <= 0 { return base }
+            return "\(base) 時短\(item.timeShort)"
+        }()
+        return Button(action: action) {
+            Text(label)
+                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                .foregroundColor(.white.opacity(0.95))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .padding(.horizontal, 12)
+                .background(panelBg)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent.opacity(0.6), lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
     }
 
     private func hesoPrizeButton(item: ParsedHesoItem, isSelected: Bool, action: @escaping () -> Void) -> some View {
@@ -1948,7 +2226,7 @@ struct WinInputSheetView: View {
     }
 
     private func prizePanel(entry: MachinePrize, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        let displayText = "\(entry.rounds)R  \(entry.balls)発"
+        let displayText = "\(entry.balls)発"
         return Button(action: action) {
             Text(displayText)
                 .font(.system(size: 15, weight: .semibold, design: .monospaced))
@@ -1980,6 +2258,13 @@ struct WinInputSheetView: View {
         }
     }
 
+    /// ヘソ当たりモードで選択肢をタップしたとき：純増・種別を計算して onConfirm を呼ぶ
+    private func applyHesoAtariSelection(item: HesoAtariItem) {
+        let prizeBalls = machine.netBallsForPrize(payoutBalls: item.payout)
+        let resolvedWinType: WinType = item.rush == 1 ? .rush : .normal
+        onConfirm(prizeBalls, resolvedWinType)
+    }
+
     private func confirmAction() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         if rotation.trimmingCharacters(in: .whitespaces).isEmpty {
@@ -1999,6 +2284,11 @@ struct WinInputSheetView: View {
             return
         }
 
+        if useHesoDynamic && hesoConfirmStep == 0 {
+            hesoConfirmStep = 1
+            return
+        }
+
         if let pair = dataDrivenBonuses, let onRecordHit = onConfirmRecordHit, selectedDataDrivenBonusIndex < pair.list.count {
             onRecordHit(pair.list[selectedDataDrivenBonusIndex])
             return
@@ -2007,26 +2297,22 @@ struct WinInputSheetView: View {
         var prizeBalls: Int? = nil
         var resolvedWinType: WinType = winType
 
-        if useHesoDynamic, selectedPrizeIndex < hesoItems.count {
-            let item = hesoItems[selectedPrizeIndex]
-            resolvedWinType = item.winType
-            let r = item.rounds ?? machine.defaultRoundsPerHit
-            let b = item.balls ?? machine.defaultPrize
-            prizeBalls = machine.netBallsForPrize(rounds: r, payoutBalls: b)
+        if useHesoDynamic, selectedPrizeIndex < hesoAtariItems.count {
+            let item = hesoAtariItems[selectedPrizeIndex]
+            resolvedWinType = item.rush == 1 ? .rush : .normal
+            prizeBalls = machine.netBallsForPrize(payoutBalls: item.payout)
         } else if useDenchuDynamic, selectedPrizeIndex < denchuItems.count {
             let item = denchuItems[selectedPrizeIndex]
-            let r = item.rounds ?? machine.defaultRoundsPerHit
             let b = item.balls ?? machine.defaultPrize
-            prizeBalls = machine.netBallsForPrize(rounds: r, payoutBalls: b)
+            prizeBalls = machine.netBallsForPrize(payoutBalls: b)
         } else if useLtDynamic, selectedPrizeIndex < ltItems.count {
             resolvedWinType = .lt
             let item = ltItems[selectedPrizeIndex]
-            let r = item.rounds ?? machine.defaultRoundsPerHit
             let b = item.balls ?? machine.defaultPrize
-            prizeBalls = machine.netBallsForPrize(rounds: r, payoutBalls: b)
+            prizeBalls = machine.netBallsForPrize(payoutBalls: b)
         } else if !prizeEntries.isEmpty, selectedPrizeIndex < prizeEntries.count {
             let entry = prizeEntries[selectedPrizeIndex]
-            prizeBalls = machine.netBallsForPrize(rounds: entry.rounds, payoutBalls: entry.balls)
+            prizeBalls = machine.netBallsForPrize(payoutBalls: entry.balls)
         }
         onConfirm(prizeBalls, resolvedWinType)
     }

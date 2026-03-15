@@ -2,10 +2,12 @@
 var SS_ID = "1fSGx5EmcSOD68itgBRxjGyUGz0Wh5u1Lnbw-dyvchz4";
 
 /**
- * 1行目のヘッダー（A〜I）。左詰め9列のみ。
+ * 1行目のヘッダー。機種IDの後にヘソ当たり1〜5、最後に更新ステータス。
  */
 var HEADER_ROW = [
-  "導入日", "機種名", "メーカー", "大当り確率", "機種タイプ", "スペック", "特徴タグ", "機種ID", "更新ステータス"
+  "導入日", "機種名", "メーカー", "大当り確率", "機種タイプ", "スペック", "特徴タグ", "機種ID",
+  "ヘソ当たり1", "ヘソ当たり2", "ヘソ当たり3", "ヘソ当たり4", "ヘソ当たり5",
+  "更新ステータス"
 ];
 
 function onOpen() {
@@ -123,7 +125,7 @@ function processPachinkoText(rawInput, manualUrl) {
     var denom = parseFloat(probability.split("/")[1]) || 0;
     var specType = (machineType === "羽根モノ") ? "羽根モノ" : (denom >= 300 ? "ミドル" : denom >= 150 ? "ライトミドル" : denom >= 50 ? "甘デジ" : "その他");
 
-    var vals = [introDate, name, maker, probability, machineType, specType, tagString, mCode];
+    var vals = [introDate, name, maker, probability, machineType, specType, tagString, mCode, "", "", "", "", ""];
     var incomplete = vals.some(function(v) { var s = String(v || "").trim(); return s === "" || s === "-" || s === "不明" || s === "要確認"; });
     var crawlStatus = incomplete ? "要確認" : "完了";
     var newRow = vals.concat(crawlStatus);

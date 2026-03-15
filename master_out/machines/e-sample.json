@@ -1,0 +1,73 @@
+{
+  "machine_id": "e-sample",
+  "name": "サンプル機種",
+  "modes": [
+    {
+      "mode_id": 0,
+      "name": "通常",
+      "bonuses": [
+        {
+          "name": "単発1500",
+          "payout": 1500,
+          "ratio": 0,
+          "densapo": 100,
+          "next_mode_id": 0
+        }
+      ]
+    },
+    {
+      "mode_id": 1,
+      "name": "RUSH",
+      "bonuses": [
+        {
+          "name": "RUSH当り1500",
+          "payout": 1500,
+          "ratio": 0,
+          "densapo": 10,
+          "next_mode_id": 1
+        },
+        {
+          "name": "通常へ",
+          "payout": 0,
+          "ratio": 0,
+          "densapo": 0,
+          "next_mode_id": 0
+        }
+      ]
+    },
+    {
+      "mode_id": 2,
+      "name": "LT",
+      "bonuses": []
+    },
+    {
+      "mode_id": 3,
+      "name": "モード3",
+      "bonuses": []
+    },
+    {
+      "mode_id": 4,
+      "name": "モード4",
+      "bonuses": []
+    },
+    {
+      "mode_id": 5,
+      "name": "モード5",
+      "bonuses": []
+    },
+    {
+      "mode_id": 6,
+      "name": "モード6",
+      "bonuses": []
+    },
+    {
+      "mode_id": 7,
+      "name": "モード7",
+      "bonuses": []
+    }
+  ],
+  "manufacturer": "メーカーA",
+  "probability": "1/319.5",
+  "machine_type": "kakugen",
+  "introduction_date": "2024-01-01"
+}

@@ -231,7 +231,7 @@ struct InsightPanelView: View {
                             InfoIconView(explanation: "メーカー公表の等価基準値（回/1000pt）。通常回転のみ。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
-                        Text(log.formulaBorderValue > 0 ? String(format: "%.1f 回/千pt", log.formulaBorderValue) : "—")
+                        Text(log.formulaBorderValue > 0 ? String(format: "%.1f 回/1k", log.formulaBorderValue) : "—")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
@@ -241,7 +241,7 @@ struct InsightPanelView: View {
                             InfoIconView(explanation: "店の貸玉料金・払出係数で補正した基準値（回/1000pt）。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
-                        Text(log.dynamicBorder > 0 ? String(format: "%.1f 回/千pt", log.dynamicBorder) : "—")
+                        Text(log.dynamicBorder > 0 ? String(format: "%.1f 回/1k", log.dynamicBorder) : "—")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }

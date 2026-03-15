@@ -523,7 +523,7 @@ struct HomeView: View {
             .reduce(0) { $0 + $1.deficitSurplus }
     }
 
-    /// 期間内の公式基準値との差の平均（回/千pt）。実質回転率 − 公式基準値。nil は対象なし
+    /// 期間内の公式基準値との差の平均（回/1k）。実質回転率 − 公式基準値。nil は対象なし
     private var periodBorderDiff: Double? {
         let cal = Calendar.current
         let list = allSessions
@@ -838,7 +838,7 @@ struct HomeView: View {
                     .font(.system(size: 12, weight: .medium, design: .rounded))
                     .foregroundColor(.white.opacity(0.92))
                 if let diff = periodBorderDiff {
-                    Text(String(format: "%+.1f 回/千pt", diff))
+                    Text(String(format: "%+.1f 回/1k", diff))
                         .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
                         .foregroundStyle(diff >= 0 ? cyan : Color(red: 0.95, green: 0.3, blue: 0.5))
                         .frame(maxWidth: .infinity)
@@ -1064,52 +1064,107 @@ struct HomeGridButton: View {
     }
 }
 
-// MARK: - 機種管理（独立ビュー・外側のNavigationStackに組み込むためネストしない）
+// MARK: - 機種管理（スワイプで編集・削除、並べ替え、右下FABで新規登録）
+private let machineOrderKey = "machineDisplayOrder"
+private let shopOrderKey = "shopDisplayOrder"
+
 struct MachineManagementView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Machine.name) private var machines: [Machine]
+    @AppStorage(machineOrderKey) private var machineOrderStr = ""
     @State private var machineToEdit: Machine?
     @State private var showNewMachine = false
+    @State private var isReorderMode = false
 
     private var cyan: Color { AppGlassStyle.accent }
+    private var orderedMachines: [Machine] {
+        let order = machineOrderStr.split(separator: "|").map(String.init)
+        return machines.sorted { m1, m2 in
+            let i1 = order.firstIndex(of: m1.name) ?? Int.max
+            let i2 = order.firstIndex(of: m2.name) ?? Int.max
+            if i1 != i2 { return i1 < i2 }
+            return m1.name < m2.name
+        }
+    }
+    private func saveMachineOrder(_ list: [Machine]) {
+        machineOrderStr = list.map(\.name).joined(separator: "|")
+    }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottomTrailing) {
             StaticHomeBackgroundView()
             List {
-                ForEach(machines) { m in
+                ForEach(orderedMachines) { m in
                     Button {
+                        guard !isReorderMode else { return }
                         machineToEdit = m
                     } label: {
                         HStack {
                             Text(m.name)
                                 .foregroundColor(.white)
                             Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundColor(cyan.opacity(0.8))
+                            if isReorderMode {
+                                Image(systemName: "line.3.horizontal")
+                                    .font(.subheadline)
+                                    .foregroundColor(cyan.opacity(0.8))
+                            } else {
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(cyan.opacity(0.8))
+                            }
                         }
                         .padding(.vertical, 12)
                     }
                     .listRowBackground(AppGlassStyle.rowBackground)
                     .listSelectionStyle()
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) { modelContext.delete(m) } label: { Label("削除", systemImage: "trash") }
+                        Button(role: .destructive) {
+                            modelContext.delete(m)
+                            let arr = orderedMachines.filter { $0.persistentModelID != m.persistentModelID }
+                            saveMachineOrder(arr)
+                        } label: { Label("削除", systemImage: "trash") }
+                        Button {
+                            machineToEdit = m
+                        } label: { Label("編集", systemImage: "pencil") }
+                        .tint(cyan)
                     }
+                    .moveDisabled(!isReorderMode)
                 }
-                Button {
-                    showNewMachine = true
-                } label: {
-                    Label("新規機種を登録", systemImage: "plus.circle")
-                        .foregroundColor(cyan)
+                .onMove { from, to in
+                    guard isReorderMode else { return }
+                    var arr = orderedMachines
+                    arr.move(fromOffsets: from, toOffset: to)
+                    saveMachineOrder(arr)
                 }
-                .listRowBackground(AppGlassStyle.rowBackground)
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .environment(\.editMode, .constant(isReorderMode ? .active : .inactive))
+
+            Button {
+                showNewMachine = true
+            } label: {
+                Label("新規機種を登録", systemImage: "plus.circle.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+                    .background(cyan, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .padding(.trailing, 20)
+            .padding(.bottom, 24)
         }
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(isReorderMode ? "完了" : "並べ替え") {
+                    withAnimation(.easeInOut(duration: 0.25)) { isReorderMode.toggle() }
+                }
+                .foregroundColor(cyan)
+            }
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 84) }
         .sheet(isPresented: Binding(
             get: { machineToEdit != nil },
@@ -1129,52 +1184,104 @@ struct MachineManagementView: View {
     }
 }
 
-// MARK: - 店舗管理（独立ビュー・外側のNavigationStackに組み込むためネストしない）
+// MARK: - 店舗管理（スワイプで編集・削除、右上並べ替え、右下FABで新規登録）
 struct ShopManagementView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Shop.name) private var shops: [Shop]
+    @AppStorage(shopOrderKey) private var shopOrderStr = ""
     @State private var shopToEdit: Shop?
     @State private var showNewShop = false
+    @State private var isReorderMode = false
 
     private var cyan: Color { AppGlassStyle.accent }
+    private var orderedShops: [Shop] {
+        let order = shopOrderStr.split(separator: "|").map(String.init)
+        return shops.sorted { s1, s2 in
+            let i1 = order.firstIndex(of: s1.name) ?? Int.max
+            let i2 = order.firstIndex(of: s2.name) ?? Int.max
+            if i1 != i2 { return i1 < i2 }
+            return s1.name < s2.name
+        }
+    }
+    private func saveShopOrder(_ list: [Shop]) {
+        shopOrderStr = list.map(\.name).joined(separator: "|")
+    }
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottomTrailing) {
             StaticHomeBackgroundView()
             List {
-                ForEach(shops) { s in
+                ForEach(orderedShops) { s in
                     Button {
+                        guard !isReorderMode else { return }
                         shopToEdit = s
                     } label: {
                         HStack {
                             Text(s.name)
                                 .foregroundColor(.white)
                             Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.caption)
-                                .foregroundColor(cyan.opacity(0.8))
+                            if isReorderMode {
+                                Image(systemName: "line.3.horizontal")
+                                    .font(.subheadline)
+                                    .foregroundColor(cyan.opacity(0.8))
+                            } else {
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(cyan.opacity(0.8))
+                            }
                         }
                         .padding(.vertical, 12)
                     }
                     .listRowBackground(AppGlassStyle.rowBackground)
                     .listSelectionStyle()
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) { modelContext.delete(s) } label: { Label("削除", systemImage: "trash") }
+                        Button(role: .destructive) {
+                            modelContext.delete(s)
+                            let arr = orderedShops.filter { $0.persistentModelID != s.persistentModelID }
+                            saveShopOrder(arr)
+                        } label: { Label("削除", systemImage: "trash") }
+                        Button {
+                            shopToEdit = s
+                        } label: { Label("編集", systemImage: "pencil") }
+                        .tint(cyan)
                     }
+                    .moveDisabled(!isReorderMode)
                 }
-                Button {
-                    showNewShop = true
-                } label: {
-                    Label("新規店舗を登録", systemImage: "plus.circle")
-                        .foregroundColor(cyan)
+                .onMove { from, to in
+                    guard isReorderMode else { return }
+                    var arr = orderedShops
+                    arr.move(fromOffsets: from, toOffset: to)
+                    saveShopOrder(arr)
                 }
-                .listRowBackground(AppGlassStyle.rowBackground)
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .environment(\.editMode, .constant(isReorderMode ? .active : .inactive))
+
+            Button {
+                showNewShop = true
+            } label: {
+                Label("新規店舗を登録", systemImage: "plus.circle.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+                    .background(cyan, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            .padding(.trailing, 20)
+            .padding(.bottom, 24)
         }
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(isReorderMode ? "完了" : "並べ替え") {
+                    withAnimation(.easeInOut(duration: 0.25)) { isReorderMode.toggle() }
+                }
+                .foregroundColor(cyan)
+            }
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 84) }
         .sheet(isPresented: Binding(
             get: { shopToEdit != nil },
@@ -1869,7 +1976,7 @@ struct SessionDetailView: View {
                     detailPanel(title: "分析（入力データから算出）") {
                         VStack(alignment: .leading, spacing: 8) {
                             detailRow(label: "理論値比（保存時）", value: session.expectationRatioAtSave > 0 ? String(format: "%.2f%%", session.expectationRatioAtSave * 100) : "—")
-                            detailRow(label: "実質回転率", value: String(format: "%.1f 回/千pt", rotationPer1k))
+                            detailRow(label: "実質回転率", value: String(format: "%.1f 回/1k", rotationPer1k))
                             detailRow(label: "RUSH当選", value: "\(session.rushWinCount) 回")
                             detailRow(label: "通常当選", value: "\(session.normalWinCount) 回")
                             detailRow(label: "LT当選", value: "\(session.ltWinCount) 回")
@@ -1946,7 +2053,7 @@ struct HistorySessionCard: View {
     }
     private var rotationRateDisplay: String {
         if rotationPer1k <= 0 { return "—" }
-        var s = String(format: "%.1f 回/千pt", rotationPer1k)
+        var s = String(format: "%.1f 回/1k", rotationPer1k)
         if session.formulaBorderPer1k > 0 {
             let diff = rotationPer1k - session.formulaBorderPer1k
             s += " (\(diff >= 0 ? "+" : "")\(String(format: "%.1f", diff)))"

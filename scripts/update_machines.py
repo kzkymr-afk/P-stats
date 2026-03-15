@@ -139,8 +139,12 @@ def fetch_and_parse_csv(url: str) -> List[Dict]:
         machine_type_raw = "kakugen"
         support_limit = 0
         time_short = 0
-        prize_entries = [{"label": "10R 1500玉", "rounds": 10, "balls": 1500}]
-        default_prize = 1500
+        if heso_atari:
+            default_prize = heso_atari[0]["payout"]
+            prize_entries = []
+        else:
+            default_prize = 1500
+            prize_entries = [{"label": "1500玉", "balls": 1500}]
 
         row = {
             "name": name[:200],

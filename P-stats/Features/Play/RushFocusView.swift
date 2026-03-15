@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// RUSHフォーカスモード：上3/8＝折れ線、1/8＝大当たり履歴、下1/2＝RUSHボタン、右下＝RUSH終了。フェーズ4: machineDetail があればそのモードの bonuses を動的表示。
+/// RUSHフォーカスモード：上3/16＝損益折れ線、3/16＝連チャン・通算RUSH/単発、1/8＝大当たり履歴、下1/2＝RUSHボタン、右下＝RUSH終了。フェーズ4: machineDetail があればそのモードの bonuses を動的表示。
 struct RushFocusView: View {
     @Bindable var log: GameLog
     var machineDetail: MachineDetail? = nil
@@ -16,7 +16,8 @@ struct RushFocusView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let top = geo.size.height * (3.0 / 8.0)
+            let chartHeight = geo.size.height * (3.0 / 16.0)
+            let statsHeight = geo.size.height * (3.0 / 16.0)
             let mid = geo.size.height * (1.0 / 8.0)
             let bottom = geo.size.height * 0.5
             let w = max(1, geo.size.width)
@@ -24,10 +25,16 @@ struct RushFocusView: View {
             ZStack {
                 bg.ignoresSafeArea()
                 VStack(spacing: 0) {
-                    // 上3/8: 損益折れ線グラフ（幅は親に合わせる）
-                    profitLineChartView(height: top, availableWidth: w - 32)
+                    // 上3/16: 損益折れ線グラフ（幅は親に合わせる）
+                    profitLineChartView(height: chartHeight, availableWidth: w - 32)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
+
+                    // 3/16: 連チャン・通算RUSH/単発
+                    ChainAndTotalWinCountView(log: log)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 4)
+                        .frame(height: statsHeight)
 
                     // 1/8: 大当たり履歴（角丸パネル）
                     WinHistoryBarChartView(records: Array(log.winRecords.suffix(30)), maxHeight: mid)
@@ -502,7 +509,8 @@ struct LtFocusView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let top = geo.size.height * (3.0 / 8.0)
+            let chartHeight = geo.size.height * (3.0 / 16.0)
+            let statsHeight = geo.size.height * (3.0 / 16.0)
             let mid = geo.size.height * (1.0 / 8.0)
             let bottom = geo.size.height * 0.5
             let w = max(1, geo.size.width)
@@ -510,10 +518,18 @@ struct LtFocusView: View {
             ZStack {
                 bg.ignoresSafeArea()
                 VStack(spacing: 0) {
-                    profitLineChartView(height: top, availableWidth: w - 32)
+                    // 上3/16: 損益折れ線グラフ
+                    profitLineChartView(height: chartHeight, availableWidth: w - 32)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
 
+                    // 3/16: 連チャン・通算RUSH/単発
+                    ChainAndTotalWinCountView(log: log)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 4)
+                        .frame(height: statsHeight)
+
+                    // 1/8: 大当たり履歴
                     WinHistoryBarChartView(records: Array(log.winRecords.suffix(30)), maxHeight: mid)
                         .padding(6)
                         .frame(maxWidth: .infinity)
@@ -799,6 +815,49 @@ struct LtFocusView: View {
             let xRot = p.0
             guard let record = log.winRecords.first(where: { (record) in (record.normalRotationsAtWin ?? record.rotationAtWin) == xRot }) else { return nil }
             return (rotation: xRot, profit: p.1, type: record.type)
+        }
+    }
+}
+
+/// 連チャン回数・通算 RUSH/単発を1行で表示。RushFocusView / ChanceModeView / LtFocusView で共通利用。
+struct ChainAndTotalWinCountView: View {
+    var log: GameLog
+    private let panelBg = Color.black.opacity(0.85)
+    private let accent = AppGlassStyle.accent
+    private var glassStroke: LinearGradient {
+        LinearGradient(
+            colors: [
+                Color.white.opacity(0.42),
+                accent.opacity(0.35),
+                Color.white.opacity(0.08)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    var body: some View {
+        HStack(spacing: 16) {
+            labelValue("連チャン", log.currentRushChainCount)
+            labelValue("RUSH", log.rushWinCount)
+            labelValue("単発", log.normalWinCount)
+        }
+        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+        .foregroundColor(.white.opacity(0.95))
+        .frame(maxWidth: .infinity)
+        .frame(height: 36)
+        .padding(.horizontal, 12)
+        .background(panelBg)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(glassStroke, lineWidth: 1))
+    }
+
+    private func labelValue(_ label: String, _ value: Int) -> some View {
+        HStack(spacing: 4) {
+            Text(label)
+                .foregroundColor(.white.opacity(0.75))
+            Text("\(value)回")
+                .foregroundColor(accent.opacity(0.95))
         }
     }
 }

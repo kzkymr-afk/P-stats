@@ -135,10 +135,9 @@ final class GameLog {
         }
     }
 
-    /// 当たり1回あたりの持ち玉（R数×実戦1R純増）。例: 10R・1R=135 → 1350
+    /// 当たり1回あたりの持ち玉（1R想定: 実戦1R純増）
     var effectiveBallsPerHit: Int {
-        let rounds = selectedMachine.defaultRoundsPerHit
-        return Int(round(Double(rounds) * effective1RNetPerRound))
+        return Int(round(effective1RNetPerRound))
     }
 
     /// mode_id から WinType を返す（0=通常, 1=RUSH, 2=LT）
@@ -188,8 +187,9 @@ final class GameLog {
         setStateAfterHit(nextModeId: bonus.nextModeId, densapo: bonus.densapo)
     }
 
-    /// 大当たりを1件追加。prizeBalls を指定した場合はその玉数（純増）を使用、nil の場合は effectiveBallsPerHit を使用。従来API・recordHit と併存。
-    func addWin(type: WinType, atRotation: Int, prizeBalls: Int? = nil) {
+    /// 大当たりを1件追加。prizeBalls を指定した場合はその玉数（純増）を使用、nil の場合は effectiveBallsPerHit を使用。
+    /// timeShortFromHit: 単発（通常）当たりで採用した当たりの時短ゲーム数。指定時は機種の timeShortRotations の代わりにこれを時短残りに加算する。
+    func addWin(type: WinType, atRotation: Int, prizeBalls: Int? = nil, timeShortFromHit: Int? = nil) {
         let diff = atRotation - totalRotations
         if diff != 0 && currentState == .normal { normalRotations += diff }
         let prize = prizeBalls ?? effectiveBallsPerHit
@@ -200,7 +200,7 @@ final class GameLog {
         totalRotations = atRotation
         let (nextModeId, densapo): (Int, Int)
         if type == .normal {
-            let timeShort = selectedMachine.timeShortRotations
+            let timeShort = timeShortFromHit ?? selectedMachine.timeShortRotations
             nextModeId = 0
             densapo = timeShort > 0 ? timeShort : 0
         } else if type == .lt {
@@ -235,6 +235,16 @@ final class GameLog {
     var normalWinCount: Int { winRecords.filter { $0.type == .normal }.count }
     /// LT（上位RUSH）当選回数
     var ltWinCount: Int { winRecords.filter { $0.type == .lt }.count }
+
+    /// 現在の RUSH 連チャン回数（直近から遡って連続する .rush と .lt の件数）。.normal で終わっていれば 0。
+    var currentRushChainCount: Int {
+        var count = 0
+        for r in winRecords.reversed() {
+            if r.type == .rush || r.type == .lt { count += 1 }
+            else { break }
+        }
+        return count
+    }
     var totalUsedBalls: Int {
         let cashBalls = lendingRecords.filter { $0.type == .cash }.count * selectedShop.ballsPerCashUnit
         let holdingsBalls = lendingRecords.filter { $0.type == .holdings }.reduce(0) { $0 + ($1.balls ?? holdingsBallsPerTap) }

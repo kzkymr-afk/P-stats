@@ -256,7 +256,7 @@ struct AnalyticsDashboardView: View {
         guard totalCost > 0 else { return 0 }
         return Double(totalRotations) / (totalCost / 1000.0)
     }
-    /// 公式基準値との差の平均（回/千pt）。公式未設定のセッションは除外して平均
+    /// 公式基準値との差の平均（回/1k）。公式未設定のセッションは除外して平均
     private var avgDiffFromFormulaBorder: Double? {
         let list = sessionsForSummary.filter { $0.formulaBorderPer1k > 0 }
         guard !list.isEmpty else { return nil }
@@ -394,13 +394,13 @@ struct AnalyticsDashboardView: View {
             VStack(alignment: .leading, spacing: 8) {
                 summaryRow(
                     title: "通算実践回転率",
-                    value: sessionsForSummary.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/千pt", weightedAvgRotationPer1k),
+                    value: sessionsForSummary.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/1k", weightedAvgRotationPer1k),
                     valueColor: .white,
                     explanation: "総回転数（通常のみ）÷実質投入千pt単位。"
                 )
                 summaryRow(
                     title: "平均基準値差",
-                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/千pt", $0) } ?? "—",
+                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/1k", $0) } ?? "—",
                     valueColor: (avgDiffFromFormulaBorder ?? 0) >= 0 ? cyan : Color.orange,
                     explanation: "実践回転率−公式基準値。プラスでボーダー上回り。"
                 )
@@ -596,11 +596,11 @@ private struct WeekdayTendencySection: View {
                         }
                     }
                 }
-                chartRow(title: "回転率（回/千pt）") {
+                chartRow(title: "回転率（回/1k）") {
                     Chart(groups) { g in
                         BarMark(
                             x: .value("曜日", g.label),
-                            y: .value("回/千pt", g.avgRotationRate)
+                            y: .value("回/1k", g.avgRotationRate)
                         )
                         .foregroundStyle(accent)
                     }
@@ -703,11 +703,11 @@ private struct SpecificDayBarChartSection: View {
                         AxisValueLabel { if let s = value.as(String.self), !s.hasPrefix("_pad") { Text(s).foregroundStyle(Color.white.opacity(0.8)) } }
                     } }
                 }
-                chartRow(title: "回転率（回/千pt）") {
+                chartRow(title: "回転率（回/1k）") {
                     Chart(displayGroups) { g in
                         BarMark(
                             x: .value("区分", g.label),
-                            y: .value("回/千pt", g.label.hasPrefix("_pad") ? 0 : g.avgRotationRate)
+                            y: .value("回/1k", g.label.hasPrefix("_pad") ? 0 : g.avgRotationRate)
                         )
                         .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : accent)
                     }
@@ -1068,7 +1068,7 @@ private struct AnalyticsSessionCardView: View {
     /// 実践回転率の表示文字列（公式基準値との差を括弧内に表示）
     private var rotationRateDisplay: String {
         if rotationPer1k <= 0 { return "—" }
-        var s = String(format: "%.1f 回/千pt", rotationPer1k)
+        var s = String(format: "%.1f 回/1k", rotationPer1k)
         if session.formulaBorderPer1k > 0 {
             let diff = rotationPer1k - session.formulaBorderPer1k
             s += " (\(diff >= 0 ? "+" : "")\(String(format: "%.1f", diff)))"
@@ -1200,7 +1200,7 @@ private struct AnalyticsSessionDetailView: View {
             }
             Section("分析") {
                 LabeledContent("理論値比（保存時）", value: session.expectationRatioAtSave > 0 ? String(format: "%.2f%%", session.expectationRatioAtSave * 100) : "—").listRowBackground(AnalyticsPanelStyle.rowBackground)
-                LabeledContent("実質回転率", value: String(format: "%.1f 回/千pt", rotationPer1k)).listRowBackground(AnalyticsPanelStyle.rowBackground)
+                LabeledContent("実質回転率", value: String(format: "%.1f 回/1k", rotationPer1k)).listRowBackground(AnalyticsPanelStyle.rowBackground)
             }
         }
         .listStyle(.plain)
@@ -1454,12 +1454,12 @@ private struct AnalyticsShopDetailView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             summaryRow(
                                 title: "通算実践回転率",
-                                value: shopSessions.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/千pt", weightedAvgRotationPer1k),
+                                value: shopSessions.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/1k", weightedAvgRotationPer1k),
                                 valueColor: .white
                             )
                             summaryRow(
                                 title: "平均基準値差",
-                                value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/千pt", $0) } ?? "—",
+                                value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/1k", $0) } ?? "—",
                                 valueColor: (avgDiffFromFormulaBorder ?? 0) >= 0 ? cyan : Color.orange
                             )
                         }
@@ -1616,12 +1616,12 @@ private struct AnalyticsMachineDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 summaryRow(
                     title: "通算実践回転率",
-                    value: machineSessions.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/千pt", weightedAvgRotationPer1k),
+                    value: machineSessions.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/1k", weightedAvgRotationPer1k),
                     valueColor: .white
                 )
                 summaryRow(
                     title: "平均基準値差",
-                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/千pt", $0) } ?? "—",
+                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/1k", $0) } ?? "—",
                     valueColor: (avgDiffFromFormulaBorder ?? 0) >= 0 ? cyan : Color.orange
                 )
             }
@@ -1783,12 +1783,12 @@ private struct AnalyticsManufacturerDetailView: View {
             VStack(alignment: .leading, spacing: 8) {
                 summaryRow(
                     title: "通算実践回転率",
-                    value: manufacturerSessions.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/千pt", weightedAvgRotationPer1k),
+                    value: manufacturerSessions.isEmpty || weightedAvgRotationPer1k <= 0 ? "—" : String(format: "%.1f 回/1k", weightedAvgRotationPer1k),
                     valueColor: .white
                 )
                 summaryRow(
                     title: "平均基準値差",
-                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/千pt", $0) } ?? "—",
+                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f 回/1k", $0) } ?? "—",
                     valueColor: (avgDiffFromFormulaBorder ?? 0) >= 0 ? cyan : Color.orange
                 )
             }
@@ -1911,7 +1911,7 @@ struct AnalyticsGroupCard: View {
     private var secondLineText: String {
         var s = "実践回転率 \(String(format: "%.1f", group.avgRotationRate))/1kpt · \(group.sessionCount)回"
         if let diff = group.avgDiffFromFormulaBorder {
-            s += " （公式基準値との差: \(String(format: "%+.1f 回/千pt", diff))"
+            s += " （公式基準値との差: \(String(format: "%+.1f 回/1k", diff))"
         }
         return s
     }

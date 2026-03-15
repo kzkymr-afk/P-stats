@@ -66,8 +66,8 @@ struct MachineEditView: View, Equatable {
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
 
-    /// ヘソ（通常時）の大当たり種類
-    @State private var draftHesoPrizes: [DraftPrize] = []
+    /// ヘソ当たり1〜5（出玉/RUSH(0or1)/時短）。マスタ書式。
+    @State private var draftHesoAtari: [HesoAtariItem] = []
     /// 電チュー（RUSH時）の大当たり種類。hasLT のときは draftRushPrizes / draftLtPrizes を使う
     @State private var draftDenchuPrizes: [DraftPrize] = []
     /// LTあり機種のとき true。RUSH と LT パネルを分けて表示する
@@ -104,9 +104,7 @@ struct MachineEditView: View, Equatable {
     struct DraftPrize: Identifiable {
         let id = UUID()
         var label: String
-        var rounds: Int
         var balls: Int
-        var netPerRound: Double { rounds > 0 ? Double(balls) / Double(rounds) : 0 }
     }
 
     private var accent: Color { AppGlassStyle.accent }
@@ -122,7 +120,7 @@ struct MachineEditView: View, Equatable {
                             presetPanel
                             editPanel(title: "通常時の当選確率") { probabilityPanel }
                             editPanel(title: "公式ボーダー（等価ベース）") { borderPanel }
-                            editPanel(title: "大当たり種類（ヘソ・通常時）") { bonusHesoPanel }
+                            editPanel(title: "大当たり種類（ヘソ・通常時）") { hesoAtariPanel }
                             editPanel(title: "時短ゲーム数") { timeShortPanel }
                             editPanel(title: "電サポ回数（STゲーム数）") { supportLimitPanel }
                             editPanel(title: "データの共有") {
@@ -264,9 +262,9 @@ struct MachineEditView: View, Equatable {
             }
             .sheet(isPresented: $showAddPrizePicker) {
                 PrizePickerSheet(prizeSets: prizeSets, onSelectMultiple: { list in
-                    let draft = list.map { DraftPrize(label: $0.name, rounds: $0.rounds, balls: $0.balls) }
+                    let draft = list.map { DraftPrize(label: $0.name, balls: $0.balls) }
                     switch addingToPanel {
-                    case .heso: draftHesoPrizes.append(contentsOf: draft)
+                    case .heso: break // ヘソは hesoAtari で管理するためライブラリ追加なし
                     case .denchu: draftDenchuPrizes.append(contentsOf: draft)
                     case .rush: draftRushPrizes.append(contentsOf: draft)
                     case .lt: draftLtPrizes.append(contentsOf: draft)
@@ -490,13 +488,12 @@ struct MachineEditView: View, Equatable {
     private func bonusRows(prizes: [DraftPrize], onRemove: @escaping (DraftPrize) -> Void) -> some View {
         let countPerRound = Int(countPerRoundStr) ?? 10
         return ForEach(prizes) { p in
-                let netBalls = max(0, p.balls - (p.rounds * countPerRound))
-                let netPerR = p.rounds > 0 ? Double(netBalls) / Double(p.rounds) : 0.0
+                let netBalls = max(0, p.balls - countPerRound)
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(p.label.isEmpty ? "\(p.rounds)R（\(p.balls)玉）" : p.label)
+                        Text(p.label.isEmpty ? "\(p.balls)玉" : p.label)
                             .font(.subheadline)
-                        Text("実質 \(netBalls) 個（1Rあたり \(String(format: "%.0f", netPerR)) 玉）")
+                        Text("純増 \(netBalls) 玉")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -513,18 +510,85 @@ struct MachineEditView: View, Equatable {
     }
 
     @ViewBuilder
-    private var bonusHesoPanel: some View {
-        Button {
-            addingToPanel = .heso
-            showAddPrizePicker = true
-        } label: {
-            Label("ライブラリから追加", systemImage: "plus.circle")
-                .font(.caption.weight(.medium))
+    /// ヘソ当たり1〜5（出玉/RUSH(0or1)/時短ゲーム数）の編集
+    private var hesoAtariPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if draftHesoAtari.count < 5 {
+                Button {
+                    draftHesoAtari.append(HesoAtariItem(payout: 1500, rush: 0, timeShort: 100))
+                } label: {
+                    Label("行を追加（最大5）", systemImage: "plus.circle")
+                        .font(.caption.weight(.medium))
+                }
+                .foregroundColor(accent)
+            }
+            ForEach(Array(draftHesoAtari.enumerated()), id: \.element.id) { index, _ in
+                hesoAtariRow(index: index)
+            }
         }
-        .foregroundColor(accent)
-        if !draftHesoPrizes.isEmpty {
-            bonusRows(prizes: draftHesoPrizes) { p in draftHesoPrizes.removeAll { $0.id == p.id } }
+    }
+
+    private func hesoAtariRow(index: Int) -> some View {
+        let payoutBinding = Binding<Int>(
+            get: { index < draftHesoAtari.count ? draftHesoAtari[index].payout : 1500 },
+            set: {
+                guard index < draftHesoAtari.count else { return }
+                var v = draftHesoAtari[index]
+                v.payout = $0
+                draftHesoAtari[index] = v
+            }
+        )
+        let rushBinding = Binding<Int>(
+            get: { index < draftHesoAtari.count ? draftHesoAtari[index].rush : 0 },
+            set: {
+                guard index < draftHesoAtari.count else { return }
+                var v = draftHesoAtari[index]
+                v.rush = $0
+                draftHesoAtari[index] = v
+            }
+        )
+        let timeShortBinding = Binding<Int>(
+            get: { index < draftHesoAtari.count ? draftHesoAtari[index].timeShort : 100 },
+            set: {
+                guard index < draftHesoAtari.count else { return }
+                var v = draftHesoAtari[index]
+                v.timeShort = $0
+                draftHesoAtari[index] = v
+            }
+        )
+        return HStack(alignment: .center, spacing: 8) {
+            Text("\(index + 1)")
+                .font(.caption.monospacedDigit())
+                .foregroundColor(.white.opacity(0.7))
+                .frame(width: 16, alignment: .leading)
+            TextField("出玉", value: payoutBinding, format: .number)
+                .keyboardType(.numberPad)
+                .frame(width: 56)
+                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                .background(Color.white.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            Picker("", selection: rushBinding) {
+                Text("時短へ").tag(0)
+                Text("RUSH").tag(1)
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 120)
+            TextField("時短", value: timeShortBinding, format: .number)
+                .keyboardType(.numberPad)
+                .frame(width: 48)
+                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                .background(Color.white.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            Button(role: .destructive) {
+                draftHesoAtari.remove(at: index)
+            } label: {
+                Image(systemName: "trash")
+                    .font(.caption)
+            }
         }
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder
@@ -683,12 +747,8 @@ struct MachineEditView: View, Equatable {
     private enum AddingToPanel { case heso, denchu, rush, lt }
     @State private var addingToPanel: AddingToPanel = .heso
 
-    private func draftPrizeFromHeso(_ item: ParsedHesoItem) -> DraftPrize {
-        DraftPrize(label: item.displayLabel, rounds: item.rounds ?? 10, balls: item.balls ?? 1500)
-    }
-
     private func draftPrizeFromDenchu(_ item: ParsedDenchuItem) -> DraftPrize {
-        DraftPrize(label: item.displayLabel, rounds: item.rounds ?? 10, balls: item.balls ?? 1500)
+        DraftPrize(label: item.displayLabel, balls: item.balls ?? 1500)
     }
 
     private func adoptPreset(_ item: PresetItem) {
@@ -704,11 +764,7 @@ struct MachineEditView: View, Equatable {
             probability = s.probability ?? ""
             border = s.border ?? ""
             countPerRoundStr = "\(s.countPerRound ?? 10)"
-            if let heso = s.heso_prizes, !heso.isEmpty {
-                draftHesoPrizes = PrizeStringParser.parseHesoPrizes(heso).map { draftPrizeFromHeso($0) }
-            } else {
-                draftHesoPrizes = (s.prizeEntries ?? []).map { DraftPrize(label: $0.label ?? "", rounds: $0.rounds, balls: $0.balls) }
-            }
+            draftHesoAtari = s.hesoAtari ?? []
             if let denchu = s.denchu_prizes, !denchu.isEmpty {
                 draftDenchuPrizes = PrizeStringParser.parseDenchuPrizes(denchu).map { draftPrizeFromDenchu($0) }
             } else {
@@ -732,11 +788,7 @@ struct MachineEditView: View, Equatable {
             defaultPrize = "\(s.defaultPrize ?? 1500)"
             probability = s.probability ?? ""
             border = s.border ?? ""
-            if let heso = s.heso_prizes, !heso.isEmpty {
-                draftHesoPrizes = PrizeStringParser.parseHesoPrizes(heso).map { draftPrizeFromHeso($0) }
-            } else {
-                draftHesoPrizes = (s.prizeEntries ?? []).map { DraftPrize(label: $0.label ?? "", rounds: $0.rounds, balls: $0.balls) }
-            }
+            draftHesoAtari = s.hesoAtari ?? []
             if let denchu = s.denchu_prizes, !denchu.isEmpty {
                 draftDenchuPrizes = PrizeStringParser.parseDenchuPrizes(denchu).map { draftPrizeFromDenchu($0) }
             } else {
@@ -761,7 +813,7 @@ struct MachineEditView: View, Equatable {
             defaultPrize = "\(preset.defaultPrize)"
             probability = preset.probability
             border = preset.border
-            draftHesoPrizes = preset.prizeEntries.map { DraftPrize(label: $0.label, rounds: $0.rounds, balls: $0.balls) }
+            draftHesoAtari = [] // ローカルプリセットには hesoAtari なし
             draftDenchuPrizes = []
             hasLT = false
             draftRushPrizes = []
@@ -787,11 +839,7 @@ struct MachineEditView: View, Equatable {
         countPerRoundStr = "\(machine.countPerRound)"
         dmmMachineID = machine.masterID ?? ""
         ltFromNormal = machine.ltFromNormal
-        if !machine.heso_prizes.isEmpty {
-            draftHesoPrizes = PrizeStringParser.parseHesoPrizes(machine.heso_prizes).map { draftPrizeFromHeso($0) }
-        } else {
-            draftHesoPrizes = machine.prizeEntries.map { DraftPrize(label: $0.label, rounds: $0.rounds, balls: $0.balls) }
-        }
+        draftHesoAtari = machine.hesoAtari
         if !machine.denchu_prizes.isEmpty {
             draftDenchuPrizes = PrizeStringParser.parseDenchuPrizes(machine.denchu_prizes).map { draftPrizeFromDenchu($0) }
         } else {
@@ -833,10 +881,17 @@ struct MachineEditView: View, Equatable {
             return
         }
 
-        let hesoStr = draftHesoPrizes.map { "\($0.rounds)R(\($0.balls)個)" }.joined(separator: ",")
         let denchuPrizesForSave = hasLT ? (draftRushPrizes + draftLtPrizes) : draftDenchuPrizes
-        let denchuStr = denchuPrizesForSave.map { "\($0.rounds)R(\($0.balls)個)" }.joined(separator: ",")
-        let allPrizes = draftHesoPrizes + denchuPrizesForSave
+        let denchuStr = denchuPrizesForSave.map { "(\($0.balls)個)" }.joined(separator: ",")
+        let allPrizes = denchuPrizesForSave  // ヘソは hesoAtari で保存するため prizeEntries には電チューのみ
+
+        let hesoAtariStorageValue: String = {
+            guard !draftHesoAtari.isEmpty else { return "" }
+            let encoder = JSONEncoder()
+            guard let data = try? encoder.encode(draftHesoAtari),
+                  let s = String(data: data, encoding: .utf8) else { return "" }
+            return s
+        }()
 
         let inferredType: MachineType = sup > 0 ? .st : .kakugen
         if let existing = editing {
@@ -851,13 +906,13 @@ struct MachineEditView: View, Equatable {
             existing.manufacturer = manufacturerStr.trimmingCharacters(in: .whitespaces)
             existing.masterID = dmmMachineID.trimmingCharacters(in: .whitespaces)
             existing.ltFromNormal = ltFromNormal
-            existing.heso_prizes = hesoStr
+            existing.hesoAtariStorage = hesoAtariStorageValue
             existing.denchu_prizes = denchuStr
             for p in existing.prizeEntries {
                 modelContext.delete(p)
             }
             for p in allPrizes {
-                let mp = MachinePrize(label: p.label, rounds: p.rounds, balls: p.balls)
+                let mp = MachinePrize(label: p.label, balls: p.balls)
                 mp.machine = existing
                 modelContext.insert(mp)
             }
@@ -870,11 +925,11 @@ struct MachineEditView: View, Equatable {
             machine.countPerRound = cPerRound
             machine.manufacturer = manufacturerStr.trimmingCharacters(in: .whitespaces)
             machine.ltFromNormal = ltFromNormal
-            machine.heso_prizes = hesoStr
+            machine.hesoAtariStorage = hesoAtariStorageValue
             machine.denchu_prizes = denchuStr
             modelContext.insert(machine)
             for p in allPrizes {
-                let mp = MachinePrize(label: p.label, rounds: p.rounds, balls: p.balls)
+                let mp = MachinePrize(label: p.label, balls: p.balls)
                 mp.machine = machine
                 modelContext.insert(mp)
             }
@@ -882,14 +937,13 @@ struct MachineEditView: View, Equatable {
         if shareWithEveryone {
             let manufacturer = manufacturerStr.trimmingCharacters(in: .whitespaces)
             let inferredType: MachineType = (Int(supportLimit) ?? 160) > 0 ? .st : .kakugen
-            let prizeEntriesForCloud = allPrizes.map { (label: $0.label, rounds: $0.rounds, balls: $0.balls) }
+            let prizeEntriesForCloud = allPrizes.map { (label: $0.label, balls: $0.balls) }
             let netBaseFromPrizes: Double = {
                 guard !allPrizes.isEmpty else { return 140 }
                 let totalBalls = allPrizes.reduce(0) { $0 + $1.balls }
-                let totalRounds = allPrizes.reduce(0) { $0 + $1.rounds }
-                let totalFeed = totalRounds * cPerRound
+                let totalFeed = allPrizes.count * cPerRound
                 let totalNet = totalBalls - totalFeed
-                return totalRounds > 0 ? max(50, min(250, Double(max(0, totalNet)) / Double(totalRounds))) : 140
+                return allPrizes.count > 0 ? max(50, min(250, Double(max(0, totalNet)) / Double(allPrizes.count))) : 140
             }()
             Task {
                 do {
@@ -1114,7 +1168,7 @@ struct PrizePickerSheet: View {
                 } label: {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(ps.name.isEmpty ? "\(ps.rounds)R（\(ps.balls)玉）" : ps.name)
+                            Text(ps.name.isEmpty ? "\(ps.balls)玉" : ps.name)
                                 .font(.subheadline)
                             Text("1Rあたり \(String(format: "%.0f", ps.netPerRound)) 玉")
                                 .font(.caption2)

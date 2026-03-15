@@ -4,48 +4,37 @@ import SwiftUI
 
 // --- 1. 永続化データ ---
 
-/// ユーザーが登録する「ボーナス種類」のライブラリ（例: 10R 1500玉）
+/// ユーザーが登録する「ボーナス種類」のライブラリ（出玉のみ。R数は廃止）
 @Model
 final class PrizeSet {
-    var name: String = ""   // 例: "10R（1500玉）"
-    var rounds: Int = 10    // 回数（R）
+    var name: String = ""
     var balls: Int = 1500   // 出玉数
     /// ライブラリ一覧の表示順（小さいほど上）。手動並び替え用
     var displayOrder: Int = 0
 
     init() {}
 
-    init(name: String, rounds: Int, balls: Int) {
+    init(name: String, balls: Int) {
         self.name = name
-        self.rounds = rounds
         self.balls = balls
     }
 
-    /// 1Rあたりの平均純増数
-    var netPerRound: Double {
-        rounds > 0 ? Double(balls) / Double(rounds) : 0
-    }
+    /// 1Rあたり純増（打ち出し10玉/1R想定）
+    var netPerRound: Double { max(0, Double(balls - 10)) }
 }
 
-/// 機種に紐づくボーナス種類（1機種に複数登録可能）
+/// 機種に紐づくボーナス種類（電チュー用。出玉のみ。R数は廃止）
 @Model
 final class MachinePrize {
-    var label: String = ""  // 例: "10R（1500玉）"
-    var rounds: Int = 10
+    var label: String = ""
     var balls: Int = 1500
     var machine: Machine?
 
     init() {}
 
-    init(label: String, rounds: Int, balls: Int) {
+    init(label: String, balls: Int) {
         self.label = label
-        self.rounds = rounds
         self.balls = balls
-    }
-
-    /// 1Rあたりの平均純増数
-    var netPerRound: Double {
-        rounds > 0 ? Double(balls) / Double(rounds) : 0
     }
 }
 
@@ -62,10 +51,17 @@ enum MachineType: String, CaseIterable, Codable {
     }
 }
 
+/// ヘソ当たり1件（マスタ書式: 出玉/RUSH(0or1)/時短ゲーム数）。0=時短へ、1=RUSH突入。
+struct HesoAtariItem: Codable, Identifiable, Equatable {
+    var payout: Int
+    var rush: Int  // 0=時短へ、1=RUSH突入
+    var timeShort: Int
+    var id: String { "\(payout)/\(rush)/\(timeShort)" }
+}
+
 /// ユーザーのマイリスト用機種。実質ボーダー計算に必要な項目を保持する。
-/// 項目: 台名(name), 確変/ST(machineTypeRaw), 公式ボーダー(border), ボーナス種類(prizeEntries / heso_prizes・denchu_prizes),
+/// 項目: 台名(name), 確変/ST(machineTypeRaw), 公式ボーダー(border), ボーナス種類(prizeEntries / hesoAtari・denchu_prizes),
 /// 出球(defaultPrize), 賞球数(countPerRound), 電サポゲーム数(supportLimit)。
-/// P-Sync/GAS連携時は「特図1内訳」→ heso_prizes、「特図2内訳」→ denchu_prizes でマッピングすること。
 @Model
 final class Machine {
     var name: String = ""
@@ -95,8 +91,15 @@ final class Machine {
     /// メーカー名（分析用・例: サミー、藤森）
     var manufacturer: String = ""
 
-    /// P-Sync/GAS用：通常時の特図1内訳。カンマ区切り（例: "10R(1500個)-RUSH,2R(300個)-通常"）。空なら prizeEntries を利用。
-    var heso_prizes: String = ""
+    /// 通常時のヘソ当たり1〜5（JSON配列を文字列で保持）。空なら prizeEntries を利用。
+    var hesoAtariStorage: String = ""
+    /// ヘソ当たりリスト（hesoAtariStorage のデコード結果）。保存時は hesoAtariStorage に JSON を代入する。
+    var hesoAtari: [HesoAtariItem] {
+        guard !hesoAtariStorage.isEmpty,
+              let data = hesoAtariStorage.data(using: .utf8),
+              let decoded = try? JSONDecoder().decode([HesoAtariItem].self, from: data) else { return [] }
+        return decoded
+    }
     /// P-Sync/GAS用：RUSH時の特図2内訳。カンマ区切り（例: "10R(1500個)-RUSH,300個-RUSH,10R(1500個)-天国"）。空なら prizeEntries を利用。
     var denchu_prizes: String = ""
     /// 通常時（ヘソ）からいきなりLTに突入できる機種か。false のときは RUSH からのみ LT へ。
@@ -126,37 +129,26 @@ final class Machine {
         return !d.isEmpty && (d.contains("天国") || d.contains("LT"))
     }
 
-    /// 当たり1回のR数（先頭のボーナス種類。なければ10R想定）
-    var defaultRoundsPerHit: Int {
-        prizeEntries.first?.rounds ?? 10
+    /// 払い出しから1R打ち出しを引いた純増（R数は使わない。1当たり = 払い出し - countPerRound）
+    func netBallsForPrize(payoutBalls: Int) -> Int {
+        return max(0, payoutBalls - countPerRound)
     }
 
-    /// 払い出しから打ち出しを引いた純増。公式: 純増 = 払い出し - (ラウンド数 × カウント数)
-    func netBallsForPrize(rounds: Int, payoutBalls: Int) -> Int {
-        let feed = rounds * countPerRound
-        return max(0, payoutBalls - feed)
-    }
-
-    /// 1Rあたりの純増出玉（ボーナス種類から算出。なければ defaultPrize を払出として純増算出）
+    /// 1Rあたりの純増出玉（ボーナス種類から算出。各当たりを1Rとみなす）
     var averageNetPerRound: Double {
         guard !prizeEntries.isEmpty else {
-            let r = defaultRoundsPerHit
-            let net = netBallsForPrize(rounds: r, payoutBalls: defaultPrize)
-            return r > 0 ? Double(net) / Double(r) : 0
+            return Double(netBallsForPrize(payoutBalls: defaultPrize))
         }
-        let totalPayout = prizeEntries.reduce(0) { $0 + $1.balls }
-        let totalRounds = prizeEntries.reduce(0) { $0 + $1.rounds }
-        let totalFeed = totalRounds * countPerRound
-        let totalNet = totalPayout - totalFeed
-        return totalRounds > 0 ? Double(max(0, totalNet)) / Double(totalRounds) : 0
+        let totalNet = prizeEntries.reduce(0) { $0 + netBallsForPrize(payoutBalls: $1.balls) }
+        return Double(totalNet) / Double(prizeEntries.count)
     }
 
-    /// 実戦で使う当たり1回の持ち玉（純増ベース）。ボーナス種類があればその純増、なければ R数×1R純増
+    /// 実戦で使う当たり1回の持ち玉（純増ベース）
     var effectiveDefaultPrize: Int {
         if let first = prizeEntries.first {
-            return netBallsForPrize(rounds: first.rounds, payoutBalls: first.balls)
+            return netBallsForPrize(payoutBalls: first.balls)
         }
-        return Int(round(Double(defaultRoundsPerHit) * averageNetPerRound))
+        return netBallsForPrize(payoutBalls: defaultPrize)
     }
 
     /// 先頭当たりの払い出し（公表値）。表示用
@@ -165,15 +157,12 @@ final class Machine {
     }
 }
 
-/// P-Sync/GAS から機種を取得する際の「特図内訳」フィールド用。JSON のヘッダー名と Swift プロパティをマッピングする。
+/// P-Sync/GAS から機種を取得する際の「特図2内訳」フィールド用。ヘソ当たりは hesoAtari で管理。
 struct MachineGASPrizeFields: Codable {
-    /// GAS ヘッダー「特図1内訳」→ 通常時ボタン用（例: "10R(1500個)-RUSH,2R(300個)-通常"）
-    var heso_prizes: String?
     /// GAS ヘッダー「特図2内訳」→ RUSH時ボタン用（例: "10R(1500個)-RUSH,10R(1500個)-天国"）
     var denchu_prizes: String?
 
     enum CodingKeys: String, CodingKey {
-        case heso_prizes = "特図1内訳"
         case denchu_prizes = "特図2内訳"
     }
 }
@@ -183,17 +172,14 @@ struct MachineGASPrizeFields: Codable {
 @Model
 final class PresetMachinePrize {
     var label: String = ""
-    var rounds: Int = 10
     var balls: Int = 1500
     var preset: PresetMachine?
 
     init() {}
-    init(label: String, rounds: Int, balls: Int) {
+    init(label: String, balls: Int) {
         self.label = label
-        self.rounds = rounds
         self.balls = balls
     }
-    var netPerRound: Double { rounds > 0 ? Double(balls) / Double(rounds) : 0 }
 }
 
 @Model
@@ -221,10 +207,9 @@ final class PresetMachine {
     var machineType: MachineType { MachineType(rawValue: machineTypeRaw) ?? .kakugen }
     var isST: Bool { machineType == .st }
     var averageNetPerRound: Double {
-        guard !prizeEntries.isEmpty else { return Double(defaultPrize) / 10.0 }
+        guard !prizeEntries.isEmpty else { return Double(defaultPrize) }
         let totalBalls = prizeEntries.reduce(0) { $0 + $1.balls }
-        let totalRounds = prizeEntries.reduce(0) { $0 + $1.rounds }
-        return totalRounds > 0 ? Double(totalBalls) / Double(totalRounds) : 0
+        return Double(totalBalls) / Double(prizeEntries.count)
     }
     var effectiveDefaultPrize: Int { prizeEntries.first?.balls ?? defaultPrize }
 }
@@ -389,7 +374,7 @@ final class GameSession {
     var rushWinCount: Int = 0          // 実践で入力したRUSH当選回数
     var normalWinCount: Int = 0        // 実践で入力した通常当選回数
     var ltWinCount: Int = 0            // 実践で入力したLT（上位RUSH）当選回数
-    /// 保存時の公式基準値（回/千pt・等価）。実践回転率との差表示用
+    /// 保存時の公式基準値（回/1k・等価）。実践回転率との差表示用
     var formulaBorderPer1k: Double = 0
 
     init(machineName: String, shopName: String, manufacturerName: String = "", inputCash: Int, totalHoldings: Int, normalRotations: Int, totalUsedBalls: Int, payoutCoefficient: Double, totalRealCost: Double = 0, expectationRatioAtSave: Double = 0, rushWinCount: Int = 0, normalWinCount: Int = 0, ltWinCount: Int = 0, formulaBorderPer1k: Double = 0) {

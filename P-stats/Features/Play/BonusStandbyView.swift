@@ -158,9 +158,8 @@ struct ChainResultInputView: View {
     private func submit() {
         guard let sets = Int(setCountStr), sets > 0,
               let gain = Int(totalGainStr), gain >= 0 else { return }
-        let rounds = machine.defaultRoundsPerHit
         let countPerRound = machine.countPerRound
-        let totalRounds = sets * rounds
+        let totalRounds = sets  // 1当たり=1R想定
         guard totalRounds > 0 else { return }
         // 1Rあたりの実効純増 = (総獲得玉 / 総R数) - 打ち出し per R = (gain / totalRounds) - countPerRound
         let avgBallsPerRound = Double(gain) / Double(totalRounds)

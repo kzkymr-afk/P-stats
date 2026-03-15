@@ -204,11 +204,15 @@ struct MasterMachineSearchView: View {
             machine.border = s.border ?? ""
             machine.countPerRound = s.countPerRound ?? 10
             machine.manufacturer = s.manufacturer ?? ""
-            machine.heso_prizes = s.heso_prizes ?? ""
+            if let heso = s.hesoAtari, !heso.isEmpty,
+               let data = try? JSONEncoder().encode(heso),
+               let str = String(data: data, encoding: .utf8) {
+                machine.hesoAtariStorage = str
+            }
             machine.denchu_prizes = s.denchu_prizes ?? ""
             modelContext.insert(machine)
             for entry in s.prizeEntries ?? [] {
-                let mp = MachinePrize(label: entry.label ?? "", rounds: entry.rounds, balls: entry.balls)
+                let mp = MachinePrize(label: entry.label ?? "", balls: entry.balls)
                 mp.machine = machine
                 modelContext.insert(mp)
             }
@@ -226,9 +230,14 @@ struct MasterMachineSearchView: View {
             machine.border = s.border ?? ""
             machine.countPerRound = s.countPerRound ?? 10
             machine.manufacturer = s.manufacturer ?? ""
+            if let heso = s.hesoAtari, !heso.isEmpty,
+               let data = try? JSONEncoder().encode(heso),
+               let str = String(data: data, encoding: .utf8) {
+                machine.hesoAtariStorage = str
+            }
             modelContext.insert(machine)
             for entry in s.prizeEntries ?? [] {
-                let mp = MachinePrize(label: entry.label ?? "", rounds: entry.rounds, balls: entry.balls)
+                let mp = MachinePrize(label: entry.label ?? "", balls: entry.balls)
                 mp.machine = machine
                 modelContext.insert(mp)
             }
@@ -244,7 +253,7 @@ struct MasterMachineSearchView: View {
             machine.manufacturer = ""
             modelContext.insert(machine)
             for p in preset.prizeEntries {
-                let mp = MachinePrize(label: p.label, rounds: p.rounds, balls: p.balls)
+                let mp = MachinePrize(label: p.label, balls: p.balls)
                 mp.machine = machine
                 modelContext.insert(mp)
             }

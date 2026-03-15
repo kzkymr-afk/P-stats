@@ -1,6 +1,10 @@
 [
   {
-    "machine_id": "4935",
-    "name": "e甲鉄城のカバネリ2GFEA"
+    "machine_id": "e-sample",
+    "name": "サンプル機種"
+  },
+  {
+    "machine_id": "4936",
+    "name": "テスト機種2"
   }
 ]

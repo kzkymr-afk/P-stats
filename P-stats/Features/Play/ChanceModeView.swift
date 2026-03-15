@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-/// 通常大当たり後のチャンスモード：フォーカスモードに準じた構成。上3/8＝折れ線、1/8＝履歴、下1/2＝左2/3 RUSH・右1/3 昇格/時短終了
+/// 通常大当たり後のチャンスモード：フォーカスモードに準じた構成。上3/16＝折れ線、3/16＝連チャン・通算RUSH/単発、1/8＝履歴、下1/2＝左2/3 RUSH・右1/3 昇格/時短終了
 struct ChanceModeView: View {
     @Bindable var log: GameLog
     var onRushExit: () -> Void
@@ -28,18 +28,19 @@ struct ChanceModeView: View {
 
     var body: some View {
         GeometryReader { geo in
-            let top = geo.size.height * (3.0 / 8.0)
+            let chartHeight = geo.size.height * (3.0 / 16.0)
+            let statsHeight = geo.size.height * (3.0 / 16.0)
             let mid = geo.size.height * (1.0 / 8.0)
             let bottom = geo.size.height * 0.5
             let w = max(1, geo.size.width)
-            let chartAreaH = max(1, top)
+            let chartAreaH = max(1, chartHeight)
             let chartAreaW = max(1, w - 32)
             let chartSizeValid = chartAreaH.isFinite && chartAreaH > 0 && chartAreaW.isFinite && chartAreaW > 0
             ZStack {
                 bg.ignoresSafeArea()
                 VStack(spacing: 0) {
 
-                    // 上3/8: 損益折れ線グラフ（幅は親に合わせる）。寸法が無効なときは表示しない
+                    // 上3/16: 損益折れ線グラフ（幅は親に合わせる）。寸法が無効なときは表示しない
                     Group {
                         if chartSizeValid {
                             profitLineChartView(height: chartAreaH, availableWidth: chartAreaW)
@@ -49,6 +50,12 @@ struct ChanceModeView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
+
+                    // 3/16: 連チャン・通算RUSH/単発
+                    ChainAndTotalWinCountView(log: log)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 4)
+                        .frame(height: statsHeight)
 
                     // 1/8: 大当たり履歴（角丸パネル）
                     WinHistoryBarChartView(records: Array(log.winRecords.suffix(30)), maxHeight: mid)

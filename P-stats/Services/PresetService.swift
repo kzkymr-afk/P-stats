@@ -24,8 +24,8 @@ struct PresetFromServer: Codable {
     var countPerRound: Int?
     var netPerRoundBase: Double?
     var manufacturer: String?
-    /// P-Sync/スプレッドシート用：特図1内訳（通常時）。CSVの「特図1内訳」列から設定。
-    var heso_prizes: String?
+    /// 通常時のヘソ当たり1〜5（出玉/RUSH(0or1)/時短）。CSVの「ヘソ当たり1」〜「ヘソ当たり5」から設定。
+    var hesoAtari: [HesoAtariItem]?
     /// P-Sync/スプレッドシート用：特図2内訳（RUSH時）。CSVの「特図2内訳」列から設定。
     var denchu_prizes: String?
     /// 導入日（表示・ソート用）。CSVの「導入日」列。"2024-03-01" 形式など。新しい順で並べるときに使用。
@@ -38,7 +38,7 @@ struct PresetFromServer: Codable {
     enum CodingKeys: String, CodingKey {
         case name, machineTypeRaw, supportLimit, timeShortRotations, defaultPrize, probability, border
         case prizeEntries, entryRate, continuationRate, countPerRound, netPerRoundBase, manufacturer
-        case heso_prizes, denchu_prizes, introductionDateRaw, ltRaw
+        case hesoAtari, denchu_prizes, introductionDateRaw, ltRaw
         case machineId = "machineId"
         case machineIdSnake = "machine_id"
         case machineID = "machineID"
@@ -60,7 +60,7 @@ struct PresetFromServer: Codable {
         countPerRound = try c.decodeIfPresent(Int.self, forKey: .countPerRound)
         netPerRoundBase = try c.decodeIfPresent(Double.self, forKey: .netPerRoundBase)
         manufacturer = try c.decodeIfPresent(String.self, forKey: .manufacturer)
-        heso_prizes = try c.decodeIfPresent(String.self, forKey: .heso_prizes)
+        hesoAtari = try c.decodeIfPresent([HesoAtariItem].self, forKey: .hesoAtari)
         denchu_prizes = try c.decodeIfPresent(String.self, forKey: .denchu_prizes)
         introductionDateRaw = try c.decodeIfPresent(String.self, forKey: .introductionDateRaw)
         ltRaw = try c.decodeIfPresent(String.self, forKey: .ltRaw)
@@ -89,7 +89,7 @@ struct PresetFromServer: Codable {
         try c.encodeIfPresent(countPerRound, forKey: .countPerRound)
         try c.encodeIfPresent(netPerRoundBase, forKey: .netPerRoundBase)
         try c.encodeIfPresent(manufacturer, forKey: .manufacturer)
-        try c.encodeIfPresent(heso_prizes, forKey: .heso_prizes)
+        try c.encodeIfPresent(hesoAtari, forKey: .hesoAtari)
         try c.encodeIfPresent(denchu_prizes, forKey: .denchu_prizes)
         try c.encodeIfPresent(introductionDateRaw, forKey: .introductionDateRaw)
         try c.encodeIfPresent(ltRaw, forKey: .ltRaw)
@@ -97,7 +97,7 @@ struct PresetFromServer: Codable {
     }
 
     /// CSVパース等で手動構築する用（CodingKeys 使用時は自動の memberwise init がなくなるため）。Task.detached から呼ぶため nonisolated。
-    nonisolated init(name: String, machineTypeRaw: String?, supportLimit: Int?, timeShortRotations: Int?, defaultPrize: Int?, probability: String?, border: String?, prizeEntries: [PrizeEntryFromServer]?, entryRate: Double?, continuationRate: Double?, countPerRound: Int?, netPerRoundBase: Double?, manufacturer: String?, heso_prizes: String?, denchu_prizes: String?, introductionDateRaw: String?, ltRaw: String?, machineId: String?) {
+    nonisolated init(name: String, machineTypeRaw: String?, supportLimit: Int?, timeShortRotations: Int?, defaultPrize: Int?, probability: String?, border: String?, prizeEntries: [PrizeEntryFromServer]?, entryRate: Double?, continuationRate: Double?, countPerRound: Int?, netPerRoundBase: Double?, manufacturer: String?, hesoAtari: [HesoAtariItem]?, denchu_prizes: String?, introductionDateRaw: String?, ltRaw: String?, machineId: String?) {
         self.name = name
         self.machineTypeRaw = machineTypeRaw
         self.supportLimit = supportLimit
@@ -111,7 +111,7 @@ struct PresetFromServer: Codable {
         self.countPerRound = countPerRound
         self.netPerRoundBase = netPerRoundBase
         self.manufacturer = manufacturer
-        self.heso_prizes = heso_prizes
+        self.hesoAtari = hesoAtari
         self.denchu_prizes = denchu_prizes
         self.introductionDateRaw = introductionDateRaw
         self.ltRaw = ltRaw
@@ -120,8 +120,9 @@ struct PresetFromServer: Codable {
 
     struct PrizeEntryFromServer: Codable {
         var label: String?
-        var rounds: Int
         var balls: Int
+        /// 後方互換: 旧JSONの rounds は読み捨て（R数は廃止）
+        var rounds: Int? = nil
     }
 }
 
@@ -231,7 +232,7 @@ enum PresetService {
             if name.isEmpty { continue }
             let probability = v("確率", "大当り確率", "probability")
             let manufacturer = v("メーカー", "manufacturer")
-            let heso = v("特図1内訳", "heso_prizes")
+            let hesoAtari = parseHesoAtariFromCSV(v: v)
             let denchu = v("特図2内訳", "denchu_prizes")
             let border = v("ボーダー", "border")
             let countPerRoundStr = v("賞球数", "countPerRound", "カウント数")
@@ -261,7 +262,7 @@ enum PresetService {
                 countPerRound: countPerRound,
                 netPerRoundBase: nil,
                 manufacturer: manufacturer.isEmpty ? nil : manufacturer,
-                heso_prizes: heso.isEmpty ? nil : heso,
+                hesoAtari: hesoAtari.isEmpty ? nil : hesoAtari,
                 denchu_prizes: denchu.isEmpty ? nil : denchu,
                 introductionDateRaw: introDate.isEmpty ? nil : introDate,
                 ltRaw: ltYn.isEmpty ? nil : ltYn,
@@ -269,6 +270,25 @@ enum PresetService {
             ))
         }
         return list
+    }
+
+    /// セル書式「出玉/RUSH(0or1)/時短ゲーム数」をパース。空欄・不正は nil。
+    private static nonisolated func parseHesoAtariCell(_ cell: String) -> HesoAtariItem? {
+        let parts = cell.trimmingCharacters(in: .whitespaces).split(separator: "/")
+        guard parts.count == 3,
+              let payout = Int(parts[0].trimmingCharacters(in: .whitespaces)),
+              let rush = Int(parts[1].trimmingCharacters(in: .whitespaces)),
+              rush == 0 || rush == 1,
+              let timeShort = Int(parts[2].trimmingCharacters(in: .whitespaces)) else { return nil }
+        return HesoAtariItem(payout: payout, rush: rush, timeShort: timeShort)
+    }
+
+    /// CSV の ヘソ当たり1〜5 列から [HesoAtariItem] を組み立てる。
+    private static nonisolated func parseHesoAtariFromCSV(v: (String...) -> String) -> [HesoAtariItem] {
+        let names = ["ヘソ当たり1", "ヘソ当たり2", "ヘソ当たり3", "ヘソ当たり4", "ヘソ当たり5"]
+        return names.compactMap { name in
+            parseHesoAtariCell(v(name))
+        }
     }
 
     /// 1行をCSVとしてパース（ダブルクォート内のカンマは無視）。parsePresetsFromCSV から呼ぶため nonisolated。
@@ -297,7 +317,7 @@ enum PresetService {
             return prize / 10.0
         }
         let totalBalls = entries.reduce(0) { $0 + $1.balls }
-        let totalRounds = entries.reduce(0) { $0 + $1.rounds }
-        return totalRounds > 0 ? Double(totalBalls) / Double(totalRounds) : 0
+        let n = entries.count
+        return n > 0 ? Double(totalBalls) / Double(n) : 0
     }
 }

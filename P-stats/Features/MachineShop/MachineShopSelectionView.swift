@@ -134,82 +134,105 @@ struct MachineShopSelectionView: View {
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent.opacity(0.2), lineWidth: 1))
     }
 
+    /// ゲート用：選択可能な1行カード（タップで選択・チェックマーク表示）
+    private func gateSelectRow(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 8)
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(accent)
+                }
+            }
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .background(isSelected ? accent.opacity(0.18) : Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(isSelected ? accent.opacity(0.5) : Color.white.opacity(0.12), lineWidth: isSelected ? 1.5 : 1))
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: - ゲートモード（新規遊技）：機種・店舗・現在回転数 → 遊戯開始
     private var gateModeContent: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 20) {
-                // 機種
-                glassCard {
-                    VStack(alignment: .leading, spacing: 12) {
-                        sectionTitle("機種")
-                        if savedMachines.isEmpty {
-                            HStack {
-                                Text("機種がありません")
-                                    .font(.system(size: 14, weight: .medium, design: .monospaced))
-                                    .foregroundColor(.white.opacity(0.85))
-                                Spacer()
-                                Button(action: { showNewMachineSheet = true }) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "plus.circle.fill")
-                                            .font(.subheadline)
-                                        Text("追加")
-                                            .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                    }
-                                    .foregroundColor(accent)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
+                // 機種（最新風：タップで選ぶカードリスト）
+                VStack(alignment: .leading, spacing: 10) {
+                    sectionTitle("機種")
+                    if savedMachines.isEmpty {
+                        HStack {
+                            Text("機種がありません")
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .foregroundColor(.white.opacity(0.85))
+                            Spacer()
+                            Button(action: { showNewMachineSheet = true }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.subheadline)
+                                    Text("追加")
+                                        .font(.system(size: 14, weight: .semibold, design: .rounded))
                                 }
-                                .buttonStyle(.plain)
+                                .foregroundColor(accent)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
                             }
-                        } else {
-                            Picker("", selection: machineSelection) {
-                                Text("— 選択")
-                                    .tag(nil as Machine?)
-                                ForEach(sortedMachines) { m in
-                                    Text(m.name).tag(m as Machine?)
+                            .buttonStyle(.plain)
+                        }
+                        .padding(16)
+                        .background(AppGlassStyle.rowBackground, in: RoundedRectangle(cornerRadius: 12))
+                    } else {
+                        VStack(spacing: 8) {
+                            ForEach(sortedMachines) { m in
+                                gateSelectRow(
+                                    title: m.name,
+                                    isSelected: log.selectedMachine.persistentModelID == m.persistentModelID
+                                ) {
+                                    log.selectedMachine = m
                                 }
                             }
-                            .pickerStyle(.menu)
-                            .tint(accent)
-                            .foregroundColor(.white)
                         }
                     }
                 }
 
-                // 店舗
-                glassCard {
-                    VStack(alignment: .leading, spacing: 12) {
-                        sectionTitle("店舗")
-                        if savedShops.isEmpty {
-                            HStack {
-                                Text("店舗がありません")
-                                    .font(.system(size: 14, weight: .medium, design: .monospaced))
-                                    .foregroundColor(.white.opacity(0.85))
-                                Spacer()
-                                Button(action: { showNewShopSheet = true }) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "plus.circle.fill")
-                                            .font(.subheadline)
-                                        Text("追加")
-                                            .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                    }
-                                    .foregroundColor(accent)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
+                // 店舗（同様にタップで選ぶカードリスト）
+                VStack(alignment: .leading, spacing: 10) {
+                    sectionTitle("店舗")
+                    if savedShops.isEmpty {
+                        HStack {
+                            Text("店舗がありません")
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .foregroundColor(.white.opacity(0.85))
+                            Spacer()
+                            Button(action: { showNewShopSheet = true }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.subheadline)
+                                    Text("追加")
+                                        .font(.system(size: 14, weight: .semibold, design: .rounded))
                                 }
-                                .buttonStyle(.plain)
+                                .foregroundColor(accent)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
                             }
-                        } else {
-                            Picker("", selection: shopSelection) {
-                                Text("— 選択")
-                                    .tag(nil as Shop?)
-                                ForEach(sortedShops) { s in
-                                    Text(s.name).tag(s as Shop?)
+                            .buttonStyle(.plain)
+                        }
+                        .padding(16)
+                        .background(AppGlassStyle.rowBackground, in: RoundedRectangle(cornerRadius: 12))
+                    } else {
+                        VStack(spacing: 8) {
+                            ForEach(sortedShops) { s in
+                                gateSelectRow(
+                                    title: s.name,
+                                    isSelected: log.selectedShop.persistentModelID == s.persistentModelID
+                                ) {
+                                    log.selectedShop = s
                                 }
                             }
-                            .pickerStyle(.menu)
-                            .tint(accent)
-                            .foregroundColor(.white)
                         }
                     }
                 }
@@ -334,6 +357,7 @@ struct MachineShopSelectionView: View {
             .padding(.top, 20)
             .padding(.bottom, 40)
         }
+        .keyboardDismissToolbar()
         .onAppear {
             if startWithZeroHoldings { initialHoldingsText = "0" }
         }
@@ -614,6 +638,16 @@ struct MyListMachinesView: View {
                             log.selectedMachine = m
                             dismiss()
                         }
+                        .tint(accent)
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            modelContext.delete(m)
+                        } label: { Label("削除", systemImage: "trash") }
+                        Button {
+                            machineToEdit = m
+                        } label: { Label("編集", systemImage: "pencil") }
+                        .tint(accent)
                     }
                 }
                 Button {
@@ -697,6 +731,16 @@ struct MyListShopsView: View {
                             log.selectedShop = s
                             dismiss()
                         }
+                        .tint(accent)
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            modelContext.delete(s)
+                        } label: { Label("削除", systemImage: "trash") }
+                        Button {
+                            shopToEdit = s
+                        } label: { Label("編集", systemImage: "pencil") }
+                        .tint(accent)
                     }
                 }
                 Button {

@@ -105,7 +105,6 @@ struct PresetMachineEditView: View {
     struct PresetPrizeRow: Identifiable {
         let id = UUID()
         var label: String
-        var rounds: Int
         var balls: Int
     }
 
@@ -174,18 +173,12 @@ struct PresetMachineEditView: View {
                     }
                     .listRowBackground(AppGlassStyle.rowBackground)
                 }
-                Section("ボーナス種類（R・出玉）") {
+                Section("ボーナス種類（出玉）") {
                     ForEach($prizeEntries) { $row in
                         HStack {
-                            TextField("10R", text: $row.label)
-                                .frame(width: 56)
+                            TextField("ラベル", text: $row.label)
+                                .frame(width: 80)
                                 .foregroundColor(.white)
-                            TextField("10", value: $row.rounds, format: .number)
-                                .keyboardType(.numberPad)
-                                .frame(width: 40)
-                                .multilineTextAlignment(.trailing)
-                                .foregroundColor(.white)
-                            Text("R")
                             TextField("1500", value: $row.balls, format: .number)
                                 .keyboardType(.numberPad)
                                 .frame(width: 56)
@@ -196,7 +189,7 @@ struct PresetMachineEditView: View {
                         .listRowBackground(AppGlassStyle.rowBackground)
                     }
                     Button("ボーナス種類を追加") {
-                        prizeEntries.append(PresetPrizeRow(label: "10R", rounds: 10, balls: 1500))
+                        prizeEntries.append(PresetPrizeRow(label: "1500玉", balls: 1500))
                     }
                     .foregroundColor(AppGlassStyle.accent)
                     .listRowBackground(AppGlassStyle.rowBackground)
@@ -225,7 +218,7 @@ struct PresetMachineEditView: View {
 
     private func load() {
         guard let p = preset else {
-            prizeEntries = [PresetPrizeRow(label: "10R", rounds: 10, balls: 1500)]
+            prizeEntries = [PresetPrizeRow(label: "1500玉", balls: 1500)]
             return
         }
         name = p.name
@@ -235,9 +228,9 @@ struct PresetMachineEditView: View {
         defaultPrizeStr = "\(p.defaultPrize)"
         probability = p.probability
         border = p.border
-        prizeEntries = p.prizeEntries.map { PresetPrizeRow(label: $0.label, rounds: $0.rounds, balls: $0.balls) }
+        prizeEntries = p.prizeEntries.map { PresetPrizeRow(label: $0.label, balls: $0.balls) }
         if prizeEntries.isEmpty {
-            prizeEntries = [PresetPrizeRow(label: "10R", rounds: 10, balls: 1500)]
+            prizeEntries = [PresetPrizeRow(label: "1500玉", balls: 1500)]
         }
     }
 
@@ -258,7 +251,7 @@ struct PresetMachineEditView: View {
             existing.border = border
             existing.prizeEntries.forEach { modelContext.delete($0) }
             for row in prizeEntries {
-                let e = PresetMachinePrize(label: row.label, rounds: row.rounds, balls: row.balls)
+                let e = PresetMachinePrize(label: row.label, balls: row.balls)
                 e.preset = existing
                 modelContext.insert(e)
             }
@@ -270,7 +263,7 @@ struct PresetMachineEditView: View {
             p.border = border
             modelContext.insert(p)
             for row in prizeEntries {
-                let e = PresetMachinePrize(label: row.label, rounds: row.rounds, balls: row.balls)
+                let e = PresetMachinePrize(label: row.label, balls: row.balls)
                 e.preset = p
                 modelContext.insert(e)
             }

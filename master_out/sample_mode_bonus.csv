@@ -1,7 +1,0 @@
-machine_id,machine_name,mode_id,mode_name,bonus_name,payout,ratio,densapo,next_mode_id,notes
-e-keiji-ougon,e花の慶次〜黄金の一撃,0,通常,超大当り3000,3000,50,100,2,
-e-keiji-ougon,e花の慶次〜黄金の一撃,0,通常,戦BONUS,1500,50,10,1,
-e-keiji-ougon,e花の慶次〜黄金の一撃,1,RUSH,RUSH当り1500,1500,100,10,1,
-e-keiji-ougon,e花の慶次〜黄金の一撃,1,RUSH,通常に戻る,0,0,0,0,
-e-keiji-ougon,e花の慶次〜黄金の一撃,2,LT,LT当り2000,2000,100,8,2,
-e-keiji-ougon,e花の慶次〜黄金の一撃,2,LT,LT終了,0,0,0,0,
