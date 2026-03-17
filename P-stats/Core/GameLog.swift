@@ -168,9 +168,16 @@ final class GameLog {
 
     /// フェーズ3: データ駆動の当たり記録。BonusDetail に従い履歴追加・出玉加算・currentModeID と電サポを更新する。既存の addWin と併存。
     func recordHit(bonus: BonusDetail, atRotation: Int) {
+        recordHit(bonus: bonus, totalPrize: nil, atRotation: atRotation)
+    }
+
+    /// ユニット連結型対応: totalPrize を渡すとその値で確定（nilなら baseOut を使用）
+    func recordHit(bonus: BonusDetail, totalPrize: Int?, atRotation: Int) {
         let diff = atRotation - totalRotations
         if diff != 0, currentState == .normal { normalRotations += diff }
-        let prize = bonus.payout > 0 ? bonus.payout : effectiveBallsPerHit
+        let resolvedBase = bonus.baseOut > 0 ? bonus.baseOut : bonus.payout
+        let raw = totalPrize ?? (resolvedBase > 0 ? resolvedBase : effectiveBallsPerHit)
+        let prize = max(0, raw)
         var record = WinRecord(
             type: Self.winType(from: currentModeID),
             prize: prize,

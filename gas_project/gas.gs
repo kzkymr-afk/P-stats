@@ -2,12 +2,13 @@
 var SS_ID = "1fSGx5EmcSOD68itgBRxjGyUGz0Wh5u1Lnbw-dyvchz4";
 
 /**
- * 1行目のヘッダー。機種IDの後にヘソ当たり1〜5、最後に更新ステータス。
+ * 実際のスプレッドシートのヘッダー（A〜AC = 29列）。
+ * A=導入開始日, B=機種ID, C=機種名, D=メーカー, E=確率, F=機種タイプ, G=スペック, H=特徴タグ, I=ステータス, J〜Q=モード0〜7, R〜AC=当たり1〜12
  */
 var HEADER_ROW = [
-  "導入日", "機種名", "メーカー", "大当り確率", "機種タイプ", "スペック", "特徴タグ", "機種ID",
-  "ヘソ当たり1", "ヘソ当たり2", "ヘソ当たり3", "ヘソ当たり4", "ヘソ当たり5",
-  "更新ステータス"
+  "導入開始日", "機種ID", "機種名", "メーカー", "確率", "機種タイプ", "スペック", "特徴タグ", "ステータス",
+  "モード0", "モード1", "モード2", "モード3", "モード4", "モード5", "モード6", "モード7",
+  "当たり1", "当たり2", "当たり3", "当たり4", "当たり5", "当たり6", "当たり7", "当たり8", "当たり9", "当たり10", "当たり11", "当たり12"
 ];
 
 function onOpen() {
@@ -37,9 +38,17 @@ function doPost(e) {
       var sheet = ss.getSheets()[0];
       var lastRow = sheet.getLastRow();
       if (lastRow <= 1) return createResponse("");
-      var data = sheet.getRange(2, 8, lastRow - 1, 2).getValues();
-      var doneIds = data.filter(function(row) { return row[1] === "完了"; }).map(function(row) { return String(row[0]); });
+      // 29列: 列B(2)=機種ID, 列I(9)=ステータス
+      var data = sheet.getRange(2, 1, lastRow - 1, 29).getValues();
+      var doneIds = data.filter(function(row) { return row[8] === "完了"; }).map(function(row) { return String(row[1]); });
       return createResponse(doneIds.join(","));
+    }
+
+    if (mode === "get_machine_json") {
+      if (!id) return createJsonResponse({ ok: false, error: "missing_id" });
+      var machine = buildMachineJsonById(String(id));
+      if (!machine) return createJsonResponse({ ok: false, error: "not_found", machine_id: String(id) });
+      return createJsonResponse({ ok: true, machine: machine });
     }
 
     if (p.text) {
@@ -56,9 +65,144 @@ function createResponse(msg) {
   return ContentService.createTextOutput(msg).setMimeType(ContentService.MimeType.TEXT);
 }
 
+function createJsonResponse(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function toNumberOr(value, fallback) {
+  var n = Number(String(value).trim());
+  return isFinite(n) ? n : fallback;
+}
+
 /**
- * 解析メイン。取得するのは次の8項目のみ。それ以外は空欄（ユーザー入力用）。
- * 導入開始日・機種名・メーカー名・通常時大当り確率・機種タイプ・スペック・特徴タグ・機種ID
+ * 当たりセルをパース（後方互換あり）
+ * - 新6要素: name/base/unit/max/currentMode/nextMode
+ * - 旧4要素: name/payout/currentMode/nextMode（unit=0,max=1）
+ * - 旧5要素: name/payout/currentMode/nextMode/densapo（unit=0,max=1）
+ */
+function parseAtariCell(cell) {
+  var raw = String(cell == null ? "" : cell).trim();
+  if (!raw) return null;
+  var parts = raw.split("/").map(function(x) { return String(x).trim(); });
+  if (parts.length < 4) return null;
+
+  if (parts.length >= 6) {
+    var name = parts[0];
+    var baseOut = toNumberOr(parts[1], 0);
+    var unitOut = toNumberOr(parts[2], 0);
+    var maxStack = Math.max(1, toNumberOr(parts[3], 1));
+    var currentMode = toNumberOr(parts[4], 0);
+    var nextMode = toNumberOr(parts[5], 0);
+    return {
+      name: name,
+      baseOut: baseOut,
+      unitOut: unitOut,
+      maxStack: maxStack,
+      currentMode: currentMode,
+      nextMode: nextMode,
+      totalMaxOut: baseOut + unitOut * maxStack
+    };
+  }
+
+  // 旧4/旧5
+  var oldName = parts[0];
+  var payout = toNumberOr(parts[1], 0);
+  var oldCurrent = toNumberOr(parts[2], 0);
+  var oldNext = toNumberOr(parts[3], 0);
+  var densapo = parts.length >= 5 ? toNumberOr(parts[4], 0) : 0;
+
+  var obj = {
+    name: oldName,
+    baseOut: payout,
+    unitOut: 0,
+    maxStack: 1,
+    currentMode: oldCurrent,
+    nextMode: oldNext,
+    totalMaxOut: payout
+  };
+  if (densapo) obj.densapo = densapo;
+  return obj;
+}
+
+function buildMachineJsonById(machineId) {
+  var ss = SpreadsheetApp.openById(SS_ID);
+  var sheet = ss.getSheets()[0];
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return null;
+
+  // B列=機種ID を探索（2行目〜）
+  var idValues = sheet.getRange(2, 2, lastRow - 1, 1).getValues(); // [[id],[id],...]
+  var rowIndex = -1;
+  for (var i = 0; i < idValues.length; i++) {
+    if (String(idValues[i][0]).trim() === machineId) { rowIndex = i + 2; break; }
+  }
+  if (rowIndex === -1) return null;
+
+  // A〜AC（29列）を取得
+  var row = sheet.getRange(rowIndex, 1, 1, 29).getValues()[0];
+
+  var introDate = String(row[0] || "").trim();
+  var id = String(row[1] || "").trim();
+  var name = String(row[2] || "").trim();
+  var maker = String(row[3] || "").trim();
+  var probability = String(row[4] || "").trim();
+  var machineType = String(row[5] || "").trim();
+  var specType = String(row[6] || "").trim();
+  var tags = String(row[7] || "").trim();
+  var status = String(row[8] || "").trim();
+
+  // モード名（J〜Q）
+  var modeNames = [];
+  for (var m = 0; m < 8; m++) modeNames.push(String(row[9 + m] || "").trim());
+
+  // 当たり（R〜AC）
+  var parsedBonuses = [];
+  for (var a = 0; a < 12; a++) {
+    var parsed = parseAtariCell(row[17 + a]);
+    if (parsed) parsedBonuses.push(parsed);
+  }
+
+  // モードごとに束ねる
+  var modes = [];
+  for (var modeId = 0; modeId < 8; modeId++) {
+    var bonuses = parsedBonuses
+      .filter(function(b) { return b.currentMode === modeId; })
+      .map(function(b) {
+        return {
+          name: b.name,
+          baseOut: b.baseOut,
+          unitOut: b.unitOut,
+          maxStack: b.maxStack,
+          next_mode_id: b.nextMode,
+          densapo: b.densapo || 0
+        };
+      });
+    modes.push({
+      mode_id: modeId,
+      name: modeNames[modeId] || ("モード" + modeId),
+      bonuses: bonuses
+    });
+  }
+
+  return {
+    machine_id: id,
+    name: name,
+    introduction_date: introDate,
+    manufacturer: maker,
+    probability: probability,
+    machine_type: machineType,
+    spec: specType,
+    tags: tags,
+    status: status,
+    modes: modes
+  };
+}
+
+/**
+ * 解析メイン。HTMLから取得できる項目を29列（A〜AC）の該当列に書き込む。
+ * A=導入開始日, B=機種ID, C=機種名, D=メーカー, E=確率, F=機種タイプ, G=スペック, H=特徴タグ, I=ステータス, J〜Q=モード0〜7(空), R〜AC=当たり1〜12(空)
  */
 function processPachinkoText(rawInput, manualUrl) {
   try {
@@ -93,6 +237,7 @@ function processPachinkoText(rawInput, manualUrl) {
       || parseTarget.match(/メーカー名?<\/th>\s*<td[^>]*>([\s\S]*?)<\/td>/i);
     if (makerMatch && makerMatch[1]) {
       maker = makerMatch[1].replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").split("（")[0].split("の掲載機種")[0].trim();
+      maker = maker.replace(/&amp;/g, "＆");  // HTML実体を全角＆に（例: サンセイR&amp;D → サンセイR＆D）
       if (!maker) maker = "不明";
     }
 
@@ -124,14 +269,21 @@ function processPachinkoText(rawInput, manualUrl) {
     var machineType = isHybrid ? "1種2種混合機" : (probability === "-" && parseTarget.indexOf("羽根モノ") !== -1 ? "羽根モノ" : "デジパチ");
     var denom = parseFloat(probability.split("/")[1]) || 0;
     var specType = (machineType === "羽根モノ") ? "羽根モノ" : (denom >= 300 ? "ミドル" : denom >= 150 ? "ライトミドル" : denom >= 50 ? "甘デジ" : "その他");
+    if (tagSet["ST"]) machineType = "st";
+    else if (machineType === "デジパチ" || machineType === "1種2種混合機") machineType = "kakugen";
 
-    var vals = [introDate, name, maker, probability, machineType, specType, tagString, mCode, "", "", "", "", ""];
-    var incomplete = vals.some(function(v) { var s = String(v || "").trim(); return s === "" || s === "-" || s === "不明" || s === "要確認"; });
+    var incomplete = !mCode || mCode === "-" || !name || name === "不明" || !maker || maker === "不明" || !probability || probability === "-";
     var crawlStatus = incomplete ? "要確認" : "完了";
-    var newRow = vals.concat(crawlStatus);
+
+    // 29列（A〜AC）: 導入開始日, 機種ID, 機種名, メーカー, 確率, 機種タイプ, スペック, 特徴タグ, ステータス, モード0〜7(空), 当たり1〜12(空)
+    var newRow = [
+      introDate, mCode, name, maker, probability, machineType, specType, tagString, crawlStatus,
+      "", "", "", "", "", "", "", "",
+      "", "", "", "", "", "", "", "", "", "", "", ""
+    ];
 
     sheet.insertRowBefore(2);
-    sheet.getRange(2, 1, 1, HEADER_ROW.length).setValues([newRow]);
+    sheet.getRange(2, 1, 2, HEADER_ROW.length).setValues([newRow]);
 
     return "成功: " + name;
   } catch (e) {

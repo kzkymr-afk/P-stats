@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-1シート・1機種1行のCSV（25列）を読み、
+1シート・1機種1行のCSV（マスター）を読み、
 index.json / machines/{機種ID}.json / export_status.csv を生成する。
 
 ＝＝＝ 使い方 ＝＝＝
@@ -35,11 +35,12 @@ MACHINES_SUBDIR = "machines"
 REQUEST_TIMEOUT = 20
 
 # 列インデックス（0-based）。ヘッダーがこの順で並ぶことを想定。別名は _col_index でマッチさせる。
+# 現行（スプレッドシート）: A=導入開始日, B=機種ID, C=機種名, D=メーカー, E=確率, F=機種タイプ, G=スペック, H=特徴タグ, I=ステータス, J〜Q=モード0〜7, R〜AA=当たり1〜10
 HEADER_NAMES = [
-    "機種ID", "機種名", "メーカー", "確率", "機種タイプ", "導入日",
+    "導入開始日", "機種ID", "機種名", "メーカー", "確率", "機種タイプ", "スペック", "特徴タグ",
     "モード0", "モード1", "モード2", "モード3", "モード4", "モード5", "モード6", "モード7",
-    "当たり1", "当たり2", "当たり3", "当たり4", "当たり5",
-    "当たり6", "当たり7", "当たり8", "当たり9", "当たり10",
+    "当たり1", "当たり2", "当たり3", "当たり4", "当たり5", "当たり6",
+    "当たり7", "当たり8", "当たり9", "当たり10", "当たり11", "当たり12",
     "ステータス",
 ]
 
@@ -58,6 +59,7 @@ def _col_index(headers: list[str]) -> dict[str, int]:
         "機種ID": ["機種id", "machine_id", "machine id"],
         "機種名": ["name", "machine_name", "machine name"],
         "ステータス": ["status"],
+        "導入開始日": ["導入日", "introduction_date", "introduction date"],
     }
     for canon in HEADER_NAMES:
         if canon in result:
@@ -99,8 +101,15 @@ def _should_skip_status(status: str) -> bool:
 def _parse_bonus_cell(cell: str) -> Optional[dict]:
     """
     当たりセルをパースする。
-    形式: 当たり名/出球数/滞在モード番号/移行先モード番号 または .../移行先モード番号/電サポ回数
-    戻り値: { "name", "payout", "densapo", "next_mode_id" } および滞在モード番号で modes に振り分けするため stay_mode_id を返す。
+    形式:
+      - 新6要素（ユニット連結型）: 当たり名/基本出玉/ユニット出玉/最大連結数/滞在モード番号/移行先モード番号
+      - 旧4要素（完結型）: 当たり名/出球数/滞在モード番号/移行先モード番号
+      - 旧5要素（電サポ）: 当たり名/出球数/滞在モード番号/移行先モード番号/電サポ回数
+
+    戻り値:
+      - modes に振り分けするため stay_mode_id を返す（内部キー）。
+      - BonusDetail 互換のキー: payout（=baseOut）, densapo, next_mode_id, ratio
+      - ユニット連結型のキー: baseOut, unitOut, maxStack
     """
     cell = (cell or "").strip()
     if not cell:
@@ -111,24 +120,43 @@ def _parse_bonus_cell(cell: str) -> Optional[dict]:
     name = parts[0] or ""
     if not name:
         return None
-    payout = _parse_int(parts[1])
-    if payout is None:
-        payout = 0
-    stay_mode_id = _parse_int(parts[2])
-    if stay_mode_id is None:
-        stay_mode_id = 0
-    next_mode_id = _parse_int(parts[3])
-    if next_mode_id is None:
-        next_mode_id = 0
+
+    # 新6要素
+    if len(parts) >= 6:
+        base_out = _parse_int(parts[1]) or 0
+        unit_out = _parse_int(parts[2]) or 0
+        max_stack = _parse_int(parts[3]) or 1
+        stay_mode_id = _parse_int(parts[4]) or 0
+        next_mode_id = _parse_int(parts[5]) or 0
+        stay_mode_id = max(0, min(7, stay_mode_id))
+        next_mode_id = max(0, min(7, next_mode_id))
+        max_stack = max(1, max_stack)
+        return {
+            "name": name,
+            "payout": base_out,  # 旧互換（アプリ側が payout のみでも動くため）
+            "baseOut": base_out,
+            "unitOut": unit_out,
+            "maxStack": max_stack,
+            "ratio": 0,
+            "densapo": 0,
+            "next_mode_id": next_mode_id,
+            "stay_mode_id": stay_mode_id,
+        }
+
+    # 旧4/旧5
+    payout = _parse_int(parts[1]) or 0
+    stay_mode_id = _parse_int(parts[2]) or 0
+    next_mode_id = _parse_int(parts[3]) or 0
     densapo = _parse_int(parts[4]) if len(parts) > 4 else 0
-    if densapo is None:
-        densapo = 0
-    # 滞在モードは 0〜7 に収める
+    densapo = densapo or 0
     stay_mode_id = max(0, min(7, stay_mode_id))
     next_mode_id = max(0, min(7, next_mode_id))
     return {
         "name": name,
         "payout": payout,
+        "baseOut": payout,
+        "unitOut": 0,
+        "maxStack": 1,
         "ratio": 0,
         "densapo": densapo,
         "next_mode_id": next_mode_id,
@@ -191,9 +219,9 @@ def load_and_validate_rows(csv_content: str):
         seen_ids.add(machine_id)
         # モード名 0〜7
         mode_names = [v(values, f"モード{i}", "") for i in range(8)]
-        # 当たり1〜10 をパース
+        # 当たり1〜12 をパース
         bonuses_by_mode: dict[int, list[dict]] = {i: [] for i in range(8)}
-        for i in range(1, 11):
+        for i in range(1, 13):
             cell = v(values, f"当たり{i}")
             parsed = _parse_bonus_cell(cell)
             if parsed:
@@ -206,7 +234,9 @@ def load_and_validate_rows(csv_content: str):
             "manufacturer": v(values, "メーカー"),
             "probability": v(values, "確率"),
             "machine_type": v(values, "機種タイプ"),
-            "introduction_date": v(values, "導入日"),
+            "introduction_date": v(values, "導入開始日") or v(values, "導入日"),
+            "spec": v(values, "スペック"),
+            "tags": v(values, "特徴タグ"),
             "mode_names": mode_names,
             "bonuses_by_mode": bonuses_by_mode,
         })
@@ -243,6 +273,10 @@ def build_machine_json(row: dict) -> dict:
         result["machine_type"] = row["machine_type"]
     if row.get("introduction_date"):
         result["introduction_date"] = row["introduction_date"]
+    if row.get("spec"):
+        result["spec"] = row["spec"]
+    if row.get("tags"):
+        result["tags"] = row["tags"]
     return result
 
 

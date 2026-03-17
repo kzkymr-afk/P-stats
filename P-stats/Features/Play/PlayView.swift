@@ -31,6 +31,7 @@ struct PlayView: View {
     @State private var didAutoOpenPowerSavingThisSession = false
     @State private var isBonusStandby = false
     @State private var showChainResult = false
+    // ユニット連結型（追撃）は WinInputSheetView 内で完結（メイン＋追撃＋確定）
     /// スワイプで開く情報ドロワーのオフセット（0=閉, insightPanelWidth=全開）。1:1で指に追従
     @State private var drawerOffset: CGFloat = 0
     /// 隙間ゾーンでスワイプ開始時にシアングロー表示
@@ -436,8 +437,8 @@ struct PlayView: View {
                                 returnToPowerSavingModeAfterExit = false
                             }
                         },
-                        onConfirmRecordHit: { bonus in
-                            applyRecordHitAndNavigate(bonus: bonus)
+                        onConfirmRecordHit: { bonus, total in
+                            applyRecordHitAndNavigate(bonus: bonus, totalPrize: total)
                         },
                         machineDetail: machineDetail,
                         currentModeID: log.currentModeID
@@ -1337,14 +1338,14 @@ struct PlayView: View {
     }
 
     /// フェーズ4: recordHit を実行し、nextModeId に応じて RUSH/LT/時短画面へ遷移する
-    private func applyRecordHitAndNavigate(bonus: BonusDetail) {
+    private func applyRecordHitAndNavigate(bonus: BonusDetail, totalPrize: Int? = nil) {
         let rot = Int(tempWinRotation) ?? 0
         let atRotation = (log.winRecords.last?.rotationAtWin ?? 0) + rot
         let cash = Int(tempWinCashYen) ?? 0
         let hBalls = Int(tempWinHoldingsBalls) ?? 0
         let hCount = Int(tempWinHoldingsCount) ?? 0
         log.syncToSnapshot(cashYen: cash, holdingsBalls: hBalls, totalHoldingsCount: hCount)
-        log.recordHit(bonus: bonus, atRotation: atRotation)
+        log.recordHit(bonus: bonus, totalPrize: totalPrize, atRotation: atRotation)
         showWinInputSheet = false
         if bonus.nextModeId == 1 {
             OrganicHaptics.playRushHeartbeat()
@@ -1913,8 +1914,9 @@ struct WinInputSheetView: View {
     /// 確定時: (選択したボーナスの純増, 実際の種別)。ヘソ当たりで選んだ内容が RUSH/通常 を決める。nil の場合は機種デフォルト。
     var onConfirm: (Int?, WinType) -> Void
     var onCancel: () -> Void
-    /// フェーズ4: データ駆動時、確定で選択した BonusDetail のみ渡す。親で recordHit(bonus, atRotation) と遷移を行う。
-    var onConfirmRecordHit: ((BonusDetail) -> Void)? = nil
+    /// フェーズ4: データ駆動時、確定で選択した BonusDetail と「確定した合計出玉」を渡す。
+    /// - totalPrize: 基本出玉＋追撃（unitOut×回数）の合計。完結型は基本出玉相当。
+    var onConfirmRecordHit: ((BonusDetail, Int) -> Void)? = nil
     /// フェーズ4: データ駆動用。nil でなければこのモードの bonuses を表示する。
     var machineDetail: MachineDetail? = nil
     var currentModeID: Int = 0
@@ -1925,6 +1927,8 @@ struct WinInputSheetView: View {
 
     @State private var selectedPrizeIndex: Int = 0
     @State private var selectedDataDrivenBonusIndex: Int = 0
+    /// ユニット連結型: 追撃回数（選択中のボーナスに対して）
+    @State private var unitTapCount: Int = 0
     @State private var showExtraFields = false
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
@@ -1991,6 +1995,12 @@ struct WinInputSheetView: View {
         AppGlassStyle.modeColor(modeId: currentModeID)
     }
 
+    private var selectedDataDrivenBonus: BonusDetail? {
+        guard let pair = dataDrivenBonuses else { return nil }
+        guard pair.list.indices.contains(selectedDataDrivenBonusIndex) else { return nil }
+        return pair.list[selectedDataDrivenBonusIndex]
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // ヘッダー：タイトル＋キャンセル（コンパクト）。フェーズ4: データ駆動時はモード名・色
@@ -2036,7 +2046,10 @@ struct WinInputSheetView: View {
                         } else if let pair = dataDrivenBonuses {
                             VStack(spacing: 8) {
                                 ForEach(Array(pair.list.enumerated()), id: \.element.id) { index, bonus in
-                                    Button(action: { selectedDataDrivenBonusIndex = index }) {
+                                    Button(action: {
+                                        selectedDataDrivenBonusIndex = index
+                                        unitTapCount = 0 // メインタップ＝基本出玉に戻す
+                                    }) {
                                         Text(bonus.name)
                                             .font(.system(size: 15, weight: .semibold, design: .monospaced))
                                             .foregroundColor(selectedDataDrivenBonusIndex == index ? sheetTitleColor : .white.opacity(0.9))
@@ -2052,6 +2065,52 @@ struct WinInputSheetView: View {
                                     }
                                     .buttonStyle(.plain)
                                 }
+                            }
+                            if let b = selectedDataDrivenBonus, b.unitOut > 0 {
+                                let base = max(0, b.baseOut)
+                                let unit = max(0, b.unitOut)
+                                let maxStack = max(1, b.maxStack)
+                                let total = base + unit * unitTapCount
+                                HStack(spacing: 10) {
+                                    ZStack {
+                                        panelBgSelected
+                                        VStack(spacing: 6) {
+                                            Text("今回の出玉")
+                                                .font(.caption.weight(.semibold))
+                                                .foregroundColor(.white.opacity(0.7))
+                                            Text("\(total) 玉")
+                                                .font(.system(size: 26, weight: .black, design: .monospaced))
+                                                .foregroundColor(sheetTitleColor)
+                                            Text("追撃 \(unitTapCount)/\(maxStack)")
+                                                .font(.caption2.weight(.semibold))
+                                                .foregroundColor(.white.opacity(0.6))
+                                        }
+                                        .padding(.vertical, 10)
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(sheetTitleColor.opacity(0.6), lineWidth: 1))
+
+                                    Button(action: {
+                                        guard unitTapCount < maxStack else { return }
+                                        unitTapCount += 1
+                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    }) {
+                                        ZStack {
+                                            sheetTitleColor.opacity(0.18)
+                                            Text("追撃\n+\(unit)")
+                                                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                                .foregroundColor(sheetTitleColor)
+                                                .multilineTextAlignment(.center)
+                                        }
+                                        .frame(width: 110, height: 74)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(sheetTitleColor.opacity(0.6), lineWidth: 1))
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(unitTapCount >= maxStack)
+                                }
+                                .padding(.top, 6)
                             }
                         } else if useHesoDynamic && hesoConfirmStep == 0 {
                             EmptyView()
@@ -2289,8 +2348,16 @@ struct WinInputSheetView: View {
             return
         }
 
-        if let pair = dataDrivenBonuses, let onRecordHit = onConfirmRecordHit, selectedDataDrivenBonusIndex < pair.list.count {
-            onRecordHit(pair.list[selectedDataDrivenBonusIndex])
+        if let pair = dataDrivenBonuses,
+           let onRecordHit = onConfirmRecordHit,
+           selectedDataDrivenBonusIndex < pair.list.count {
+            let b = pair.list[selectedDataDrivenBonusIndex]
+            let base = max(0, b.baseOut)
+            let unit = max(0, b.unitOut)
+            let maxStack = max(1, b.maxStack)
+            let clampedCount = min(max(0, unitTapCount), maxStack)
+            let total = base + unit * clampedCount
+            onRecordHit(b, total)
             return
         }
 
