@@ -485,6 +485,7 @@ struct HomeView: View {
     @State private var showMachineShopGate = false
     @State private var showContinueSelection = false
     @State private var continueRestoreFailed = false
+    @State private var showGameSessionEdit = false
     @Query(sort: \Machine.name) private var machines: [Machine]
     @Query(sort: \Shop.name) private var shops: [Shop]
     @State private var selectedTab: HomeTab = .home
@@ -630,6 +631,9 @@ struct HomeView: View {
                 isPlaying = false
                 selectedTab = .settings
             })
+        }
+        .sheet(isPresented: $showGameSessionEdit) {
+            GameSessionEditView()
         }
     }
 
@@ -891,13 +895,11 @@ struct HomeView: View {
                     showContinueSelection = true
                 }
             }
-            Button {
+            historyAndSimpleCell(side: side, gridSpacing: gridSpacing, cyan: cyan, onHistoryTap: {
                 homeNavigationPath = [.history]
-            } label: {
-                HomeGridButtonLabel(title: "実戦履歴", icon: "calendar", cyan: cyan, size: side)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+            }, onSimpleTap: {
+                showGameSessionEdit = true
+            })
             Button {
                 homeNavigationPath = [.analytics]
             } label: {
@@ -905,6 +907,90 @@ struct HomeView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - 実戦履歴（上下2分割）＋シンプル収支入力
+    private func historyAndSimpleCell(
+        side: CGFloat,
+        gridSpacing: CGFloat,
+        cyan: Color,
+        onHistoryTap: @escaping () -> Void,
+        onSimpleTap: @escaping () -> Void
+    ) -> some View {
+        // グリッドの縦間隔（gridSpacing）より狭く、でもゼロにはしない
+        let innerGap = max(8, gridSpacing * 0.45)
+        let subHeight = max(44, (side - innerGap) / 2)
+
+        return VStack(spacing: innerGap) {
+            Button { onSimpleTap() } label: {
+                HomeGridButtonLabelSplit(
+                    title: "シンプル収支入力",
+                    icon: "square.and.pencil",
+                    cyan: cyan,
+                    width: side,
+                    height: subHeight
+                )
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Button { onHistoryTap() } label: {
+                HomeGridButtonLabelSplit(
+                    title: "実戦履歴",
+                    icon: "calendar",
+                    cyan: cyan,
+                    width: side,
+                    height: subHeight
+                )
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
+        .frame(width: side, height: side)
+    }
+
+    // MARK: - 実戦履歴・シンプル収支入力（高さ可変ラベル）
+    private struct HomeGridButtonLabelSplit: View {
+        let title: String
+        let icon: String
+        var cyan: Color = AppGlassStyle.accent
+        let width: CGFloat
+        let height: CGFloat
+
+        private var cornerRadius: CGFloat { min(20, max(14, height * 0.22)) }
+        private var minDim: CGFloat { min(width, height) }
+        private var iconSize: CGFloat { min(32, max(18, minDim * 0.18)) }
+        private var titleSize: CGFloat { min(14, max(10, minDim * 0.075)) }
+        private var innerSpacing: CGFloat { max(4, minDim * 0.06) }
+
+        var body: some View {
+            VStack(spacing: innerSpacing) {
+                Image(systemName: icon)
+                    .font(.system(size: iconSize, weight: .medium))
+                Text(title)
+                    .font(.system(size: titleSize, weight: .medium, design: .rounded))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
+            .foregroundColor(.white.opacity(0.95))
+            .frame(width: width, height: height)
+            .background(Color.black.opacity(0.70), in: RoundedRectangle(cornerRadius: cornerRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.4),
+                                cyan.opacity(0.25),
+                                Color.white.opacity(0.08)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
         }
     }
 
@@ -1071,12 +1157,33 @@ private let shopOrderKey = "shopDisplayOrder"
 struct MachineManagementView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Machine.name) private var machines: [Machine]
+    @Query(sort: \GameSession.date, order: .reverse) private var recentSessions: [GameSession]
     @AppStorage(machineOrderKey) private var machineOrderStr = ""
     @State private var machineToEdit: Machine?
     @State private var showNewMachine = false
     @State private var isReorderMode = false
 
     private var cyan: Color { AppGlassStyle.accent }
+
+    // 「機種名が7件表示される高さ」で固定表示するための目安
+    private let visibleMachineCount = 7
+    private let machineRowHeight: CGFloat = 48
+    private var machineListHeight: CGFloat { CGFloat(visibleMachineCount) * machineRowHeight }
+
+    /// 実戦履歴ベース：新しい順（未使用の機種は後ろへ）
+    private var recencyOrderedMachines: [Machine] {
+        let order = recentSessions.reduce(into: [String]()) { acc, s in
+            let n = s.machineName.isEmpty ? "未設定" : s.machineName
+            if !acc.contains(n) { acc.append(n) }
+        }
+        return machines.sorted { m1, m2 in
+            let i1 = order.firstIndex(of: m1.name) ?? Int.max
+            let i2 = order.firstIndex(of: m2.name) ?? Int.max
+            if i1 != i2 { return i1 < i2 }
+            return m1.name < m2.name
+        }
+    }
+
     private var orderedMachines: [Machine] {
         let order = machineOrderStr.split(separator: "|").map(String.init)
         return machines.sorted { m1, m2 in
@@ -1086,6 +1193,16 @@ struct MachineManagementView: View {
             return m1.name < m2.name
         }
     }
+
+    // 通常表示は「最新7件を上に固定」＋「残りは並べ替え結果を反映」
+    private var machinesForList: [Machine] {
+        if isReorderMode { return orderedMachines }
+        let top = Array(recencyOrderedMachines.prefix(visibleMachineCount))
+        let topIDs = Set(top.map(\.persistentModelID))
+        let rest = orderedMachines.filter { !topIDs.contains($0.persistentModelID) }
+        return top + rest
+    }
+
     private func saveMachineOrder(_ list: [Machine]) {
         machineOrderStr = list.map(\.name).joined(separator: "|")
     }
@@ -1094,38 +1211,30 @@ struct MachineManagementView: View {
         ZStack(alignment: .bottomTrailing) {
             StaticHomeBackgroundView()
             List {
-                ForEach(orderedMachines) { m in
-                    Button {
-                        guard !isReorderMode else { return }
-                        machineToEdit = m
-                    } label: {
-                        HStack {
-                            Text(m.name)
-                                .foregroundColor(.white)
-                            Spacer()
-                            if isReorderMode {
-                                Image(systemName: "line.3.horizontal")
-                                    .font(.subheadline)
-                                    .foregroundColor(cyan.opacity(0.8))
-                            } else {
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundColor(cyan.opacity(0.8))
-                            }
-                        }
-                        .padding(.vertical, 12)
+                ForEach(machinesForList) { m in
+                    HStack {
+                        Text(m.name)
+                            .foregroundColor(.white)
+                        Spacer()
                     }
+                    .padding(.vertical, 12)
                     .listRowBackground(AppGlassStyle.rowBackground)
                     .listSelectionStyle()
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button {
+                            machineToEdit = m
+                        } label: { Label("編集", systemImage: "pencil") }
+                        .tint(cyan)
                         Button(role: .destructive) {
                             modelContext.delete(m)
                             let arr = orderedMachines.filter { $0.persistentModelID != m.persistentModelID }
                             saveMachineOrder(arr)
                         } label: { Label("削除", systemImage: "trash") }
                         Button {
-                            machineToEdit = m
-                        } label: { Label("編集", systemImage: "pencil") }
+                            // 現在表示中の順で並べ替えモードに入る（並べ替え時の体感ジャンプを減らす）
+                            saveMachineOrder(machinesForList)
+                            withAnimation(.easeInOut(duration: 0.25)) { isReorderMode = true }
+                        } label: { Label("並べ替え", systemImage: "line.3.horizontal") }
                         .tint(cyan)
                     }
                     .moveDisabled(!isReorderMode)
@@ -1137,6 +1246,7 @@ struct MachineManagementView: View {
                     saveMachineOrder(arr)
                 }
             }
+            .frame(height: machineListHeight)
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .environment(\.editMode, .constant(isReorderMode ? .active : .inactive))
@@ -1160,7 +1270,12 @@ struct MachineManagementView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button(isReorderMode ? "完了" : "並べ替え") {
-                    withAnimation(.easeInOut(duration: 0.25)) { isReorderMode.toggle() }
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        if !isReorderMode {
+                            saveMachineOrder(machinesForList)
+                        }
+                        isReorderMode.toggle()
+                    }
                 }
                 .foregroundColor(cyan)
             }

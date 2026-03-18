@@ -80,12 +80,12 @@ def _append_master_csv_row(machine_id, response_text):
 # --- 追加：完了済みIDを一括取得 ---
 def get_done_ids():
     try:
-        print("📊 GASから完了済みIDリストをダウンロード中...")
-        res = requests.post(GAS_URL, data={'mode': 'get_done_list'}, timeout=20)
+        print("📊 GASからスキップ対象ID（A〜H埋まり済み）をダウンロード中...")
+        res = requests.post(GAS_URL, data={'mode': 'get_skip_ids'}, timeout=20)
         if not res.text:
             return set()
         # カンマ区切りを集合(set)にする。リストより検索が圧倒的に速い。
-        return set(res.text.split(','))
+        return set([s for s in res.text.split(',') if s.strip()])
     except Exception as e:
         print(f"⚠️ リスト取得失敗: {e}")
         return set()

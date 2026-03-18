@@ -466,7 +466,9 @@ struct PlayView: View {
                         machine: log.selectedMachine,
                         rotationAtOpen: log.gamesSinceLastWin,
                         onSelectRush: { item in
-                            let atRotation = (log.winRecords.last?.rotationAtWin ?? 0) + log.gamesSinceLastWin
+                            // rotationAtWin / normalRotations は「電サポ・時短を除く通常回転」基準。
+                            // gamesSinceLastWin は電サポ/時短込みになるため、そのまま使うと回転率へ混ざる。
+                            let atRotation = log.totalRotations
                             let prizeBalls = log.selectedMachine.netBallsForPrize(payoutBalls: item.payout)
                             log.addWin(type: .rush, atRotation: atRotation, prizeBalls: prizeBalls)
                             showHesoAtariModeSheet = false
@@ -477,7 +479,9 @@ struct PlayView: View {
                             }
                         },
                         onSelectSingle: { item in
-                            let atRotation = (log.winRecords.last?.rotationAtWin ?? 0) + log.gamesSinceLastWin
+                            // rotationAtWin / normalRotations は「電サポ・時短を除く通常回転」基準。
+                            // gamesSinceLastWin は電サポ/時短込みになるため、そのまま使うと回転率へ混ざる。
+                            let atRotation = log.totalRotations
                             let prizeBalls = log.selectedMachine.netBallsForPrize(payoutBalls: item.payout)
                             log.addWin(type: .normal, atRotation: atRotation, prizeBalls: prizeBalls, timeShortFromHit: item.timeShort)
                             if returnToPowerSavingModeAfterExit {

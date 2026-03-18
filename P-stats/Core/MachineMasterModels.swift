@@ -65,7 +65,9 @@ struct MachineFullMaster: Decodable {
             }
         }
         let modes: [MasterMode] = legacy.modes.map { m in
-            MasterMode(modeId: m.modeId, name: m.name, densapo: m.bonuses.map(\.densapo).max() ?? 0)
+            // 旧形式は densapo が Int 固定のため、MasterDensapo.finite に変換する
+            let maxDensapo = m.bonuses.map(\.densapo).max() ?? 0
+            return MasterMode(modeId: m.modeId, name: m.name, densapo: .finite(maxDensapo))
         }
         return MachineFullMaster(
             machineId: legacy.machineId,

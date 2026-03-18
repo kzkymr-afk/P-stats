@@ -1,5 +1,7 @@
 /** マスターシートのスプレッドシートID */
 var SS_ID = "1fSGx5EmcSOD68itgBRxjGyUGz0Wh5u1Lnbw-dyvchz4";
+// デプロイ版の動作確認用（Webアプリがどのコードを動かしているか判別）
+var BUILD_TAG = "2026-03-18_disable_status_autofill_v2";
 
 /**
  * 実際のスプレッドシートのヘッダー（A〜AC = 29列）。
@@ -33,6 +35,15 @@ function doPost(e) {
     var mode = p.mode;
     var id = p.id || p.url || "";
 
+    if (mode === "ping") {
+      return createJsonResponse({
+        ok: true,
+        build_tag: BUILD_TAG,
+        notes: "I列(ステータス)は自動入力しない仕様",
+        header_len: HEADER_ROW.length
+      });
+    }
+
     if (mode === "get_done_list") {
       var ss = SpreadsheetApp.openById(SS_ID);
       var sheet = ss.getSheets()[0];
@@ -42,6 +53,26 @@ function doPost(e) {
       var data = sheet.getRange(2, 1, lastRow - 1, 29).getValues();
       var doneIds = data.filter(function(row) { return row[8] === "完了"; }).map(function(row) { return String(row[1]); });
       return createResponse(doneIds.join(","));
+    }
+
+    // Collector用: A〜H がすべて埋まっている機種ID一覧（=再取得不要のスキップ対象）
+    if (mode === "get_skip_ids") {
+      var ssSkip = SpreadsheetApp.openById(SS_ID);
+      var sheetSkip = ssSkip.getSheets()[0];
+      var lastRowSkip = sheetSkip.getLastRow();
+      if (lastRowSkip <= 1) return createResponse("");
+      var dataSkip = sheetSkip.getRange(2, 1, lastRowSkip - 1, 29).getValues();
+      var ids = dataSkip
+        .filter(function(row) {
+          var idv = String(row[1] || "").trim(); // B列
+          if (!idv) return false;
+          for (var c = 0; c < 8; c++) {
+            if (String(row[c] || "").trim() === "") return false; // A〜H
+          }
+          return true;
+        })
+        .map(function(row) { return String(row[1] || "").trim(); });
+      return createResponse(ids.join(","));
     }
 
     if (mode === "get_machine_json") {
@@ -74,6 +105,23 @@ function createJsonResponse(obj) {
 function toNumberOr(value, fallback) {
   var n = Number(String(value).trim());
   return isFinite(n) ? n : fallback;
+}
+
+function findRowIndexByMachineId_(sheet, machineId) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return -1;
+  var idValues = sheet.getRange(2, 2, lastRow - 1, 1).getValues(); // B列
+  for (var i = 0; i < idValues.length; i++) {
+    if (String(idValues[i][0] || "").trim() === machineId) return i + 2;
+  }
+  return -1;
+}
+
+function hasAnyBlankAtoH_(rowAtoH) {
+  for (var i = 0; i < 8; i++) {
+    if (String(rowAtoH[i] || "").trim() === "") return true;
+  }
+  return false;
 }
 
 /**
@@ -250,6 +298,7 @@ function processPachinkoText(rawInput, manualUrl) {
     var specArea = parseTarget.split("お知らせ一覧")[0];
     var tagSet = {};
     var isHybrid = false;
+    var isFeather = false; // 羽モノ（羽根モノ）判定
     var iconMatches = specArea.match(/alt="([^"]+)"/g) || [];
     for (var im = 0; im < iconMatches.length; im++) {
       var altText = iconMatches[im].replace(/alt=|\"/g, "").trim();
@@ -257,6 +306,8 @@ function processPachinkoText(rawInput, manualUrl) {
       else if (altText.match(/\bLT\b|ラッキートリガー/i)) tagSet["LT"] = true;
       if (altText.indexOf("遊タイム") !== -1) tagSet["遊タイム"] = true;
       if (altText.indexOf("1種2種") !== -1) isHybrid = true;
+      // 例: alt="羽モノ " のように「羽根モノ」と表記揺れがあるため両方拾う
+      if (altText.indexOf("羽モノ") !== -1 || altText.indexOf("羽根モノ") !== -1 || altText.indexOf("羽物") !== -1) isFeather = true;
       if (altText.indexOf("設定") !== -1) tagSet["設定付"] = true;
       if (altText.indexOf("コンプリート") !== -1) tagSet["コンプリート"] = true;
     }
@@ -266,26 +317,45 @@ function processPachinkoText(rawInput, manualUrl) {
     if (specTable && specTable[0] && specTable[0].match(/転落抽選|転落型/i)) tagSet["転落"] = true;
     var tagKeys = Object.keys(tagSet);
     var tagString = tagKeys.length > 0 ? tagKeys.join("/") : "なし";
-    var machineType = isHybrid ? "1種2種混合機" : (probability === "-" && parseTarget.indexOf("羽根モノ") !== -1 ? "羽根モノ" : "デジパチ");
+    // 機種タイプ（F列）はシート定義どおり「デジパチ/1種2種混合機/羽根モノ」を入れる（st/kakugen は入れない）
+    // 羽モノは「アイコンalt」と「本文（羽根モノ/羽モノ/羽物）」の両方で判定して取りこぼしを防ぐ
+    if (!isFeather && (parseTarget.indexOf("羽根モノ") !== -1 || parseTarget.indexOf("羽モノ") !== -1 || parseTarget.indexOf("羽物") !== -1)) {
+      isFeather = true;
+    }
+    var machineType = isHybrid
+      ? "1種2種混合機"
+      : ((probability === "-" && isFeather) ? "羽根モノ" : "デジパチ");
     var denom = parseFloat(probability.split("/")[1]) || 0;
     var specType = (machineType === "羽根モノ") ? "羽根モノ" : (denom >= 300 ? "ミドル" : denom >= 150 ? "ライトミドル" : denom >= 50 ? "甘デジ" : "その他");
-    if (tagSet["ST"]) machineType = "st";
-    else if (machineType === "デジパチ" || machineType === "1種2種混合機") machineType = "kakugen";
 
+    // ステータス（I列）は運用上「手動入力」が正とするため、GAS/Collector では自動入力しない。
+    // 必須項目の不足判定（incomplete）はログ用途には残すが、シートには書き込まない。
     var incomplete = !mCode || mCode === "-" || !name || name === "不明" || !maker || maker === "不明" || !probability || probability === "-";
-    var crawlStatus = incomplete ? "要確認" : "完了";
 
-    // 29列（A〜AC）: 導入開始日, 機種ID, 機種名, メーカー, 確率, 機種タイプ, スペック, 特徴タグ, ステータス, モード0〜7(空), 当たり1〜12(空)
+    // A〜H（導入開始日〜特徴タグ）
+    var aToH = [introDate, mCode, name, maker, probability, machineType, specType, tagString];
+
+    // 既存行があれば、A〜H に空があるときだけ上書き（それ以外の列は触らない）
+    var existingRowIndex = findRowIndexByMachineId_(sheet, mCode);
+    if (existingRowIndex !== -1) {
+      var existingAtoH = sheet.getRange(existingRowIndex, 1, 1, 8).getValues()[0];
+      if (hasAnyBlankAtoH_(existingAtoH)) {
+        sheet.getRange(existingRowIndex, 1, 1, 8).setValues([aToH]);
+        // ステータス（I列）は Collector/GAS の再取得では更新しない（手動運用を優先）
+        return "更新: " + name;
+      }
+      return "スキップ: 既に埋まっています " + name;
+    }
+
+    // 新規行: 2行目に追加（A〜Hのみ埋め、I列=ステータスは空、右側も空）
     var newRow = [
-      introDate, mCode, name, maker, probability, machineType, specType, tagString, crawlStatus,
+      introDate, mCode, name, maker, probability, machineType, specType, tagString, "",
       "", "", "", "", "", "", "", "",
       "", "", "", "", "", "", "", "", "", "", "", ""
     ];
-
     sheet.insertRowBefore(2);
-    sheet.getRange(2, 1, 2, HEADER_ROW.length).setValues([newRow]);
-
-    return "成功: " + name;
+    sheet.getRange(2, 1, 1, HEADER_ROW.length).setValues([newRow]);
+    return "追加: " + name;
   } catch (e) {
     return "解析エラー: " + e.toString();
   }

@@ -533,17 +533,31 @@ final class GameLog {
 
     func adjustForZeroTray(syncRotation: Int) {
         let lastRot = winRecords.last?.rotationAtWin ?? 0
-        let prevPerCycle = totalRotations - lastRot
-        totalRotations = lastRot + syncRotation
-        if currentState == .normal { normalRotations += (syncRotation - prevPerCycle) }
+        // syncRotation はランプ表示（電サポ/時短込み）想定。
+        // 回転率（normalRotations）は「投資して回した分（電サポ/時短除外）」のみなので、差分変換する。
+        let currentPaidSinceLastWin = max(0, normalRotations - lastRot)
+        let currentLampSinceLastWin = max(0, gamesSinceLastWin)
+        let freeSinceLastWin = max(0, currentLampSinceLastWin - currentPaidSinceLastWin)
+        let paidFromInput = max(0, syncRotation - freeSinceLastWin)
+
+        // 内部の totalRotations / normalRotations は「電サポ・時短を除く有料回転」基準に揃える
+        totalRotations = lastRot + paidFromInput
+        normalRotations = lastRot + paidFromInput
     }
 
     /// データランプなどに表示されているゲーム数（当選後からの回転数）とアプリを合わせる。総回転数は累積のまま
     func syncTotalRotations(newTotal: Int) {
         let lastRot = winRecords.last?.rotationAtWin ?? 0
-        let prevPerCycle = totalRotations - lastRot
-        totalRotations = lastRot + newTotal
-        if currentState == .normal { normalRotations += (newTotal - prevPerCycle) }
+        // newTotal はランプ表示（電サポ/時短込み）想定。
+        // 回転率（normalRotations）は「投資して回した分（電サポ/時短除外）」のみなので、差分変換する。
+        let currentPaidSinceLastWin = max(0, normalRotations - lastRot)
+        let currentLampSinceLastWin = max(0, gamesSinceLastWin)
+        let freeSinceLastWin = max(0, currentLampSinceLastWin - currentPaidSinceLastWin)
+        let paidFromInput = max(0, newTotal - freeSinceLastWin)
+
+        // 内部の totalRotations / normalRotations は「電サポ・時短を除く有料回転」基準に揃える
+        totalRotations = lastRot + paidFromInput
+        normalRotations = lastRot + paidFromInput
     }
 
     /// 当選時点の投資・持ち玉に合わせて lendingRecords と initialHoldings を設定（大当たり入力時に使用）
@@ -580,8 +594,9 @@ final class GameLog {
     /// 当選時点などに回転数を合わせる（回転率に含める）。syncTotalRotations と同じ
     func setRotationsTo(_ n: Int) {
         let v = max(0, n)
+        // setRotationsTo は入力値を「有料回転」として扱い揃える（現状この関数は未使用）
         totalRotations = v
-        if currentState == .normal { normalRotations = v }
+        normalRotations = v
     }
 
     /// 現金投入額をあとから修正（500pt単位。持ち玉投入はそのまま）
