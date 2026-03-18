@@ -1,57 +1,12 @@
 {
   "machine_id": "4936",
-  "name": "テスト機種2",
-  "modes": [
-    {
-      "mode_id": 0,
-      "name": "通常",
-      "bonuses": [
-        {
-          "name": "単発",
-          "payout": 1000,
-          "ratio": 0,
-          "densapo": 0,
-          "next_mode_id": 0
-        }
-      ]
-    },
-    {
-      "mode_id": 1,
-      "name": "ST",
-      "bonuses": []
-    },
-    {
-      "mode_id": 2,
-      "name": "モード2",
-      "bonuses": []
-    },
-    {
-      "mode_id": 3,
-      "name": "モード3",
-      "bonuses": []
-    },
-    {
-      "mode_id": 4,
-      "name": "モード4",
-      "bonuses": []
-    },
-    {
-      "mode_id": 5,
-      "name": "モード5",
-      "bonuses": []
-    },
-    {
-      "mode_id": 6,
-      "name": "モード6",
-      "bonuses": []
-    },
-    {
-      "mode_id": 7,
-      "name": "モード7",
-      "bonuses": []
-    }
-  ],
-  "probability": "1/99",
-  "machine_type": "st",
-  "introduction_date": "2024-06-01"
+  "name": "eようこそ実力至上主義の教室へ",
+  "manufacturer": "",
+  "probability": "",
+  "machine_type": "",
+  "intro_start": "",
+  "spec": "",
+  "tags": "",
+  "modes": [],
+  "bonuses": []
 }
