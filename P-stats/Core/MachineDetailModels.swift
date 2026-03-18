@@ -101,4 +101,22 @@ struct BonusDetail: Decodable, Identifiable {
             ratio = 0
         }
     }
+
+    init(
+        name: String,
+        baseOut: Int,
+        unitOut: Int,
+        maxStack: Int,
+        ratio: Double = 0,
+        densapo: Int = 0,
+        nextModeId: Int
+    ) {
+        self.name = name
+        self.baseOut = baseOut
+        self.unitOut = unitOut
+        self.maxStack = max(1, maxStack)
+        self.ratio = ratio
+        self.densapo = densapo
+        self.nextModeId = nextModeId
+    }
 }

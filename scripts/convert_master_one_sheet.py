@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-1シート・1機種1行のCSV（マスター）を読み、
+1シート・1機種1行のCSV/TSV（マスター）を読み、
 index.json / machines/{機種ID}.json / export_status.csv を生成する。
+
+新仕様:
+- モードセル: mode_id/mode_name/densapo（densapo は int または INF/∞）
+- 当たりセル: name/base/unit/max_concat/stay_mode_id/next_mode_id/branch_label
 
 ＝＝＝ 使い方 ＝＝＝
 
@@ -34,16 +38,16 @@ OUTPUT_DIR = Path(os.environ.get("MASTER_ONE_SHEET_OUTPUT_DIR", str(REPO_ROOT / 
 MACHINES_SUBDIR = "machines"
 REQUEST_TIMEOUT = 20
 
-# 列インデックス（0-based）。ヘッダーがこの順で並ぶことを想定。別名は _col_index でマッチさせる。
-# 現行（スプレッドシート）: A=導入開始日, B=機種ID, C=機種名, D=メーカー, E=確率, F=機種タイプ, G=スペック, H=特徴タグ, I=ステータス, J〜Q=モード0〜7, R〜AA=当たり1〜10
+# 列インデックス（0-based）。ヘッダー名で解決する（列位置に依存しない）。
 HEADER_NAMES = [
-    "導入開始日", "機種ID", "機種名", "メーカー", "確率", "機種タイプ", "スペック", "特徴タグ",
+    "導入開始日", "機種名", "メーカー", "確率", "機種タイプ", "スペック", "特徴タグ", "機種ID", "ステータス",
     "モード0", "モード1", "モード2", "モード3", "モード4", "モード5", "モード6", "モード7",
     "当たり1", "当たり2", "当たり3", "当たり4", "当たり5", "当たり6",
     "当たり7", "当たり8", "当たり9", "当たり10", "当たり11", "当たり12",
-    "ステータス",
 ]
 
+# 出力対象ステータス（デフォルト: 完了 のみ）
+EXPORT_STATUS_VALUES = {s.strip() for s in os.environ.get("MASTER_EXPORT_STATUS_VALUES", "完了").split("|") if s.strip()}
 SKIP_STATUS_VALUES = {"スキップ", "無効", "skip", "invalid", "スキップ ", "無効 "}
 
 
@@ -60,6 +64,7 @@ def _col_index(headers: list[str]) -> dict[str, int]:
         "機種名": ["name", "machine_name", "machine name"],
         "ステータス": ["status"],
         "導入開始日": ["導入日", "introduction_date", "introduction date"],
+        "機種タイプ": ["type", "machine_type", "machine type"],
     }
     for canon in HEADER_NAMES:
         if canon in result:
@@ -95,72 +100,72 @@ def _parse_int(s: str) -> Optional[int]:
 
 
 def _should_skip_status(status: str) -> bool:
-    return _normalize(status) in {t.lower() for t in SKIP_STATUS_VALUES}
+    s = (status or "").strip()
+    if not s:
+        return True
+    if s in EXPORT_STATUS_VALUES:
+        return False
+    return _normalize(s) in {t.lower() for t in SKIP_STATUS_VALUES}
+
+
+def _parse_densapo(s: str):
+    t = (s or "").strip()
+    if not t:
+        return 0
+    if t.lower() in {"inf", "∞"}:
+        return "INF"
+    v = _parse_int(t)
+    return v if v is not None else 0
+
+
+def _parse_mode_cell(cell: str) -> Optional[dict]:
+    raw = (cell or "").strip()
+    if not raw:
+        return None
+    parts = [p.strip() for p in raw.split("/")]
+    if len(parts) != 3:
+        return None
+    mode_id = _parse_int(parts[0])
+    if mode_id is None or not (0 <= mode_id <= 7):
+        return None
+    name = parts[1] or ""
+    densapo = _parse_densapo(parts[2])
+    return {"mode_id": mode_id, "name": name, "densapo": densapo}
 
 
 def _parse_bonus_cell(cell: str) -> Optional[dict]:
     """
     当たりセルをパースする。
-    形式:
-      - 新6要素（ユニット連結型）: 当たり名/基本出玉/ユニット出玉/最大連結数/滞在モード番号/移行先モード番号
-      - 旧4要素（完結型）: 当たり名/出球数/滞在モード番号/移行先モード番号
-      - 旧5要素（電サポ）: 当たり名/出球数/滞在モード番号/移行先モード番号/電サポ回数
-
-    戻り値:
-      - modes に振り分けするため stay_mode_id を返す（内部キー）。
-      - BonusDetail 互換のキー: payout（=baseOut）, densapo, next_mode_id, ratio
-      - ユニット連結型のキー: baseOut, unitOut, maxStack
+    形式（7要素）:
+      name/base_payout/unit_payout/max_concat/stay_mode_id/next_mode_id/branch_label
     """
     cell = (cell or "").strip()
     if not cell:
         return None
     parts = [p.strip() for p in cell.split("/")]
-    if len(parts) < 4:
+    if len(parts) != 7:
         return None
     name = parts[0] or ""
     if not name:
         return None
-
-    # 新6要素
-    if len(parts) >= 6:
-        base_out = _parse_int(parts[1]) or 0
-        unit_out = _parse_int(parts[2]) or 0
-        max_stack = _parse_int(parts[3]) or 1
-        stay_mode_id = _parse_int(parts[4]) or 0
-        next_mode_id = _parse_int(parts[5]) or 0
-        stay_mode_id = max(0, min(7, stay_mode_id))
-        next_mode_id = max(0, min(7, next_mode_id))
-        max_stack = max(1, max_stack)
-        return {
-            "name": name,
-            "payout": base_out,  # 旧互換（アプリ側が payout のみでも動くため）
-            "baseOut": base_out,
-            "unitOut": unit_out,
-            "maxStack": max_stack,
-            "ratio": 0,
-            "densapo": 0,
-            "next_mode_id": next_mode_id,
-            "stay_mode_id": stay_mode_id,
-        }
-
-    # 旧4/旧5
-    payout = _parse_int(parts[1]) or 0
-    stay_mode_id = _parse_int(parts[2]) or 0
-    next_mode_id = _parse_int(parts[3]) or 0
-    densapo = _parse_int(parts[4]) if len(parts) > 4 else 0
-    densapo = densapo or 0
-    stay_mode_id = max(0, min(7, stay_mode_id))
-    next_mode_id = max(0, min(7, next_mode_id))
+    base_payout = _parse_int(parts[1])
+    unit_payout = _parse_int(parts[2])
+    max_concat = _parse_int(parts[3])
+    stay = _parse_int(parts[4])
+    nxt = _parse_int(parts[5])
+    if base_payout is None or unit_payout is None or max_concat is None or stay is None or nxt is None:
+        return None
+    if not (0 <= stay <= 7) or not (0 <= nxt <= 7):
+        return None
+    branch_label = parts[6] or ""
     return {
         "name": name,
-        "payout": payout,
-        "baseOut": payout,
-        "unitOut": 0,
-        "maxStack": 1,
-        "ratio": 0,
-        "densapo": densapo,
-        "next_mode_id": next_mode_id,
-        "stay_mode_id": stay_mode_id,
+        "base_payout": max(0, base_payout),
+        "unit_payout": max(0, unit_payout),
+        "max_concat": max(0, max_concat),
+        "stay_mode_id": stay,
+        "next_mode_id": nxt,
+        "branch_label": branch_label,
     }
 
 
@@ -200,33 +205,82 @@ def load_and_validate_rows(csv_content: str):
 
     seen_ids: set[str] = set()
     valid_rows: list[dict] = []
-    skip_report: list[tuple[int, str, str]] = []
+    skip_report: list[tuple[int, str, str, str]] = []
 
     for row_no, values in enumerate(rows[1:], start=2):
         machine_id = v(values, "機種ID")
         status = v(values, "ステータス")
 
         if not machine_id:
-            skip_report.append((row_no, machine_id, "機種IDが空"))
+            skip_report.append((row_no, machine_id, "skipped", "missing_machine_id"))
             continue
         if machine_id in seen_ids:
-            skip_report.append((row_no, machine_id, "機種ID重複"))
+            skip_report.append((row_no, machine_id, "skipped", "duplicate_machine_id"))
             continue
         if _should_skip_status(status):
-            skip_report.append((row_no, machine_id, "ステータスによりスキップ"))
+            skip_report.append((row_no, machine_id, "skipped", "status_not_ready"))
             continue
 
         seen_ids.add(machine_id)
-        # モード名 0〜7
-        mode_names = [v(values, f"モード{i}", "") for i in range(8)]
-        # 当たり1〜12 をパース
-        bonuses_by_mode: dict[int, list[dict]] = {i: [] for i in range(8)}
+        # モード 0〜7
+        modes: list[dict] = []
+        mode_parse_errors: list[str] = []
+        for i in range(8):
+            raw = v(values, f"モード{i}", "")
+            if not raw:
+                continue
+            parsed = _parse_mode_cell(raw)
+            if not parsed:
+                mode_parse_errors.append(f"モード{i}={raw}")
+            else:
+                modes.append(parsed)
+
+        # 当たり1〜12
+        bonuses: list[dict] = []
+        bonus_parse_errors: list[str] = []
         for i in range(1, 13):
             cell = v(values, f"当たり{i}")
+            if not cell:
+                continue
             parsed = _parse_bonus_cell(cell)
-            if parsed:
-                stay = parsed.pop("stay_mode_id")
-                bonuses_by_mode[stay].append(parsed)
+            if not parsed:
+                bonus_parse_errors.append(f"当たり{i}={cell}")
+            else:
+                bonuses.append(parsed)
+
+        if mode_parse_errors:
+            skip_report.append((row_no, machine_id, "error", "parse_error_mode: " + "; ".join(mode_parse_errors[:3])))
+            continue
+        if bonus_parse_errors:
+            skip_report.append((row_no, machine_id, "error", "parse_error_bonus: " + "; ".join(bonus_parse_errors[:3])))
+            continue
+
+        # 検証: stay_mode_id 内の同名分岐
+        by_stay: dict[int, list[dict]] = {}
+        for b in bonuses:
+            by_stay.setdefault(b["stay_mode_id"], []).append(b)
+        bad_dup = []
+        bad_rowdup = []
+        for stay, lst in by_stay.items():
+            by_name = {}
+            for b in lst:
+                by_name.setdefault(b["name"], []).append(b)
+            for name, items in by_name.items():
+                if len(items) > 1:
+                    if all((it.get("branch_label") or "").strip() == "" for it in items):
+                        bad_dup.append(f"stay={stay},name={name}")
+                seen = set()
+                for it in items:
+                    key = (it["name"], it["next_mode_id"], (it.get("branch_label") or "").strip())
+                    if key in seen:
+                        bad_rowdup.append(f"stay={stay},name={name}")
+                    seen.add(key)
+        if bad_dup:
+            skip_report.append((row_no, machine_id, "error", "duplicate_bonus_name_without_branch: " + ", ".join(bad_dup[:3])))
+            continue
+        if bad_rowdup:
+            skip_report.append((row_no, machine_id, "error", "duplicate_bonus_row: " + ", ".join(bad_rowdup[:3])))
+            continue
 
         valid_rows.append({
             "machine_id": machine_id,
@@ -234,50 +288,49 @@ def load_and_validate_rows(csv_content: str):
             "manufacturer": v(values, "メーカー"),
             "probability": v(values, "確率"),
             "machine_type": v(values, "機種タイプ"),
-            "introduction_date": v(values, "導入開始日") or v(values, "導入日"),
+            "intro_start": v(values, "導入開始日") or v(values, "導入日"),
             "spec": v(values, "スペック"),
             "tags": v(values, "特徴タグ"),
-            "mode_names": mode_names,
-            "bonuses_by_mode": bonuses_by_mode,
+            "status": status,
+            "modes": modes,
+            "bonuses": bonuses,
         })
 
+    # 成功行も export_status に出す
+    for r in valid_rows:
+        skip_report.append((0, r["machine_id"], "exported", ""))
     return valid_rows, skip_report
 
 
 def build_index(rows: list[dict]) -> list[dict]:
-    return [{"machine_id": r["machine_id"], "name": r["name"]} for r in rows]
+    out = []
+    for r in rows:
+        out.append({
+            "machine_id": r["machine_id"],
+            "name": r["name"],
+            "manufacturer": r.get("manufacturer") or "",
+            "probability": r.get("probability") or "",
+            "machine_type": r.get("machine_type") or "",
+            "intro_start": r.get("intro_start") or "",
+            "status": r.get("status") or "",
+        })
+    return out
 
 
 def build_machine_json(row: dict) -> dict:
-    """1行分のデータからアプリ互換の machines/{id}.json 用 dict を組み立てる。"""
-    modes = []
-    for mode_id in range(8):
-        name = (row["mode_names"][mode_id] or "").strip() or (f"モード{mode_id}" if mode_id > 0 else "通常")
-        bonuses = row["bonuses_by_mode"].get(mode_id, [])
-        modes.append({
-            "mode_id": mode_id,
-            "name": name,
-            "bonuses": bonuses,
-        })
-    result = {
+    """1行分のデータから machines/{id}.json 用 dict を組み立てる（新仕様）。"""
+    return {
         "machine_id": row["machine_id"],
         "name": row["name"],
-        "modes": modes,
+        "manufacturer": row.get("manufacturer") or "",
+        "probability": row.get("probability") or "",
+        "machine_type": row.get("machine_type") or "",
+        "intro_start": row.get("intro_start") or "",
+        "spec": row.get("spec") or "",
+        "tags": row.get("tags") or "",
+        "modes": row.get("modes") or [],
+        "bonuses": row.get("bonuses") or [],
     }
-    # 拡張用にマスタ項目を付与（アプリは現状使わない）
-    if row.get("manufacturer"):
-        result["manufacturer"] = row["manufacturer"]
-    if row.get("probability"):
-        result["probability"] = row["probability"]
-    if row.get("machine_type"):
-        result["machine_type"] = row["machine_type"]
-    if row.get("introduction_date"):
-        result["introduction_date"] = row["introduction_date"]
-    if row.get("spec"):
-        result["spec"] = row["spec"]
-    if row.get("tags"):
-        result["tags"] = row["tags"]
-    return result
 
 
 def main() -> None:
@@ -338,10 +391,11 @@ def main() -> None:
     status_path = OUTPUT_DIR / "export_status.csv"
     with open(status_path, "w", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["行番号", "機種ID", "理由"])
-        for row_no, mid, reason in skip_report:
-            w.writerow([row_no, mid, reason])
-    print(f"[convert_master_one_sheet] export_status.csv: {len(skip_report)} 件スキップ -> {status_path}", flush=True)
+        w.writerow(["row_no", "machine_id", "status", "reason", "detail"])
+        for row_no, mid, st, detail in skip_report:
+            reason = detail.split(":")[0].strip() if detail else ""
+            w.writerow([row_no, mid, st, reason, detail])
+    print(f"[convert_master_one_sheet] export_status.csv: {len(skip_report)} 行 -> {status_path}", flush=True)
 
 
 if __name__ == "__main__":

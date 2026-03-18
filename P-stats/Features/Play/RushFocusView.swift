@@ -1,16 +1,20 @@
 import SwiftUI
 import SwiftData
 
-/// RUSHフォーカスモード：上3/16＝損益折れ線、3/16＝連チャン・通算RUSH/単発、1/8＝大当たり履歴、下1/2＝RUSHボタン、右下＝RUSH終了。フェーズ4: machineDetail があればそのモードの bonuses を動的表示。
+/// RUSHフォーカスモード：上3/16＝損益折れ線、3/16＝連チャン・通算RUSH/単発、1/8＝大当たり履歴、下1/2＝RUSHボタン、右下＝RUSH終了。フェーズ4: machineMaster があれば stay_mode_id の bonuses を動的表示。
 struct RushFocusView: View {
     @Bindable var log: GameLog
-    var machineDetail: MachineDetail? = nil
+    var machineMaster: MachineFullMaster? = nil
     let onExit: () -> Void
 
     @State private var showRushEndSheet = false
     // ユニット連結型: 入力中（メイン＋追撃）
-    @State private var activeBonus: BonusDetail?
+    @State private var activeBonus: MasterBonus?
     @State private var activeUnitCount: Int = 0
+    @State private var desiredUnitCount: Int = 0
+    @State private var selectedName: String?
+    @State private var showBranchPicker: Bool = false
+    @State private var branchCandidates: [MasterBonus] = []
 
     private let accent = AppGlassStyle.accent
     private let modeIdRush = 1
@@ -49,7 +53,7 @@ struct RushFocusView: View {
                         .padding(.horizontal, 16)
                         .padding(.vertical, 4)
 
-                    // 下1/2: RUSHボタン（フェーズ4: machineDetail なら bonuses を動的表示）＋右下にRUSH終了
+                    // 下1/2: RUSHボタン（フェーズ4: machineMaster なら bonuses を動的表示）＋右下にRUSH終了
                     ZStack(alignment: .bottomTrailing) {
                         rushBonusButtons
 
@@ -81,7 +85,7 @@ struct RushFocusView: View {
             }
         }
         .sheet(isPresented: $showRushEndSheet) {
-            RushEndInputSheet(log: log, machineDetail: machineDetail, onConfirm: {
+            RushEndInputSheet(log: log, machineMaster: machineMaster, onConfirm: {
                 showRushEndSheet = false
                 log.endRushAndReturnToNormal()
                 onExit()
@@ -91,128 +95,212 @@ struct RushFocusView: View {
 
     @ViewBuilder
     private var rushBonusButtons: some View {
-        if let mode = machineDetail?.modes.first(where: { $0.modeId == modeIdRush }), !mode.bonuses.isEmpty {
-            VStack(spacing: 10) {
-                if let b = activeBonus, b.unitOut > 0 {
-                    // 入力中の合計表示＋追撃ボタン＋確定
-                    let base = max(0, b.baseOut)
-                    let unit = max(0, b.unitOut)
-                    let maxStack = max(1, b.maxStack)
-                    let total = base + unit * activeUnitCount
+        if let master = machineMaster {
+            let list = master.bonuses(forStayModeId: modeIdRush)
+            if list.isEmpty {
+                return AnyView(legacyRushButton)
+            }
+            let grouped = Dictionary(grouping: list, by: { $0.name })
+            let names = grouped.keys.sorted()
+            return AnyView(
+                VStack(spacing: 10) {
+                    if let b = activeBonus, b.hasUnit {
+                        let base = max(0, b.basePayout)
+                        let unit = max(0, b.unitPayout)
+                        let maxStack = max(0, b.maxUnitCount)
+                        let d = min(max(desiredUnitCount, 0), maxStack)
+                        let a = min(max(activeUnitCount, 0), d)
+                        let total = base + unit * a
 
-                    HStack(spacing: 10) {
-                        // メイン（選択中表示のみ）
-                        ZStack {
-                            AppGlassStyle.rushColor.opacity(AppGlassStyle.rushBackgroundOpacity)
-                            VStack(spacing: 6) {
-                                Text(b.name)
-                                    .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                    .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
-                                    .lineLimit(1)
-                                Text("\(total) 玉")
-                                    .font(.system(size: 22, weight: .black, design: .monospaced))
-                                    .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
-                            }
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushStrokeOpacity), lineWidth: 1))
-
-                        // 追撃（サブ）
-                        Button(action: {
-                            guard activeUnitCount < maxStack else { return }
-                            activeUnitCount += 1
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        }) {
-                            ZStack {
-                                AppGlassStyle.rushColor.opacity(0.22)
-                                Text("追撃\n+\(unit)")
-                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                    .foregroundColor(AppGlassStyle.rushColor)
-                                    .multilineTextAlignment(.center)
-                            }
-                            .frame(width: 110, height: 110)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(0.5), lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(activeUnitCount >= maxStack)
-                    }
-
-                    HStack(spacing: 10) {
-                        Button("キャンセル") {
-                            activeBonus = nil
-                            activeUnitCount = 0
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        }
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.8))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.08))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                        Button("確定") {
-                            OrganicHaptics.playRushHeartbeat()
-                            log.recordHit(bonus: b, totalPrize: total, atRotation: log.totalRotations)
-                            activeBonus = nil
-                            activeUnitCount = 0
-                        }
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(AppGlassStyle.rushColor)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                    }
-                }
-
-                // 通常の当たりボタン一覧（編集中は unitOut>0 のボタンを無効化して誤タップ防止）
-                VStack(spacing: 8) {
-                    ForEach(mode.bonuses) { bonus in
-                        Button(action: {
-                            if bonus.unitOut > 0 {
-                                activeBonus = bonus
-                                activeUnitCount = 0
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            } else {
-                                OrganicHaptics.playRushHeartbeat()
-                                log.recordHit(bonus: bonus, atRotation: log.totalRotations)
-                            }
-                        }) {
+                        HStack(spacing: 10) {
                             ZStack {
                                 AppGlassStyle.rushColor.opacity(AppGlassStyle.rushBackgroundOpacity)
-                                Text(bonus.name)
-                                    .font(.system(size: 18, weight: .bold, design: .monospaced))
-                                    .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
-                                    .lineLimit(1)
+                                VStack(spacing: 6) {
+                                    Text(b.name)
+                                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                                        .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
+                                        .lineLimit(1)
+                                    Text("\(total) 玉")
+                                        .font(.system(size: 22, weight: .black, design: .monospaced))
+                                        .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
+                                    Text("追撃 \(a)/\(d)")
+                                        .font(.caption2.weight(.semibold))
+                                        .foregroundColor(.white.opacity(0.7))
+                                }
                             }
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .clipShape(RoundedRectangle(cornerRadius: 16))
                             .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushStrokeOpacity), lineWidth: 1))
+
+                            VStack(spacing: 8) {
+                                Stepper(value: $desiredUnitCount, in: 0...maxStack) {
+                                    Text("回数 \(desiredUnitCount)")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundColor(.white.opacity(0.85))
+                                }
+                                .tint(AppGlassStyle.rushColor)
+
+                                Button(action: {
+                                    guard activeUnitCount < desiredUnitCount else { return }
+                                    activeUnitCount += 1
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                }) {
+                                    ZStack {
+                                        AppGlassStyle.rushColor.opacity(0.22)
+                                        Text("追撃\n+\(unit)")
+                                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                            .foregroundColor(AppGlassStyle.rushColor)
+                                            .multilineTextAlignment(.center)
+                                    }
+                                    .frame(width: 110, height: 44)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(0.5), lineWidth: 1))
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(activeUnitCount >= desiredUnitCount)
+                            }
+                            .frame(width: 150)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(activeBonus != nil && bonus.unitOut > 0 && bonus.id != activeBonus?.id)
+
+                        HStack(spacing: 10) {
+                            Button("キャンセル") {
+                                activeBonus = nil
+                                activeUnitCount = 0
+                                desiredUnitCount = 0
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            }
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundColor(.white.opacity(0.8))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(Color.white.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                            Button("確定") {
+                                OrganicHaptics.playRushHeartbeat()
+                                let total = base + unit * a
+                                let temp = BonusDetail(
+                                    name: b.name,
+                                    baseOut: b.basePayout,
+                                    unitOut: b.unitPayout,
+                                    maxStack: max(1, b.maxConcat),
+                                    ratio: 0,
+                                    densapo: 0,
+                                    nextModeId: b.nextModeId
+                                )
+                                log.recordHit(bonus: temp, totalPrize: total, atRotation: log.totalRotations)
+                                activeBonus = nil
+                                activeUnitCount = 0
+                                desiredUnitCount = 0
+                            }
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(AppGlassStyle.rushColor)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                    }
+
+                    VStack(spacing: 8) {
+                        ForEach(names, id: \.self) { name in
+                            Button(action: {
+                                let variants = grouped[name] ?? []
+                                if variants.count <= 1 {
+                                    let v = variants.first!
+                                    if v.hasUnit {
+                                        activeBonus = v
+                                        activeUnitCount = 0
+                                        desiredUnitCount = 0
+                                    } else {
+                                        OrganicHaptics.playRushHeartbeat()
+                                        let temp = BonusDetail(
+                                            name: v.name,
+                                            baseOut: v.basePayout,
+                                            unitOut: v.unitPayout,
+                                            maxStack: max(1, v.maxConcat),
+                                            ratio: 0,
+                                            densapo: 0,
+                                            nextModeId: v.nextModeId
+                                        )
+                                        log.recordHit(bonus: temp, atRotation: log.totalRotations)
+                                    }
+                                    return
+                                }
+                                // 分岐
+                                selectedName = name
+                                branchCandidates = variants
+                                showBranchPicker = true
+                            }) {
+                                ZStack {
+                                    AppGlassStyle.rushColor.opacity(AppGlassStyle.rushBackgroundOpacity)
+                                    Text(name)
+                                        .font(.system(size: 18, weight: .bold, design: .monospaced))
+                                        .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
+                                        .lineLimit(1)
+                                }
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushStrokeOpacity), lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(activeBonus != nil)
+                        }
                     }
                 }
-            }
-        } else {
-            Button(action: {
-                OrganicHaptics.playRushHeartbeat()
-                log.addWin(type: .rush, atRotation: log.totalRotations)
-            }) {
-                ZStack {
-                    AppGlassStyle.rushColor.opacity(AppGlassStyle.rushBackgroundOpacity)
-                    Text("RUSH")
-                        .font(.system(size: 22, weight: .bold, design: .monospaced))
-                        .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
+                .confirmationDialog("分岐を選択", isPresented: $showBranchPicker, titleVisibility: .visible) {
+                    ForEach(branchCandidates, id: \.id) { v in
+                        let label = (v.branchLabel?.trimmingCharacters(in: .whitespaces).isEmpty == false) ? (v.branchLabel ?? "") : "（未設定）"
+                        Button(label) {
+                            if (v.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty {
+                                return
+                            }
+                            if v.hasUnit {
+                                activeBonus = v
+                                activeUnitCount = 0
+                                desiredUnitCount = 0
+                            } else {
+                                OrganicHaptics.playRushHeartbeat()
+                                let temp = BonusDetail(
+                                    name: v.name,
+                                    baseOut: v.basePayout,
+                                    unitOut: v.unitPayout,
+                                    maxStack: max(1, v.maxConcat),
+                                    ratio: 0,
+                                    densapo: 0,
+                                    nextModeId: v.nextModeId
+                                )
+                                log.recordHit(bonus: temp, atRotation: log.totalRotations)
+                            }
+                        }
+                        .disabled((v.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                } message: {
+                    Text(branchCandidates.contains(where: { ($0.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty })
+                         ? "データ不整合：分岐ラベル未設定があります（選択不可）"
+                         : "分岐ラベルを選択してください")
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushStrokeOpacity), lineWidth: 1))
-            }
-            .buttonStyle(.plain)
+            )
         }
+        return AnyView(legacyRushButton)
+    }
+
+    private var legacyRushButton: some View {
+        Button(action: {
+            OrganicHaptics.playRushHeartbeat()
+            log.addWin(type: .rush, atRotation: log.totalRotations)
+        }) {
+            ZStack {
+                AppGlassStyle.rushColor.opacity(AppGlassStyle.rushBackgroundOpacity)
+                Text("RUSH")
+                    .font(.system(size: 22, weight: .bold, design: .monospaced))
+                    .foregroundColor(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushTitleOpacity))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(AppGlassStyle.rushStrokeOpacity), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     private let panelBg = Color.black.opacity(0.85)
@@ -450,7 +538,7 @@ struct RushFocusView: View {
 // MARK: - RUSH終了入力（獲得出玉＋終了時回転数＋RUSHのゲーム数）
 private struct RushEndInputSheet: View {
     @Bindable var log: GameLog
-    var machineDetail: MachineDetail? = nil
+    var machineMaster: MachineFullMaster? = nil
     let onConfirm: () -> Void
     let onCancel: () -> Void
 
@@ -464,15 +552,15 @@ private struct RushEndInputSheet: View {
     /// 終了時回転数・RUSHゲーム数の選択肢。JSONのRUSHモード bonuses の densapo を重複除いてソート。なければ機種の supportLimit + 共通値
     private var stBasedOptions: [Int] {
         let fallback = Set(Self.commonRotations + [log.selectedMachine.supportLimit]).sorted()
-        guard let rushMode = machineDetail?.modes.first(where: { $0.modeId == 1 }) else { return fallback }
-        let fromJson = Set(rushMode.bonuses.map(\.densapo).filter { $0 > 0 })
-        if fromJson.isEmpty { return fallback }
-        return (fromJson.union(Set(Self.commonRotations))).sorted()
+        guard let rushMode = machineMaster?.modes.first(where: { $0.modeId == 1 }) else { return fallback }
+        let d = rushMode.densapo.intValueOrZero
+        if d <= 0 { return fallback }
+        return (Set([d]).union(Set(Self.commonRotations))).sorted()
     }
 
-    init(log: GameLog, machineDetail: MachineDetail? = nil, onConfirm: @escaping () -> Void, onCancel: @escaping () -> Void) {
+    init(log: GameLog, machineMaster: MachineFullMaster? = nil, onConfirm: @escaping () -> Void, onCancel: @escaping () -> Void) {
         self.log = log
-        self.machineDetail = machineDetail
+        self.machineMaster = machineMaster
         self.onConfirm = onConfirm
         self.onCancel = onCancel
         let support = log.selectedMachine.supportLimit
@@ -555,12 +643,15 @@ private struct RushEndInputSheet: View {
 // MARK: - LT（上位RUSH）フォーカスモード（ゴールド系・LT当たり/LT終了）
 struct LtFocusView: View {
     @Bindable var log: GameLog
-    var machineDetail: MachineDetail? = nil
+    var machineMaster: MachineFullMaster? = nil
     let onExit: () -> Void
 
     // ユニット連結型: 入力中（メイン＋追撃）
-    @State private var activeBonus: BonusDetail?
+    @State private var activeBonus: MasterBonus?
     @State private var activeUnitCount: Int = 0
+    @State private var desiredUnitCount: Int = 0
+    @State private var showBranchPicker: Bool = false
+    @State private var branchCandidates: [MasterBonus] = []
 
     private let accent = AppGlassStyle.ltColor
     private let modeIdLt = 2
@@ -643,13 +734,22 @@ struct LtFocusView: View {
 
     @ViewBuilder
     private var ltBonusButtons: some View {
-        if let mode = machineDetail?.modes.first(where: { $0.modeId == modeIdLt }), !mode.bonuses.isEmpty {
+        if let master = machineMaster {
+            let list = master.bonuses(forStayModeId: modeIdLt)
+            if list.isEmpty {
+                legacyLtButton
+                return
+            }
+            let grouped = Dictionary(grouping: list, by: { $0.name })
+            let names = grouped.keys.sorted()
             VStack(spacing: 10) {
-                if let b = activeBonus, b.unitOut > 0 {
-                    let base = max(0, b.baseOut)
-                    let unit = max(0, b.unitOut)
-                    let maxStack = max(1, b.maxStack)
-                    let total = base + unit * activeUnitCount
+                if let b = activeBonus, b.hasUnit {
+                    let base = max(0, b.basePayout)
+                    let unit = max(0, b.unitPayout)
+                    let maxStack = max(0, b.maxUnitCount)
+                    let d = min(max(desiredUnitCount, 0), maxStack)
+                    let a = min(max(activeUnitCount, 0), d)
+                    let total = base + unit * a
 
                     HStack(spacing: 10) {
                         ZStack {
@@ -662,36 +762,49 @@ struct LtFocusView: View {
                                 Text("\(total) 玉")
                                     .font(.system(size: 22, weight: .black, design: .monospaced))
                                     .foregroundColor(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltTitleOpacity))
+                                Text("追撃 \(a)/\(d)")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundColor(.white.opacity(0.7))
                             }
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltStrokeOpacity), lineWidth: 1))
 
-                        Button(action: {
-                            guard activeUnitCount < maxStack else { return }
-                            activeUnitCount += 1
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        }) {
-                            ZStack {
-                                AppGlassStyle.ltColor.opacity(0.22)
-                                Text("追撃\n+\(unit)")
-                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                    .foregroundColor(AppGlassStyle.ltColor)
-                                    .multilineTextAlignment(.center)
+                        VStack(spacing: 8) {
+                            Stepper(value: $desiredUnitCount, in: 0...maxStack) {
+                                Text("回数 \(desiredUnitCount)")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundColor(.white.opacity(0.85))
                             }
-                            .frame(width: 110, height: 110)
-                            .clipShape(RoundedRectangle(cornerRadius: 16))
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(0.5), lineWidth: 1))
+                            .tint(AppGlassStyle.ltColor)
+
+                            Button(action: {
+                                guard activeUnitCount < desiredUnitCount else { return }
+                                activeUnitCount += 1
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            }) {
+                                ZStack {
+                                    AppGlassStyle.ltColor.opacity(0.22)
+                                    Text("追撃\n+\(unit)")
+                                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                        .foregroundColor(AppGlassStyle.ltColor)
+                                        .multilineTextAlignment(.center)
+                                }
+                                .frame(width: 110, height: 44)
+                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(0.5), lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(activeUnitCount >= desiredUnitCount)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(activeUnitCount >= maxStack)
                     }
 
                     HStack(spacing: 10) {
                         Button("キャンセル") {
                             activeBonus = nil
                             activeUnitCount = 0
+                            desiredUnitCount = 0
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         }
                         .font(.system(size: 14, weight: .bold, design: .monospaced))
@@ -702,9 +815,19 @@ struct LtFocusView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
 
                         Button("確定") {
-                            log.recordHit(bonus: b, totalPrize: total, atRotation: log.totalRotations)
+                            let temp = BonusDetail(
+                                name: b.name,
+                                baseOut: b.basePayout,
+                                unitOut: b.unitPayout,
+                                maxStack: max(1, b.maxConcat),
+                                ratio: 0,
+                                densapo: 0,
+                                nextModeId: b.nextModeId
+                            )
+                            log.recordHit(bonus: temp, totalPrize: total, atRotation: log.totalRotations)
                             activeBonus = nil
                             activeUnitCount = 0
+                            desiredUnitCount = 0
                         }
                         .font(.system(size: 14, weight: .bold, design: .monospaced))
                         .foregroundColor(.black)
@@ -716,19 +839,35 @@ struct LtFocusView: View {
                 }
 
                 VStack(spacing: 8) {
-                    ForEach(mode.bonuses) { bonus in
+                    ForEach(names, id: \.self) { name in
                         Button(action: {
-                            if bonus.unitOut > 0 {
-                                activeBonus = bonus
-                                activeUnitCount = 0
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            } else {
-                                log.recordHit(bonus: bonus, atRotation: log.totalRotations)
+                            let variants = grouped[name] ?? []
+                            if variants.count <= 1 {
+                                let v = variants.first!
+                                if v.hasUnit {
+                                    activeBonus = v
+                                    activeUnitCount = 0
+                                    desiredUnitCount = 0
+                                } else {
+                                    let temp = BonusDetail(
+                                        name: v.name,
+                                        baseOut: v.basePayout,
+                                        unitOut: v.unitPayout,
+                                        maxStack: max(1, v.maxConcat),
+                                        ratio: 0,
+                                        densapo: 0,
+                                        nextModeId: v.nextModeId
+                                    )
+                                    log.recordHit(bonus: temp, atRotation: log.totalRotations)
+                                }
+                                return
                             }
+                            branchCandidates = variants
+                            showBranchPicker = true
                         }) {
                             ZStack {
                                 AppGlassStyle.ltColor.opacity(AppGlassStyle.ltBackgroundOpacity)
-                                Text(bonus.name)
+                                Text(name)
                                     .font(.system(size: 18, weight: .bold, design: .monospaced))
                                     .foregroundColor(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltTitleOpacity))
                                     .lineLimit(1)
@@ -738,26 +877,59 @@ struct LtFocusView: View {
                             .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltStrokeOpacity), lineWidth: 1))
                         }
                         .buttonStyle(.plain)
-                        .disabled(activeBonus != nil && bonus.unitOut > 0 && bonus.id != activeBonus?.id)
+                        .disabled(activeBonus != nil)
                     }
                 }
             }
-        } else {
-            Button(action: {
-                log.addWin(type: .lt, atRotation: log.totalRotations)
-            }) {
-                ZStack {
-                    AppGlassStyle.ltColor.opacity(AppGlassStyle.ltBackgroundOpacity)
-                    Text("LT")
-                        .font(.system(size: 22, weight: .bold, design: .monospaced))
-                        .foregroundColor(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltTitleOpacity))
+            .confirmationDialog("分岐を選択", isPresented: $showBranchPicker, titleVisibility: .visible) {
+                ForEach(branchCandidates, id: \.id) { v in
+                    let label = (v.branchLabel?.trimmingCharacters(in: .whitespaces).isEmpty == false) ? (v.branchLabel ?? "") : "（未設定）"
+                    Button(label) {
+                        if (v.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty { return }
+                        if v.hasUnit {
+                            activeBonus = v
+                            activeUnitCount = 0
+                            desiredUnitCount = 0
+                        } else {
+                            let temp = BonusDetail(
+                                name: v.name,
+                                baseOut: v.basePayout,
+                                unitOut: v.unitPayout,
+                                maxStack: max(1, v.maxConcat),
+                                ratio: 0,
+                                densapo: 0,
+                                nextModeId: v.nextModeId
+                            )
+                            log.recordHit(bonus: temp, atRotation: log.totalRotations)
+                        }
+                    }
+                    .disabled((v.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltStrokeOpacity), lineWidth: 1))
+            } message: {
+                Text(branchCandidates.contains(where: { ($0.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty })
+                     ? "データ不整合：分岐ラベル未設定があります（選択不可）"
+                     : "分岐ラベルを選択してください")
             }
-            .buttonStyle(.plain)
+        } else {
+            legacyLtButton
         }
+    }
+
+    private var legacyLtButton: some View {
+        Button(action: {
+            log.addWin(type: .lt, atRotation: log.totalRotations)
+        }) {
+            ZStack {
+                AppGlassStyle.ltColor.opacity(AppGlassStyle.ltBackgroundOpacity)
+                Text("LT")
+                    .font(.system(size: 22, weight: .bold, design: .monospaced))
+                    .foregroundColor(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltTitleOpacity))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(AppGlassStyle.ltStrokeOpacity), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder

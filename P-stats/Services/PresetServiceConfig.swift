@@ -6,6 +6,6 @@ enum PresetServiceConfig {
     static let defaultMachineMasterDataURL = "https://raw.githubusercontent.com/kzkymr-afk/P-stats/main/machines.json"
 
     /// モード・当たり詳細（index.json / machines/[id].json）の取得元ベースURL。末尾スラッシュなし。
-    /// 例: https://raw.githubusercontent.com/kzkymr-afk/P-stats/main/master_out
-    static let defaultMachineDetailBaseURL = "https://raw.githubusercontent.com/kzkymr-afk/P-stats/main/master_out"
+    /// 例: https://kzkymr-afk.github.io/P-stats/master_out
+    static let defaultMachineDetailBaseURL = "https://kzkymr-afk.github.io/P-stats/master_out"
 }

@@ -70,7 +70,7 @@ struct PlayView: View {
     @State private var tempWinHoldingsBalls: String = ""
     @State private var tempWinHoldingsCount: String = ""
     /// フェーズ4: 機種のモード・当たり詳細（masterID があるときロード）
-    @State private var machineDetail: MachineDetail? = nil
+    @State private var machineMaster: MachineFullMaster? = nil
 
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
@@ -440,7 +440,7 @@ struct PlayView: View {
                         onConfirmRecordHit: { bonus, total in
                             applyRecordHitAndNavigate(bonus: bonus, totalPrize: total)
                         },
-                        machineDetail: machineDetail,
+                        machineMaster: machineMaster,
                         currentModeID: log.currentModeID
                     )
                     .frame(maxWidth: 400)
@@ -515,7 +515,7 @@ struct PlayView: View {
         .animation(.easeInOut(duration: 0.2), value: showHesoAtariModeSheet)
         .task(id: "\(log.selectedMachine.masterID ?? "")|\(log.selectedMachine.name)|\(machineDetailBaseURL)") {
             let base = machineDetailBaseURL.trimmingCharacters(in: .whitespaces)
-            machineDetail = await MachineDetailLoader.fetchMachineDetail(
+            machineMaster = await MachineDetailLoader.fetchMachineDetail(
                 machineId: log.selectedMachine.masterID,
                 machineName: log.selectedMachine.name,
                 baseURL: base.isEmpty ? nil : base
@@ -618,7 +618,7 @@ struct PlayView: View {
             )
         }
         .fullScreenCover(isPresented: $showRushFocusMode) {
-            RushFocusView(log: log, machineDetail: machineDetail) {
+            RushFocusView(log: log, machineMaster: machineMaster) {
                 showRushFocusMode = false
                 if returnToPowerSavingModeAfterExit {
                     showPowerSavingMode = true
@@ -1322,12 +1322,13 @@ struct PlayView: View {
 
     private func handleWinSelection(type: WinType) {
         prepareWinInput(type: type)
-        if let detail = machineDetail,
-           let mode = detail.modes.first(where: { $0.modeId == log.currentModeID }),
-           mode.bonuses.count == 1,
-           let bonus = mode.bonuses.first {
-            applyRecordHitAndNavigate(bonus: bonus)
-            return
+        // フェーズ4: 新マスター（MachineFullMaster）優先。stay_mode_id==current の bonuses が1件なら即確定。
+        if let master = machineMaster {
+            let list = master.bonuses(forStayModeId: log.currentModeID)
+            if list.count == 1, let b = list.first {
+                // MachineFullMaster の bonus を既存 BonusDetail 相当として recordHit するため、WinInputSheetView 経由に寄せる
+                // → ここではシートを出して確定（回転・投資の入力が必要なため）
+            }
         }
         // 通常モードでヘソ当たりが登録されているときは、回転・投資確認なしでヘソ当たり専用シートを表示
         if type == .normal && !log.selectedMachine.hesoAtari.isEmpty {
@@ -1903,7 +1904,7 @@ struct HesoAtariModeSheet: View {
 }
 
 /// 大当たり入力：ヘソ当たり(hesoAtari)または denchu_prizes / prizeEntries を動的表示。通常時は「確認」→「ヘソ当たり選択」の2段階。
-/// フェーズ4: machineDetail + currentModeID があるときはそのモードの bonuses を表示し、確定で onConfirmRecordHit を呼ぶ。
+/// フェーズ4: machineMaster + currentModeID があるときは stay_mode_id==current の bonuses を表示し、確定で onConfirmRecordHit を呼ぶ。
 struct WinInputSheetView: View {
     let machine: Machine
     let winType: WinType
@@ -1917,8 +1918,8 @@ struct WinInputSheetView: View {
     /// フェーズ4: データ駆動時、確定で選択した BonusDetail と「確定した合計出玉」を渡す。
     /// - totalPrize: 基本出玉＋追撃（unitOut×回数）の合計。完結型は基本出玉相当。
     var onConfirmRecordHit: ((BonusDetail, Int) -> Void)? = nil
-    /// フェーズ4: データ駆動用。nil でなければこのモードの bonuses を表示する。
-    var machineDetail: MachineDetail? = nil
+    /// フェーズ4: データ駆動用。nil でなければ stay_mode_id==current の bonuses を表示する。
+    var machineMaster: MachineFullMaster? = nil
     var currentModeID: Int = 0
 
     private let accent = AppGlassStyle.accent
@@ -1926,20 +1927,21 @@ struct WinInputSheetView: View {
     private let panelBgSelected = Color.black.opacity(0.85)
 
     @State private var selectedPrizeIndex: Int = 0
-    @State private var selectedDataDrivenBonusIndex: Int = 0
     /// ユニット連結型: 追撃回数（選択中のボーナスに対して）
     @State private var unitTapCount: Int = 0
+    /// ユーザーが選ぶ「上乗せ回数」(0..max)
+    @State private var desiredUnitCount: Int = 0
     @State private var showExtraFields = false
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
     /// 通常時ヘソ当たりモード: 0=回転・投資確認, 1=ヘソ当たり1〜5選択
     @State private var hesoConfirmStep: Int = 0
 
-    /// フェーズ4: 現在モードの bonuses（2件以上のみ。1件は親でスキップ済み）
-    private var dataDrivenBonuses: (mode: ModeDetail, list: [BonusDetail])? {
-        guard let detail = machineDetail else { return nil }
-        guard let mode = detail.modes.first(where: { $0.modeId == currentModeID }), mode.bonuses.count > 1 else { return nil }
-        return (mode, mode.bonuses)
+    /// フェーズ4: 現在モードの bonuses（stay_mode_id==current）。同名分岐・上乗せを含むためフラットで扱う。
+    private var dataDrivenBonuses: [MasterBonus]? {
+        guard let master = machineMaster else { return nil }
+        let list = master.bonuses(forStayModeId: currentModeID)
+        return list.isEmpty ? nil : list
     }
 
     /// 通常時: ヘソ当たり1〜5（hesoAtari）
@@ -1985,8 +1987,9 @@ struct WinInputSheetView: View {
     }
 
     private var sheetTitle: String {
-        if let pair = dataDrivenBonuses {
-            return pair.mode.name.isEmpty ? "大当たり" : "\(pair.mode.name) 大当たり"
+        if let master = machineMaster,
+           let mode = master.modes.first(where: { $0.modeId == currentModeID }) {
+            return mode.name.isEmpty ? "大当たり" : "\(mode.name) 大当たり"
         }
         return winType == .lt ? "LT大当たり" : (winType == .rush ? "RUSH大当たり" : "通常大当たり")
     }
@@ -1994,11 +1997,27 @@ struct WinInputSheetView: View {
     private var sheetTitleColor: Color {
         AppGlassStyle.modeColor(modeId: currentModeID)
     }
+    
+    private var dataDrivenGroupedNames: [(name: String, variants: [MasterBonus])] {
+        guard let list = dataDrivenBonuses else { return [] }
+        let grouped = Dictionary(grouping: list, by: { $0.name })
+        return grouped.keys.sorted().map { key in
+            (name: key, variants: grouped[key] ?? [])
+        }
+    }
 
-    private var selectedDataDrivenBonus: BonusDetail? {
-        guard let pair = dataDrivenBonuses else { return nil }
-        guard pair.list.indices.contains(selectedDataDrivenBonusIndex) else { return nil }
-        return pair.list[selectedDataDrivenBonusIndex]
+    @State private var selectedDataDrivenNameIndex: Int = 0
+    @State private var selectedBranchIndex: Int = 0
+
+    private var selectedVariants: [MasterBonus] {
+        guard dataDrivenGroupedNames.indices.contains(selectedDataDrivenNameIndex) else { return [] }
+        return dataDrivenGroupedNames[selectedDataDrivenNameIndex].variants
+    }
+    private var selectedVariant: MasterBonus? {
+        guard !selectedVariants.isEmpty else { return nil }
+        if selectedVariants.count == 1 { return selectedVariants[0] }
+        guard selectedVariants.indices.contains(selectedBranchIndex) else { return selectedVariants[0] }
+        return selectedVariants[selectedBranchIndex]
     }
 
     var body: some View {
@@ -2043,33 +2062,76 @@ struct WinInputSheetView: View {
                             Text("回転数・投資を確認して「確定」でヘソ当たり選択へ")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.7))
-                        } else if let pair = dataDrivenBonuses {
+                        } else if dataDrivenBonuses != nil {
                             VStack(spacing: 8) {
-                                ForEach(Array(pair.list.enumerated()), id: \.element.id) { index, bonus in
+                                ForEach(Array(dataDrivenGroupedNames.enumerated()), id: \.offset) { index, item in
                                     Button(action: {
-                                        selectedDataDrivenBonusIndex = index
-                                        unitTapCount = 0 // メインタップ＝基本出玉に戻す
+                                        selectedDataDrivenNameIndex = index
+                                        selectedBranchIndex = 0
+                                        unitTapCount = 0
+                                        desiredUnitCount = 0
                                     }) {
-                                        Text(bonus.name)
+                                        Text(item.name)
                                             .font(.system(size: 15, weight: .semibold, design: .monospaced))
-                                            .foregroundColor(selectedDataDrivenBonusIndex == index ? sheetTitleColor : .white.opacity(0.9))
+                                            .foregroundColor(selectedDataDrivenNameIndex == index ? sheetTitleColor : .white.opacity(0.9))
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 14)
                                             .padding(.horizontal, 12)
-                                            .background(selectedDataDrivenBonusIndex == index ? panelBgSelected : panelBg)
+                                            .background(selectedDataDrivenNameIndex == index ? panelBgSelected : panelBg)
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 12)
-                                                    .stroke(selectedDataDrivenBonusIndex == index ? sheetTitleColor : Color.white.opacity(0.2), lineWidth: selectedDataDrivenBonusIndex == index ? 2 : 1)
+                                                    .stroke(selectedDataDrivenNameIndex == index ? sheetTitleColor : Color.white.opacity(0.2), lineWidth: selectedDataDrivenNameIndex == index ? 2 : 1)
                                             )
                                             .clipShape(RoundedRectangle(cornerRadius: 12))
                                     }
                                     .buttonStyle(.plain)
                                 }
                             }
-                            if let b = selectedDataDrivenBonus, b.unitOut > 0 {
-                                let base = max(0, b.baseOut)
-                                let unit = max(0, b.unitOut)
-                                let maxStack = max(1, b.maxStack)
+
+                            if selectedVariants.count > 1 {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    Text("分岐")
+                                        .font(.subheadline.weight(.semibold))
+                                        .foregroundColor(.white.opacity(0.85))
+                                    VStack(spacing: 8) {
+                                        ForEach(Array(selectedVariants.enumerated()), id: \.element.id) { idx, v in
+                                            let label = (v.branchLabel?.trimmingCharacters(in: .whitespaces).isEmpty == false) ? (v.branchLabel ?? "") : "（未設定）"
+                                            Button(action: {
+                                                selectedBranchIndex = idx
+                                                unitTapCount = 0
+                                                desiredUnitCount = 0
+                                            }) {
+                                                Text(label)
+                                                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                                                    .foregroundColor(selectedBranchIndex == idx ? sheetTitleColor : .white.opacity(0.9))
+                                                    .frame(maxWidth: .infinity)
+                                                    .padding(.vertical, 12)
+                                                    .padding(.horizontal, 12)
+                                                    .background(selectedBranchIndex == idx ? panelBgSelected : panelBg)
+                                                    .overlay(
+                                                        RoundedRectangle(cornerRadius: 12)
+                                                            .stroke(selectedBranchIndex == idx ? sheetTitleColor : Color.white.opacity(0.2), lineWidth: selectedBranchIndex == idx ? 2 : 1)
+                                                    )
+                                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                            }
+                                            .buttonStyle(.plain)
+                                        }
+                                    }
+                                    if selectedVariants.contains(where: { ($0.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty }) {
+                                        Text("データ不整合：同名当たりが複数なのに分岐ラベル未設定があります（マスタを修正してください）")
+                                            .font(.caption)
+                                            .foregroundColor(.red.opacity(0.9))
+                                    }
+                                }
+                                .padding(.top, 6)
+                            }
+
+                            if let v = selectedVariant, v.hasUnit {
+                                let base = max(0, v.basePayout)
+                                let unit = max(0, v.unitPayout)
+                                let maxStack = max(0, v.maxUnitCount)
+                                desiredUnitCount = min(max(desiredUnitCount, 0), maxStack)
+                                unitTapCount = min(max(unitTapCount, 0), desiredUnitCount)
                                 let total = base + unit * unitTapCount
                                 HStack(spacing: 10) {
                                     ZStack {
@@ -2081,7 +2143,7 @@ struct WinInputSheetView: View {
                                             Text("\(total) 玉")
                                                 .font(.system(size: 26, weight: .black, design: .monospaced))
                                                 .foregroundColor(sheetTitleColor)
-                                            Text("追撃 \(unitTapCount)/\(maxStack)")
+                                            Text("追撃 \(unitTapCount)/\(desiredUnitCount)")
                                                 .font(.caption2.weight(.semibold))
                                                 .foregroundColor(.white.opacity(0.6))
                                         }
@@ -2091,24 +2153,34 @@ struct WinInputSheetView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 12))
                                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(sheetTitleColor.opacity(0.6), lineWidth: 1))
 
-                                    Button(action: {
-                                        guard unitTapCount < maxStack else { return }
-                                        unitTapCount += 1
-                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    }) {
-                                        ZStack {
-                                            sheetTitleColor.opacity(0.18)
-                                            Text("追撃\n+\(unit)")
-                                                .font(.system(size: 13, weight: .bold, design: .monospaced))
-                                                .foregroundColor(sheetTitleColor)
-                                                .multilineTextAlignment(.center)
+                                    VStack(spacing: 8) {
+                                        Stepper(value: $desiredUnitCount, in: 0...maxStack) {
+                                            Text("回数 \(desiredUnitCount)")
+                                                .font(.caption.weight(.semibold))
+                                                .foregroundColor(.white.opacity(0.8))
                                         }
-                                        .frame(width: 110, height: 74)
-                                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(sheetTitleColor.opacity(0.6), lineWidth: 1))
+                                        .tint(sheetTitleColor)
+
+                                        Button(action: {
+                                            guard unitTapCount < desiredUnitCount else { return }
+                                            unitTapCount += 1
+                                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                        }) {
+                                            ZStack {
+                                                sheetTitleColor.opacity(0.18)
+                                                Text("追撃\n+\(unit)")
+                                                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                                    .foregroundColor(sheetTitleColor)
+                                                    .multilineTextAlignment(.center)
+                                            }
+                                            .frame(width: 110, height: 44)
+                                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(sheetTitleColor.opacity(0.6), lineWidth: 1))
+                                        }
+                                        .buttonStyle(.plain)
+                                        .disabled(unitTapCount >= desiredUnitCount)
                                     }
-                                    .buttonStyle(.plain)
-                                    .disabled(unitTapCount >= maxStack)
+                                    .frame(width: 140)
                                 }
                                 .padding(.top, 6)
                             }
@@ -2348,16 +2420,31 @@ struct WinInputSheetView: View {
             return
         }
 
-        if let pair = dataDrivenBonuses,
+        if dataDrivenBonuses != nil,
            let onRecordHit = onConfirmRecordHit,
-           selectedDataDrivenBonusIndex < pair.list.count {
-            let b = pair.list[selectedDataDrivenBonusIndex]
-            let base = max(0, b.baseOut)
-            let unit = max(0, b.unitOut)
-            let maxStack = max(1, b.maxStack)
-            let clampedCount = min(max(0, unitTapCount), maxStack)
-            let total = base + unit * clampedCount
-            onRecordHit(b, total)
+           let v = selectedVariant {
+            // 分岐ラベル未設定が混ざっている場合はデータ不整合として弾く
+            if selectedVariants.count > 1,
+               selectedVariants.contains(where: { ($0.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty }) {
+                errorMessage = "データ不整合：同名当たりが複数なのに分岐ラベル未設定があります（マスタを修正してください）"
+                showErrorAlert = true
+                return
+            }
+            let base = max(0, v.basePayout)
+            let unit = max(0, v.unitPayout)
+            let clampedDesired = min(max(0, desiredUnitCount), max(0, v.maxUnitCount))
+            let clampedActual = min(max(0, unitTapCount), clampedDesired)
+            let total = base + unit * clampedActual
+            let temp = BonusDetail(
+                name: v.name,
+                baseOut: v.basePayout,
+                unitOut: v.unitPayout,
+                maxStack: max(1, v.maxConcat),
+                ratio: 0,
+                densapo: 0,
+                nextModeId: v.nextModeId
+            )
+            onRecordHit(temp, total)
             return
         }
 

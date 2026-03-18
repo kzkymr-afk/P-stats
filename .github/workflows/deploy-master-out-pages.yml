@@ -1,0 +1,56 @@
+name: master_out を GitHub Pages に配信
+
+on:
+  schedule:
+    # 毎週土曜 0:00 UTC = 日本時間 9:00（土曜朝）
+    - cron: '0 0 * * 6'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v5
+
+      - name: Python をセットアップ
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: 依存をインストール
+        run: pip install requests
+
+      - name: master_out を生成（CSV→JSON）
+        env:
+          MASTER_ONE_SHEET_CSV_URL: ${{ vars.MASTER_ONE_SHEET_CSV_URL }}
+          MASTER_ONE_SHEET_OUTPUT_DIR: ${{ github.workspace }}/master_out
+          # 完了|公開 などにしたい場合は Repository Variables で上書き
+          MASTER_EXPORT_STATUS_VALUES: ${{ vars.MASTER_EXPORT_STATUS_VALUES }}
+        run: |
+          if [ -z "$MASTER_ONE_SHEET_CSV_URL" ]; then
+            echo "::error::Repository Variables に MASTER_ONE_SHEET_CSV_URL が未設定です。"
+            exit 1
+          fi
+          echo "CSV URL: $MASTER_ONE_SHEET_CSV_URL"
+          python scripts/convert_master_one_sheet.py
+          echo "--- master_out ---"
+          ls -la master_out
+          ls -la master_out/machines | head -n 30 || true
+
+      - name: GitHub Pages（gh-pages ブランチ）へ配信
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: ./master_out
+          destination_dir: master_out
+          force_orphan: true
+
