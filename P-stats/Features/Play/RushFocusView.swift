@@ -225,12 +225,12 @@ struct RushFocusView: View {
                                         )
                                         log.recordHit(bonus: temp, atRotation: log.totalRotations)
                                     }
-                                    return
+                                } else {
+                                    // 分岐
+                                    selectedName = name
+                                    branchCandidates = variants
+                                    showBranchPicker = true
                                 }
-                                // 分岐
-                                selectedName = name
-                                branchCandidates = variants
-                                showBranchPicker = true
                             }) {
                                 ZStack {
                                     AppGlassStyle.rushColor.opacity(AppGlassStyle.rushBackgroundOpacity)
@@ -252,25 +252,25 @@ struct RushFocusView: View {
                     ForEach(branchCandidates, id: \.id) { v in
                         let label = (v.branchLabel?.trimmingCharacters(in: .whitespaces).isEmpty == false) ? (v.branchLabel ?? "") : "（未設定）"
                         Button(label) {
-                            if (v.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty {
-                                return
-                            }
-                            if v.hasUnit {
-                                activeBonus = v
-                                activeUnitCount = 0
-                                desiredUnitCount = 0
-                            } else {
-                                OrganicHaptics.playRushHeartbeat()
-                                let temp = BonusDetail(
-                                    name: v.name,
-                                    baseOut: v.basePayout,
-                                    unitOut: v.unitPayout,
-                                    maxStack: max(1, v.maxConcat),
-                                    ratio: 0,
-                                    densapo: 0,
-                                    nextModeId: v.nextModeId
-                                )
-                                log.recordHit(bonus: temp, atRotation: log.totalRotations)
+                            let trimmed = (v.branchLabel ?? "").trimmingCharacters(in: .whitespaces)
+                            if !trimmed.isEmpty {
+                                if v.hasUnit {
+                                    activeBonus = v
+                                    activeUnitCount = 0
+                                    desiredUnitCount = 0
+                                } else {
+                                    OrganicHaptics.playRushHeartbeat()
+                                    let temp = BonusDetail(
+                                        name: v.name,
+                                        baseOut: v.basePayout,
+                                        unitOut: v.unitPayout,
+                                        maxStack: max(1, v.maxConcat),
+                                        ratio: 0,
+                                        densapo: 0,
+                                        nextModeId: v.nextModeId
+                                    )
+                                    log.recordHit(bonus: temp, atRotation: log.totalRotations)
+                                }
                             }
                         }
                         .disabled((v.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
@@ -798,6 +798,7 @@ struct LtFocusView: View {
                                 .buttonStyle(.plain)
                                 .disabled(activeUnitCount >= desiredUnitCount)
                             }
+                            .frame(width: 150)
                         }
 
                         HStack(spacing: 10) {
@@ -860,10 +861,11 @@ struct LtFocusView: View {
                                         )
                                         log.recordHit(bonus: temp, atRotation: log.totalRotations)
                                     }
-                                    return
+                                } else {
+                                    selectedName = name
+                                    branchCandidates = variants
+                                    showBranchPicker = true
                                 }
-                                branchCandidates = variants
-                                showBranchPicker = true
                             }) {
                                 ZStack {
                                     AppGlassStyle.ltColor.opacity(AppGlassStyle.ltBackgroundOpacity)
@@ -885,22 +887,24 @@ struct LtFocusView: View {
                     ForEach(branchCandidates, id: \.id) { v in
                         let label = (v.branchLabel?.trimmingCharacters(in: .whitespaces).isEmpty == false) ? (v.branchLabel ?? "") : "（未設定）"
                         Button(label) {
-                            if (v.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty { return }
-                            if v.hasUnit {
-                                activeBonus = v
-                                activeUnitCount = 0
-                                desiredUnitCount = 0
-                            } else {
-                                let temp = BonusDetail(
-                                    name: v.name,
-                                    baseOut: v.basePayout,
-                                    unitOut: v.unitPayout,
-                                    maxStack: max(1, v.maxConcat),
-                                    ratio: 0,
-                                    densapo: 0,
-                                    nextModeId: v.nextModeId
-                                )
-                                log.recordHit(bonus: temp, atRotation: log.totalRotations)
+                            let trimmed = (v.branchLabel ?? "").trimmingCharacters(in: .whitespaces)
+                            if !trimmed.isEmpty {
+                                if v.hasUnit {
+                                    activeBonus = v
+                                    activeUnitCount = 0
+                                    desiredUnitCount = 0
+                                } else {
+                                    let temp = BonusDetail(
+                                        name: v.name,
+                                        baseOut: v.basePayout,
+                                        unitOut: v.unitPayout,
+                                        maxStack: max(1, v.maxConcat),
+                                        ratio: 0,
+                                        densapo: 0,
+                                        nextModeId: v.nextModeId
+                                    )
+                                    log.recordHit(bonus: temp, atRotation: log.totalRotations)
+                                }
                             }
                         }
                         .disabled((v.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty)
