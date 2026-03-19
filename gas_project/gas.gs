@@ -1,7 +1,7 @@
 /** マスターシートのスプレッドシートID */
 var SS_ID = "1fSGx5EmcSOD68itgBRxjGyUGz0Wh5u1Lnbw-dyvchz4";
 // デプロイ版の動作確認用（Webアプリがどのコードを動かしているか判別）
-var BUILD_TAG = "2026-03-18_disable_status_autofill_v2";
+var BUILD_TAG = "2026-03-20_master_mode0_7_atari9";
 
 /**
  * 実際のスプレッドシートのヘッダー（A〜AC = 29列）。
@@ -39,7 +39,7 @@ function doPost(e) {
       return createJsonResponse({
         ok: true,
         build_tag: BUILD_TAG,
-        notes: "I列(ステータス)は自動入力しない仕様",
+        notes: "I列手動。マスタ: mode_0〜7、当たり9項目（あたりID/名/…）",
         header_len: HEADER_ROW.length
       });
     }
@@ -107,6 +107,111 @@ function toNumberOr(value, fallback) {
   return isFinite(n) ? n : fallback;
 }
 
+function parseUiRoleLetter_(s) {
+  var t = String(s == null ? "" : s).trim().toLowerCase();
+  if (t === "n" || t === "normal" || t === "通常") return 0;
+  if (t === "l" || t === "lt") return 2;
+  return 1;
+}
+
+function parseDensapoToken_(s) {
+  var t = String(s == null ? "" : s).trim();
+  if (!t) return 0;
+  var low = t.toLowerCase();
+  if (low === "inf" || t === "∞") return "INF";
+  var n = Number(t);
+  return isFinite(n) ? n : 0;
+}
+
+/** モード: mode_N/表示/densapo[/ui_role] のみ。N=0〜7（mode_0=通常、1〜7=特殊） */
+function parseModeCell_(cell) {
+  var raw = String(cell == null ? "" : cell).trim();
+  if (!raw) return null;
+  var parts = raw.split("/").map(function(x) { return String(x).trim(); });
+  if (parts.length < 3) return null;
+  var mm = String(parts[0]).match(/^mode_(\d+)$/i);
+  if (!mm) return null;
+  var mid = parseInt(mm[1], 10);
+  if (mid < 0 || mid > 7) return null;
+  var dens = parseDensapoToken_(parts[2]);
+  var ui = (parts.length >= 4 && parts[3]) ? parseUiRoleLetter_(parts[3]) : (mid === 0 ? 0 : 1);
+  return { mode_id: mid, name: parts[1] || "", densapo: dens, ui_role: ui };
+}
+
+function parseModeRef_(token) {
+  var t = String(token == null ? "" : token).trim();
+  if (!t) return null;
+  var mm = t.match(/^mode_(\d+)$/i);
+  if (mm) {
+    var v = parseInt(mm[1], 10);
+    return (v >= 0 && v <= 7) ? v : null;
+  }
+  var n = toNumberOr(t, NaN);
+  return (isFinite(n) && n >= 0 && n <= 7) ? n : null;
+}
+
+/** あたりID（昇格先含む）を正規化 */
+function normalizeAtariId_(token) {
+  var t = String(token == null ? "" : token).trim();
+  if (!t) return "";
+  var mm = t.match(/^bonus_(\d+)$/i);
+  if (mm) return "bonus_" + parseInt(mm[1], 10);
+  if (/^\d+$/.test(t)) return "bonus_" + parseInt(t, 10);
+  return t;
+}
+
+function normalizePromotionId_(token) {
+  var t = String(token == null ? "" : token).trim();
+  if (!t || t === "-") return null;
+  return normalizeAtariId_(t) || null;
+}
+
+function enrichBonusesNextUiRole_(bonuses, modes) {
+  var byId = {};
+  for (var i = 0; i < modes.length; i++) {
+    byId[modes[i].mode_id] = modes[i];
+  }
+  for (var j = 0; j < bonuses.length; j++) {
+    var nm = bonuses[j].next_mode_id;
+    bonuses[j].next_ui_role = byId[nm] != null ? byId[nm].ui_role : null;
+  }
+}
+
+/**
+ * 当たりセル9項目:
+ * あたりID/あたり名/基本/ユニット/最大連結/滞在モード/移行先/分岐/昇格先
+ */
+function parseAtariCell9_(cell) {
+  var raw = String(cell == null ? "" : cell).trim();
+  if (!raw) return null;
+  var parts = raw.split("/").map(function(x) { return String(x).trim(); });
+  if (parts.length !== 9) return null;
+  var bidRaw = parts[0];
+  var nm = parts[1];
+  if (!bidRaw || !nm) return null;
+  var bonusId = normalizeAtariId_(bidRaw);
+  if (!bonusId) return null;
+  var base = toNumberOr(parts[2], NaN);
+  var unit = toNumberOr(parts[3], NaN);
+  var maxc = toNumberOr(parts[4], NaN);
+  var stay = parseModeRef_(parts[5]);
+  var nxt = parseModeRef_(parts[6]);
+  if (!isFinite(base) || !isFinite(unit) || !isFinite(maxc) || stay === null || nxt === null) return null;
+  var branch = parts[7] || "";
+  var promo = normalizePromotionId_(parts[8]);
+  return {
+    bonus_id: bonusId,
+    name: nm,
+    base_payout: Math.max(0, base),
+    unit_payout: Math.max(0, unit),
+    max_concat: Math.max(0, maxc),
+    stay_mode_id: stay,
+    next_mode_id: nxt,
+    branch_label: branch,
+    promotion_id: promo
+  };
+}
+
 function findRowIndexByMachineId_(sheet, machineId) {
   var lastRow = sheet.getLastRow();
   if (lastRow <= 1) return -1;
@@ -122,56 +227,6 @@ function hasAnyBlankAtoH_(rowAtoH) {
     if (String(rowAtoH[i] || "").trim() === "") return true;
   }
   return false;
-}
-
-/**
- * 当たりセルをパース（後方互換あり）
- * - 新6要素: name/base/unit/max/currentMode/nextMode
- * - 旧4要素: name/payout/currentMode/nextMode（unit=0,max=1）
- * - 旧5要素: name/payout/currentMode/nextMode/densapo（unit=0,max=1）
- */
-function parseAtariCell(cell) {
-  var raw = String(cell == null ? "" : cell).trim();
-  if (!raw) return null;
-  var parts = raw.split("/").map(function(x) { return String(x).trim(); });
-  if (parts.length < 4) return null;
-
-  if (parts.length >= 6) {
-    var name = parts[0];
-    var baseOut = toNumberOr(parts[1], 0);
-    var unitOut = toNumberOr(parts[2], 0);
-    var maxStack = Math.max(1, toNumberOr(parts[3], 1));
-    var currentMode = toNumberOr(parts[4], 0);
-    var nextMode = toNumberOr(parts[5], 0);
-    return {
-      name: name,
-      baseOut: baseOut,
-      unitOut: unitOut,
-      maxStack: maxStack,
-      currentMode: currentMode,
-      nextMode: nextMode,
-      totalMaxOut: baseOut + unitOut * maxStack
-    };
-  }
-
-  // 旧4/旧5
-  var oldName = parts[0];
-  var payout = toNumberOr(parts[1], 0);
-  var oldCurrent = toNumberOr(parts[2], 0);
-  var oldNext = toNumberOr(parts[3], 0);
-  var densapo = parts.length >= 5 ? toNumberOr(parts[4], 0) : 0;
-
-  var obj = {
-    name: oldName,
-    baseOut: payout,
-    unitOut: 0,
-    maxStack: 1,
-    currentMode: oldCurrent,
-    nextMode: oldNext,
-    totalMaxOut: payout
-  };
-  if (densapo) obj.densapo = densapo;
-  return obj;
 }
 
 function buildMachineJsonById(machineId) {
@@ -201,50 +256,31 @@ function buildMachineJsonById(machineId) {
   var tags = String(row[7] || "").trim();
   var status = String(row[8] || "").trim();
 
-  // モード名（J〜Q）
-  var modeNames = [];
-  for (var m = 0; m < 8; m++) modeNames.push(String(row[9 + m] || "").trim());
-
-  // 当たり（R〜AC）
-  var parsedBonuses = [];
-  for (var a = 0; a < 12; a++) {
-    var parsed = parseAtariCell(row[17 + a]);
-    if (parsed) parsedBonuses.push(parsed);
-  }
-
-  // モードごとに束ねる
   var modes = [];
-  for (var modeId = 0; modeId < 8; modeId++) {
-    var bonuses = parsedBonuses
-      .filter(function(b) { return b.currentMode === modeId; })
-      .map(function(b) {
-        return {
-          name: b.name,
-          baseOut: b.baseOut,
-          unitOut: b.unitOut,
-          maxStack: b.maxStack,
-          next_mode_id: b.nextMode,
-          densapo: b.densapo || 0
-        };
-      });
-    modes.push({
-      mode_id: modeId,
-      name: modeNames[modeId] || ("モード" + modeId),
-      bonuses: bonuses
-    });
+  for (var m = 0; m < 8; m++) {
+    var pm = parseModeCell_(row[9 + m]);
+    if (pm) modes.push(pm);
   }
+
+  var flatBonuses = [];
+  for (var a = 0; a < 12; a++) {
+    var nb = parseAtariCell9_(row[17 + a]);
+    if (nb) flatBonuses.push(nb);
+  }
+  enrichBonusesNextUiRole_(flatBonuses, modes);
 
   return {
     machine_id: id,
     name: name,
-    introduction_date: introDate,
     manufacturer: maker,
     probability: probability,
     machine_type: machineType,
+    intro_start: introDate,
     spec: specType,
     tags: tags,
     status: status,
-    modes: modes
+    modes: modes,
+    bonuses: flatBonuses
   };
 }
 

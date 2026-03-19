@@ -65,9 +65,16 @@ enum AnalyticsFixedSpecificDayLabels {
 
 /// データ分析内パネル用スタイル（不透明度を15%上げて背景との重なりで文字が見にくくなるのを軽減）
 private enum AnalyticsPanelStyle {
-    static let panelBackground = Color.black.opacity(0.85)
-    static let rowBackground = Color.black.opacity(0.80)
+    static let panelBackground = Color.black.opacity(0.90)
+    static let rowBackground = Color.black.opacity(0.85)
 }
+
+private let fullJapaneseDateFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.locale = Locale(identifier: "ja_JP")
+    f.dateFormat = "yyyy年M月d日"
+    return f
+}()
 
 // MARK: - 分析フッター（ドック。YouTube風フローティングピル）
 private struct AnalyticsBottomBarView: View {
@@ -1172,11 +1179,7 @@ private struct AnalyticsSessionDetailView: View {
     var body: some View {
         List {
             Section("記録日時") {
-                Text(session.date, style: .date)
-                    .foregroundColor(.white.opacity(0.95))
-                    .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
-                    .listRowBackground(AnalyticsPanelStyle.rowBackground)
-                Text(session.date, style: .time)
+                Text(fullJapaneseDateFormatter.string(from: session.date))
                     .foregroundColor(.white.opacity(0.95))
                     .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                     .listRowBackground(AnalyticsPanelStyle.rowBackground)

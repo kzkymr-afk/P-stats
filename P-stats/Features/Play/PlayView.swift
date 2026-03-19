@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import Combine
 
 struct PlayView: View {
     @Bindable var log: GameLog
@@ -8,6 +9,7 @@ struct PlayView: View {
     var onOpenSettingsTab: (() -> Void)? = nil
     @Environment(\.dismiss) var dismiss // ホームに戻るために必要
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("alwaysShowBothInvestmentButtons") private var alwaysShowBothInvestmentButtons = true
 
     // --- 1. シートの表示管理用変数 ---
@@ -524,6 +526,16 @@ struct PlayView: View {
                 machineName: log.selectedMachine.name,
                 baseURL: base.isEmpty ? nil : base
             )
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .inactive || newPhase == .background {
+                ResumableStateStore.autosave(from: log, force: true)
+            }
+        }
+        /// フリーズ・強制終了対策: 低頻度タイマー＋最短間隔スロットル（バッテリー負荷を抑える）
+        .onReceive(Timer.publish(every: 75, on: .main, in: .common).autoconnect()) { _ in
+            guard scenePhase == .active else { return }
+            ResumableStateStore.autosave(from: log, force: false)
         }
         .onAppear {
             guard !hasRestoredFocusView else { return }
@@ -1352,15 +1364,16 @@ struct PlayView: View {
         log.syncToSnapshot(cashYen: cash, holdingsBalls: hBalls, totalHoldingsCount: hCount)
         log.recordHit(bonus: bonus, totalPrize: totalPrize, atRotation: atRotation)
         showWinInputSheet = false
-        if bonus.nextModeId == 1 {
+        let nextRole = bonus.resolvedNextUiRole
+        if nextRole == 1 {
             OrganicHaptics.playRushHeartbeat()
             showRushFocusMode = true
-        } else if bonus.nextModeId == 2 {
+        } else if nextRole == 2 {
             showRushFocusMode = true
-        } else if bonus.nextModeId == 0 {
+        } else if nextRole == 0 {
             showChanceMode = true
         }
-        if returnToPowerSavingModeAfterExit, bonus.nextModeId == 0 {
+        if returnToPowerSavingModeAfterExit, nextRole == 0 {
             showPowerSavingMode = true
             returnToPowerSavingModeAfterExit = false
         }
@@ -2012,6 +2025,8 @@ struct WinInputSheetView: View {
 
     @State private var selectedDataDrivenNameIndex: Int = 0
     @State private var selectedBranchIndex: Int = 0
+    /// 昇格ボタン押下時に、現在モード外のボーナスへ一時的に差し替える
+    @State private var promotedOverrideVariant: MasterBonus? = nil
 
     private var selectedVariants: [MasterBonus] {
         guard dataDrivenGroupedNames.indices.contains(selectedDataDrivenNameIndex) else { return [] }
@@ -2022,6 +2037,9 @@ struct WinInputSheetView: View {
         if selectedVariants.count == 1 { return selectedVariants[0] }
         guard selectedVariants.indices.contains(selectedBranchIndex) else { return selectedVariants[0] }
         return selectedVariants[selectedBranchIndex]
+    }
+    private var effectiveSelectedVariant: MasterBonus? {
+        promotedOverrideVariant ?? selectedVariant
     }
 
     var body: some View {
@@ -2074,6 +2092,7 @@ struct WinInputSheetView: View {
                                     Button(action: {
                                         selectedDataDrivenNameIndex = index
                                         selectedBranchIndex = 0
+                                        promotedOverrideVariant = nil
                                         unitTapCount = 0
                                         desiredUnitCount = 0
                                     }) {
@@ -2104,6 +2123,7 @@ struct WinInputSheetView: View {
                                             let label = (v.branchLabel?.trimmingCharacters(in: .whitespaces).isEmpty == false) ? (v.branchLabel ?? "") : "（未設定）"
                                             Button(action: {
                                                 selectedBranchIndex = idx
+                                                promotedOverrideVariant = nil
                                                 unitTapCount = 0
                                                 desiredUnitCount = 0
                                             }) {
@@ -2132,13 +2152,35 @@ struct WinInputSheetView: View {
                                 .padding(.top, 6)
                             }
 
-                            if let v = selectedVariant, v.hasUnit {
+                            if let v = effectiveSelectedVariant,
+                               let promotionId = v.promotionTargetBonusId,
+                               !promotionId.trimmingCharacters(in: .whitespaces).isEmpty {
+                                Button(action: {
+                                    applyPromotionIfPossible(from: v)
+                                }) {
+                                    Text("上位ボーナスへ昇格")
+                                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                        .foregroundColor(sheetTitleColor)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .background(sheetTitleColor.opacity(0.16))
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 12)
+                                                .stroke(sheetTitleColor.opacity(0.55), lineWidth: 1)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .padding(.top, 6)
+                            }
+
+                            if let v = effectiveSelectedVariant, v.hasUnit {
                                 let base = max(0, v.basePayout)
                                 let unit = max(0, v.unitPayout)
                                 let maxStack = max(0, v.maxUnitCount)
-                                desiredUnitCount = min(max(desiredUnitCount, 0), maxStack)
-                                unitTapCount = min(max(unitTapCount, 0), desiredUnitCount)
-                                let total = base + unit * unitTapCount
+                                let clampedDesired = min(max(desiredUnitCount, 0), maxStack)
+                                let clampedTapCount = min(max(unitTapCount, 0), clampedDesired)
+                                let total = base + unit * clampedTapCount
                                 HStack(spacing: 10) {
                                     ZStack {
                                         panelBgSelected
@@ -2149,7 +2191,7 @@ struct WinInputSheetView: View {
                                             Text("\(total) 玉")
                                                 .font(.system(size: 26, weight: .black, design: .monospaced))
                                                 .foregroundColor(sheetTitleColor)
-                                            Text("追撃 \(unitTapCount)/\(desiredUnitCount)")
+                                            Text("追撃 \(clampedTapCount)/\(clampedDesired)")
                                                 .font(.caption2.weight(.semibold))
                                                 .foregroundColor(.white.opacity(0.6))
                                         }
@@ -2168,7 +2210,7 @@ struct WinInputSheetView: View {
                                         .tint(sheetTitleColor)
 
                                         Button(action: {
-                                            guard unitTapCount < desiredUnitCount else { return }
+                                            guard unitTapCount < clampedDesired else { return }
                                             unitTapCount += 1
                                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                         }) {
@@ -2184,7 +2226,7 @@ struct WinInputSheetView: View {
                                             .overlay(RoundedRectangle(cornerRadius: 12).stroke(sheetTitleColor.opacity(0.6), lineWidth: 1))
                                         }
                                         .buttonStyle(.plain)
-                                        .disabled(unitTapCount >= desiredUnitCount)
+                                        .disabled(clampedTapCount >= clampedDesired)
                                     }
                                     .frame(width: 140)
                                 }
@@ -2402,6 +2444,20 @@ struct WinInputSheetView: View {
         onConfirm(prizeBalls, resolvedWinType)
     }
 
+    /// 昇格先 bonus_id が見つかれば、選択中ボーナスを上書きして再スタートする
+    private func applyPromotionIfPossible(from variant: MasterBonus) {
+        guard let promotionId = variant.promotionTargetBonusId?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !promotionId.isEmpty else { return }
+        guard let promoted = machineMaster?.bonuses.first(where: { $0.bonusId == promotionId }) else {
+            errorMessage = "昇格先ボーナスが見つかりません（promotion_id: \(promotionId)）"
+            showErrorAlert = true
+            return
+        }
+        promotedOverrideVariant = promoted
+        unitTapCount = 0
+        desiredUnitCount = 0
+    }
+
     private func confirmAction() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         if rotation.trimmingCharacters(in: .whitespaces).isEmpty {
@@ -2428,7 +2484,7 @@ struct WinInputSheetView: View {
 
         if dataDrivenBonuses != nil,
            let onRecordHit = onConfirmRecordHit,
-           let v = selectedVariant {
+           let v = effectiveSelectedVariant {
             // 分岐ラベル未設定が混ざっている場合はデータ不整合として弾く
             if selectedVariants.count > 1,
                selectedVariants.contains(where: { ($0.branchLabel ?? "").trimmingCharacters(in: .whitespaces).isEmpty }) {
@@ -2441,16 +2497,9 @@ struct WinInputSheetView: View {
             let clampedDesired = min(max(0, desiredUnitCount), max(0, v.maxUnitCount))
             let clampedActual = min(max(0, unitTapCount), clampedDesired)
             let total = base + unit * clampedActual
-            let temp = BonusDetail(
-                name: v.name,
-                baseOut: v.basePayout,
-                unitOut: v.unitPayout,
-                maxStack: max(1, v.maxConcat),
-                ratio: 0,
-                densapo: 0,
-                nextModeId: v.nextModeId
-            )
+            let temp = v.asBonusDetail(using: machineMaster)
             onRecordHit(temp, total)
+            promotedOverrideVariant = nil
             return
         }
 

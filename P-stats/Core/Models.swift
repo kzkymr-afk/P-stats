@@ -325,6 +325,8 @@ struct ResumableState: Codable {
     var lendingRecords: [LendingRecord]
     /// フェーズ3: 現在の滞在モードID（0=通常, 1=RUSH, 2=LT）。既存保存データは nil のとき currentState から復元
     var currentModeID: Int? = nil
+    /// 現在のモードの UI ロール（0/1/2）。nil のときは currentModeID から推定
+    var currentModeUiRole: Int? = nil
 }
 
 // --- 3. テーマ定義 (⚠️ここが1回だけであることを確認！) ---

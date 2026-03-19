@@ -17,7 +17,6 @@ struct RushFocusView: View {
     @State private var branchCandidates: [MasterBonus] = []
 
     private let accent = AppGlassStyle.accent
-    private let modeIdRush = 1
     private let bg = AppGlassStyle.background
     private let maxChartHours: Double = 13
 
@@ -96,7 +95,7 @@ struct RushFocusView: View {
     @ViewBuilder
     private var rushBonusButtons: some View {
         if let master = machineMaster {
-            let list = master.bonuses(forStayModeId: modeIdRush)
+            let list = master.bonuses(forStayModeId: log.currentModeID)
             if list.isEmpty {
                 legacyRushButton
             } else {
@@ -179,15 +178,7 @@ struct RushFocusView: View {
                             Button("確定") {
                                 OrganicHaptics.playRushHeartbeat()
                                 let total = base + unit * a
-                                let temp = BonusDetail(
-                                    name: b.name,
-                                    baseOut: b.basePayout,
-                                    unitOut: b.unitPayout,
-                                    maxStack: max(1, b.maxConcat),
-                                    ratio: 0,
-                                    densapo: 0,
-                                    nextModeId: b.nextModeId
-                                )
+                                let temp = b.asBonusDetail(using: machineMaster)
                                 log.recordHit(bonus: temp, totalPrize: total, atRotation: log.totalRotations)
                                 activeBonus = nil
                                 activeUnitCount = 0
@@ -214,15 +205,7 @@ struct RushFocusView: View {
                                         desiredUnitCount = 0
                                     } else {
                                         OrganicHaptics.playRushHeartbeat()
-                                        let temp = BonusDetail(
-                                            name: v.name,
-                                            baseOut: v.basePayout,
-                                            unitOut: v.unitPayout,
-                                            maxStack: max(1, v.maxConcat),
-                                            ratio: 0,
-                                            densapo: 0,
-                                            nextModeId: v.nextModeId
-                                        )
+                                        let temp = v.asBonusDetail(using: machineMaster)
                                         log.recordHit(bonus: temp, atRotation: log.totalRotations)
                                     }
                                 } else {
@@ -260,15 +243,7 @@ struct RushFocusView: View {
                                     desiredUnitCount = 0
                                 } else {
                                     OrganicHaptics.playRushHeartbeat()
-                                    let temp = BonusDetail(
-                                        name: v.name,
-                                        baseOut: v.basePayout,
-                                        unitOut: v.unitPayout,
-                                        maxStack: max(1, v.maxConcat),
-                                        ratio: 0,
-                                        densapo: 0,
-                                        nextModeId: v.nextModeId
-                                    )
+                                    let temp = v.asBonusDetail(using: machineMaster)
                                     log.recordHit(bonus: temp, atRotation: log.totalRotations)
                                 }
                             }
@@ -553,7 +528,9 @@ private struct RushEndInputSheet: View {
     /// 終了時回転数・RUSHゲーム数の選択肢。JSONのRUSHモード bonuses の densapo を重複除いてソート。なければ機種の supportLimit + 共通値
     private var stBasedOptions: [Int] {
         let fallback = Set(Self.commonRotations + [log.selectedMachine.supportLimit]).sorted()
-        guard let rushMode = machineMaster?.modes.first(where: { $0.modeId == 1 }) else { return fallback }
+        let rushMode = machineMaster?.modes.first(where: { $0.uiRole == 1 })
+            ?? machineMaster?.modes.first(where: { $0.modeId == 1 })
+        guard let rushMode else { return fallback }
         let d = rushMode.densapo.intValueOrZero
         if d <= 0 { return fallback }
         return (Set([d]).union(Set(Self.commonRotations))).sorted()
@@ -656,7 +633,6 @@ struct LtFocusView: View {
     @State private var branchCandidates: [MasterBonus] = []
 
     private let accent = AppGlassStyle.ltColor
-    private let modeIdLt = 2
     private let bg = AppGlassStyle.background
     private let panelBg = Color.black.opacity(0.85)
     private var glassStroke: LinearGradient {
@@ -737,7 +713,7 @@ struct LtFocusView: View {
     @ViewBuilder
     private var ltBonusButtons: some View {
         if let master = machineMaster {
-            let list = master.bonuses(forStayModeId: modeIdLt)
+            let list = master.bonuses(forStayModeId: log.currentModeID)
             if list.isEmpty {
                 legacyLtButton
             } else {
@@ -817,15 +793,7 @@ struct LtFocusView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 12))
 
                             Button("確定") {
-                                let temp = BonusDetail(
-                                    name: b.name,
-                                    baseOut: b.basePayout,
-                                    unitOut: b.unitPayout,
-                                    maxStack: max(1, b.maxConcat),
-                                    ratio: 0,
-                                    densapo: 0,
-                                    nextModeId: b.nextModeId
-                                )
+                                let temp = b.asBonusDetail(using: machineMaster)
                                 log.recordHit(bonus: temp, totalPrize: total, atRotation: log.totalRotations)
                                 activeBonus = nil
                                 activeUnitCount = 0
@@ -851,15 +819,7 @@ struct LtFocusView: View {
                                         activeUnitCount = 0
                                         desiredUnitCount = 0
                                     } else {
-                                        let temp = BonusDetail(
-                                            name: v.name,
-                                            baseOut: v.basePayout,
-                                            unitOut: v.unitPayout,
-                                            maxStack: max(1, v.maxConcat),
-                                            ratio: 0,
-                                            densapo: 0,
-                                            nextModeId: v.nextModeId
-                                        )
+                                        let temp = v.asBonusDetail(using: machineMaster)
                                         log.recordHit(bonus: temp, atRotation: log.totalRotations)
                                     }
                                 } else {
@@ -895,15 +855,7 @@ struct LtFocusView: View {
                                     activeUnitCount = 0
                                     desiredUnitCount = 0
                                 } else {
-                                    let temp = BonusDetail(
-                                        name: v.name,
-                                        baseOut: v.basePayout,
-                                        unitOut: v.unitPayout,
-                                        maxStack: max(1, v.maxConcat),
-                                        ratio: 0,
-                                        densapo: 0,
-                                        nextModeId: v.nextModeId
-                                    )
+                                    let temp = v.asBonusDetail(using: machineMaster)
                                     log.recordHit(bonus: temp, atRotation: log.totalRotations)
                                 }
                             }

@@ -28,6 +28,7 @@ jobs:
       - name: 依存をインストール
         run: pip install requests
 
+      # 仕様: mode_0〜mode_7 / 当たり9項目（あたりID先頭）— scripts/convert_master_one_sheet.py と同期
       - name: master_out を生成（CSV→JSON）
         env:
           MASTER_ONE_SHEET_CSV_URL: ${{ vars.MASTER_ONE_SHEET_CSV_URL }}

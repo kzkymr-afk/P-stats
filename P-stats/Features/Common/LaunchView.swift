@@ -36,7 +36,9 @@ struct LaunchView: View {
             withAnimation(.easeInOut(duration: 0.5)) {
                 gradientProgress = 1
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 550_000_000)
+                await Task.yield()
                 onFinish()
             }
         }

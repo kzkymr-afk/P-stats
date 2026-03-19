@@ -16,6 +16,8 @@ final class GameLog {
     var currentState: PlayState = .normal
     /// フェーズ3: 現在の滞在モードID（0=通常, 1=RUSH, 2=LT）。データ駆動の遷移の真実のソース。
     var currentModeID: Int = 0
+    /// 現在滞在モードの UI ロール（0=通常系, 1=RUSH系, 2=LT）。`mode_id` が 1〜8 でも履歴の WinType・表示と整合させる。
+    var currentModeUiRole: Int = 0
     /// 電サポまたは時短の残り回数（0で自動通常復帰）。ST電サポ・通常後の時短の両方で使用
     var remainingSupportCount: Int = 0
     /// 現在の時短/STフェーズ開始時の残り回数（前回大当たり以降のゲーム数表示用）
@@ -79,6 +81,7 @@ final class GameLog {
                 if remainingSupportCount <= 0 {
                     currentState = .normal
                     currentModeID = 0
+                    currentModeUiRole = 0
                     isTimeShortMode = false
                 }
             } else {
@@ -140,27 +143,40 @@ final class GameLog {
         return Int(round(effective1RNetPerRound))
     }
 
-    /// mode_id から WinType を返す（0=通常, 1=RUSH, 2=LT）
-    private static func winType(from modeId: Int) -> WinType {
-        switch modeId {
+    /// ui_role から WinType（0=通常, 1=RUSH, 2=LT）
+    private static func winType(fromUiRole role: Int) -> WinType {
+        switch role {
         case 1: return .rush
         case 2: return .lt
         default: return .normal
         }
     }
 
+    /// `next_mode_id` のみわかっている旧データ向けの ui_role 推定（従来分岐と整合）
+    private static func inferredUiRole(fromModeId modeId: Int) -> Int {
+        switch modeId {
+        case 0: return 0
+        case 1: return 1
+        case 2: return 2
+        default: return 2
+        }
+    }
+
     /// 当たり1回適用後の状態更新（currentModeID / 電サポ・時短 / currentState）。recordHit と addWin の共通処理。
-    private func setStateAfterHit(nextModeId: Int, densapo: Int) {
+    private func setStateAfterHit(nextModeId: Int, densapo: Int, nextUiRole: Int?) {
+        let role = nextUiRole ?? Self.inferredUiRole(fromModeId: nextModeId)
         currentModeID = nextModeId
+        currentModeUiRole = role
         remainingSupportCount = max(0, densapo)
         supportPhaseInitialCount = remainingSupportCount
-        if nextModeId == 0 {
+        switch role {
+        case 0:
             currentState = remainingSupportCount > 0 ? .support : .normal
             isTimeShortMode = remainingSupportCount > 0
-        } else if nextModeId == 1 {
+        case 1:
             currentState = .support
             isTimeShortMode = false
-        } else {
+        default:
             currentState = .lt
             isTimeShortMode = false
         }
@@ -179,7 +195,7 @@ final class GameLog {
         let raw = totalPrize ?? (resolvedBase > 0 ? resolvedBase : effectiveBallsPerHit)
         let prize = max(0, raw)
         var record = WinRecord(
-            type: Self.winType(from: currentModeID),
+            type: Self.winType(fromUiRole: currentModeUiRole),
             prize: prize,
             rotationAtWin: atRotation,
             normalRotationsAtWin: normalRotations
@@ -191,7 +207,11 @@ final class GameLog {
         winRecords.append(record)
         pushUndo(.removeWin(id: record.id))
         totalRotations = atRotation
-        setStateAfterHit(nextModeId: bonus.nextModeId, densapo: bonus.densapo)
+        setStateAfterHit(
+            nextModeId: bonus.nextModeId,
+            densapo: bonus.densapo,
+            nextUiRole: bonus.nextUiRole
+        )
     }
 
     /// 大当たりを1件追加。prizeBalls を指定した場合はその玉数（純増）を使用、nil の場合は effectiveBallsPerHit を使用。
@@ -217,8 +237,8 @@ final class GameLog {
             nextModeId = 1
             densapo = selectedMachine.isST ? selectedMachine.supportLimit : 0
         }
-        currentModeID = nextModeId
-        setStateAfterHit(nextModeId: nextModeId, densapo: densapo)
+        let nextRole: Int = type == .normal ? 0 : (type == .lt ? 2 : 1)
+        setStateAfterHit(nextModeId: nextModeId, densapo: densapo, nextUiRole: nextRole)
     }
 
     /// カウントボタン表示用：前回大当たり以降のゲーム数（時短・ST抜けゲーム数含む）
@@ -459,6 +479,7 @@ final class GameLog {
     /// 手動で通常へ復帰（確変の「通常落ち」やST・時短の手動切り上げ）
     func backToNormalManually() {
         currentModeID = 0
+        currentModeUiRole = 0
         currentState = .normal
         remainingSupportCount = 0
         isTimeShortMode = false
@@ -467,6 +488,7 @@ final class GameLog {
     /// チャンスモードで「時短終了」押下時。通常へ復帰（総回転数は時短中加算していないのでそのまま）
     func endTimeShortAndReturnToNormal() {
         currentModeID = 0
+        currentModeUiRole = 0
         currentState = .normal
         remainingSupportCount = 0
         isTimeShortMode = false
@@ -475,6 +497,7 @@ final class GameLog {
     /// フォーカスモードで「RUSH終了」押下時。通常へ復帰（総回転数はST中加算していないのでそのまま）
     func endRushAndReturnToNormal() {
         currentModeID = 0
+        currentModeUiRole = 0
         currentState = .normal
         remainingSupportCount = 0
         isTimeShortMode = false
@@ -483,6 +506,7 @@ final class GameLog {
     /// フォーカスモードで「LT終了」押下時。通常へ復帰
     func endLtAndReturnToNormal() {
         currentModeID = 0
+        currentModeUiRole = 0
         currentState = .normal
         remainingSupportCount = 0
         isTimeShortMode = false
@@ -491,6 +515,7 @@ final class GameLog {
     /// RUSHモードからLTモードへ切り替え（機種がRUSH→LT可のとき）
     func switchToLtMode() {
         currentModeID = 2
+        currentModeUiRole = 2
         currentState = .lt
         // remainingSupportCount / supportPhaseInitialCount はそのまま
     }
@@ -498,6 +523,7 @@ final class GameLog {
     /// 手動で電サポ中に切り替え（STのときは残り回数をセットしてカウントダウン開始）
     func enterSupportManually() {
         currentModeID = 1
+        currentModeUiRole = 1
         currentState = .support
         isTimeShortMode = false
         if selectedMachine.isST {
@@ -681,7 +707,7 @@ final class GameLog {
             winRecords[lastNormalIndex].nextModeId = 1
         }
         let densapo = selectedMachine.isST ? selectedMachine.supportLimit : 0
-        setStateAfterHit(nextModeId: 1, densapo: densapo)
+        setStateAfterHit(nextModeId: 1, densapo: densapo, nextUiRole: 1)
     }
 
     /// 最後に記録した通常大当たりをLT大当たりに昇格させ、LTモードへ移行する。recordHit 相当の状態遷移に寄せた実装。
@@ -691,7 +717,7 @@ final class GameLog {
             winRecords[lastNormalIndex].nextModeId = 2
         }
         let densapo = selectedMachine.isST ? selectedMachine.supportLimit : 0
-        setStateAfterHit(nextModeId: 2, densapo: densapo)
+        setStateAfterHit(nextModeId: 2, densapo: densapo, nextUiRole: 2)
     }
 
     /// 投資1件の内容を差し替え（履歴編集用・timestamp は維持）
@@ -726,6 +752,7 @@ final class GameLog {
         normalRotations = 0
         currentState = .normal
         currentModeID = 0
+        currentModeUiRole = 0
         remainingSupportCount = 0
         supportPhaseInitialCount = 0
         isTimeShortMode = false
@@ -747,6 +774,8 @@ final class GameLog {
         initialDisplayRotation = state.initialDisplayRotation
         currentState = state.currentState
         currentModeID = state.currentModeID ?? Self.resolvedModeID(from: state.currentState, isTimeShortMode: state.isTimeShortMode)
+        currentModeUiRole = state.currentModeUiRole
+            ?? Self.inferredUiRole(fromModeId: currentModeID)
         remainingSupportCount = state.remainingSupportCount
         supportPhaseInitialCount = state.supportPhaseInitialCount
         isTimeShortMode = state.isTimeShortMode

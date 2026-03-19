@@ -285,6 +285,8 @@ private struct AppBootstrapView: View {
             await MainActor.run {
                 modelContainer = container
             }
+            // 次フレームまで譲り、SwiftUI が最初の本編レイアウトを先に進められるようにする（起動直後のタップ劣化対策）
+            await Task.yield()
         }
     }
 }
@@ -612,8 +614,9 @@ struct HomeView: View {
             MachineShopSelectionView(log: log, gateMode: true, onGateStart: { showMachineShopGate = false; isPlaying = true }, onGateCancel: { showMachineShopGate = false })
         }
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .background {
-                ResumableStateStore.save(from: log)
+            // inactive: 電源・Appスイッチャー・着信等で先に呼ばれる。background 待ちだと保存が間に合わないことがある
+            if newPhase == .inactive || newPhase == .background {
+                ResumableStateStore.autosave(from: log, force: true)
             }
         }
         .fullScreenCover(isPresented: $showContinueSelection) {
@@ -774,8 +777,8 @@ struct HomeView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .opacity(appeared ? 1 : 0)
-        .offset(y: appeared ? 0 : 30)
+        // opacity 0 だと起動直後〜アニメ中にタップが効かないケースがあるため、不透明度は維持しオフセットのみ演出する
+        .offset(y: appeared ? 0 : 14)
         .onAppear {
             withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) { appeared = true }
         }
@@ -807,7 +810,7 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(cardPad)
-            .background(Color.black.opacity(0.70), in: RoundedRectangle(cornerRadius: 14))
+            .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 14))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(
@@ -855,7 +858,7 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(cardPad)
-            .background(Color.black.opacity(0.70), in: RoundedRectangle(cornerRadius: 14))
+            .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 14))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(
@@ -876,81 +879,88 @@ struct HomeView: View {
     }
 
     private func mainActionsGrid(side: CGFloat, gridSpacing: CGFloat) -> some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: gridSpacing), count: 2), spacing: gridSpacing) {
-            HomeGridButton(title: "新規スタート", icon: "plus.circle", cyan: cyan, size: side) {
-                HapticUtil.impact(.medium)
-                log.reset()
-                ResumableStateStore.clear()
-                showMachineShopGate = true
-            }
-            HomeGridButton(title: "続きから", icon: "play.circle", cyan: cyan, size: side) {
-                HapticUtil.impact(.medium)
-                if let state = ResumableStateStore.load(),
-                   let machine = machines.first(where: { $0.name == state.machineName }),
-                   let shop = shops.first(where: { $0.name == state.shopName }) {
-                    log.applyResumableState(state, machine: machine, shop: shop)
-                    isPlaying = true
-                } else {
-                    continueRestoreFailed = ResumableStateStore.load() != nil
-                    showContinueSelection = true
+        // 左: 新規スタート・シンプル入力を各々 side×side（従来の新規スタートと同サイズ）
+        // 右: 続きから・実践履歴・データ分析を縦3等分（左列の総高さと一致）
+        let leftColumnTotalHeight = 2 * side + gridSpacing
+
+        return HStack(alignment: .top, spacing: gridSpacing) {
+            VStack(spacing: gridSpacing) {
+                HomeGridButton(title: "新規スタート", icon: "plus.circle", cyan: cyan, size: side) {
+                    HapticUtil.impact(.medium)
+                    log.reset()
+                    ResumableStateStore.clear()
+                    showMachineShopGate = true
+                }
+                HomeGridButton(title: "シンプル入力", icon: "square.and.pencil", cyan: cyan, size: side) {
+                    HapticUtil.impact(.medium)
+                    showGameSessionEdit = true
                 }
             }
-            historyAndSimpleCell(side: side, gridSpacing: gridSpacing, cyan: cyan, onHistoryTap: {
-                homeNavigationPath = [.history]
-            }, onSimpleTap: {
-                showGameSessionEdit = true
-            })
-            Button {
-                homeNavigationPath = [.analytics]
-            } label: {
-                HomeGridButtonLabel(title: "データ分析", icon: "chart.bar", cyan: cyan, size: side)
-                    .contentShape(Rectangle())
+            .frame(width: side)
+
+            GeometryReader { geo in
+                let rowH = max(48, (geo.size.height - 2 * gridSpacing) / 3)
+                VStack(spacing: gridSpacing) {
+                    Button {
+                        HapticUtil.impact(.medium)
+                        if let state = ResumableStateStore.load(),
+                           let machine = machines.first(where: { $0.name == state.machineName }),
+                           let shop = shops.first(where: { $0.name == state.shopName }) {
+                            log.applyResumableState(state, machine: machine, shop: shop)
+                            isPlaying = true
+                        } else {
+                            continueRestoreFailed = ResumableStateStore.load() != nil
+                            showContinueSelection = true
+                        }
+                    } label: {
+                        HomeGridButtonLabelSplit(
+                            title: "続きから",
+                            icon: "play.circle",
+                            cyan: cyan,
+                            width: side,
+                            height: rowH
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        HapticUtil.impact(.medium)
+                        homeNavigationPath = [.history]
+                    } label: {
+                        HomeGridButtonLabelSplit(
+                            title: "実践履歴",
+                            icon: "calendar",
+                            cyan: cyan,
+                            width: side,
+                            height: rowH
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        HapticUtil.impact(.medium)
+                        homeNavigationPath = [.analytics]
+                    } label: {
+                        HomeGridButtonLabelSplit(
+                            title: "データ分析",
+                            icon: "chart.bar",
+                            cyan: cyan,
+                            width: side,
+                            height: rowH
+                        )
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .frame(width: side, height: geo.size.height, alignment: .top)
             }
-            .buttonStyle(.plain)
+            .frame(width: side, height: leftColumnTotalHeight)
         }
     }
 
-    // MARK: - 実戦履歴（上下2分割）＋シンプル収支入力
-    private func historyAndSimpleCell(
-        side: CGFloat,
-        gridSpacing: CGFloat,
-        cyan: Color,
-        onHistoryTap: @escaping () -> Void,
-        onSimpleTap: @escaping () -> Void
-    ) -> some View {
-        // グリッドの縦間隔（gridSpacing）より狭く、でもゼロにはしない
-        let innerGap = max(8, gridSpacing * 0.45)
-        let subHeight = max(44, (side - innerGap) / 2)
-
-        return VStack(spacing: innerGap) {
-            Button { onSimpleTap() } label: {
-                HomeGridButtonLabelSplit(
-                    title: "シンプル収支入力",
-                    icon: "square.and.pencil",
-                    cyan: cyan,
-                    width: side,
-                    height: subHeight
-                )
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            Button { onHistoryTap() } label: {
-                HomeGridButtonLabelSplit(
-                    title: "実戦履歴",
-                    icon: "calendar",
-                    cyan: cyan,
-                    width: side,
-                    height: subHeight
-                )
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-        }
-        .frame(width: side, height: side)
-    }
-
-    // MARK: - 実戦履歴・シンプル収支入力（高さ可変ラベル）
+    // MARK: - ホーム右列など（高さ可変ラベル）
     private struct HomeGridButtonLabelSplit: View {
         let title: String
         let icon: String
@@ -975,7 +985,7 @@ struct HomeView: View {
             }
             .foregroundColor(.white.opacity(0.95))
             .frame(width: width, height: height)
-            .background(Color.black.opacity(0.70), in: RoundedRectangle(cornerRadius: cornerRadius))
+            .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: cornerRadius))
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .stroke(
@@ -1076,7 +1086,7 @@ struct HomeGridButtonLabel: View {
         }
         .foregroundColor(.white.opacity(0.95))
         .frame(width: size, height: size)
-        .background(Color.black.opacity(0.70), in: RoundedRectangle(cornerRadius: 20))
+        .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 20))
         .overlay(
             RoundedRectangle(cornerRadius: 20)
                 .stroke(
@@ -1119,7 +1129,7 @@ struct HomeGridButton: View {
             }
             .foregroundColor(.white.opacity(0.95))
             .frame(width: size, height: size)
-            .background(Color.black.opacity(0.70), in: RoundedRectangle(cornerRadius: 20))
+            .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 20))
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
                     .stroke(
@@ -1165,11 +1175,6 @@ struct MachineManagementView: View {
 
     private var cyan: Color { AppGlassStyle.accent }
 
-    // 「機種名が7件表示される高さ」で固定表示するための目安
-    private let visibleMachineCount = 7
-    private let machineRowHeight: CGFloat = 48
-    private var machineListHeight: CGFloat { CGFloat(visibleMachineCount) * machineRowHeight }
-
     /// 実戦履歴ベース：新しい順（未使用の機種は後ろへ）
     private var recencyOrderedMachines: [Machine] {
         let order = recentSessions.reduce(into: [String]()) { acc, s in
@@ -1194,13 +1199,9 @@ struct MachineManagementView: View {
         }
     }
 
-    // 通常表示は「最新7件を上に固定」＋「残りは並べ替え結果を反映」
+    // 通常表示は最新遊技順。並べ替えモード時のみ手動順を反映。
     private var machinesForList: [Machine] {
-        if isReorderMode { return orderedMachines }
-        let top = Array(recencyOrderedMachines.prefix(visibleMachineCount))
-        let topIDs = Set(top.map(\.persistentModelID))
-        let rest = orderedMachines.filter { !topIDs.contains($0.persistentModelID) }
-        return top + rest
+        isReorderMode ? orderedMachines : recencyOrderedMachines
     }
 
     private func saveMachineOrder(_ list: [Machine]) {
@@ -1208,6 +1209,8 @@ struct MachineManagementView: View {
     }
 
     var body: some View {
+        // bottomTrailing: フル画面の List がスクロール・スワイプを受け取る。FAB はドック直上の右下。
+        // 行に listSelectionStyle() を付けない（DragGesture minimumDistance:0 が List の縦スクロール・swipeActions と競合するため）
         ZStack(alignment: .bottomTrailing) {
             StaticHomeBackgroundView()
             List {
@@ -1217,9 +1220,10 @@ struct MachineManagementView: View {
                             .foregroundColor(.white)
                         Spacer()
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                     .padding(.vertical, 12)
                     .listRowBackground(AppGlassStyle.rowBackground)
-                    .listSelectionStyle()
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button {
                             machineToEdit = m
@@ -1230,12 +1234,6 @@ struct MachineManagementView: View {
                             let arr = orderedMachines.filter { $0.persistentModelID != m.persistentModelID }
                             saveMachineOrder(arr)
                         } label: { Label("削除", systemImage: "trash") }
-                        Button {
-                            // 現在表示中の順で並べ替えモードに入る（並べ替え時の体感ジャンプを減らす）
-                            saveMachineOrder(machinesForList)
-                            withAnimation(.easeInOut(duration: 0.25)) { isReorderMode = true }
-                        } label: { Label("並べ替え", systemImage: "line.3.horizontal") }
-                        .tint(cyan)
                     }
                     .moveDisabled(!isReorderMode)
                 }
@@ -1246,9 +1244,10 @@ struct MachineManagementView: View {
                     saveMachineOrder(arr)
                 }
             }
-            .frame(height: machineListHeight)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .contentMargins(.bottom, 76, for: .scrollContent)
             .environment(\.editMode, .constant(isReorderMode ? .active : .inactive))
 
             Button {
@@ -1263,8 +1262,10 @@ struct MachineManagementView: View {
             }
             .buttonStyle(.plain)
             .padding(.trailing, 20)
-            .padding(.bottom, 24)
+            .padding(.bottom, 12)
         }
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
         .toolbar {
@@ -1323,6 +1324,7 @@ struct ShopManagementView: View {
     }
 
     var body: some View {
+        // 行に listSelectionStyle() を付けない（機種管理と同様、List のスクロール・swipeActions と競合するため）
         ZStack(alignment: .bottomTrailing) {
             StaticHomeBackgroundView()
             List {
@@ -1346,9 +1348,10 @@ struct ShopManagementView: View {
                             }
                         }
                         .padding(.vertical, 12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
                     .listRowBackground(AppGlassStyle.rowBackground)
-                    .listSelectionStyle()
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
                             modelContext.delete(s)
@@ -1369,8 +1372,10 @@ struct ShopManagementView: View {
                     saveShopOrder(arr)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
+            .contentMargins(.bottom, 76, for: .scrollContent)
             .environment(\.editMode, .constant(isReorderMode ? .active : .inactive))
 
             Button {
@@ -1385,8 +1390,10 @@ struct ShopManagementView: View {
             }
             .buttonStyle(.plain)
             .padding(.trailing, 20)
-            .padding(.bottom, 24)
+            .padding(.bottom, 12)
         }
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
         .toolbar {
@@ -1838,7 +1845,7 @@ struct ContinuePlaySelectionView: View {
                                                 .font(.body.weight(.semibold))
                                                 .foregroundColor(.white)
                                             Spacer()
-                                            Text(session.date, style: .date)
+                                            Text(fullJapaneseDateFormatter.string(from: session.date))
                                                 .font(.caption)
                                                 .foregroundColor(.white.opacity(0.95))
                                                 .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
@@ -1900,16 +1907,23 @@ struct ContinuePlaySelectionView: View {
 }
 
 // --- 実戦ログ・期待値収支（日付でグループ化） ---
+private let fullJapaneseDateFormatter: DateFormatter = {
+    let f = DateFormatter()
+    f.locale = Locale(identifier: "ja_JP")
+    f.dateFormat = "yyyy年M月d日"
+    return f
+}()
+
 private let sessionDateFormatter: DateFormatter = {
     let f = DateFormatter()
-    f.dateStyle = .medium
-    f.timeStyle = .none
     f.locale = Locale(identifier: "ja_JP")
+    f.dateFormat = "yyyy年M月d日"
     return f
 }()
 
 struct HistoryListView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @Query(sort: \GameSession.date, order: .reverse) var sessions: [GameSession]
     @State private var sessionToEdit: GameSession?
 
@@ -1935,6 +1949,7 @@ struct HistoryListView: View {
                                     HistorySessionCard(session: session)
                                 }
                                 .buttonStyle(.plain)
+                                .contentShape(Rectangle())
                                 .contextMenu {
                                     Button {
                                         sessionToEdit = session
@@ -1962,8 +1977,20 @@ struct HistoryListView: View {
             }
         }
         .navigationTitle("実戦履歴")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    Label("戻る", systemImage: "chevron.left")
+                }
+            }
+        }
         .sheet(item: $sessionToEdit) { s in
             NavigationStack {
                 SessionEditView(session: s)
@@ -2006,11 +2033,7 @@ struct SessionDetailView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     detailPanel(title: "記録日時") {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(session.date, style: .date)
-                                .font(.body)
-                                .foregroundColor(labelColor)
-                                .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
-                            Text(session.date, style: .time)
+                            Text(fullJapaneseDateFormatter.string(from: session.date))
                                 .font(.body)
                                 .foregroundColor(labelColor)
                                 .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)

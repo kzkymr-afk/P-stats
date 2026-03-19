@@ -31,8 +31,8 @@ enum DesignTokens {
     }
 
     enum Opacity {
-        static let rowBackground: Double = 0.65
-        static let cardBackground: Double = 0.70
+        static let rowBackground: Double = 0.70
+        static let cardBackground: Double = 0.75
         static let rushBackground: Double = 0.12
         static let normalBackground: Double = 0.12
         static let ltBackground: Double = 0.12

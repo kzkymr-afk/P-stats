@@ -4,13 +4,29 @@ import Foundation
 enum ResumableStateStore {
     private static let fileName = "resumable_session.json"
 
+    /// 通常のオートセーブ（タスクループ等）で短時間に連続書き込みしないための間隔。inactive/background は無視される
+    private static var lastAutosaveAt: Date?
+    private static let autosaveMinInterval: TimeInterval = 25
+
     private static var fileURL: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent(fileName)
     }
 
-    /// 現在のログ状態を保存（保存して終了時・バックグラウンド時に呼ぶ）
+    /// バッテリー・I/O 配慮付きオートセーブ。
+    /// - `force: true` … 非アクティブ化・バックグラウンド等。間隔制限なしで必ず保存。
+    /// - `force: false` … 実戦中の定期保存。`autosaveMinInterval` 秒以内の再呼び出しはスキップ。
+    static func autosave(from log: GameLog, force: Bool) {
+        if !force {
+            let now = Date()
+            if let t = lastAutosaveAt, now.timeIntervalSince(t) < autosaveMinInterval { return }
+        }
+        save(from: log)
+    }
+
+    /// 現在のログ状態を保存（セッション確定時・明示保存用。スロットルなし）
     static func save(from log: GameLog) {
+        lastAutosaveAt = Date()
         let state = ResumableState(
             machineName: log.selectedMachine.name,
             shopName: log.selectedShop.name,
@@ -25,7 +41,8 @@ enum ResumableStateStore {
             adjustedNetPerRound: log.adjustedNetPerRound,
             winRecords: log.winRecords,
             lendingRecords: log.lendingRecords,
-            currentModeID: log.currentModeID
+            currentModeID: log.currentModeID,
+            currentModeUiRole: log.currentModeUiRole
         )
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: fileURL)
