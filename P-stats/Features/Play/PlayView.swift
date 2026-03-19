@@ -808,12 +808,12 @@ struct PlayView: View {
                 Button(action: { showSettingsSheet = true; haptic(.light) }) {
                     HStack(alignment: .center, spacing: 8) {
                         Text(log.selectedMachine.name)
-                            .font(.system(size: 15, weight: .bold, design: .monospaced))
+                            .font(AppTypography.sectionSubheading)
                             .foregroundColor(.white)
                             .lineLimit(1)
                         Text(log.selectedShop.name)
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.85))
+                            .font(AppTypography.bodyRounded)
+                            .foregroundColor(.white.opacity(0.9))
                             .lineLimit(1)
                             .truncationMode(.tail)
                     }
@@ -826,12 +826,12 @@ struct PlayView: View {
                 Button(action: { showSettingsSheet = true; haptic(.light) }) {
                     HStack(alignment: .center, spacing: 8) {
                         Text(log.selectedMachine.name)
-                            .font(.system(size: 15, weight: .bold, design: .monospaced))
+                            .font(AppTypography.sectionSubheading)
                             .foregroundColor(.white)
                             .lineLimit(1)
                         Text(log.selectedShop.name)
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.85))
+                            .font(AppTypography.bodyRounded)
+                            .foregroundColor(.white.opacity(0.9))
                             .lineLimit(1)
                             .truncationMode(.tail)
                     }
@@ -843,7 +843,12 @@ struct PlayView: View {
         }
         .padding(.horizontal, 12)
         .frame(height: height)
-        .background(playHeaderBackground)
+        // カスタム実戦背景上でも機種名が読めるよう、情報行と同系の角丸＋枠線プレートに載せる
+        .background(playHeaderBackground, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(glassStroke(tint: focusAccent), lineWidth: playPanelStrokeLineWidth)
+        )
     }
 
     private func headerRowUndoButton() -> some View {
@@ -875,13 +880,13 @@ struct PlayView: View {
     private func winCountPanel(height: CGFloat) -> some View {
         HStack(spacing: 16) {
             Text("RUSH")
-                .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                .font(AppTypography.sectionSubheading)
                 .foregroundColor(AppGlassStyle.rushColor.opacity(0.95))
             Text("\(log.rushWinCount)回")
                 .font(.system(size: 17, weight: .bold, design: .monospaced))
                 .foregroundColor(focusAccent)
             Text("通常")
-                .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                .font(AppTypography.sectionSubheading)
                 .foregroundColor(AppGlassStyle.normalColor.opacity(0.95))
             Text("\(log.normalWinCount)回")
                 .font(.system(size: 17, weight: .bold, design: .monospaced))
@@ -924,8 +929,8 @@ struct PlayView: View {
                     HStack {
                         HStack(spacing: 4) {
                             Text("総回転数")
-                                .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                .foregroundColor(focusAccent.opacity(0.7))
+                                .font(AppTypography.sectionSubheading)
+                                .foregroundColor(focusAccent.opacity(0.85))
                             InfoIconView(explanation: "ゲーム開始から現在までの通常回転の累積（時短・電サポを除く）。金を払って回した回転数。", tint: focusAccent.opacity(0.6))
                         }
                         Spacer()
@@ -940,8 +945,8 @@ struct PlayView: View {
                     HStack {
                         HStack(spacing: 4) {
                             Text("理論値")
-                                .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                .foregroundColor(focusAccent.opacity(0.7))
+                                .font(AppTypography.sectionSubheading)
+                                .foregroundColor(focusAccent.opacity(0.85))
                             InfoIconView(explanation: "実質回転率÷実戦基準値。1.0で基準、1.0超で理論値プラス。", tint: focusAccent.opacity(0.6))
                         }
                         Spacer()
@@ -955,8 +960,8 @@ struct PlayView: View {
                 infoStatPanel {
                     HStack {
                         Text("総投入")
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
-                            .foregroundColor(focusAccent.opacity(0.7))
+                            .font(AppTypography.sectionSubheading)
+                            .foregroundColor(focusAccent.opacity(0.85))
                         Spacer()
                         Text(log.totalInput.formattedPtWithUnit)
                             .font(.system(size: 16, weight: .bold, design: .monospaced))
@@ -968,8 +973,8 @@ struct PlayView: View {
                 infoStatPanel {
                     HStack {
                         Text("総持ち玉投資")
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
-                            .foregroundColor(focusAccent.opacity(0.7))
+                            .font(AppTypography.sectionSubheading)
+                            .foregroundColor(focusAccent.opacity(0.85))
                         Spacer()
                         Text("\(log.holdingsInvestedBalls)玉")
                             .font(.system(size: 16, weight: .bold, design: .monospaced))
@@ -981,8 +986,8 @@ struct PlayView: View {
                 infoStatPanel {
                     HStack {
                         Text("持ち玉")
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
-                            .foregroundColor(focusAccent.opacity(0.7))
+                            .font(AppTypography.sectionSubheading)
+                            .foregroundColor(focusAccent.opacity(0.85))
                         Spacer()
                         Text("\(log.totalHoldings)玉")
                             .font(.system(size: 16, weight: .bold, design: .monospaced))
@@ -1577,19 +1582,20 @@ struct BorderMeterView: View {
                 .frame(maxHeight: .infinity)
 
                 // 横バーの下：実質回転率・表面回転率の2種（表面はやや控えめ）
+                // ゲージは上半円プレート内。見出しを本文より一段大きく（装飾目盛 -5/±0/+5 はサイズ優先のため据え置き）
                 VStack(spacing: 4) {
                     HStack(spacing: 6) {
                         Text("実質回転率")
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.85))
+                            .font(AppTypography.sectionSubheading)
+                            .foregroundColor(.white.opacity(0.92))
                         Text(gaugeEnabled ? String(format: "%.1f", realRate) : "\(normalRotations)")
                             .font(.system(size: valueFontSize, weight: .bold, design: .monospaced))
                             .foregroundColor(markerColor)
                     }
                     HStack(spacing: 6) {
                         Text("表面回転率")
-                            .font(.system(size: 9, weight: .medium, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.6))
+                            .font(AppTypography.bodyRounded)
+                            .foregroundColor(.white.opacity(0.72))
                         Text(gaugeEnabled && rotationPer1000Yen > 0 ? String(format: "%.1f", rotationPer1000Yen) : "—")
                             .font(.system(size: 12, weight: .regular, design: .monospaced))
                             .foregroundColor(.white.opacity(0.65))
@@ -1704,9 +1710,10 @@ struct WinHistoryBarChartView: View {
                 }
             }
             .frame(maxWidth: .infinity)
+            // 棒グラフエリア内の見出し（親パネルの上に重なるため、角丸プレート上のラベルとして読みやすいサイズに）
             Text("大当たり履歴")
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundColor(.white.opacity(0.7))
+                .font(AppTypography.sectionSubheading)
+                .foregroundColor(.white.opacity(0.92))
                 .padding(8)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .allowsHitTesting(false)

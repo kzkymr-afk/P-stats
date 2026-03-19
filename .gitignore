@@ -7,3 +7,9 @@ node_modules/
 # ログファイルや一時ファイル
 *.log
 .DS_Store
+
+# Xcode ユーザー固有（ウィンドウ状態・個人 schemes）
+**/xcuserdata/
+
+# ローカル CI / エージェント用 DerivedData（ワークスペース内ビルド）
+.DerivedData/

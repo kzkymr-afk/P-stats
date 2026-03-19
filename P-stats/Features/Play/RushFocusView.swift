@@ -1103,8 +1103,6 @@ struct ChainAndTotalWinCountView: View {
             labelValue("RUSH", log.rushWinCount)
             labelValue("単発", log.normalWinCount)
         }
-        .font(.system(size: 14, weight: .semibold, design: .monospaced))
-        .foregroundColor(.white.opacity(0.95))
         .frame(maxWidth: .infinity)
         .frame(height: 36)
         .padding(.horizontal, 12)
@@ -1116,8 +1114,10 @@ struct ChainAndTotalWinCountView: View {
     private func labelValue(_ label: String, _ value: Int) -> some View {
         HStack(spacing: 4) {
             Text(label)
-                .foregroundColor(.white.opacity(0.75))
+                .font(AppTypography.sectionSubheading)
+                .foregroundColor(.white.opacity(0.88))
             Text("\(value)回")
+                .font(AppTypography.bodyMonoSemibold)
                 .foregroundColor(accent.opacity(0.95))
         }
     }

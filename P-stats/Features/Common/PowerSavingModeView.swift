@@ -155,7 +155,11 @@ struct PowerSavingModeView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(Color.black.opacity(0.85))
+            .background(Color.black.opacity(0.85), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
+            )
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)
@@ -165,11 +169,12 @@ struct PowerSavingModeView: View {
     private func row(label: String, value: String) -> some View {
         HStack(spacing: 8) {
             Text(label)
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundColor(cyan.opacity(0.85))
+                .font(AppTypography.sectionSubheading)
+                .foregroundColor(cyan.opacity(0.9))
             Spacer(minLength: 4)
             Text(value)
-                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .font(AppTypography.bodyMonoSemibold)
+                .fontWeight(.bold)
                 .foregroundColor(cyan)
         }
         .padding(.vertical, 6)

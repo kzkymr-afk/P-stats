@@ -118,11 +118,11 @@ struct MachineShopSelectionView: View {
         }
     }
 
-    /// パネル共通：セクション見出し（新規遊技開始パネル用・大きく太字）
+    /// パネル共通：セクション見出し（`AppTypography.panelHeading` に統一）
     private func sectionTitle(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 16, weight: .bold, design: .rounded))
-            .foregroundColor(accent.opacity(0.9))
+            .font(AppTypography.panelHeading)
+            .foregroundColor(.white.opacity(0.95))
     }
 
     /// パネル共通：グラスカード（インサイト・収支パネルと同じスタイル）
@@ -139,7 +139,7 @@ struct MachineShopSelectionView: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Text(title)
-                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                    .font(AppTypography.bodyRounded)
                     .foregroundColor(.white)
                     .multilineTextAlignment(.leading)
                 Spacer(minLength: 8)
@@ -161,76 +161,78 @@ struct MachineShopSelectionView: View {
     private var gateModeContent: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 20) {
-                // 機種（最新風：タップで選ぶカードリスト）
-                VStack(alignment: .leading, spacing: 10) {
-                    sectionTitle("機種")
-                    if savedMachines.isEmpty {
-                        HStack {
-                            Text("機種がありません")
-                                .font(.system(size: 14, weight: .medium, design: .rounded))
-                                .foregroundColor(.white.opacity(0.85))
-                            Spacer()
-                            Button(action: { showNewMachineSheet = true }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.subheadline)
-                                    Text("追加")
-                                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                // 機種（見出し＋リストを1カードに収める）
+                glassCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        sectionTitle("機種")
+                        if savedMachines.isEmpty {
+                            HStack {
+                                Text("機種がありません")
+                                    .font(AppTypography.bodyRounded)
+                                    .foregroundColor(.white.opacity(0.9))
+                                Spacer()
+                                Button(action: { showNewMachineSheet = true }) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "plus.circle.fill")
+                                            .font(.subheadline)
+                                        Text("追加")
+                                            .font(AppTypography.bodyRounded)
+                                            .fontWeight(.semibold)
+                                    }
+                                    .foregroundColor(accent)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
                                 }
-                                .foregroundColor(accent)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
-                        }
-                        .padding(16)
-                        .background(AppGlassStyle.rowBackground, in: RoundedRectangle(cornerRadius: 12))
-                    } else {
-                        VStack(spacing: 8) {
-                            ForEach(sortedMachines) { m in
-                                gateSelectRow(
-                                    title: m.name,
-                                    isSelected: log.selectedMachine.persistentModelID == m.persistentModelID
-                                ) {
-                                    log.selectedMachine = m
+                        } else {
+                            VStack(spacing: 8) {
+                                ForEach(sortedMachines) { m in
+                                    gateSelectRow(
+                                        title: m.name,
+                                        isSelected: log.selectedMachine.persistentModelID == m.persistentModelID
+                                    ) {
+                                        log.selectedMachine = m
+                                    }
                                 }
                             }
                         }
                     }
                 }
 
-                // 店舗（同様にタップで選ぶカードリスト）
-                VStack(alignment: .leading, spacing: 10) {
-                    sectionTitle("店舗")
-                    if savedShops.isEmpty {
-                        HStack {
-                            Text("店舗がありません")
-                                .font(.system(size: 14, weight: .medium, design: .rounded))
-                                .foregroundColor(.white.opacity(0.85))
-                            Spacer()
-                            Button(action: { showNewShopSheet = true }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.subheadline)
-                                    Text("追加")
-                                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                // 店舗（見出し＋リストを1カードに収める）
+                glassCard {
+                    VStack(alignment: .leading, spacing: 10) {
+                        sectionTitle("店舗")
+                        if savedShops.isEmpty {
+                            HStack {
+                                Text("店舗がありません")
+                                    .font(AppTypography.bodyRounded)
+                                    .foregroundColor(.white.opacity(0.9))
+                                Spacer()
+                                Button(action: { showNewShopSheet = true }) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "plus.circle.fill")
+                                            .font(.subheadline)
+                                        Text("追加")
+                                            .font(AppTypography.bodyRounded)
+                                            .fontWeight(.semibold)
+                                    }
+                                    .foregroundColor(accent)
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 8)
                                 }
-                                .foregroundColor(accent)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 8)
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
-                        }
-                        .padding(16)
-                        .background(AppGlassStyle.rowBackground, in: RoundedRectangle(cornerRadius: 12))
-                    } else {
-                        VStack(spacing: 8) {
-                            ForEach(sortedShops) { s in
-                                gateSelectRow(
-                                    title: s.name,
-                                    isSelected: log.selectedShop.persistentModelID == s.persistentModelID
-                                ) {
-                                    log.selectedShop = s
+                        } else {
+                            VStack(spacing: 8) {
+                                ForEach(sortedShops) { s in
+                                    gateSelectRow(
+                                        title: s.name,
+                                        isSelected: log.selectedShop.persistentModelID == s.persistentModelID
+                                    ) {
+                                        log.selectedShop = s
+                                    }
                                 }
                             }
                         }
@@ -245,10 +247,11 @@ struct MachineShopSelectionView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(spacing: 4) {
                                 Text("開始時の回転数")
-                                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                                    .foregroundColor(accent.opacity(0.9))
+                                    .font(AppTypography.panelHeading)
+                                    .foregroundColor(.white.opacity(0.95))
                                 Text("（必須）")
-                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                    .font(AppTypography.bodyRounded)
+                                    .fontWeight(.bold)
                                     .foregroundColor(.red)
                             }
                             HStack {
@@ -429,6 +432,8 @@ struct MachineShopSelectionView: View {
                 .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
             } header: {
                 Text("機種")
+                    .font(AppTypography.panelHeading)
+                    .foregroundColor(.white.opacity(0.95))
             }
 
             Section {
@@ -488,6 +493,8 @@ struct MachineShopSelectionView: View {
                 .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
             } header: {
                 Text("店舗")
+                    .font(AppTypography.panelHeading)
+                    .foregroundColor(.white.opacity(0.95))
             }
 
             Section {

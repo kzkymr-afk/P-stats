@@ -449,8 +449,8 @@ struct InsightPanelView: View {
     /// パネルタイトル用（閲覧・収支・今回の遊技情報・修正・モード切替）
     private func panelTitle(_ s: String) -> some View {
         Text(s)
-            .font(.system(size: 11, weight: .semibold, design: .rounded))
-            .foregroundColor(cyan.opacity(0.75))
+            .font(AppTypography.insightPanelTitle)
+            .foregroundColor(cyan.opacity(0.85))
             .textCase(.uppercase)
     }
 

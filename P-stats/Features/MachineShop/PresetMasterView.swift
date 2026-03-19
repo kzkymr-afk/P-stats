@@ -18,7 +18,7 @@ struct PresetMasterListView: View {
                     .foregroundStyle(.white.opacity(0.7))
                     .listRowBackground(AppGlassStyle.rowBackground)
             }
-            Section("登録済みマスタ機種") {
+            Section {
                 if presets.isEmpty {
                     Text("まだ登録がありません。「追加」でマスタ機種を登録してください。")
                         .font(.caption)
@@ -53,6 +53,10 @@ struct PresetMasterListView: View {
                         }
                     }
                 }
+            } header: {
+                Text("登録済みマスタ機種")
+                    .font(AppTypography.panelHeading)
+                    .foregroundStyle(.white.opacity(0.95))
             }
         }
         .listStyle(.plain)

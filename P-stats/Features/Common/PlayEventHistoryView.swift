@@ -19,21 +19,29 @@ struct PlayEventHistoryView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("大当たり履歴") {
+                Section {
                     ForEach(log.winRecords.sorted { ($0.timestamp ?? .distantPast) > ($1.timestamp ?? .distantPast) }) { record in
                         winRow(record)
                             .contentShape(Rectangle())
                             .onTapGesture { openEditWin(record) }
                     }
                     .onDelete(perform: deleteWins)
+                } header: {
+                    Text("大当たり履歴")
+                        .font(AppTypography.panelHeading)
+                        .foregroundStyle(.white.opacity(0.95))
                 }
-                Section("投資履歴") {
+                Section {
                     ForEach(log.lendingRecords.sorted { $0.timestamp > $1.timestamp }) { record in
                         lendingRow(record)
                             .contentShape(Rectangle())
                             .onTapGesture { openEditLending(record) }
                     }
                     .onDelete(perform: deleteLendings)
+                } header: {
+                    Text("投資履歴")
+                        .font(AppTypography.panelHeading)
+                        .foregroundStyle(.white.opacity(0.95))
                 }
             }
             .navigationTitle("大当たり・投資履歴")

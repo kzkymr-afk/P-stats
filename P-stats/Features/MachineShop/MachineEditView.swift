@@ -280,7 +280,7 @@ struct MachineEditView: View, Equatable {
     private func editPanel<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.subheadline.weight(.semibold))
+                .font(AppTypography.panelHeading)
                 .foregroundColor(.white.opacity(0.95))
             content()
         }
@@ -295,7 +295,7 @@ struct MachineEditView: View, Equatable {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center) {
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.panelHeading)
                     .foregroundColor(.white.opacity(0.95))
                 Spacer(minLength: 8)
                 trailing()

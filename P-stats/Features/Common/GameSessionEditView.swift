@@ -1,14 +1,6 @@
 import SwiftUI
 import SwiftData
 
-/// 実践日などの表示統一（例: 2026年3月19日）
-private let gameSessionJapaneseDateFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.locale = Locale(identifier: "ja_JP")
-    f.dateFormat = "yyyy年M月d日"
-    return f
-}()
-
 struct GameSessionEditView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -134,7 +126,7 @@ struct GameSessionEditView: View {
     private var simpleInputSections: some View {
         Section {
             LabeledContent("実践日") {
-                Text(gameSessionJapaneseDateFormatter.string(from: date))
+                Text(JapaneseDateFormatters.yearMonthDay.string(from: date))
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.trailing)
             }
@@ -171,7 +163,7 @@ struct GameSessionEditView: View {
     private var fullInputSections: some View {
         Section {
             LabeledContent("実践日") {
-                Text(gameSessionJapaneseDateFormatter.string(from: date))
+                Text(JapaneseDateFormatters.yearMonthDay.string(from: date))
                     .foregroundStyle(.primary)
             }
             DatePicker("", selection: $date, displayedComponents: .date)

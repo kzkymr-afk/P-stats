@@ -69,13 +69,6 @@ private enum AnalyticsPanelStyle {
     static let rowBackground = Color.black.opacity(0.85)
 }
 
-private let fullJapaneseDateFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.locale = Locale(identifier: "ja_JP")
-    f.dateFormat = "yyyy年M月d日"
-    return f
-}()
-
 // MARK: - 分析フッター（ドック。YouTube風フローティングピル）
 private struct AnalyticsBottomBarView: View {
     @Binding var bottomSegment: AnalyticsBottomSegment
@@ -364,7 +357,7 @@ struct AnalyticsDashboardView: View {
         HStack {
             HStack(spacing: 2) {
                 Text(title)
-                    .font(.system(size: 10))
+                    .font(AppTypography.bodyRounded)
                     .foregroundStyle(mutedGray)
                 if let exp = explanation {
                     InfoIconView(explanation: exp, tint: mutedGray)
@@ -372,7 +365,7 @@ struct AnalyticsDashboardView: View {
             }
             Spacer(minLength: 4)
             Text(value)
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .font(.system(size: 15, weight: .semibold, design: .monospaced))
                 .foregroundColor(valueColor)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
@@ -433,13 +426,23 @@ struct AnalyticsDashboardView: View {
                 .font(.system(size: 48))
                 .foregroundColor(cyan.opacity(0.5))
             Text("データがありません")
-                .font(.headline)
+                .font(AppTypography.panelHeading)
                 .foregroundColor(.white)
             Text("実戦を保存するとここに集計が表示されます")
-                .font(.subheadline)
-                .foregroundColor(mutedGray)
+                .font(AppTypography.bodyRounded)
+                .foregroundColor(.white.opacity(0.75))
                 .multilineTextAlignment(.center)
         }
+        .padding(.vertical, 28)
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity)
+        .background(AnalyticsPanelStyle.panelBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -1035,10 +1038,7 @@ private struct CalendarHeatmapSection: View {
     }
 
     private func monthHeaderLabel(_ monthStart: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy年M月"
-        f.locale = Locale(identifier: "ja_JP")
-        return f.string(from: monthStart)
+        JapaneseDateFormatters.yearMonth.string(from: monthStart)
     }
 
     private func cellView(profit: Int, maxAbs: Int, date: Date, day: Int, selectedDay: Binding<Date?>) -> some View {
@@ -1179,7 +1179,7 @@ private struct AnalyticsSessionDetailView: View {
     var body: some View {
         List {
             Section("記録日時") {
-                Text(fullJapaneseDateFormatter.string(from: session.date))
+                Text(JapaneseDateFormatters.yearMonthDay.string(from: session.date))
                     .foregroundColor(.white.opacity(0.95))
                     .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                     .listRowBackground(AnalyticsPanelStyle.rowBackground)
@@ -1252,10 +1252,7 @@ private struct AnalyticsDayDetailView: View {
     }
 
     private var dayTitle: String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy年M月d日"
-        f.locale = Locale(identifier: "ja_JP")
-        return f.string(from: day)
+        JapaneseDateFormatters.yearMonthDay.string(from: day)
     }
 
     var body: some View {
@@ -1925,15 +1922,15 @@ struct AnalyticsGroupCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
                         Text(group.label)
-                            .font(.subheadline.weight(.semibold))
+                            .font(AppTypography.panelHeading)
                             .foregroundColor(.white)
                         Text("（遊技回数：\(group.sessionCount)回）")
                             .font(.caption2)
                             .foregroundColor(.white.opacity(0.65))
                     }
                     Text(secondLineText)
-                        .font(.caption2)
-                        .foregroundColor(.white.opacity(0.65))
+                        .font(AppTypography.bodyRounded)
+                        .foregroundColor(.white.opacity(0.7))
                 }
                 Spacer()
             }
@@ -1941,32 +1938,35 @@ struct AnalyticsGroupCard: View {
                 // 実成績を最前面に（強調）
                 VStack(alignment: .leading, spacing: 2) {
                     Text("実成績")
-                        .font(.system(size: 10))
-                        .foregroundColor(.white.opacity(0.65))
+                        .font(AppTypography.sectionSubheading)
+                        .foregroundColor(.white.opacity(0.8))
                     Text("\(group.totalProfit >= 0 ? "+" : "")\(group.totalProfit.formattedPtWithUnit)")
-                        .font(.subheadline.monospacedDigit().weight(.semibold))
+                        .font(AppTypography.bodyMonoSemibold)
+                        .monospacedDigit()
                         .foregroundColor(group.totalProfit >= 0 ? effectiveAccent : effectiveLossColor)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text("理論")
-                        .font(.system(size: 10))
-                        .foregroundColor(.white.opacity(0.65))
+                        .font(AppTypography.sectionSubheading)
+                        .foregroundColor(.white.opacity(0.8))
                     Text("\(group.totalTheoreticalProfit >= 0 ? "+" : "")\(group.totalTheoreticalProfit)")
-                        .font(.caption.monospacedDigit())
+                        .font(AppTypography.bodyMonoSemibold)
+                        .monospacedDigit()
                         .foregroundColor(.white.opacity(0.85))
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text("期待比")
-                        .font(.system(size: 10))
-                        .foregroundColor(.white.opacity(0.65))
+                        .font(AppTypography.sectionSubheading)
+                        .foregroundColor(.white.opacity(0.8))
                     Text("\(group.totalDeficitSurplus >= 0 ? "+" : "")\(group.totalDeficitSurplus.formattedPtWithUnit)")
-                        .font(.caption.monospacedDigit().weight(.semibold))
+                        .font(AppTypography.bodyMonoSemibold)
+                        .monospacedDigit()
                         .foregroundColor(group.totalDeficitSurplus >= 0 ? effectiveAccent : effectiveLossColor)
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     Text("理論との差")
-                        .font(.system(size: 9))
-                        .foregroundColor(.white.opacity(0.5))
+                        .font(AppTypography.bodyRounded)
+                        .foregroundColor(.white.opacity(0.55))
                     DeficitSurplusBarView(
                         deficitSurplus: group.totalDeficitSurplus,
                         accent: effectiveAccent,

@@ -64,8 +64,8 @@
 |------|-----------------|
 | 実戦画面本体 | `PlayView.swift` |
 | ゲージ | `BorderMeterView`（同ファイル内） |
-| 背景保存・読み込み | `P_statsApp.swift` の `PlayBackgroundStore` / `PlayView` の `playBackgroundLayer` |
-| 設定（実戦画面の背景） | `P_statsApp.swift` の `SettingsTabView`、`playViewBackgroundStyle` / `playViewBackgroundImagePath` |
+| 背景保存・読み込み | `App/PlayBackgroundStore.swift` と `PlayView` の `playBackgroundLayer`（カスタム画像選択は `App/SettingsTabView.swift`） |
+| 設定（実戦画面の背景） | `App/SettingsTabView.swift` の `playViewBackgroundStyle` / `playViewBackgroundImagePath` |
 
 ---
 

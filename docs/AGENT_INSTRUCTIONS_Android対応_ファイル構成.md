@@ -16,7 +16,7 @@
 
 ```
 P-stats/
-├── P_statsApp.swift                    # エントリポイント・@main のみ
+├── P_statsApp.swift                    # @main・WindowGroup のみ（Bootstrap は App/AppBootstrap.swift）
 ├── App/                                # アプリ全体で1つだけのもの
 │   ├── HomeBackgroundStore.swift
 │   ├── PlayBackgroundStore.swift
