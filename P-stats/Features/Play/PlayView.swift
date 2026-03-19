@@ -1329,7 +1329,7 @@ struct PlayView: View {
         // フェーズ4: 新マスター（MachineFullMaster）優先。stay_mode_id==current の bonuses が1件なら即確定。
         if let master = machineMaster {
             let list = master.bonuses(forStayModeId: log.currentModeID)
-            if list.count == 1, let b = list.first {
+            if list.count == 1 {
                 // MachineFullMaster の bonus を既存 BonusDetail 相当として recordHit するため、WinInputSheetView 経由に寄せる
                 // → ここではシートを出して確定（回転・投資の入力が必要なため）
             }
@@ -2025,12 +2025,14 @@ struct WinInputSheetView: View {
     }
 
     var body: some View {
+        let isDataDriven = dataDrivenBonuses != nil
+        let titleColor: Color = isDataDriven ? sheetTitleColor : .white
         VStack(alignment: .leading, spacing: 0) {
             // ヘッダー：タイトル＋キャンセル（コンパクト）。フェーズ4: データ駆動時はモード名・色
             HStack {
                 Text(sheetTitle)
                     .font(.title3.weight(.bold))
-                    .foregroundColor(dataDrivenBonuses != nil ? sheetTitleColor : .white)
+                    .foregroundColor(titleColor)
                 Spacer()
                 Button("キャンセル") { onCancel() }
                     .font(.subheadline.weight(.medium))

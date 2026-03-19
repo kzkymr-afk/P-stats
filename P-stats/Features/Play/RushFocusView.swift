@@ -651,6 +651,7 @@ struct LtFocusView: View {
     @State private var activeBonus: MasterBonus?
     @State private var activeUnitCount: Int = 0
     @State private var desiredUnitCount: Int = 0
+    @State private var selectedName: String?
     @State private var showBranchPicker: Bool = false
     @State private var branchCandidates: [MasterBonus] = []
 
