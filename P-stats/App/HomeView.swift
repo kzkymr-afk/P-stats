@@ -617,7 +617,7 @@ struct HomeView: View {
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
                 .background(
-                    TranslucentBlurView(style: .systemUltraThinMaterialDark, alpha: 1.0)
+                    Color.black
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .clipShape(RoundedRectangle(cornerRadius: 28))
                 )
@@ -637,7 +637,7 @@ struct HomeView: View {
                         )
                 )
                 .padding(.horizontal, contentHorizontalPadding(geo.size.width))
-                .padding(.bottom, 10) // 本物のiPhoneドックに近い位置（ホームインジケータ直上）
+                .padding(.bottom, 0)
             }
         }
     }

@@ -50,11 +50,10 @@ struct MachineEditView: View, Equatable {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
-    @Query(sort: \PrizeSet.name) private var prizeSets: [PrizeSet]
     @Query(sort: \PresetMachine.name) private var allPresets: [PresetMachine]
     @State private var machineName: String = ""
     @State private var selectedMachineType: MachineType = .kakugen
-    @State private var supportLimit: String = "160"
+    @State private var supportLimit: String = "0"
     @State private var timeShortRotations: String = "0"
     @State private var defaultPrize: String = "1500"
     @State private var probability: String = ""
@@ -95,13 +94,15 @@ struct MachineEditView: View, Equatable {
     @State private var machineMasterItems: [MachineMasterItem] = []
     @State private var showMasterPicker = false
     @State private var masterSearchText: String = ""
+    /// マスター由来の導入開始日（表示のみ）
+    @State private var introductionDateDisplay: String = ""
     
     @State private var isDMMPanelExpanded = false
     /// 機種を検索で選んだプリセットの id（選択中をハイライトする用）
     @State private var selectedPresetId: String? = nil
     @FocusState private var isPresetSearchFocused: Bool
 
-    struct DraftPrize: Identifiable {
+    private struct DraftPrize: Identifiable {
         let id = UUID()
         var label: String
         var balls: Int
@@ -116,13 +117,9 @@ struct MachineEditView: View, Equatable {
                     AppGlassStyle.background.ignoresSafeArea()
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 16) {
-                            editPanel(title: "機種名・メーカー") { machineNamePanel }
                             presetPanel
-                            editPanel(title: "通常時の当選確率") { probabilityPanel }
-                            editPanel(title: "公式ボーダー（等価ベース）") { borderPanel }
-                            editPanel(title: "大当たり種類（ヘソ・通常時）") { hesoAtariPanel }
-                            editPanel(title: "時短ゲーム数") { timeShortPanel }
-                            editPanel(title: "電サポ回数（STゲーム数）") { supportLimitPanel }
+                            editPanel(title: "機種概要") { machineOverviewPanel }
+                            editPanel(title: "公式ボーダー（等価ベース）") { borderPanelWithDmmLink }
                             editPanel(title: "データの共有") {
                                 Toggle("この機種データをみんなとシェアする", isOn: $shareWithEveryone)
                                     .tint(accent)
@@ -174,7 +171,7 @@ struct MachineEditView: View, Equatable {
                             showErrorAlert = true
                             return
                         }
-                        if (Int(supportLimit) ?? 160) < 0 || (Int(timeShortRotations) ?? 0) < 0 || (Int(defaultPrize) ?? 1500) < 0 || (Int(countPerRoundStr) ?? 10) < 0 {
+                        if (Int(supportLimit) ?? 0) < 0 || (Int(timeShortRotations) ?? 0) < 0 || (Int(defaultPrize) ?? 1500) < 0 || (Int(countPerRoundStr) ?? 10) < 0 {
                             errorMessage = "負の数は入力できません"
                             showErrorAlert = true
                             return
@@ -250,6 +247,7 @@ struct MachineEditView: View, Equatable {
                     onSelect: { item in
                         machineName = item.name
                         manufacturerStr = item.manufacturer ?? ""
+                        introductionDateDisplay = ""
                         showMasterPicker = false
                     },
                     onDismiss: { showMasterPicker = false }
@@ -259,20 +257,6 @@ struct MachineEditView: View, Equatable {
                 if let machine = editing {
                     loadMachineIntoForm(machine)
                 }
-            }
-            .sheet(isPresented: $showAddPrizePicker) {
-                PrizePickerSheet(prizeSets: prizeSets, onSelectMultiple: { list in
-                    let draft = list.map { DraftPrize(label: $0.name, balls: $0.balls) }
-                    switch addingToPanel {
-                    case .heso: break // ヘソは hesoAtari で管理するためライブラリ追加なし
-                    case .denchu: draftDenchuPrizes.append(contentsOf: draft)
-                    case .rush: draftRushPrizes.append(contentsOf: draft)
-                    case .lt: draftLtPrizes.append(contentsOf: draft)
-                    }
-                    showAddPrizePicker = false
-                }, onDismiss: {
-                    showAddPrizePicker = false
-                })
             }
         }
     }
@@ -408,13 +392,13 @@ struct MachineEditView: View, Equatable {
     }
 
     @ViewBuilder
-    private var machineNamePanel: some View {
+    private var machineOverviewPanel: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("機種名")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.9))
-                    .frame(width: 72, alignment: .leading)
+                    .frame(width: 100, alignment: .leading)
                 TextField("例: パチンコ〇〇", text: $machineName)
                     .textContentType(.none)
                     .autocapitalization(.none)
@@ -428,7 +412,7 @@ struct MachineEditView: View, Equatable {
                 Text("メーカー")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.9))
-                    .frame(width: 72, alignment: .leading)
+                    .frame(width: 100, alignment: .leading)
                 TextField("例: サミー", text: $manufacturerStr)
                     .keyboardType(.default)
                     .multilineTextAlignment(.trailing)
@@ -437,13 +421,51 @@ struct MachineEditView: View, Equatable {
                     .background(Color.white.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            // DMM機種ID は裏で取得・保持のみ（機種を検索で選んだときに adoptPreset で dmmMachineID にセット）。UIには表示しない。
+            HStack(alignment: .firstTextBaseline) {
+                HStack(spacing: 4) {
+                    Text("通常時の当選確率")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.9))
+                    InfoIconView(explanation: "通常回転時の当選確率。1/399.5のように分母のみ入力。機種を検索で選ぶとマスターから入ります。", tint: .white.opacity(0.6))
+                }
+                Spacer(minLength: 12)
+                HStack(spacing: 0) {
+                    Text("1／")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.9))
+                    TextField("399.5", text: Binding(
+                        get: {
+                            guard let i = probability.firstIndex(of: "/") else { return probability }
+                            return String(probability[probability.index(after: i)...]).trimmingCharacters(in: .whitespaces)
+                        },
+                        set: { probability = $0.isEmpty ? "" : "1/\($0)" }
+                    ))
+                    .keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                    .frame(width: 72)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
+                    .background(Color.white.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+            HStack(alignment: .top) {
+                Text("導入開始日")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.9))
+                    .frame(width: 100, alignment: .leading)
+                Text(introductionDateDisplay.trimmingCharacters(in: .whitespaces).isEmpty ? "—" : introductionDateDisplay)
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(introductionDateDisplay.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 0.95))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            // DMM機種ID は裏で保持（機種を検索で選んだときに adoptPreset でセット）
             if !machineMasterListURL.isEmpty {
                 Button {
                     masterSearchText = ""
                     showMasterPicker = true
                 } label: {
-                    Label("マスタから検索", systemImage: "magnifyingglass")
+                    Label("マスタ一覧から機種名を選ぶ", systemImage: "magnifyingglass")
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                 }
@@ -453,275 +475,10 @@ struct MachineEditView: View, Equatable {
         }
     }
 
+    /// 公式ボーダー入力の直下に DMM ぱちタウンへの導線を置く（アプリ内ブラウザは既存の `InAppWebView`＋下部バーで戻る）
     @ViewBuilder
-    private var probabilityPanel: some View {
-        HStack(alignment: .firstTextBaseline) {
-            HStack(spacing: 4) {
-                Text("通常時の当選確率")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
-                InfoIconView(explanation: "通常回転時の当選確率。1/399.5のように分母のみ入力。", tint: .white.opacity(0.6))
-            }
-            Spacer(minLength: 12)
-            HStack(spacing: 0) {
-                Text("1／")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
-                TextField("399.5", text: Binding(
-                    get: {
-                        guard let i = probability.firstIndex(of: "/") else { return probability }
-                        return String(probability[probability.index(after: i)...]).trimmingCharacters(in: .whitespaces)
-                    },
-                    set: { probability = $0.isEmpty ? "" : "1/\($0)" }
-                ))
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 72)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 10)
-                .background(Color.white.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
-        }
-    }
-
-    private func bonusRows(prizes: [DraftPrize], onRemove: @escaping (DraftPrize) -> Void) -> some View {
-        let countPerRound = Int(countPerRoundStr) ?? 10
-        return ForEach(prizes) { p in
-                let netBalls = max(0, p.balls - countPerRound)
-                HStack(alignment: .center) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(p.label.isEmpty ? "\(p.balls)玉" : p.label)
-                            .font(.subheadline)
-                        Text("純増 \(netBalls) 玉")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    Button(role: .destructive) {
-                        onRemove(p)
-                    } label: {
-                        Image(systemName: "trash")
-                            .font(.body)
-                    }
-                }
-                .padding(.vertical, 4)
-        }
-    }
-
-    @ViewBuilder
-    /// ヘソ当たり1〜5（出玉/RUSH(0or1)/時短ゲーム数）の編集
-    private var hesoAtariPanel: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if draftHesoAtari.count < 5 {
-                Button {
-                    draftHesoAtari.append(HesoAtariItem(payout: 1500, rush: 0, timeShort: 100))
-                } label: {
-                    Label("行を追加（最大5）", systemImage: "plus.circle")
-                        .font(.caption.weight(.medium))
-                }
-                .foregroundColor(accent)
-            }
-            ForEach(Array(draftHesoAtari.enumerated()), id: \.element.id) { index, _ in
-                hesoAtariRow(index: index)
-            }
-        }
-    }
-
-    private func hesoAtariRow(index: Int) -> some View {
-        let payoutBinding = Binding<Int>(
-            get: { index < draftHesoAtari.count ? draftHesoAtari[index].payout : 1500 },
-            set: {
-                guard index < draftHesoAtari.count else { return }
-                var v = draftHesoAtari[index]
-                v.payout = $0
-                draftHesoAtari[index] = v
-            }
-        )
-        let rushBinding = Binding<Int>(
-            get: { index < draftHesoAtari.count ? draftHesoAtari[index].rush : 0 },
-            set: {
-                guard index < draftHesoAtari.count else { return }
-                var v = draftHesoAtari[index]
-                v.rush = $0
-                draftHesoAtari[index] = v
-            }
-        )
-        let timeShortBinding = Binding<Int>(
-            get: { index < draftHesoAtari.count ? draftHesoAtari[index].timeShort : 100 },
-            set: {
-                guard index < draftHesoAtari.count else { return }
-                var v = draftHesoAtari[index]
-                v.timeShort = $0
-                draftHesoAtari[index] = v
-            }
-        )
-        return HStack(alignment: .center, spacing: 8) {
-            Text("\(index + 1)")
-                .font(.caption.monospacedDigit())
-                .foregroundColor(.white.opacity(0.7))
-                .frame(width: 16, alignment: .leading)
-            TextField("出玉", value: payoutBinding, format: .number)
-                .keyboardType(.numberPad)
-                .frame(width: 56)
-                .padding(.vertical, 6)
-                .padding(.horizontal, 8)
-                .background(Color.white.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-            Picker("", selection: rushBinding) {
-                Text("時短へ").tag(0)
-                Text("RUSH").tag(1)
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 120)
-            TextField("時短", value: timeShortBinding, format: .number)
-                .keyboardType(.numberPad)
-                .frame(width: 48)
-                .padding(.vertical, 6)
-                .padding(.horizontal, 8)
-                .background(Color.white.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-            Button(role: .destructive) {
-                draftHesoAtari.remove(at: index)
-            } label: {
-                Image(systemName: "trash")
-                    .font(.caption)
-            }
-        }
-        .padding(.vertical, 4)
-    }
-
-    @ViewBuilder
-    private var bonusDenchuPanel: some View {
-        Button {
-            addingToPanel = .denchu
-            showAddPrizePicker = true
-        } label: {
-            Label("ライブラリから追加", systemImage: "plus.circle")
-                .font(.caption.weight(.medium))
-        }
-        .foregroundColor(accent)
-        if !draftDenchuPrizes.isEmpty {
-            bonusRows(prizes: draftDenchuPrizes) { p in draftDenchuPrizes.removeAll { $0.id == p.id } }
-        }
-    }
-
-    @ViewBuilder
-    private var bonusRushPanel: some View {
-        Button {
-            addingToPanel = .rush
-            showAddPrizePicker = true
-        } label: {
-            Label("ライブラリから追加", systemImage: "plus.circle")
-                .font(.caption.weight(.medium))
-        }
-        .foregroundColor(accent)
-        if !draftRushPrizes.isEmpty {
-            bonusRows(prizes: draftRushPrizes) { p in draftRushPrizes.removeAll { $0.id == p.id } }
-        }
-    }
-
-    @ViewBuilder
-    private var bonusLtPanel: some View {
-        Button {
-            addingToPanel = .lt
-            showAddPrizePicker = true
-        } label: {
-            Label("ライブラリから追加", systemImage: "plus.circle")
-                .font(.caption.weight(.medium))
-        }
-        .foregroundColor(accent)
-        if !draftLtPrizes.isEmpty {
-            bonusRows(prizes: draftLtPrizes) { p in draftLtPrizes.removeAll { $0.id == p.id } }
-        }
-    }
-
-    @ViewBuilder
-    private var countPerRoundPanel: some View {
-        HStack(alignment: .firstTextBaseline) {
-            HStack(spacing: 4) {
-                Text("賞球数")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
-                Text("（1Rあたりの打ち出し玉数）")
-                    .font(.caption2)
-                    .foregroundColor(.white.opacity(0.6))
-                InfoIconView(explanation: "1ラウンドあたりのカウント数。実質出玉の計算に使います。", tint: .white.opacity(0.6))
-            }
-            Spacer(minLength: 12)
-            TextField("10", text: $countPerRoundStr)
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 56)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 10)
-                .background(Color.white.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            Text("カウント")
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.6))
-        }
-    }
-
-    @ViewBuilder
-    private var supportLimitPanel: some View {
-        HStack(alignment: .firstTextBaseline) {
-            HStack(spacing: 4) {
-                Text("電サポ回数")
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
-                Text("（STゲーム数）")
-                    .font(.caption2)
-                    .foregroundColor(.white.opacity(0.6))
-                InfoIconView(explanation: "ST機種ではこの回数で自動通常復帰。確変機は手動復帰のため未使用。", tint: .white.opacity(0.6))
-            }
-            Spacer(minLength: 12)
-            TextField("160", text: $supportLimit)
-                .keyboardType(.numberPad)
-                .multilineTextAlignment(.trailing)
-                .frame(width: 56)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 10)
-                .background(Color.white.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-            Text("G")
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.6))
-        }
-    }
-
-    @ViewBuilder
-    private var timeShortPanel: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline) {
-                HStack(spacing: 4) {
-                    Text("時短ゲーム数")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.9))
-                    InfoIconView(explanation: "通常大当たり後の時短ゲーム数。この間は球消費なしで回転のみカウント。機種を検索で選ぶとマスターから自動入力予定（取得は改めて実装）。", tint: .white.opacity(0.6))
-                }
-                Spacer(minLength: 12)
-                TextField("0", text: $timeShortRotations)
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.trailing)
-                    .frame(width: 56)
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 10)
-                    .background(Color.white.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                Text("G")
-                    .font(.caption)
-                    .foregroundColor(.white.opacity(0.6))
-            }
-            Text("機種を検索で選ぶとマスターから自動入力されます（取得は改めて実装）。")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    @ViewBuilder
-    private var borderPanel: some View {
-        VStack(alignment: .leading, spacing: 8) {
+    private var borderPanelWithDmmLink: some View {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("回転/1000pt")
                     .font(.subheadline)
@@ -739,13 +496,33 @@ struct MachineEditView: View, Equatable {
             Text("店舗設定に基づいて自動的に調整されます。")
                 .font(.caption)
                 .foregroundColor(.white.opacity(0.7))
+
+            if dmmMachineURL != nil {
+                Button {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                        isDMMPanelExpanded = true
+                    }
+                } label: {
+                    Label("DMMぱちタウンでこの機種を見る", systemImage: "safari")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(accent.opacity(0.28))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent.opacity(0.55), lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(.white)
+                Text("アプリ内ブラウザで開きます。画面下の「登録画面」を押すと、この登録フォームにすぐ戻れます。")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.72))
+            } else {
+                Text("マスタの「機種を検索」で機種ID付きのデータを選ぶと、ぱちタウンの公式ページを開けます。")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.6))
+            }
         }
     }
-
-    @State private var showAddPrizePicker = false
-    /// ライブラリから追加する先
-    private enum AddingToPanel { case heso, denchu, rush, lt }
-    @State private var addingToPanel: AddingToPanel = .heso
 
     private func draftPrizeFromDenchu(_ item: ParsedDenchuItem) -> DraftPrize {
         DraftPrize(label: item.displayLabel, balls: item.balls ?? 1500)
@@ -757,6 +534,7 @@ struct MachineEditView: View, Equatable {
             machineName = s.name
             manufacturerStr = s.manufacturer ?? ""
             dmmMachineID = s.machineId ?? ""
+            introductionDateDisplay = (s.introductionDateRaw ?? "").trimmingCharacters(in: .whitespaces)
             selectedMachineType = MachineType(rawValue: s.machineTypeRaw ?? "") ?? .kakugen
             supportLimit = "\(s.supportLimit ?? 160)"
             timeShortRotations = "\(s.timeShortRotations ?? 0)"
@@ -783,7 +561,9 @@ struct MachineEditView: View, Equatable {
             let s = c.asPresetFromServer
             machineName = s.name
             manufacturerStr = s.manufacturer ?? ""
-            supportLimit = "\(s.supportLimit ?? 160)"
+            introductionDateDisplay = ""
+            dmmMachineID = ""
+            supportLimit = "\(s.supportLimit ?? 0)"
             timeShortRotations = "\(s.timeShortRotations ?? 0)"
             defaultPrize = "\(s.defaultPrize ?? 1500)"
             probability = s.probability ?? ""
@@ -807,6 +587,8 @@ struct MachineEditView: View, Equatable {
         case .local(let preset):
             preset.lastUsedAt = Date()
             machineName = preset.name
+            introductionDateDisplay = ""
+            dmmMachineID = ""
             selectedMachineType = preset.machineType
             supportLimit = "\(preset.supportLimit)"
             timeShortRotations = "\(preset.timeShortRotations)"
@@ -829,6 +611,7 @@ struct MachineEditView: View, Equatable {
     }
 
     private func copyFromMachine(_ machine: Machine) {
+        introductionDateDisplay = ""
         selectedMachineType = machine.machineType
         supportLimit = "\(machine.supportLimit)"
         timeShortRotations = "\(machine.timeShortRotations)"
@@ -936,7 +719,7 @@ struct MachineEditView: View, Equatable {
         }
         if shareWithEveryone {
             let manufacturer = manufacturerStr.trimmingCharacters(in: .whitespaces)
-            let inferredType: MachineType = (Int(supportLimit) ?? 160) > 0 ? .st : .kakugen
+            let inferredType: MachineType = (Int(supportLimit) ?? 0) > 0 ? .st : .kakugen
             let prizeEntriesForCloud = allPrizes.map { (label: $0.label, balls: $0.balls) }
             let netBaseFromPrizes: Double = {
                 guard !allPrizes.isEmpty else { return 140 }
@@ -1137,6 +920,7 @@ struct MachineMasterPickerSheet: View {
                 }
             }
         }
+        .keyboardDismissToolbar()
     }
 }
 

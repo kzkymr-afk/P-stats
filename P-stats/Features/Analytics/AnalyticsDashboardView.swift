@@ -151,7 +151,7 @@ private struct AnalyticsBottomBarView: View {
         .padding(.vertical, 6)
         .frame(maxWidth: .infinity)
         .background(
-            TranslucentBlurView(style: .systemUltraThinMaterialDark, alpha: 0.92)
+            Color.black
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .clipShape(Capsule())
         )
@@ -161,7 +161,7 @@ private struct AnalyticsBottomBarView: View {
         )
         .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 4)
         .padding(.horizontal, 20)
-        .padding(.bottom, 8)
+        .padding(.bottom, 0)
     }
 }
 
