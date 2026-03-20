@@ -74,6 +74,10 @@ struct PlayView: View {
     /// フェーズ4: 機種のモード・当たり詳細（masterID があるときロード）
     @State private var machineMaster: MachineFullMaster? = nil
 
+    /// 上乗せ／昇格のプレビューで `currentState` が切り替わっても、
+    /// `normalRotations` 加算判定だけは「当たり入力開始時点の状態」を基準にする。
+    @State private var normalRotationCountStateAtWinInputStart: PlayState = .normal
+
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
 
@@ -239,7 +243,7 @@ struct PlayView: View {
                             .fill(playHeaderBackground)
                         headerRow(height: h2)
                     }
-                    .frame(height: headerTopMargin + h2)
+                    .frame(minHeight: headerTopMargin + h2)
                     .frame(maxWidth: .infinity)
 
                     // ヘッダーと情報群の間のマージン
@@ -414,7 +418,12 @@ struct PlayView: View {
                             }
                             log.syncToSnapshot(cashYen: cash, holdingsBalls: hBalls, totalHoldingsCount: hCount)
                             let atRotation = (log.winRecords.last?.rotationAtWin ?? 0) + rot
-                            log.addWin(type: resolvedWinType, atRotation: atRotation, prizeBalls: prizeBalls)
+                            log.addWin(
+                                type: resolvedWinType,
+                                atRotation: atRotation,
+                                prizeBalls: prizeBalls,
+                                countNormalRotationsFromState: normalRotationCountStateAtWinInputStart
+                            )
                             showWinInputSheet = false
                             if returnToPowerSavingModeAfterExit {
                                 if resolvedWinType == .normal {
@@ -441,6 +450,14 @@ struct PlayView: View {
                         },
                         onConfirmRecordHit: { bonus, total in
                             applyRecordHitAndNavigate(bonus: bonus, totalPrize: total)
+                        },
+                        onPreviewModeChange: { promotedBonus in
+                            // 昇格ボタン押下時：winRecords は増やさず、mode/UI だけ即反映する
+                            log.previewSetStateAfterHit(
+                                nextModeId: promotedBonus.nextModeId,
+                                densapo: promotedBonus.densapo,
+                                nextUiRole: promotedBonus.resolvedNextUiRole
+                            )
                         },
                         machineMaster: machineMaster,
                         currentModeID: log.currentModeID
@@ -608,6 +625,7 @@ struct PlayView: View {
                 onOpenRush: {
                     returnToPowerSavingModeAfterExit = true
                     showPowerSavingMode = false
+                    normalRotationCountStateAtWinInputStart = log.currentState
                     prepareWinInput(type: .rush)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         showWinInputSheet = true
@@ -617,6 +635,7 @@ struct PlayView: View {
                 onOpenNormal: {
                     returnToPowerSavingModeAfterExit = true
                     showPowerSavingMode = false
+                    normalRotationCountStateAtWinInputStart = log.currentState
                     prepareWinInput(type: .normal)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         showWinInputSheet = true
@@ -626,6 +645,7 @@ struct PlayView: View {
                 onOpenLt: {
                     returnToPowerSavingModeAfterExit = true
                     showPowerSavingMode = false
+                    normalRotationCountStateAtWinInputStart = log.currentState
                     prepareWinInput(type: .lt)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         showWinInputSheet = true
@@ -802,53 +822,76 @@ struct PlayView: View {
     // 最上部: 透過度の低い背景で可読性確保（ゲーム数カウントと同程度）。アイコンは白。
     @ViewBuilder
     private func headerRow(height: CGFloat) -> some View {
-        HStack(alignment: .center, spacing: 16) {
-            if rightHandMode {
-                headerRowTrailingButtons(height: height)
-                Button(action: { showSettingsSheet = true; haptic(.light) }) {
-                    HStack(alignment: .center, spacing: 8) {
-                        Text(log.selectedMachine.name)
-                            .font(AppTypography.sectionSubheading)
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                        Text(log.selectedShop.name)
-                            .font(AppTypography.bodyRounded)
-                            .foregroundColor(.white.opacity(0.9))
-                            .lineLimit(1)
-                            .truncationMode(.tail)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(modeNameForHeader)
+                .font(AppTypography.sectionSubheading)
+                .foregroundColor(AppGlassStyle.modeColor(modeId: log.currentModeID))
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(alignment: .center, spacing: 16) {
+                if rightHandMode {
+                    headerRowTrailingButtons(height: height)
+                    Button(action: { showSettingsSheet = true; haptic(.light) }) {
+                        HStack(alignment: .center, spacing: 8) {
+                            Text(log.selectedMachine.name)
+                                .font(AppTypography.sectionSubheading)
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                            Text(log.selectedShop.name)
+                                .font(AppTypography.bodyRounded)
+                                .foregroundColor(.white.opacity(0.9))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
                     }
-                }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                headerRowUndoButton()
-            } else {
-                headerRowUndoButton()
-                Button(action: { showSettingsSheet = true; haptic(.light) }) {
-                    HStack(alignment: .center, spacing: 8) {
-                        Text(log.selectedMachine.name)
-                            .font(AppTypography.sectionSubheading)
-                            .foregroundColor(.white)
-                            .lineLimit(1)
-                        Text(log.selectedShop.name)
-                            .font(AppTypography.bodyRounded)
-                            .foregroundColor(.white.opacity(0.9))
-                            .lineLimit(1)
-                            .truncationMode(.tail)
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    headerRowUndoButton()
+                } else {
+                    headerRowUndoButton()
+                    Button(action: { showSettingsSheet = true; haptic(.light) }) {
+                        HStack(alignment: .center, spacing: 8) {
+                            Text(log.selectedMachine.name)
+                                .font(AppTypography.sectionSubheading)
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                            Text(log.selectedShop.name)
+                                .font(AppTypography.bodyRounded)
+                                .foregroundColor(.white.opacity(0.9))
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                        }
                     }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    headerRowTrailingButtons(height: height)
                 }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                headerRowTrailingButtons(height: height)
             }
         }
         .padding(.horizontal, 12)
-        .frame(height: height)
+        .frame(minHeight: height)
         // カスタム実戦背景上でも機種名が読めるよう、情報行と同系の角丸＋枠線プレートに載せる
         .background(playHeaderBackground, in: RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(glassStroke(tint: focusAccent), lineWidth: playPanelStrokeLineWidth)
         )
+    }
+
+    private var modeNameForHeader: String {
+        switch log.currentModeID {
+        case 2:
+            return "LT"
+        case 1:
+            // RUSH/ST として扱う（ST失敗もこのモードID側）
+            return "RUSH"
+        default:
+            if log.currentState == .support {
+                return log.isTimeShortMode ? "時短" : "電サポ"
+            }
+            return "通常"
+        }
     }
 
     private func headerRowUndoButton() -> some View {
@@ -1342,6 +1385,9 @@ struct PlayView: View {
     }
 
     private func handleWinSelection(type: WinType) {
+        // 当たり入力開始時点の状態を保持（昇格プレビューで `currentState` が切り替わっても、
+        // normalRotations 加算判定だけはここを基準にする）
+        normalRotationCountStateAtWinInputStart = log.currentState
         prepareWinInput(type: type)
         // フェーズ4: 新マスター（MachineFullMaster）優先。stay_mode_id==current の bonuses が1件なら即確定。
         if let master = machineMaster {
@@ -1367,7 +1413,12 @@ struct PlayView: View {
         let hBalls = Int(tempWinHoldingsBalls) ?? 0
         let hCount = Int(tempWinHoldingsCount) ?? 0
         log.syncToSnapshot(cashYen: cash, holdingsBalls: hBalls, totalHoldingsCount: hCount)
-        log.recordHit(bonus: bonus, totalPrize: totalPrize, atRotation: atRotation)
+        log.recordHit(
+            bonus: bonus,
+            totalPrize: totalPrize,
+            atRotation: atRotation,
+            countNormalRotationsFromState: normalRotationCountStateAtWinInputStart
+        )
         showWinInputSheet = false
         let nextRole = bonus.resolvedNextUiRole
         if nextRole == 1 {
@@ -1942,6 +1993,9 @@ struct WinInputSheetView: View {
     /// フェーズ4: データ駆動時、確定で選択した BonusDetail と「確定した合計出玉」を渡す。
     /// - totalPrize: 基本出玉＋追撃（unitOut×回数）の合計。完結型は基本出玉相当。
     var onConfirmRecordHit: ((BonusDetail, Int) -> Void)? = nil
+    /// フェーズ4: 昇格ボタンなどの「確定前プレビュー操作」で mode/UI を即反映するためのコールバック。
+    /// winRecords は増やさない。
+    var onPreviewModeChange: ((BonusDetail) -> Void)? = nil
     /// フェーズ4: データ駆動用。nil でなければ stay_mode_id==current の bonuses を表示する。
     var machineMaster: MachineFullMaster? = nil
     var currentModeID: Int = 0
@@ -2220,6 +2274,10 @@ struct WinInputSheetView: View {
                                             guard unitTapCount < clampedDesired else { return }
                                             unitTapCount += 1
                                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                            // 追撃（上限＝最大連結数）に到達した瞬間に即確定して次状態へ遷移
+                                            if maxStack > 0 && unitTapCount >= maxStack {
+                                                confirmAction()
+                                            }
                                         }) {
                                             ZStack {
                                                 sheetTitleColor.opacity(0.18)
@@ -2461,8 +2519,23 @@ struct WinInputSheetView: View {
             return
         }
         promotedOverrideVariant = promoted
-        unitTapCount = 0
-        desiredUnitCount = 0
+
+        // 昇格後も「その場で上乗せ（追撃）継続」を許可するため、
+        // tap 回数はリセットせず、昇格先の最大連結数でクランプする。
+        let newMaxStack = max(0, promoted.maxUnitCount)
+        desiredUnitCount = min(max(desiredUnitCount, 0), newMaxStack)
+        unitTapCount = min(max(unitTapCount, 0), desiredUnitCount)
+
+        // mode/UI だけ即反映（winRecords は確定しない）
+        if let master = machineMaster {
+            let detail = promoted.asBonusDetail(using: master)
+            onPreviewModeChange?(detail)
+        }
+
+        // 昇格によって上限が到達してしまった場合は、そこで即確定（次状態へ遷移）
+        if newMaxStack > 0 && unitTapCount >= newMaxStack {
+            confirmAction()
+        }
     }
 
     private func confirmAction() {

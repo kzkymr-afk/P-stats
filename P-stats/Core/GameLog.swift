@@ -182,15 +182,36 @@ final class GameLog {
         }
     }
 
+    /// 昇格などの「プレビュー操作」で、winRecords を増やさずに mode/UI を即反映するための状態更新。
+    /// - Note: 確定（recordHit/addWin）時の回転率加算判定は、別パラメータで上書き可能にする。
+    func previewSetStateAfterHit(nextModeId: Int, densapo: Int, nextUiRole: Int) {
+        currentModeID = nextModeId
+        currentModeUiRole = nextUiRole
+        remainingSupportCount = max(0, densapo)
+        supportPhaseInitialCount = remainingSupportCount
+        switch nextUiRole {
+        case 0:
+            currentState = remainingSupportCount > 0 ? .support : .normal
+            isTimeShortMode = remainingSupportCount > 0
+        case 1:
+            currentState = .support
+            isTimeShortMode = false
+        default:
+            currentState = .lt
+            isTimeShortMode = false
+        }
+    }
+
     /// フェーズ3: データ駆動の当たり記録。BonusDetail に従い履歴追加・出玉加算・currentModeID と電サポを更新する。既存の addWin と併存。
-    func recordHit(bonus: BonusDetail, atRotation: Int) {
-        recordHit(bonus: bonus, totalPrize: nil, atRotation: atRotation)
+    func recordHit(bonus: BonusDetail, atRotation: Int, countNormalRotationsFromState: PlayState? = nil) {
+        recordHit(bonus: bonus, totalPrize: nil, atRotation: atRotation, countNormalRotationsFromState: countNormalRotationsFromState)
     }
 
     /// ユニット連結型対応: totalPrize を渡すとその値で確定（nilなら baseOut を使用）
-    func recordHit(bonus: BonusDetail, totalPrize: Int?, atRotation: Int) {
+    func recordHit(bonus: BonusDetail, totalPrize: Int?, atRotation: Int, countNormalRotationsFromState: PlayState? = nil) {
+        let stateForRotationCount = countNormalRotationsFromState ?? currentState
         let diff = atRotation - totalRotations
-        if diff != 0, currentState == .normal { normalRotations += diff }
+        if diff != 0, stateForRotationCount == .normal { normalRotations += diff }
         let resolvedBase = bonus.baseOut > 0 ? bonus.baseOut : bonus.payout
         let raw = totalPrize ?? (resolvedBase > 0 ? resolvedBase : effectiveBallsPerHit)
         let prize = max(0, raw)
@@ -216,9 +237,10 @@ final class GameLog {
 
     /// 大当たりを1件追加。prizeBalls を指定した場合はその玉数（純増）を使用、nil の場合は effectiveBallsPerHit を使用。
     /// timeShortFromHit: 単発（通常）当たりで採用した当たりの時短ゲーム数。指定時は機種の timeShortRotations の代わりにこれを時短残りに加算する。
-    func addWin(type: WinType, atRotation: Int, prizeBalls: Int? = nil, timeShortFromHit: Int? = nil) {
+    func addWin(type: WinType, atRotation: Int, prizeBalls: Int? = nil, timeShortFromHit: Int? = nil, countNormalRotationsFromState: PlayState? = nil) {
+        let stateForRotationCount = countNormalRotationsFromState ?? currentState
         let diff = atRotation - totalRotations
-        if diff != 0 && currentState == .normal { normalRotations += diff }
+        if diff != 0 && stateForRotationCount == .normal { normalRotations += diff }
         let prize = prizeBalls ?? effectiveBallsPerHit
         var record = WinRecord(type: type, prize: prize, rotationAtWin: atRotation, normalRotationsAtWin: normalRotations)
         record.timestamp = Date()
