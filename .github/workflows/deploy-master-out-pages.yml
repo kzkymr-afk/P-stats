@@ -1,0 +1,87 @@
+name: master_out を GitHub Pages に配信
+
+on:
+  schedule:
+    # 毎週土曜 0:00 UTC = 日本時間 9:00（土曜朝）
+    - cron: '0 0 * * 6'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: リポジトリを取得
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      # convert_master_one_sheet は既存 JSON と意味比較し変更機種のみ上書きする。初回は gh-pages が無くスキップされる。
+      - name: 前回配信の master_out を取り込む（機種 JSON 差分更新用）
+        run: |
+          git fetch origin gh-pages --depth=1 || true
+          if git rev-parse origin/gh-pages >/dev/null 2>&1; then
+            git checkout origin/gh-pages -- master_out 2>/dev/null || true
+          fi
+
+      - name: Python をセットアップ
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: 依存をインストール
+        run: pip install requests
+
+      # 仕様: mode_0〜mode_7 / 当たり9項目（あたりID先頭）— scripts/convert_master_one_sheet.py と同期
+      - name: master_out を生成（CSV→JSON）
+        env:
+          MASTER_ONE_SHEET_CSV_URL: ${{ vars.MASTER_ONE_SHEET_CSV_URL }}
+          MASTER_ONE_SHEET_OUTPUT_DIR: ${{ github.workspace }}/master_out
+          # 完了|公開 などにしたい場合は Repository Variables で上書き
+          MASTER_EXPORT_STATUS_VALUES: ${{ vars.MASTER_EXPORT_STATUS_VALUES }}
+        run: |
+          if [ -z "$MASTER_ONE_SHEET_CSV_URL" ]; then
+            echo "::error::Repository Variables に MASTER_ONE_SHEET_CSV_URL が未設定です。"
+            exit 1
+          fi
+          echo "CSV URL: $MASTER_ONE_SHEET_CSV_URL"
+          python scripts/convert_master_one_sheet.py
+          echo "--- master_out ---"
+          ls -la master_out
+          ls -la master_out/machines | head -n 30 || true
+
+      # peaceiris/actions-gh-pages は Node 20 固定のため非推奨警告が出る。git のみで同等配信（orphan + master_out/ 配下）。
+      - name: GitHub Pages（gh-pages ブランチ）へ配信
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SRC="${{ github.workspace }}/master_out"
+          if [ ! -d "$SRC" ] || [ -z "$(ls -A "$SRC" 2>/dev/null)" ]; then
+            echo "::error::master_out が空です。CSV 変換を確認してください。"
+            exit 1
+          fi
+          STAGE=$(mktemp -d)
+          mkdir -p "$STAGE/master_out"
+          cp -R "$SRC"/. "$STAGE/master_out/"
+          touch "$STAGE/.nojekyll"
+          cd "$STAGE"
+          git init -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Deploy master_out (${{ github.sha }})"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          git push -u origin gh-pages --force
+
+      - name: 配信確認（gh-pages の先端コミット）
+        run: |
+          set -euo pipefail
+          git fetch origin gh-pages --depth=1
+          echo "--- gh-pages 最新コミット ---"
+          git log -1 --oneline origin/gh-pages
+          echo "--- master_out 内（先頭数件） ---"
+          git ls-tree -r --name-only origin/gh-pages master_out/ | head -40
