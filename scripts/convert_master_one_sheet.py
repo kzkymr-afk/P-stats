@@ -298,7 +298,7 @@ def load_and_validate_rows(csv_content: str):
             else:
                 bonuses.append(parsed_b)
 
-        _enrich_bonuses_with_next_ui_role(bonuses, modes)
+        _enrich_bonuses_next_ui_role(bonuses, modes)
 
         mode_ids = {m["mode_id"] for m in modes}
         if mode_parse_errors:
