@@ -390,7 +390,7 @@ function buildMachineJsonById(machineId) {
   var specType = String(row[6] || "").trim();
   var tags = String(row[7] || "").trim();
   var status = String(row[8] || "").trim();
-  // row[9] = J列 更新対象（get_machine_json では参照のみ。master_out 配信は Python 側で除外）
+  // row[9] = J列 更新対象（空白・対象・対象外。空白=対象。master_out 配信は Python 側で解釈）
 
   var modes = [];
   for (var m = 0; m < 8; m++) {

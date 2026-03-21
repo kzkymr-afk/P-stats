@@ -141,14 +141,17 @@ def _should_skip_status(status: str) -> bool:
 
 
 def _is_export_update_target(values: list[str], idx: dict[str, int]) -> bool:
-    """更新対象列が無い CSV は従来どおり全行が配信対象。列があるとき「対象外」は配信しない（既存 JSON は保持）。"""
+    """更新対象列が無い CSV は従来どおり全行が配信対象。
+
+    列があるとき: 空白・「対象」は配信対象。「対象外」（および EXCLUDE 表記）のみ除外（既存 JSON は保持）。
+    """
     if "更新対象" not in idx:
         return True
     col = idx["更新対象"]
     raw = (values[col] if col < len(values) else "") or ""
     s = raw.strip()
     if not s:
-        return True
+        return True  # 空白 = 「対象」と同じ
     if s in UPDATE_TARGET_EXCLUDE_LABELS:
         return False
     if _normalize(s) in UPDATE_TARGET_EXCLUDE_NORMALIZED:
