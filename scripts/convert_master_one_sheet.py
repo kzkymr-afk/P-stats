@@ -19,6 +19,12 @@
 
 出力:
   master_out/index.json, master_out/machines/<id>.json, master_out/export_status.csv
+
+差分更新（既定）:
+  既存の master_out/machines/*.json があるとき、JSON を意味比較し変更がない機種はファイルを書き換えない。
+  今回のエクスポート対象に含まれない safe_id の *.json は削除（CSVから消えた・ステータスで落ちた機種）。
+  CI では gh-pages 上の master_out を先に checkout してから本スクリプトを実行すること（workflow 参照）。
+  全件上書き: 環境変数 MASTER_OUT_FORCE_FULL_WRITE=1
 """
 
 from __future__ import annotations
@@ -41,6 +47,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = Path(os.environ.get("MASTER_ONE_SHEET_OUTPUT_DIR", str(REPO_ROOT / "master_out")))
 MACHINES_SUBDIR = "machines"
 REQUEST_TIMEOUT = 20
+FORCE_FULL_WRITE = os.environ.get("MASTER_OUT_FORCE_FULL_WRITE", "").strip().lower() in ("1", "true", "yes")
 
 HEADER_NAMES = [
     "導入開始日", "機種名", "メーカー", "確率", "機種タイプ", "スペック", "特徴タグ", "機種ID", "ステータス",
@@ -78,6 +85,11 @@ def _col_index(headers: list[str]) -> dict[str, int]:
                 result[canon] = i
                 break
     return result
+
+
+def _canonical_json(obj) -> str:
+    """意味が同じなら一致する比較用文字列（キー順・空白差を無視）。"""
+    return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
 def _sanitize_machine_id(machine_id: str) -> str:
@@ -443,17 +455,58 @@ def main() -> None:
 
     index = build_index(valid_rows)
     index_path = OUTPUT_DIR / "index.json"
-    with open(index_path, "w", encoding="utf-8") as f:
-        json.dump(index, f, ensure_ascii=False, indent=2)
-    print(f"[convert_master_one_sheet] index.json: {len(index)} 機種 -> {index_path}", flush=True)
+    if FORCE_FULL_WRITE:
+        with open(index_path, "w", encoding="utf-8") as f:
+            json.dump(index, f, ensure_ascii=False, indent=2)
+        print(f"[convert_master_one_sheet] index.json: 全件書き込み {len(index)} 機種 -> {index_path}", flush=True)
+    else:
+        write_index = True
+        if index_path.is_file():
+            try:
+                old_index = json.loads(index_path.read_text(encoding="utf-8"))
+                if _canonical_json(old_index) == _canonical_json(index):
+                    write_index = False
+            except (json.JSONDecodeError, OSError):
+                pass
+        if write_index:
+            with open(index_path, "w", encoding="utf-8") as f:
+                json.dump(index, f, ensure_ascii=False, indent=2)
+            print(f"[convert_master_one_sheet] index.json: 更新 {len(index)} 機種 -> {index_path}", flush=True)
+        else:
+            print(f"[convert_master_one_sheet] index.json: 変更なし（スキップ） {len(index)} 機種", flush=True)
 
+    expected_safe_ids: set[str] = set()
+    n_written = n_unchanged = 0
     for row in valid_rows:
         detail = build_machine_json(row)
         safe_id = _sanitize_machine_id(row["machine_id"])
+        expected_safe_ids.add(safe_id)
         out_path = machines_dir / f"{safe_id}.json"
+        if not FORCE_FULL_WRITE and out_path.is_file():
+            try:
+                old_obj = json.loads(out_path.read_text(encoding="utf-8"))
+                if _canonical_json(old_obj) == _canonical_json(detail):
+                    n_unchanged += 1
+                    continue
+            except (json.JSONDecodeError, OSError):
+                pass
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(detail, f, ensure_ascii=False, indent=2)
-    print(f"[convert_master_one_sheet] machines/*.json: {len(valid_rows)} ファイル -> {machines_dir}", flush=True)
+        n_written += 1
+    n_removed = 0
+    for p in machines_dir.glob("*.json"):
+        if p.stem not in expected_safe_ids:
+            try:
+                p.unlink()
+                n_removed += 1
+            except OSError:
+                pass
+    print(
+        f"[convert_master_one_sheet] machines/*.json: 新規・更新={n_written}, 変更なしスキップ={n_unchanged}, "
+        f"削除={n_removed}, 対象機種数={len(valid_rows)} -> {machines_dir}"
+        + (" [FORCE_FULL_WRITE]" if FORCE_FULL_WRITE else ""),
+        flush=True,
+    )
 
     status_path = OUTPUT_DIR / "export_status.csv"
     with open(status_path, "w", encoding="utf-8", newline="") as f:

@@ -7,6 +7,8 @@ struct PowerSavingModeView: View {
     @Bindable var log: GameLog
     /// true＝右手操作、false＝左手操作（スワイプは左手モードでも左→右に統一）
     var rightHandMode: Bool = false
+    /// 滞在モード表示用（`PlayModeVocabulary`）。nil のときはマスタ名なしのフォールバックのみ。
+    var machineMaster: MachineFullMaster? = nil
     let onExit: () -> Void
     let onOpenRush: () -> Void
     let onOpenNormal: () -> Void
@@ -122,22 +124,31 @@ struct PowerSavingModeView: View {
     }
 
     private func headerView(geo: GeometryProxy, headerHeight: CGFloat) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            Button(action: {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                onExit()
-            }) {
-                Image(systemName: "chevron.down.circle.fill")
-                    .font(.title2)
-                Text("終了")
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-            }
-            .foregroundColor(cyan.opacity(0.9))
-            .buttonStyle(.plain)
+        VStack(alignment: .leading, spacing: 6) {
+            Text("\(PlayPresentationSurface.powerSaving.userFacingTitle) · \(log.stayModeDisplayName(machineMaster: machineMaster))")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(AppGlassStyle.modeColor(modeId: log.currentModeID))
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 4)
 
-            Spacer(minLength: 6)
+            HStack(alignment: .center, spacing: 12) {
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    onExit()
+                }) {
+                    Image(systemName: "chevron.down.circle.fill")
+                        .font(.title2)
+                    Text("終了")
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                }
+                .foregroundColor(cyan.opacity(0.9))
+                .buttonStyle(.plain)
 
-            VStack(alignment: .leading, spacing: 0) {
+                Spacer(minLength: 6)
+
+                VStack(alignment: .leading, spacing: 0) {
                 row(label: "現在の回転数", value: "\(log.gamesSinceLastWin)回")
                 Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
                 row(label: "総投入", value: log.totalInput.formattedPtWithUnit)
@@ -146,20 +157,21 @@ struct PowerSavingModeView: View {
                 Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
                 row(label: "現在の持ち玉数", value: "\(log.totalHoldings)玉")
                 Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
-                HStack(spacing: 12) {
-                    row(label: "RUSH", value: "\(log.rushWinCount)回")
-                    row(label: "通常", value: "\(log.normalWinCount)回")
-                    row(label: "LT", value: "\(log.ltWinCount)回")
+                    HStack(spacing: 12) {
+                        row(label: "RUSH", value: "\(log.rushWinCount)回")
+                        row(label: "通常", value: "\(log.normalWinCount)回")
+                        row(label: "LT", value: "\(log.ltWinCount)回")
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.black.opacity(0.85), in: RoundedRectangle(cornerRadius: 12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
+                )
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(Color.black.opacity(0.85), in: RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-            )
         }
         .padding(.horizontal, 12)
         .padding(.top, 8)

@@ -19,6 +19,16 @@ jobs:
     steps:
       - name: リポジトリを取得
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 1
+
+      # convert_master_one_sheet は既存 JSON と意味比較し変更機種のみ上書きする。初回は gh-pages が無くスキップされる。
+      - name: 前回配信の master_out を取り込む（機種 JSON 差分更新用）
+        run: |
+          git fetch origin gh-pages --depth=1 || true
+          if git rev-parse origin/gh-pages >/dev/null 2>&1; then
+            git checkout origin/gh-pages -- master_out 2>/dev/null || true
+          fi
 
       - name: Python をセットアップ
         uses: actions/setup-python@v6

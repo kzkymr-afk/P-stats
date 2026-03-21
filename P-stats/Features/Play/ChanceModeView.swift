@@ -4,6 +4,8 @@ import SwiftData
 /// 通常大当たり後のチャンスモード：フォーカスモードに準じた構成。上3/16＝折れ線、3/16＝連チャン・通算RUSH/単発、1/8＝履歴、下1/2＝左2/3 RUSH・右1/3 昇格/時短終了
 struct ChanceModeView: View {
     @Bindable var log: GameLog
+    /// 滞在モード表示用（`PlayModeVocabulary`）
+    var machineMaster: MachineFullMaster? = nil
     var onRushExit: () -> Void
     /// LT仕様削除のため未使用。nil のときは LT 昇格ボタンを表示しない。
     var onLtExit: (() -> Void)? = nil
@@ -39,6 +41,18 @@ struct ChanceModeView: View {
             ZStack {
                 bg.ignoresSafeArea()
                 VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(PlayPresentationSurface.chanceMode.userFacingTitle)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(.white.opacity(0.55))
+                        Text(log.stayModeDisplayName(machineMaster: machineMaster))
+                            .font(AppTypography.sectionSubheading)
+                            .foregroundColor(AppGlassStyle.modeColor(modeId: log.currentModeID))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
 
                     // 上3/16: 損益折れ線グラフ（幅は親に合わせる）。寸法が無効なときは表示しない
                     Group {

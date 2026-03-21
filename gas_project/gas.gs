@@ -1,7 +1,18 @@
 /** マスターシートのスプレッドシートID */
 var SS_ID = "1fSGx5EmcSOD68itgBRxjGyUGz0Wh5u1Lnbw-dyvchz4";
 // デプロイ版の動作確認用（Webアプリがどのコードを動かしているか判別）
-var BUILD_TAG = "2026-03-20_master_mode0_7_atari9";
+var BUILD_TAG = "2026-03-21_master_out_deploy_menu";
+
+/**
+ * master_out を GitHub Actions でビルド・Pages 配信するときの Script Properties（プロジェクトの設定）:
+ * - GITHUB_PAT … GitHub PAT（classic: repo + workflow / Fine-grained: Actions: Write, Metadata read）
+ * - GITHUB_REPO … owner/repo 例: kzkymr-afk/P-stats
+ * - GITHUB_WORKFLOW_FILE … 省略時 deploy-master-out-pages.yml
+ * - GITHUB_REF … 省略時 main（ワークフローが動くブランチ）
+ * - MASTER_DEPLOY_WEBHOOK_SECRET … 任意。設定時のみ doPost mode=trigger_master_out_deploy で別アプリから起動可
+ */
+var MASTER_DEPLOY_WORKFLOW_DEFAULT = "deploy-master-out-pages.yml";
+var MASTER_DEPLOY_REF_DEFAULT = "main";
 
 /**
  * 実際のスプレッドシートのヘッダー（A〜AC = 29列）。
@@ -17,6 +28,102 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('★解析実行')
     .addItem('ここに貼り付け', 'showInputDialog')
     .addToUi();
+  SpreadsheetApp.getUi().createMenu('マスター配信')
+    .addItem('GitHub Actions で master_out をデプロイ', 'runDeployMasterOutToGitHub')
+    .addToUi();
+}
+
+/** メニュー「マスター配信」から: GitHub の workflow_dispatch で deploy-master-out-pages を起動 */
+function runDeployMasterOutToGitHub() {
+  var ui = SpreadsheetApp.getUi();
+  try {
+    var result = triggerMasterOutDeployCore_();
+    if (result.ok) {
+      ui.alert(
+        'master_out デプロイを開始しました',
+        'GitHub Actions 完了後（数分）、GitHub Pages の master_out/ に反映されます。\n' +
+          'リポジトリの Actions タブで進捗を確認できます。\n\n' +
+          '※ スプレッドシートは「ウェブに公開」した CSV URL が Repository Variables の MASTER_ONE_SHEET_CSV_URL と一致している必要があります。',
+        ui.ButtonSet.OK
+      );
+    } else {
+      ui.alert('デプロイ起動に失敗', 'HTTP ' + result.status + '\n\n' + String(result.body || '').slice(0, 1200), ui.ButtonSet.OK);
+    }
+  } catch (e) {
+    ui.alert('エラー', String(e.message || e), ui.ButtonSet.OK);
+  }
+}
+
+/**
+ * Apps Script エディタの関数プルダウンに出す用。
+ * `triggerMasterOutDeployCore_` のように末尾が _ の関数は一覧に出ないことがあるため、承認やデバッグはこちらを ▶ 実行。
+ * UrlFetchApp（script.external_request）の権限ダイアログを出したいときに使う。
+ */
+function authorizeUrlFetchPermission() {
+  var res = UrlFetchApp.fetch('https://www.google.com', { muteHttpExceptions: true, followRedirects: true });
+  Logger.log('HTTP ' + res.getResponseCode() + ' — UrlFetch の承認が通っていればこれで十分です。');
+}
+
+/** エディタから master_out デプロイ API を試す（結果は実行ログ）。getUi() を使わない。 */
+function runDeployMasterOutFromEditor() {
+  var result = triggerMasterOutDeployCore_();
+  Logger.log(JSON.stringify(result));
+}
+
+function getMasterDeployConfig_() {
+  var props = PropertiesService.getScriptProperties();
+  return {
+    pat: props.getProperty('GITHUB_PAT'),
+    repo: props.getProperty('GITHUB_REPO'),
+    workflowFile: props.getProperty('GITHUB_WORKFLOW_FILE') || MASTER_DEPLOY_WORKFLOW_DEFAULT,
+    ref: props.getProperty('GITHUB_REF') || MASTER_DEPLOY_REF_DEFAULT,
+    webhookSecret: props.getProperty('MASTER_DEPLOY_WEBHOOK_SECRET')
+  };
+}
+
+/**
+ * POST https://api.github.com/repos/{owner}/{repo}/actions/workflows/{file}/dispatches
+ * @returns {{ok: boolean, status?: number, body?: string}}
+ */
+function triggerMasterOutDeployCore_() {
+  var cfg = getMasterDeployConfig_();
+  if (!cfg.pat || !cfg.repo) {
+    throw new Error('Script Properties に GITHUB_PAT と GITHUB_REPO を設定してください。');
+  }
+  var parts = String(cfg.repo).trim().split('/');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    throw new Error('GITHUB_REPO は owner/repo 形式で設定してください。');
+  }
+  var owner = parts[0];
+  var repo = parts[1];
+  var workflow = cfg.workflowFile;
+  var url =
+    'https://api.github.com/repos/' +
+    encodeURIComponent(owner) +
+    '/' +
+    encodeURIComponent(repo) +
+    '/actions/workflows/' +
+    encodeURIComponent(workflow) +
+    '/dispatches';
+  var payload = JSON.stringify({ ref: cfg.ref });
+  var res = UrlFetchApp.fetch(url, {
+    method: 'post',
+    contentType: 'application/json',
+    payload: payload,
+    muteHttpExceptions: true,
+    headers: {
+      Authorization: 'Bearer ' + cfg.pat,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'P-stats-GAS-master-deploy'
+    }
+  });
+  var code = res.getResponseCode();
+  var text = res.getContentText();
+  if (code === 204) {
+    return { ok: true, status: code };
+  }
+  return { ok: false, status: code, body: text };
 }
 
 function showInputDialog() {
@@ -40,8 +147,35 @@ function doPost(e) {
         ok: true,
         build_tag: BUILD_TAG,
         notes: "I列手動。マスタ: mode_0〜7、当たり9項目（あたりID/名/…）",
-        header_len: HEADER_ROW.length
+        header_len: HEADER_ROW.length,
+        master_deploy_webhook: !!PropertiesService.getScriptProperties().getProperty("MASTER_DEPLOY_WEBHOOK_SECRET")
       });
+    }
+
+    // データ入力専用アプリ等から: Script Properties の MASTER_DEPLOY_WEBHOOK_SECRET と p.secret が一致したときだけ起動
+    if (mode === "trigger_master_out_deploy") {
+      var sprops = PropertiesService.getScriptProperties();
+      var wh = sprops.getProperty("MASTER_DEPLOY_WEBHOOK_SECRET");
+      if (!wh) {
+        return createJsonResponse({ ok: false, error: "webhook_not_configured" });
+      }
+      var incoming = String(p.secret || p.deploy_secret || "").trim();
+      if (incoming !== String(wh).trim()) {
+        return createJsonResponse({ ok: false, error: "forbidden" });
+      }
+      try {
+        var dr = triggerMasterOutDeployCore_();
+        if (dr.ok) {
+          return createJsonResponse({ ok: true, github_status: dr.status });
+        }
+        return createJsonResponse({
+          ok: false,
+          github_status: dr.status,
+          github_body: String(dr.body || "").slice(0, 2000)
+        });
+      } catch (err) {
+        return createJsonResponse({ ok: false, error: String(err.message || err) });
+      }
     }
 
     if (mode === "get_done_list") {

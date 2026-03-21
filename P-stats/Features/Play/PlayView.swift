@@ -13,6 +13,15 @@ struct PlayView: View {
     @AppStorage("alwaysShowBothInvestmentButtons") private var alwaysShowBothInvestmentButtons = true
 
     // --- 1. シートの表示管理用変数 ---
+    // 全画面オーバーレイと `PlayPresentationSurface` の対応（名称は `PlayModeVocabulary.swift` と用語定義で統一）
+    // - showBonusMonitor → .bonusMonitor
+    // - showPowerSavingMode → .powerSaving
+    // - showRushFocusMode → .rushFocus
+    // - showChanceMode → .chanceMode
+    // - showChainResult → .chainResult
+    // - showHistoryFromPlay → .historyFromPlay
+    // - showEventHistorySheet → .playEventHistory
+    // - showAnalyticsFromPlay → .analyticsFromPlay
     @State private var showSettingsSheet = false
     @State private var showSyncSheet = false
     @State private var showTrayAdjustSheet = false
@@ -621,6 +630,7 @@ struct PlayView: View {
             PowerSavingModeView(
                 log: log,
                 rightHandMode: rightHandMode,
+                machineMaster: machineMaster,
                 onExit: { showPowerSavingMode = false },
                 onOpenRush: {
                     returnToPowerSavingModeAfterExit = true
@@ -663,7 +673,7 @@ struct PlayView: View {
             }
         }
         .fullScreenCover(isPresented: $showChanceMode) {
-            ChanceModeView(log: log, onRushExit: {
+            ChanceModeView(log: log, machineMaster: machineMaster, onRushExit: {
                 showChanceMode = false
                 showRushFocusMode = true
             }, onLtExit: nil, onTimeShortEnd: { showChanceMode = false })
@@ -823,7 +833,7 @@ struct PlayView: View {
     @ViewBuilder
     private func headerRow(height: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(modeNameForHeader)
+            Text(log.stayModeDisplayName(machineMaster: machineMaster))
                 .font(AppTypography.sectionSubheading)
                 .foregroundColor(AppGlassStyle.modeColor(modeId: log.currentModeID))
                 .lineLimit(nil)
@@ -877,21 +887,6 @@ struct PlayView: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(glassStroke(tint: focusAccent), lineWidth: playPanelStrokeLineWidth)
         )
-    }
-
-    private var modeNameForHeader: String {
-        switch log.currentModeID {
-        case 2:
-            return "LT"
-        case 1:
-            // RUSH/ST として扱う（ST失敗もこのモードID側）
-            return "RUSH"
-        default:
-            if log.currentState == .support {
-                return log.isTimeShortMode ? "時短" : "電サポ"
-            }
-            return "通常"
-        }
     }
 
     private func headerRowUndoButton() -> some View {

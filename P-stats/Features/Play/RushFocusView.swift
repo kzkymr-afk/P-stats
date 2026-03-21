@@ -31,6 +31,19 @@ struct RushFocusView: View {
             ZStack {
                 bg.ignoresSafeArea()
                 VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(PlayPresentationSurface.rushFocus.userFacingTitle)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(.white.opacity(0.55))
+                        Text(log.stayModeDisplayName(machineMaster: machineMaster))
+                            .font(AppTypography.sectionSubheading)
+                            .foregroundColor(AppGlassStyle.modeColor(modeId: log.currentModeID))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+
                     // 上3/16: 損益折れ線グラフ（幅は親に合わせる）
                     profitLineChartView(height: chartHeight, availableWidth: w - 32)
                         .padding(.horizontal, 16)
@@ -658,6 +671,19 @@ struct LtFocusView: View {
             ZStack {
                 bg.ignoresSafeArea()
                 VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(PlayPresentationSurface.ltFocus.userFacingTitle)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundColor(.white.opacity(0.55))
+                        Text(log.stayModeDisplayName(machineMaster: machineMaster))
+                            .font(AppTypography.sectionSubheading)
+                            .foregroundColor(AppGlassStyle.modeColor(modeId: log.currentModeID))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+
                     // 上3/16: 損益折れ線グラフ
                     profitLineChartView(height: chartHeight, availableWidth: w - 32)
                         .padding(.horizontal, 16)
