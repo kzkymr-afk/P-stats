@@ -77,3 +77,11 @@ jobs:
           git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
           git push -u origin gh-pages --force
 
+      - name: 配信確認（gh-pages の先端コミット）
+        run: |
+          set -euo pipefail
+          git fetch origin gh-pages --depth=1
+          echo "--- gh-pages 最新コミット ---"
+          git log -1 --oneline origin/gh-pages
+          echo "--- master_out 内（先頭数件） ---"
+          git ls-tree -r --name-only origin/gh-pages master_out/ | head -40

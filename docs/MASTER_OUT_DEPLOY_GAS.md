@@ -89,6 +89,30 @@ curl -sS -X POST "https://script.google.com/macros/s/＜デプロイID＞/exec" 
 | HTTP 404 | ワークフローファイル名、`GITHUB_REF` のブランチに YAML が存在するか |
 | Actions は動くが JSON が古い | `MASTER_ONE_SHEET_CSV_URL` が正しいシートか、公開 CSV の反映待ち |
 | メニューが出ない | `onOpen` が走るようシートを再読み込み、または `clasp push` 漏れ |
+| **GitHub 上の `master_out` が更新されない** | 下記 §4.1 を読む（**`main` と `gh-pages` の取り違え**が最多） |
+
+### 4.1 「リポジトリのファイルが変わらない」とき
+
+**配信された JSON は `main` ブランチには載りません。** ワークフローは **`gh-pages` ブランチ**にだけ `master_out/` を force push します。
+
+1. GitHub のリポジトリ画面で、ブランチを **`gh-pages`** に切り替える。  
+2. フォルダ **`master_out/`** 以下に `index.json` や `machines/*.json` があるか見る。  
+3. 緑の **`main`** のまま `master_out` を探しても、**更新されないのは正常**です。
+
+**Actions が成功しているか**も確認する。失敗している場合はログの **「GitHub Pages（gh-pages ブランチ）へ配信」** と **「配信確認」** ステップを開く。
+
+### 4.2 GitHub Pages のサイトが古いまま
+
+**Settings → Pages → Build and deployment** を開く。
+
+- **Source が「GitHub Actions」**だけになっている場合、**ブランチへの push だけではサイトが更新されない**ことがあります。静的ファイルを **`gh-pages` ブランチ**から配信するなら、**Deploy from a branch** にし、**Branch = `gh-pages` / Folder = `/ (root)`** を選ぶ（リポジトリの運用に合わせる）。
+- 公開 URL は通常 `https://＜ユーザー名＞.github.io/＜リポジトリ名＞/master_out/` 配下（`index.json` は `.../master_out/index.json`）。
+
+### 4.3 それでもおかしいとき
+
+- **Organization のルール**で `gh-pages` への force push が禁止されていないか。
+- **CSV** が Google のキャッシュで古い（編集直後は数十秒〜1分待つ、公開 URL を開き直して確認）。
+- ワークフロー最後の **「配信確認」** で `git log origin/gh-pages` のコミットメッセージに **その実行時の `main` の SHA** が含まれているか。
 
 ## 5. 関連ファイル
 
