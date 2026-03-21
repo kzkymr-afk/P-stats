@@ -9,9 +9,6 @@ on:
 permissions:
   contents: write
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -56,12 +53,27 @@ jobs:
           ls -la master_out
           ls -la master_out/machines | head -n 30 || true
 
+      # peaceiris/actions-gh-pages は Node 20 固定のため非推奨警告が出る。git のみで同等配信（orphan + master_out/ 配下）。
       - name: GitHub Pages（gh-pages ブランチ）へ配信
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./master_out
-          destination_dir: master_out
-          force_orphan: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SRC="${{ github.workspace }}/master_out"
+          if [ ! -d "$SRC" ] || [ -z "$(ls -A "$SRC" 2>/dev/null)" ]; then
+            echo "::error::master_out が空です。CSV 変換を確認してください。"
+            exit 1
+          fi
+          STAGE=$(mktemp -d)
+          mkdir -p "$STAGE/master_out"
+          cp -R "$SRC"/. "$STAGE/master_out/"
+          touch "$STAGE/.nojekyll"
+          cd "$STAGE"
+          git init -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Deploy master_out (${{ github.sha }})"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          git push -u origin gh-pages --force
 
