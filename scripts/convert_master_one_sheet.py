@@ -23,6 +23,7 @@
 差分更新（既定）:
   既存の master_out/machines/*.json があるとき、JSON を意味比較し変更がない機種はファイルを書き換えない。
   今回のエクスポート対象に含まれない safe_id の *.json は削除（CSVから消えた・ステータスで落ちた機種）。
+  「更新対象」列が「対象外」の行は JSON を書き換えず、既存ファイルも削除しない（index には残す）。
   CI では gh-pages 上の master_out を先に checkout してから本スクリプトを実行すること（workflow 参照）。
   全件上書き: 環境変数 MASTER_OUT_FORCE_FULL_WRITE=1
 """
@@ -51,6 +52,7 @@ FORCE_FULL_WRITE = os.environ.get("MASTER_OUT_FORCE_FULL_WRITE", "").strip().low
 
 HEADER_NAMES = [
     "導入開始日", "機種名", "メーカー", "確率", "機種タイプ", "スペック", "特徴タグ", "機種ID", "ステータス",
+    "更新対象",
     "モード0", "モード1", "モード2", "モード3", "モード4", "モード5", "モード6", "モード7",
     "当たり1", "当たり2", "当たり3", "当たり4", "当たり5", "当たり6",
     "当たり7", "当たり8", "当たり9", "当たり10", "当たり11", "当たり12",
@@ -59,9 +61,27 @@ HEADER_NAMES = [
 EXPORT_STATUS_VALUES = {s.strip() for s in os.environ.get("MASTER_EXPORT_STATUS_VALUES", "完了").split("|") if s.strip()}
 SKIP_STATUS_VALUES = {"スキップ", "無効", "skip", "invalid", "スキップ ", "無効 "}
 
+# 「更新対象」列が「対象外」のときは master_out へ書き出さず、既存 JSON は保持（削除しない）
+UPDATE_TARGET_EXCLUDE_LABELS = {
+    "対象外",
+    "外",
+    "しない",
+    "no",
+    "false",
+    "0",
+    "×",
+    "x",
+    "否",
+    "－",
+    "-",
+}
+
 
 def _normalize(s: str) -> str:
     return (s or "").strip().lower()
+
+
+UPDATE_TARGET_EXCLUDE_NORMALIZED = {_normalize(s) for s in UPDATE_TARGET_EXCLUDE_LABELS}
 
 
 def _col_index(headers: list[str]) -> dict[str, int]:
@@ -70,6 +90,7 @@ def _col_index(headers: list[str]) -> dict[str, int]:
         "機種ID": ["機種id", "machine_id", "machine id"],
         "機種名": ["name", "machine_name", "machine name"],
         "ステータス": ["status"],
+        "更新対象": ["update_target", "update target"],
         "導入開始日": ["導入日", "introduction_date", "introduction date"],
         "機種タイプ": ["type", "machine_type", "machine type"],
     }
@@ -117,6 +138,22 @@ def _should_skip_status(status: str) -> bool:
     if s in EXPORT_STATUS_VALUES:
         return False
     return _normalize(s) in {t.lower() for t in SKIP_STATUS_VALUES}
+
+
+def _is_export_update_target(values: list[str], idx: dict[str, int]) -> bool:
+    """更新対象列が無い CSV は従来どおり全行が配信対象。列があるとき「対象外」は配信しない（既存 JSON は保持）。"""
+    if "更新対象" not in idx:
+        return True
+    col = idx["更新対象"]
+    raw = (values[col] if col < len(values) else "") or ""
+    s = raw.strip()
+    if not s:
+        return True
+    if s in UPDATE_TARGET_EXCLUDE_LABELS:
+        return False
+    if _normalize(s) in UPDATE_TARGET_EXCLUDE_NORMALIZED:
+        return False
+    return True
 
 
 def _parse_densapo(s: str):
@@ -253,14 +290,14 @@ def fetch_csv_from_url(url: str) -> str:
 def load_and_validate_rows(csv_content: str):
     lines = [line for line in csv_content.splitlines() if line.strip()]
     if len(lines) < 2:
-        return [], []
+        return [], [], []
     reader = csv.reader(io.StringIO(csv_content))
     rows = list(reader)
     headers = rows[0]
     idx = _col_index(headers)
 
     if "機種ID" not in idx or "機種名" not in idx:
-        return [], [(0, "", "ヘッダーに機種ID・機種名がありません")]
+        return [], [], [(0, "", "ヘッダーに機種ID・機種名がありません")]
 
     def v(values: list, key: str, default: str = "") -> str:
         if key not in idx or idx[key] >= len(values):
@@ -269,6 +306,7 @@ def load_and_validate_rows(csv_content: str):
 
     seen_ids: set[str] = set()
     valid_rows: list[dict] = []
+    preserve_rows: list[dict] = []
     skip_report: list[tuple[int, str, str, str]] = []
 
     for row_no, values in enumerate(rows[1:], start=2):
@@ -286,6 +324,22 @@ def load_and_validate_rows(csv_content: str):
             continue
 
         seen_ids.add(machine_id)
+
+        if not _is_export_update_target(values, idx):
+            preserve_rows.append(
+                {
+                    "machine_id": machine_id,
+                    "name": v(values, "機種名", machine_id),
+                    "manufacturer": v(values, "メーカー"),
+                    "probability": v(values, "確率"),
+                    "machine_type": v(values, "機種タイプ"),
+                    "intro_start": v(values, "導入開始日") or v(values, "導入日"),
+                    "status": status,
+                }
+            )
+            skip_report.append((row_no, machine_id, "skipped", "not_update_target"))
+            continue
+
         modes: list[dict] = []
         mode_parse_errors: list[str] = []
         for i in range(8):
@@ -382,7 +436,7 @@ def load_and_validate_rows(csv_content: str):
 
     for r in valid_rows:
         skip_report.append((0, r["machine_id"], "exported", ""))
-    return valid_rows, skip_report
+    return valid_rows, preserve_rows, skip_report
 
 
 def build_index(rows: list[dict]) -> list[dict]:
@@ -398,6 +452,14 @@ def build_index(rows: list[dict]) -> list[dict]:
         }
         for r in rows
     ]
+
+
+def merge_index(export_rows: list[dict], preserve_rows: list[dict]) -> list[dict]:
+    """配信対象の index と、対象外で保持する index をマージ（同一 machine_id は export 優先）。"""
+    primary = build_index(export_rows)
+    seen = {e["machine_id"] for e in primary}
+    rest = [e for e in build_index(preserve_rows) if e["machine_id"] not in seen]
+    return primary + rest
 
 
 def build_machine_json(row: dict) -> dict:
@@ -447,13 +509,13 @@ def main() -> None:
         )
         sys.exit(1)
 
-    valid_rows, skip_report = load_and_validate_rows(csv_content)
+    valid_rows, preserve_rows, skip_report = load_and_validate_rows(csv_content)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     machines_dir = OUTPUT_DIR / MACHINES_SUBDIR
     machines_dir.mkdir(parents=True, exist_ok=True)
 
-    index = build_index(valid_rows)
+    index = merge_index(valid_rows, preserve_rows)
     index_path = OUTPUT_DIR / "index.json"
     if FORCE_FULL_WRITE:
         with open(index_path, "w", encoding="utf-8") as f:
@@ -476,6 +538,8 @@ def main() -> None:
             print(f"[convert_master_one_sheet] index.json: 変更なし（スキップ） {len(index)} 機種", flush=True)
 
     expected_safe_ids: set[str] = set()
+    for pr in preserve_rows:
+        expected_safe_ids.add(_sanitize_machine_id(pr["machine_id"]))
     n_written = n_unchanged = 0
     for row in valid_rows:
         detail = build_machine_json(row)
@@ -503,7 +567,7 @@ def main() -> None:
                 pass
     print(
         f"[convert_master_one_sheet] machines/*.json: 新規・更新={n_written}, 変更なしスキップ={n_unchanged}, "
-        f"削除={n_removed}, 対象機種数={len(valid_rows)} -> {machines_dir}"
+        f"削除={n_removed}, 配信JSON行数={len(valid_rows)}, 対象外保持={len(preserve_rows)} -> {machines_dir}"
         + (" [FORCE_FULL_WRITE]" if FORCE_FULL_WRITE else ""),
         flush=True,
     )

@@ -1,7 +1,7 @@
 /** マスターシートのスプレッドシートID */
 var SS_ID = "1fSGx5EmcSOD68itgBRxjGyUGz0Wh5u1Lnbw-dyvchz4";
 // デプロイ版の動作確認用（Webアプリがどのコードを動かしているか判別）
-var BUILD_TAG = "2026-03-21_master_out_deploy_menu";
+var BUILD_TAG = "2026-03-21_update_target_col_j";
 
 /**
  * master_out を GitHub Actions でビルド・Pages 配信するときの Script Properties（プロジェクトの設定）:
@@ -15,11 +15,12 @@ var MASTER_DEPLOY_WORKFLOW_DEFAULT = "deploy-master-out-pages.yml";
 var MASTER_DEPLOY_REF_DEFAULT = "main";
 
 /**
- * 実際のスプレッドシートのヘッダー（A〜AC = 29列）。
- * A=導入開始日, B=機種ID, C=機種名, D=メーカー, E=確率, F=機種タイプ, G=スペック, H=特徴タグ, I=ステータス, J〜Q=モード0〜7, R〜AC=当たり1〜12
+ * 実際のスプレッドシートのヘッダー（A〜AD = 30列）。
+ * A=導入開始日, B=機種ID, C=機種名, D=メーカー, E=確率, F=機種タイプ, G=スペック, H=特徴タグ, I=ステータス, J=更新対象, K〜R=モード0〜7, S〜AH=当たり1〜12（30列・A〜AD）
  */
 var HEADER_ROW = [
   "導入開始日", "機種ID", "機種名", "メーカー", "確率", "機種タイプ", "スペック", "特徴タグ", "ステータス",
+  "更新対象",
   "モード0", "モード1", "モード2", "モード3", "モード4", "モード5", "モード6", "モード7",
   "当たり1", "当たり2", "当たり3", "当たり4", "当たり5", "当たり6", "当たり7", "当たり8", "当たり9", "当たり10", "当たり11", "当たり12"
 ];
@@ -146,7 +147,7 @@ function doPost(e) {
       return createJsonResponse({
         ok: true,
         build_tag: BUILD_TAG,
-        notes: "I列手動。マスタ: mode_0〜7、当たり9項目（あたりID/名/…）",
+        notes: "I列ステータス手動。J列更新対象（対象/対象外）。マスタ: mode_0〜7、当たり9項目（あたりID/名/…）",
         header_len: HEADER_ROW.length,
         master_deploy_webhook: !!PropertiesService.getScriptProperties().getProperty("MASTER_DEPLOY_WEBHOOK_SECRET")
       });
@@ -183,8 +184,8 @@ function doPost(e) {
       var sheet = ss.getSheets()[0];
       var lastRow = sheet.getLastRow();
       if (lastRow <= 1) return createResponse("");
-      // 29列: 列B(2)=機種ID, 列I(9)=ステータス
-      var data = sheet.getRange(2, 1, lastRow - 1, 29).getValues();
+      // 30列: 列B(2)=機種ID, 列I(9)=ステータス
+      var data = sheet.getRange(2, 1, lastRow - 1, 30).getValues();
       var doneIds = data.filter(function(row) { return row[8] === "完了"; }).map(function(row) { return String(row[1]); });
       return createResponse(doneIds.join(","));
     }
@@ -195,7 +196,7 @@ function doPost(e) {
       var sheetSkip = ssSkip.getSheets()[0];
       var lastRowSkip = sheetSkip.getLastRow();
       if (lastRowSkip <= 1) return createResponse("");
-      var dataSkip = sheetSkip.getRange(2, 1, lastRowSkip - 1, 29).getValues();
+      var dataSkip = sheetSkip.getRange(2, 1, lastRowSkip - 1, 30).getValues();
       var ids = dataSkip
         .filter(function(row) {
           var idv = String(row[1] || "").trim(); // B列
@@ -377,8 +378,8 @@ function buildMachineJsonById(machineId) {
   }
   if (rowIndex === -1) return null;
 
-  // A〜AC（29列）を取得
-  var row = sheet.getRange(rowIndex, 1, 1, 29).getValues()[0];
+  // A〜AD（30列）を取得
+  var row = sheet.getRange(rowIndex, 1, 1, 30).getValues()[0];
 
   var introDate = String(row[0] || "").trim();
   var id = String(row[1] || "").trim();
@@ -389,16 +390,17 @@ function buildMachineJsonById(machineId) {
   var specType = String(row[6] || "").trim();
   var tags = String(row[7] || "").trim();
   var status = String(row[8] || "").trim();
+  // row[9] = J列 更新対象（get_machine_json では参照のみ。master_out 配信は Python 側で除外）
 
   var modes = [];
   for (var m = 0; m < 8; m++) {
-    var pm = parseModeCell_(row[9 + m]);
+    var pm = parseModeCell_(row[10 + m]);
     if (pm) modes.push(pm);
   }
 
   var flatBonuses = [];
   for (var a = 0; a < 12; a++) {
-    var nb = parseAtariCell9_(row[17 + a]);
+    var nb = parseAtariCell9_(row[18 + a]);
     if (nb) flatBonuses.push(nb);
   }
   enrichBonusesNextUiRole_(flatBonuses, modes);
@@ -419,8 +421,8 @@ function buildMachineJsonById(machineId) {
 }
 
 /**
- * 解析メイン。HTMLから取得できる項目を29列（A〜AC）の該当列に書き込む。
- * A=導入開始日, B=機種ID, C=機種名, D=メーカー, E=確率, F=機種タイプ, G=スペック, H=特徴タグ, I=ステータス, J〜Q=モード0〜7(空), R〜AC=当たり1〜12(空)
+ * 解析メイン。HTMLから取得できる項目を30列（A〜AD）の該当列に書き込む。
+ * A=導入開始日, B=機種ID, C=機種名, D=メーカー, E=確率, F=機種タイプ, G=スペック, H=特徴タグ, I=ステータス, J=更新対象(既定「対象」), K〜R=モード0〜7(空), S〜AH=当たり1〜12(空)
  */
 function processPachinkoText(rawInput, manualUrl) {
   try {
@@ -517,9 +519,10 @@ function processPachinkoText(rawInput, manualUrl) {
       return "スキップ: 既に埋まっています " + name;
     }
 
-    // 新規行: 2行目に追加（A〜Hのみ埋め、I列=ステータスは空、右側も空）
+    // 新規行: 2行目に追加（A〜Hのみ埋め、I列=ステータスは空、J列=更新対象は「対象」、右は空）
     var newRow = [
       introDate, mCode, name, maker, probability, machineType, specType, tagString, "",
+      "対象",
       "", "", "", "", "", "", "", "",
       "", "", "", "", "", "", "", "", "", "", "", ""
     ];
