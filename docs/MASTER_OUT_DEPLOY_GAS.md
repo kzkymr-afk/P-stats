@@ -116,6 +116,7 @@ curl -sS -X POST "https://script.google.com/macros/s/＜デプロイID＞/exec" 
 
 ## 5. 関連ファイル
 
+- **切り分け（更新されているのに中身が変わらない）**: `docs/MASTER_OUT_切り分け手順.md`
 - ワークフロー: `.github/workflows/deploy-master-out-pages.yml`
 - 変換: `scripts/convert_master_one_sheet.py`
 - GAS 本体: `gas_project/gas.gs`
