@@ -10,7 +10,7 @@ struct RushFocusView: View {
     @State private var showRushEndSheet = false
     // ユニット連結型: 入力中（メイン＋追撃）
     @State private var activeBonus: MasterBonus?
-    @State private var activeUnitCount: Int = 0
+    @State private var activeUnitTapAmounts: [Int] = []
     @State private var desiredUnitCount: Int = 0
     @State private var selectedName: String?
     @State private var showBranchPicker: Bool = false
@@ -96,6 +96,11 @@ struct RushFocusView: View {
                 .frame(minWidth: 0, maxWidth: .infinity)
             }
         }
+        .onChange(of: desiredUnitCount) { _, newVal in
+            if activeUnitTapAmounts.count > newVal {
+                activeUnitTapAmounts = Array(activeUnitTapAmounts.prefix(newVal))
+            }
+        }
         .sheet(isPresented: $showRushEndSheet) {
             RushEndInputSheet(log: log, machineMaster: machineMaster, onConfirm: {
                 showRushEndSheet = false
@@ -118,13 +123,14 @@ struct RushFocusView: View {
                 VStack(spacing: 10) {
                     if let b = activeBonus, b.hasUnit {
                         let base = max(0, b.basePayout)
-                        let unit = max(0, b.unitPayout)
+                        let payouts = b.positiveUnitPayouts
                         let maxStack = max(0, b.maxUnitCount)
                         let d = min(max(desiredUnitCount, 0), maxStack)
-                        let a = min(max(activeUnitCount, 0), d)
-                        let total = base + unit * a
+                        let amounts = Array(activeUnitTapAmounts.prefix(d))
+                        let a = amounts.count
+                        let total = base + amounts.reduce(0, +)
 
-                        HStack(spacing: 10) {
+                        HStack(alignment: .top, spacing: 10) {
                             ZStack {
                                 AppGlassStyle.rushColor.opacity(AppGlassStyle.rushBackgroundOpacity)
                                 VStack(spacing: 6) {
@@ -152,24 +158,52 @@ struct RushFocusView: View {
                                 }
                                 .tint(AppGlassStyle.rushColor)
 
-                                Button(action: {
-                                    guard activeUnitCount < desiredUnitCount else { return }
-                                    activeUnitCount += 1
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                }) {
-                                    ZStack {
-                                        AppGlassStyle.rushColor.opacity(0.22)
-                                        Text("追撃\n+\(unit)")
-                                            .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                            .foregroundColor(AppGlassStyle.rushColor)
-                                            .multilineTextAlignment(.center)
+                                if payouts.count <= 1 {
+                                    let unit = payouts.first ?? 0
+                                    Button(action: {
+                                        guard activeUnitTapAmounts.count < d, unit > 0 else { return }
+                                        activeUnitTapAmounts.append(unit)
+                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    }) {
+                                        ZStack {
+                                            AppGlassStyle.rushColor.opacity(0.22)
+                                            Text("追撃\n+\(unit)")
+                                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                                .foregroundColor(AppGlassStyle.rushColor)
+                                                .multilineTextAlignment(.center)
+                                        }
+                                        .frame(width: 110, height: 44)
+                                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(0.5), lineWidth: 1))
                                     }
-                                    .frame(width: 110, height: 44)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.rushColor.opacity(0.5), lineWidth: 1))
+                                    .buttonStyle(.plain)
+                                    .disabled(a >= d || unit <= 0)
+                                } else {
+                                    LazyVGrid(
+                                        columns: [GridItem(.adaptive(minimum: 72), spacing: 6)],
+                                        spacing: 6
+                                    ) {
+                                        ForEach(Array(payouts.enumerated()), id: \.offset) { _, u in
+                                            Button(action: {
+                                                guard activeUnitTapAmounts.count < d, u > 0 else { return }
+                                                activeUnitTapAmounts.append(u)
+                                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                            }) {
+                                                Text("＋\(u)")
+                                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                                    .foregroundColor(AppGlassStyle.rushColor)
+                                                    .frame(maxWidth: .infinity)
+                                                    .padding(.vertical, 8)
+                                                    .background(AppGlassStyle.rushColor.opacity(0.22))
+                                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppGlassStyle.rushColor.opacity(0.5), lineWidth: 1))
+                                            }
+                                            .buttonStyle(.plain)
+                                            .disabled(a >= d || u <= 0)
+                                        }
+                                    }
+                                    .frame(width: 150)
                                 }
-                                .buttonStyle(.plain)
-                                .disabled(activeUnitCount >= desiredUnitCount)
                             }
                             .frame(width: 150)
                         }
@@ -177,7 +211,7 @@ struct RushFocusView: View {
                         HStack(spacing: 10) {
                             Button("キャンセル") {
                                 activeBonus = nil
-                                activeUnitCount = 0
+                                activeUnitTapAmounts = []
                                 desiredUnitCount = 0
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             }
@@ -190,11 +224,10 @@ struct RushFocusView: View {
 
                             Button("確定") {
                                 OrganicHaptics.playRushHeartbeat()
-                                let total = base + unit * a
                                 let temp = b.asBonusDetail(using: machineMaster)
                                 log.recordHit(bonus: temp, totalPrize: total, atRotation: log.totalRotations)
                                 activeBonus = nil
-                                activeUnitCount = 0
+                                activeUnitTapAmounts = []
                                 desiredUnitCount = 0
                             }
                             .font(.system(size: 14, weight: .bold, design: .monospaced))
@@ -214,7 +247,7 @@ struct RushFocusView: View {
                                     let v = variants.first!
                                     if v.hasUnit {
                                         activeBonus = v
-                                        activeUnitCount = 0
+                                        activeUnitTapAmounts = []
                                         desiredUnitCount = 0
                                     } else {
                                         OrganicHaptics.playRushHeartbeat()
@@ -252,7 +285,7 @@ struct RushFocusView: View {
                             if !trimmed.isEmpty {
                                 if v.hasUnit {
                                     activeBonus = v
-                                    activeUnitCount = 0
+                                    activeUnitTapAmounts = []
                                     desiredUnitCount = 0
                                 } else {
                                     OrganicHaptics.playRushHeartbeat()
@@ -639,7 +672,7 @@ struct LtFocusView: View {
 
     // ユニット連結型: 入力中（メイン＋追撃）
     @State private var activeBonus: MasterBonus?
-    @State private var activeUnitCount: Int = 0
+    @State private var activeUnitTapAmounts: [Int] = []
     @State private var desiredUnitCount: Int = 0
     @State private var selectedName: String?
     @State private var showBranchPicker: Bool = false
@@ -734,6 +767,11 @@ struct LtFocusView: View {
                 .frame(minWidth: 0, maxWidth: .infinity)
             }
         }
+        .onChange(of: desiredUnitCount) { _, newVal in
+            if activeUnitTapAmounts.count > newVal {
+                activeUnitTapAmounts = Array(activeUnitTapAmounts.prefix(newVal))
+            }
+        }
     }
 
     @ViewBuilder
@@ -748,13 +786,14 @@ struct LtFocusView: View {
                 VStack(spacing: 10) {
                     if let b = activeBonus, b.hasUnit {
                         let base = max(0, b.basePayout)
-                        let unit = max(0, b.unitPayout)
+                        let payouts = b.positiveUnitPayouts
                         let maxStack = max(0, b.maxUnitCount)
                         let d = min(max(desiredUnitCount, 0), maxStack)
-                        let a = min(max(activeUnitCount, 0), d)
-                        let total = base + unit * a
+                        let amounts = Array(activeUnitTapAmounts.prefix(d))
+                        let a = amounts.count
+                        let total = base + amounts.reduce(0, +)
 
-                        HStack(spacing: 10) {
+                        HStack(alignment: .top, spacing: 10) {
                             ZStack {
                                 AppGlassStyle.ltColor.opacity(AppGlassStyle.ltBackgroundOpacity)
                                 VStack(spacing: 6) {
@@ -782,24 +821,52 @@ struct LtFocusView: View {
                                 }
                                 .tint(AppGlassStyle.ltColor)
 
-                                Button(action: {
-                                    guard activeUnitCount < desiredUnitCount else { return }
-                                    activeUnitCount += 1
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                }) {
-                                    ZStack {
-                                        AppGlassStyle.ltColor.opacity(0.22)
-                                        Text("追撃\n+\(unit)")
-                                            .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                            .foregroundColor(AppGlassStyle.ltColor)
-                                            .multilineTextAlignment(.center)
+                                if payouts.count <= 1 {
+                                    let unit = payouts.first ?? 0
+                                    Button(action: {
+                                        guard activeUnitTapAmounts.count < d, unit > 0 else { return }
+                                        activeUnitTapAmounts.append(unit)
+                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    }) {
+                                        ZStack {
+                                            AppGlassStyle.ltColor.opacity(0.22)
+                                            Text("追撃\n+\(unit)")
+                                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                                .foregroundColor(AppGlassStyle.ltColor)
+                                                .multilineTextAlignment(.center)
+                                        }
+                                        .frame(width: 110, height: 44)
+                                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(0.5), lineWidth: 1))
                                     }
-                                    .frame(width: 110, height: 44)
-                                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(AppGlassStyle.ltColor.opacity(0.5), lineWidth: 1))
+                                    .buttonStyle(.plain)
+                                    .disabled(a >= d || unit <= 0)
+                                } else {
+                                    LazyVGrid(
+                                        columns: [GridItem(.adaptive(minimum: 72), spacing: 6)],
+                                        spacing: 6
+                                    ) {
+                                        ForEach(Array(payouts.enumerated()), id: \.offset) { _, u in
+                                            Button(action: {
+                                                guard activeUnitTapAmounts.count < d, u > 0 else { return }
+                                                activeUnitTapAmounts.append(u)
+                                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                            }) {
+                                                Text("＋\(u)")
+                                                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                                    .foregroundColor(AppGlassStyle.ltColor)
+                                                    .frame(maxWidth: .infinity)
+                                                    .padding(.vertical, 8)
+                                                    .background(AppGlassStyle.ltColor.opacity(0.22))
+                                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(AppGlassStyle.ltColor.opacity(0.5), lineWidth: 1))
+                                            }
+                                            .buttonStyle(.plain)
+                                            .disabled(a >= d || u <= 0)
+                                        }
+                                    }
+                                    .frame(width: 150)
                                 }
-                                .buttonStyle(.plain)
-                                .disabled(activeUnitCount >= desiredUnitCount)
                             }
                             .frame(width: 150)
                         }
@@ -807,7 +874,7 @@ struct LtFocusView: View {
                         HStack(spacing: 10) {
                             Button("キャンセル") {
                                 activeBonus = nil
-                                activeUnitCount = 0
+                                activeUnitTapAmounts = []
                                 desiredUnitCount = 0
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             }
@@ -822,7 +889,7 @@ struct LtFocusView: View {
                                 let temp = b.asBonusDetail(using: machineMaster)
                                 log.recordHit(bonus: temp, totalPrize: total, atRotation: log.totalRotations)
                                 activeBonus = nil
-                                activeUnitCount = 0
+                                activeUnitTapAmounts = []
                                 desiredUnitCount = 0
                             }
                             .font(.system(size: 14, weight: .bold, design: .monospaced))
@@ -842,7 +909,7 @@ struct LtFocusView: View {
                                     let v = variants.first!
                                     if v.hasUnit {
                                         activeBonus = v
-                                        activeUnitCount = 0
+                                        activeUnitTapAmounts = []
                                         desiredUnitCount = 0
                                     } else {
                                         let temp = v.asBonusDetail(using: machineMaster)
@@ -878,7 +945,7 @@ struct LtFocusView: View {
                             if !trimmed.isEmpty {
                                 if v.hasUnit {
                                     activeBonus = v
-                                    activeUnitCount = 0
+                                    activeUnitTapAmounts = []
                                     desiredUnitCount = 0
                                 } else {
                                     let temp = v.asBonusDetail(using: machineMaster)

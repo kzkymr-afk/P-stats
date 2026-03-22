@@ -11,12 +11,25 @@ struct BonusDetail: Decodable, Identifiable {
     /// 移行先モードの UI ロール（0=通常系, 1=RUSH系, 2=LT）
     var nextUiRole: Int?
     var baseOut: Int
-    var unitOut: Int
+    /// 上乗せ1回あたりの出玉候補（複数なら UI で [+300][+1500] のように並べる）
+    var unitOuts: [Int]
     var maxStack: Int
 
     var payout: Int { baseOut }
 
-    var id: String { "\(name)_\(baseOut)_\(unitOut)_\(maxStack)_\(nextModeId)" }
+    /// 後方互換・単一ユニット時の代表値
+    var unitOut: Int { unitOuts.first ?? 0 }
+
+    /// 複数ユニット（カンマ区切りマスタ）かどうか
+    var hasMultipleUnitOuts: Bool { unitOuts.filter { $0 > 0 }.count > 1 }
+
+    /// 追撃 UI 用の正のユニット一覧
+    var positiveUnitOuts: [Int] { unitOuts.filter { $0 > 0 } }
+
+    var id: String {
+        let u = unitOuts.map(String.init).joined(separator: "-")
+        return "\(name)_\(baseOut)_\(u)_\(maxStack)_\(nextModeId)"
+    }
 
     enum CodingKeys: String, CodingKey {
         case name
@@ -26,6 +39,7 @@ struct BonusDetail: Decodable, Identifiable {
         case nextUiRole = "next_ui_role"
         case baseOut
         case unitOut
+        case unitOuts = "unit_outs"
         case maxStack
     }
 
@@ -36,7 +50,12 @@ struct BonusDetail: Decodable, Identifiable {
         nextModeId = (try? c.decode(Int.self, forKey: .nextModeId)) ?? 0
         nextUiRole = try? c.decode(Int.self, forKey: .nextUiRole)
         baseOut = (try? c.decode(Int.self, forKey: .baseOut)) ?? 0
-        unitOut = (try? c.decode(Int.self, forKey: .unitOut)) ?? 0
+        if let arr = try c.decodeIfPresent([Int].self, forKey: .unitOuts) {
+            unitOuts = arr.filter { $0 > 0 }
+        } else {
+            let u = (try? c.decode(Int.self, forKey: .unitOut)) ?? 0
+            unitOuts = u > 0 ? [u] : []
+        }
         let ms = (try? c.decode(Int.self, forKey: .maxStack)) ?? 1
         maxStack = max(1, ms)
         if let d = try? c.decode(Double.self, forKey: .ratio) {
@@ -60,7 +79,27 @@ struct BonusDetail: Decodable, Identifiable {
     ) {
         self.name = name
         self.baseOut = baseOut
-        self.unitOut = unitOut
+        self.unitOuts = unitOut > 0 ? [unitOut] : []
+        self.maxStack = max(1, maxStack)
+        self.ratio = ratio
+        self.densapo = densapo
+        self.nextModeId = nextModeId
+        self.nextUiRole = nextUiRole
+    }
+
+    init(
+        name: String,
+        baseOut: Int,
+        unitOuts: [Int],
+        maxStack: Int,
+        ratio: Double = 0,
+        densapo: Int = 0,
+        nextModeId: Int,
+        nextUiRole: Int? = nil
+    ) {
+        self.name = name
+        self.baseOut = baseOut
+        self.unitOuts = unitOuts.filter { $0 > 0 }
         self.maxStack = max(1, maxStack)
         self.ratio = ratio
         self.densapo = densapo

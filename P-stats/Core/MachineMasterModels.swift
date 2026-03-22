@@ -10,6 +10,8 @@ struct MachineMasterIndexEntry: Decodable, Identifiable {
     var machineType: String?
     var introStart: String?
     var status: String?
+    /// CSV「更新対象」列（`index.json` に含まれる場合のみ）
+    var updateTarget: String?
 
     var id: String { machineId }
 
@@ -21,6 +23,7 @@ struct MachineMasterIndexEntry: Decodable, Identifiable {
         case machineType = "machine_type"
         case introStart = "intro_start"
         case status
+        case updateTarget = "update_target"
     }
 }
 
@@ -144,7 +147,8 @@ struct MasterBonus: Decodable, Identifiable, Hashable {
     var bonusId: String
     var name: String
     var basePayout: Int
-    var unitPayout: Int
+    /// 上乗せ候補（カンマ区切りマスタ → 複数要素）。JSON は `unit_payouts` 優先。
+    var unitPayouts: [Int]
     var maxConcat: Int
     var stayModeId: Int
     var nextModeId: Int
@@ -154,11 +158,18 @@ struct MasterBonus: Decodable, Identifiable, Hashable {
 
     var id: String { bonusId }
 
+    /// 後方互換・代表値（先頭のユニット）
+    var unitPayout: Int { unitPayouts.first ?? 0 }
+
+    /// 追撃 UI 用
+    var positiveUnitPayouts: [Int] { unitPayouts.filter { $0 > 0 } }
+
     enum CodingKeys: String, CodingKey {
         case bonusId = "bonus_id"
         case name
         case basePayout = "base_payout"
         case unitPayout = "unit_payout"
+        case unitPayouts = "unit_payouts"
         case maxConcat = "max_concat"
         case stayModeId = "stay_mode_id"
         case nextModeId = "next_mode_id"
@@ -167,7 +178,7 @@ struct MasterBonus: Decodable, Identifiable, Hashable {
         case nextUiRole = "next_ui_role"
     }
 
-    var hasUnit: Bool { unitPayout > 0 && maxConcat > 0 }
+    var hasUnit: Bool { maxConcat > 0 && unitPayouts.contains(where: { $0 > 0 }) }
     var maxUnitCount: Int { max(0, maxConcat) }
 
     init(
@@ -185,7 +196,32 @@ struct MasterBonus: Decodable, Identifiable, Hashable {
         self.bonusId = bonusId
         self.name = name
         self.basePayout = basePayout
-        self.unitPayout = max(0, unitPayout)
+        let u = max(0, unitPayout)
+        self.unitPayouts = u > 0 ? [u] : []
+        self.maxConcat = max(1, maxConcat)
+        self.stayModeId = stayModeId
+        self.nextModeId = nextModeId
+        self.branchLabel = branchLabel
+        self.promotionTargetBonusId = promotionTargetBonusId
+        self.nextUiRole = nextUiRole
+    }
+
+    init(
+        bonusId: String,
+        name: String,
+        basePayout: Int,
+        unitPayouts: [Int],
+        maxConcat: Int,
+        stayModeId: Int,
+        nextModeId: Int,
+        branchLabel: String? = nil,
+        promotionTargetBonusId: String? = nil,
+        nextUiRole: Int? = nil
+    ) {
+        self.bonusId = bonusId
+        self.name = name
+        self.basePayout = basePayout
+        self.unitPayouts = unitPayouts.filter { $0 > 0 }
         self.maxConcat = max(1, maxConcat)
         self.stayModeId = stayModeId
         self.nextModeId = nextModeId
@@ -212,7 +248,12 @@ struct MasterBonus: Decodable, Identifiable, Hashable {
         bonusId = try c.decode(String.self, forKey: .bonusId)
         name = try c.decode(String.self, forKey: .name)
         basePayout = try c.decode(Int.self, forKey: .basePayout)
-        unitPayout = try c.decodeIfPresent(Int.self, forKey: .unitPayout) ?? 0
+        if let arr = try c.decodeIfPresent([Int].self, forKey: .unitPayouts) {
+            unitPayouts = arr.filter { $0 > 0 }
+        } else {
+            let u = try c.decodeIfPresent(Int.self, forKey: .unitPayout) ?? 0
+            unitPayouts = u > 0 ? [u] : []
+        }
         maxConcat = max(1, try c.decodeIfPresent(Int.self, forKey: .maxConcat) ?? 1)
         if let i = try c.decodeIfPresent(Int.self, forKey: .stayModeId) {
             stayModeId = i
@@ -247,7 +288,7 @@ extension MasterBonus {
         return BonusDetail(
             name: name,
             baseOut: basePayout,
-            unitOut: unitPayout,
+            unitOuts: unitPayouts,
             maxStack: maxConcat,
             ratio: 0,
             densapo: d,

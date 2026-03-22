@@ -29,6 +29,8 @@
 
 ## 3. データ入力専用アプリ（別アプリ）からの起動
 
+**別アプリにボタンを実装する場合の要件・受け入れ条件は** **`docs/別アプリ_マスター配信ボタン実装指示書.md`** を参照。
+
 GAS を **ウェブアプリ**としてデプロイしている場合（既存の `doPost` と同じ URL）、次のパラメータで **同じデプロイ**を起動できる。
 
 ### 条件
@@ -96,8 +98,9 @@ curl -sS -X POST "https://script.google.com/macros/s/＜デプロイID＞/exec" 
 **配信された JSON は `main` ブランチには載りません。** ワークフローは **`gh-pages` ブランチ**にだけ `master_out/` を force push します。
 
 1. GitHub のリポジトリ画面で、ブランチを **`gh-pages`** に切り替える。  
-2. フォルダ **`master_out/`** 以下に `index.json` や `machines/*.json` があるか見る。  
-3. 緑の **`main`** のまま `master_out` を探しても、**更新されないのは正常**です。
+2. **ルート**に **`machines.json`**（プリセット一覧用）があるか見る。  
+3. フォルダ **`master_out/`** 以下に `index.json` や **`machines/<machine_id>.json`**（スペック用・ルートの `machines.json` とは別）があるか見る。  
+4. 緑の **`main`** のまま `master_out` を探しても、**更新されないのは正常**です。
 
 **Actions が成功しているか**も確認する。失敗している場合はログの **「GitHub Pages（gh-pages ブランチ）へ配信」** と **「配信確認」** ステップを開く。
 
@@ -116,6 +119,7 @@ curl -sS -X POST "https://script.google.com/macros/s/＜デプロイID＞/exec" 
 
 ## 5. 関連ファイル
 
+- **別アプリからマスター配信ボタン**: `docs/別アプリ_マスター配信ボタン実装指示書.md`
 - **切り分け（更新されているのに中身が変わらない）**: `docs/MASTER_OUT_切り分け手順.md`
 - ワークフロー: `.github/workflows/deploy-master-out-pages.yml`
 - 変換: `scripts/convert_master_one_sheet.py`

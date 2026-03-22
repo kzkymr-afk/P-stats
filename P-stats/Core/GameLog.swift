@@ -164,7 +164,19 @@ final class GameLog {
 
     /// 当たり1回適用後の状態更新（currentModeID / 電サポ・時短 / currentState）。recordHit と addWin の共通処理。
     private func setStateAfterHit(nextModeId: Int, densapo: Int, nextUiRole: Int?) {
-        let role = nextUiRole ?? Self.inferredUiRole(fromModeId: nextModeId)
+        let inferredRole = Self.inferredUiRole(fromModeId: nextModeId)
+        // データ不整合に備えて「モードIDが明確に決め打ちできるケース」だけは推論値を優先する。
+        // 例: next_mode_id==2(LT) なのに next_ui_role==1(RUSH) が入ってしまうケース。
+        let role: Int
+        if let r = nextUiRole {
+            if (nextModeId == 0 && r != 0) || (nextModeId == 2 && r != 2) {
+                role = inferredRole
+            } else {
+                role = r
+            }
+        } else {
+            role = inferredRole
+        }
         currentModeID = nextModeId
         currentModeUiRole = role
         remainingSupportCount = max(0, densapo)

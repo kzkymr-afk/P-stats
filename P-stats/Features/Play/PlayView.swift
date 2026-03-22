@@ -1986,7 +1986,7 @@ struct WinInputSheetView: View {
     var onConfirm: (Int?, WinType) -> Void
     var onCancel: () -> Void
     /// フェーズ4: データ駆動時、確定で選択した BonusDetail と「確定した合計出玉」を渡す。
-    /// - totalPrize: 基本出玉＋追撃（unitOut×回数）の合計。完結型は基本出玉相当。
+    /// - totalPrize: 基本出玉＋追撃の合算（複数ユニット時は各タップ分を足し込み）。完結型は基本出玉相当。
     var onConfirmRecordHit: ((BonusDetail, Int) -> Void)? = nil
     /// フェーズ4: 昇格ボタンなどの「確定前プレビュー操作」で mode/UI を即反映するためのコールバック。
     /// winRecords は増やさない。
@@ -2000,8 +2000,8 @@ struct WinInputSheetView: View {
     private let panelBgSelected = Color.black.opacity(0.85)
 
     @State private var selectedPrizeIndex: Int = 0
-    /// ユニット連結型: 追撃回数（選択中のボーナスに対して）
-    @State private var unitTapCount: Int = 0
+    /// ユニット連結型: 各追撃タップの出玉（複数ユニット時は値が混在しうる）
+    @State private var unitTapAmounts: [Int] = []
     /// ユーザーが選ぶ「上乗せ回数」(0..max)
     @State private var desiredUnitCount: Int = 0
     @State private var showExtraFields = false
@@ -2149,7 +2149,7 @@ struct WinInputSheetView: View {
                                         selectedDataDrivenNameIndex = index
                                         selectedBranchIndex = 0
                                         promotedOverrideVariant = nil
-                                        unitTapCount = 0
+                                        unitTapAmounts = []
                                         desiredUnitCount = 0
                                     }) {
                                         Text(item.name)
@@ -2180,7 +2180,7 @@ struct WinInputSheetView: View {
                                             Button(action: {
                                                 selectedBranchIndex = idx
                                                 promotedOverrideVariant = nil
-                                                unitTapCount = 0
+                                                unitTapAmounts = []
                                                 desiredUnitCount = 0
                                             }) {
                                                 Text(label)
@@ -2232,12 +2232,14 @@ struct WinInputSheetView: View {
 
                             if let v = effectiveSelectedVariant, v.hasUnit {
                                 let base = max(0, v.basePayout)
-                                let unit = max(0, v.unitPayout)
+                                let payouts = v.positiveUnitPayouts
                                 let maxStack = max(0, v.maxUnitCount)
                                 let clampedDesired = min(max(desiredUnitCount, 0), maxStack)
-                                let clampedTapCount = min(max(unitTapCount, 0), clampedDesired)
-                                let total = base + unit * clampedTapCount
-                                HStack(spacing: 10) {
+                                let effectiveAmounts = Array(unitTapAmounts.prefix(clampedDesired))
+                                let clampedTapCount = effectiveAmounts.count
+                                let extraSum = effectiveAmounts.reduce(0, +)
+                                let total = base + extraSum
+                                HStack(alignment: .top, spacing: 10) {
                                     ZStack {
                                         panelBgSelected
                                         VStack(spacing: 6) {
@@ -2265,28 +2267,48 @@ struct WinInputSheetView: View {
                                         }
                                         .tint(sheetTitleColor)
 
-                                        Button(action: {
-                                            guard unitTapCount < clampedDesired else { return }
-                                            unitTapCount += 1
-                                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                            // 追撃（上限＝最大連結数）に到達した瞬間に即確定して次状態へ遷移
-                                            if maxStack > 0 && unitTapCount >= maxStack {
-                                                confirmAction()
+                                        if payouts.count <= 1 {
+                                            let u = payouts.first ?? 0
+                                            Button(action: {
+                                                appendWinInputUnitTap(amount: u, maxStack: maxStack, clampedDesired: clampedDesired)
+                                            }) {
+                                                ZStack {
+                                                    sheetTitleColor.opacity(0.18)
+                                                    Text("追撃\n+\(u)")
+                                                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                                        .foregroundColor(sheetTitleColor)
+                                                        .multilineTextAlignment(.center)
+                                                }
+                                                .frame(width: 110, height: 44)
+                                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(sheetTitleColor.opacity(0.6), lineWidth: 1))
                                             }
-                                        }) {
-                                            ZStack {
-                                                sheetTitleColor.opacity(0.18)
-                                                Text("追撃\n+\(unit)")
-                                                    .font(.system(size: 13, weight: .bold, design: .monospaced))
-                                                    .foregroundColor(sheetTitleColor)
-                                                    .multilineTextAlignment(.center)
+                                            .buttonStyle(.plain)
+                                            .disabled(clampedTapCount >= clampedDesired || u <= 0)
+                                        } else {
+                                            LazyVGrid(
+                                                columns: [GridItem(.adaptive(minimum: 72), spacing: 6)],
+                                                spacing: 6
+                                            ) {
+                                                ForEach(Array(payouts.enumerated()), id: \.offset) { _, u in
+                                                    Button(action: {
+                                                        appendWinInputUnitTap(amount: u, maxStack: maxStack, clampedDesired: clampedDesired)
+                                                    }) {
+                                                        Text("＋\(u)")
+                                                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                                            .foregroundColor(sheetTitleColor)
+                                                            .frame(maxWidth: .infinity)
+                                                            .padding(.vertical, 10)
+                                                            .background(sheetTitleColor.opacity(0.18))
+                                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(sheetTitleColor.opacity(0.55), lineWidth: 1))
+                                                    }
+                                                    .buttonStyle(.plain)
+                                                    .disabled(clampedTapCount >= clampedDesired || u <= 0)
+                                                }
                                             }
-                                            .frame(width: 110, height: 44)
-                                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(sheetTitleColor.opacity(0.6), lineWidth: 1))
+                                            .frame(width: 140)
                                         }
-                                        .buttonStyle(.plain)
-                                        .disabled(clampedTapCount >= clampedDesired)
                                     }
                                     .frame(width: 140)
                                 }
@@ -2392,6 +2414,11 @@ struct WinInputSheetView: View {
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.15), lineWidth: 1))
         .keyboardDismissToolbar()
+        .onChange(of: desiredUnitCount) { _, newVal in
+            if unitTapAmounts.count > newVal {
+                unitTapAmounts = Array(unitTapAmounts.prefix(newVal))
+            }
+        }
         .alert("入力エラー", isPresented: $showErrorAlert) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -2516,10 +2543,15 @@ struct WinInputSheetView: View {
         promotedOverrideVariant = promoted
 
         // 昇格後も「その場で上乗せ（追撃）継続」を許可するため、
-        // tap 回数はリセットせず、昇格先の最大連結数でクランプする。
+        // タップ履歴はリセットせず、昇格先の最大連結数でクランプする。
         let newMaxStack = max(0, promoted.maxUnitCount)
         desiredUnitCount = min(max(desiredUnitCount, 0), newMaxStack)
-        unitTapCount = min(max(unitTapCount, 0), desiredUnitCount)
+        if unitTapAmounts.count > newMaxStack {
+            unitTapAmounts = Array(unitTapAmounts.prefix(newMaxStack))
+        }
+        if unitTapAmounts.count > desiredUnitCount {
+            unitTapAmounts = Array(unitTapAmounts.prefix(desiredUnitCount))
+        }
 
         // mode/UI だけ即反映（winRecords は確定しない）
         if let master = machineMaster {
@@ -2528,7 +2560,16 @@ struct WinInputSheetView: View {
         }
 
         // 昇格によって上限が到達してしまった場合は、そこで即確定（次状態へ遷移）
-        if newMaxStack > 0 && unitTapCount >= newMaxStack {
+        if newMaxStack > 0 && unitTapAmounts.count >= newMaxStack {
+            confirmAction()
+        }
+    }
+
+    private func appendWinInputUnitTap(amount: Int, maxStack: Int, clampedDesired: Int) {
+        guard amount > 0, unitTapAmounts.count < clampedDesired else { return }
+        unitTapAmounts.append(amount)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        if maxStack > 0 && unitTapAmounts.count >= maxStack {
             confirmAction()
         }
     }
@@ -2568,10 +2609,9 @@ struct WinInputSheetView: View {
                 return
             }
             let base = max(0, v.basePayout)
-            let unit = max(0, v.unitPayout)
             let clampedDesired = min(max(0, desiredUnitCount), max(0, v.maxUnitCount))
-            let clampedActual = min(max(0, unitTapCount), clampedDesired)
-            let total = base + unit * clampedActual
+            let effectiveAmounts = Array(unitTapAmounts.prefix(clampedDesired))
+            let total = base + effectiveAmounts.reduce(0, +)
             let temp = v.asBonusDetail(using: machineMaster)
             onRecordHit(temp, total)
             promotedOverrideVariant = nil

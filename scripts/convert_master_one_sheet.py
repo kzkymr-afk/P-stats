@@ -9,7 +9,7 @@
   N は 0〜7 のみ。mode_0=通常、mode_1〜7=特殊モード。
   ui_role: n=通常系(0), r=RUSH系(1), l=LT(2)。省略時は mode_0→n、mode_1〜7→r。
 - 当たり列（当たり1〜12）: スラッシュ9項目（必須）
-    あたりID / あたり名 / 基本出玉 / ユニット出玉 / 最大連結数 /
+    あたりID / あたり名 / 基本出玉 / ユニット出玉(カンマ区切りで複数可) / 最大連結数 /
     滞在モードID / 移行先モードID / 分岐ラベル / 昇格先あたりID
   モードIDは mode_0〜mode_7 または整数 0〜7。昇格先は - または空でなし。
 
@@ -20,10 +20,14 @@
 出力:
   master_out/index.json, master_out/machines/<id>.json, master_out/export_status.csv
 
+index.json:
+  CSV 上の全機種を列挙（機種IDが空でなく、重複しない先着行）。ステータス・更新対象に関係なく含める。
+  「更新対象」列があるときは各要素に update_target を含める。
+
 差分更新（既定）:
   既存の master_out/machines/*.json があるとき、JSON を意味比較し変更がない機種はファイルを書き換えない。
   今回のエクスポート対象に含まれない safe_id の *.json は削除（CSVから消えた・ステータスで落ちた機種）。
-  「更新対象」列が「対象外」の行は JSON を書き換えず、既存ファイルも削除しない（index には残す）。
+  「更新対象」列が「対象外」の行は JSON を書き換えず、既存ファイルも削除しない。
   CI では gh-pages 上の master_out を先に checkout してから本スクリプトを実行すること（workflow 参照）。
   全件上書き: 環境変数 MASTER_OUT_FORCE_FULL_WRITE=1
 """
@@ -131,6 +135,24 @@ def _parse_int(s: str) -> Optional[int]:
         return None
 
 
+def _parse_unit_payout_list(token: str) -> Optional[list[int]]:
+    """ユニット出玉列: 半角・全角カンマ区切りで複数可。空・不正なら None。"""
+    t = (token or "").strip()
+    if not t:
+        return None
+    pieces = [p.strip() for p in t.replace("，", ",").split(",")]
+    pieces = [p for p in pieces if p]
+    if not pieces:
+        return None
+    out: list[int] = []
+    for p in pieces:
+        v = _parse_int(p)
+        if v is None:
+            return None
+        out.append(max(0, v))
+    return out
+
+
 def _should_skip_status(status: str) -> bool:
     s = (status or "").strip()
     if not s:
@@ -197,7 +219,11 @@ def _parse_mode_cell(cell: str) -> Optional[dict]:
     if len(parts) >= 4 and (parts[3] or "").strip():
         ui_role = _parse_ui_role_letter(parts[3])
     else:
-        ui_role = 0 if mode_id == 0 else 1
+        # ui_role を省略した場合のデフォルトはアプリ側（MachineMasterModels.swift）の推論に揃える。
+        # - mode_0: 通常(0)
+        # - mode_2: LT(2)
+        # - それ以外: RUSH(1)
+        ui_role = 0 if mode_id == 0 else (2 if mode_id == 2 else 1)
     return {"mode_id": mode_id, "name": name, "densapo": densapo, "ui_role": ui_role}
 
 
@@ -249,12 +275,14 @@ def _parse_bonus_cell(cell: str) -> Optional[dict]:
     if not bonus_id:
         return None
     base_payout = _parse_int(parts[2])
-    unit_payout = _parse_int(parts[3])
+    unit_raw = _parse_unit_payout_list(parts[3])
     max_concat = _parse_int(parts[4])
     stay = _parse_mode_ref(parts[5])
     nxt = _parse_mode_ref(parts[6])
-    if base_payout is None or unit_payout is None or max_concat is None or stay is None or nxt is None:
+    if base_payout is None or unit_raw is None or max_concat is None or stay is None or nxt is None:
         return None
+    unit_payouts = [x for x in unit_raw if x > 0]
+    unit_payout = unit_payouts[0] if unit_payouts else 0
     branch_label = parts[7] or ""
     promotion_id = _normalize_promotion_id(parts[8])
 
@@ -262,7 +290,8 @@ def _parse_bonus_cell(cell: str) -> Optional[dict]:
         "bonus_id": bonus_id,
         "name": name,
         "base_payout": max(0, base_payout),
-        "unit_payout": max(0, unit_payout),
+        "unit_payouts": unit_payouts,
+        "unit_payout": unit_payout,
         "max_concat": max(0, max_concat),
         "stay_mode_id": stay,
         "next_mode_id": nxt,
@@ -293,14 +322,14 @@ def fetch_csv_from_url(url: str) -> str:
 def load_and_validate_rows(csv_content: str):
     lines = [line for line in csv_content.splitlines() if line.strip()]
     if len(lines) < 2:
-        return [], [], []
+        return [], [], [], []
     reader = csv.reader(io.StringIO(csv_content))
     rows = list(reader)
     headers = rows[0]
     idx = _col_index(headers)
 
     if "機種ID" not in idx or "機種名" not in idx:
-        return [], [], [(0, "", "ヘッダーに機種ID・機種名がありません")]
+        return [], [], [], [(0, "", "error", "ヘッダーに機種ID・機種名がありません")]
 
     def v(values: list, key: str, default: str = "") -> str:
         if key not in idx or idx[key] >= len(values):
@@ -310,6 +339,7 @@ def load_and_validate_rows(csv_content: str):
     seen_ids: set[str] = set()
     valid_rows: list[dict] = []
     preserve_rows: list[dict] = []
+    catalog_rows: list[dict] = []
     skip_report: list[tuple[int, str, str, str]] = []
 
     for row_no, values in enumerate(rows[1:], start=2):
@@ -322,11 +352,24 @@ def load_and_validate_rows(csv_content: str):
         if machine_id in seen_ids:
             skip_report.append((row_no, machine_id, "skipped", "duplicate_machine_id"))
             continue
+        seen_ids.add(machine_id)
+
+        catalog_entry: dict = {
+            "machine_id": machine_id,
+            "name": v(values, "機種名", machine_id),
+            "manufacturer": v(values, "メーカー"),
+            "probability": v(values, "確率"),
+            "machine_type": v(values, "機種タイプ"),
+            "intro_start": v(values, "導入開始日") or v(values, "導入日"),
+            "status": status,
+        }
+        if "更新対象" in idx:
+            catalog_entry["update_target"] = v(values, "更新対象")
+        catalog_rows.append(catalog_entry)
+
         if _should_skip_status(status):
             skip_report.append((row_no, machine_id, "skipped", "status_not_ready"))
             continue
-
-        seen_ids.add(machine_id)
 
         if not _is_export_update_target(values, idx):
             preserve_rows.append(
@@ -439,12 +482,13 @@ def load_and_validate_rows(csv_content: str):
 
     for r in valid_rows:
         skip_report.append((0, r["machine_id"], "exported", ""))
-    return valid_rows, preserve_rows, skip_report
+    return valid_rows, preserve_rows, catalog_rows, skip_report
 
 
 def build_index(rows: list[dict]) -> list[dict]:
-    return [
-        {
+    out: list[dict] = []
+    for r in rows:
+        item = {
             "machine_id": r["machine_id"],
             "name": r["name"],
             "manufacturer": r.get("manufacturer") or "",
@@ -453,16 +497,10 @@ def build_index(rows: list[dict]) -> list[dict]:
             "intro_start": r.get("intro_start") or "",
             "status": r.get("status") or "",
         }
-        for r in rows
-    ]
-
-
-def merge_index(export_rows: list[dict], preserve_rows: list[dict]) -> list[dict]:
-    """配信対象の index と、対象外で保持する index をマージ（同一 machine_id は export 優先）。"""
-    primary = build_index(export_rows)
-    seen = {e["machine_id"] for e in primary}
-    rest = [e for e in build_index(preserve_rows) if e["machine_id"] not in seen]
-    return primary + rest
+        if "update_target" in r:
+            item["update_target"] = r.get("update_target") or ""
+        out.append(item)
+    return out
 
 
 def build_machine_json(row: dict) -> dict:
@@ -512,13 +550,13 @@ def main() -> None:
         )
         sys.exit(1)
 
-    valid_rows, preserve_rows, skip_report = load_and_validate_rows(csv_content)
+    valid_rows, preserve_rows, catalog_rows, skip_report = load_and_validate_rows(csv_content)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     machines_dir = OUTPUT_DIR / MACHINES_SUBDIR
     machines_dir.mkdir(parents=True, exist_ok=True)
 
-    index = merge_index(valid_rows, preserve_rows)
+    index = build_index(catalog_rows)
     index_path = OUTPUT_DIR / "index.json"
     if FORCE_FULL_WRITE:
         with open(index_path, "w", encoding="utf-8") as f:

@@ -54,3 +54,27 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git commit -m "chore: マスターデータを自動更新"
           git push || (echo "::error::git push に失敗しました。ブランチ保護や権限を確認してください。" && exit 1)
+
+      # main の machines.json と Pages を揃える（master_out 配信は別ワークフロー。ここでは machines.json のみ差し替え）
+      - name: GitHub Pages の machines.json を同期
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if ! git ls-remote --heads origin gh-pages 2>/dev/null | grep -q refs/heads/gh-pages; then
+            echo "::notice::gh-pages が未作成のためスキップ。先に「master_out を GitHub Pages に配信」を1回実行すると、以降は週次更新で machines.json が Pages にも反映されます。"
+            exit 0
+          fi
+          TMP=$(mktemp -d)
+          git clone --depth 1 --branch gh-pages "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" "$TMP/pages"
+          cp "$MACHINES_JSON_PATH" "$TMP/pages/machines.json"
+          cd "$TMP/pages"
+          if git diff --quiet machines.json 2>/dev/null; then
+            echo "Pages 上の machines.json に変更なし"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add machines.json
+          git commit -m "chore: sync machines.json from main (${{ github.sha }})"
+          git push

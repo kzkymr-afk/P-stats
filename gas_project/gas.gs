@@ -312,9 +312,24 @@ function enrichBonusesNextUiRole_(bonuses, modes) {
   }
 }
 
+/** ユニット出玉列: カンマ区切りで複数可（例 "300, 1500"） */
+function parseUnitPayoutsField_(token) {
+  var t = String(token == null ? "" : token).trim();
+  if (!t) return null;
+  var chunks = t.split(/[,，]/).map(function(x) { return String(x).trim(); }).filter(function(x) { return x.length > 0; });
+  if (chunks.length === 0) return null;
+  var out = [];
+  for (var i = 0; i < chunks.length; i++) {
+    var n = toNumberOr(chunks[i], NaN);
+    if (!isFinite(n)) return null;
+    out.push(Math.max(0, Math.floor(n)));
+  }
+  return out;
+}
+
 /**
  * 当たりセル9項目:
- * あたりID/あたり名/基本/ユニット/最大連結/滞在モード/移行先/分岐/昇格先
+ * あたりID/あたり名/基本/ユニット(複数可)/最大連結/滞在モード/移行先/分岐/昇格先
  */
 function parseAtariCell9_(cell) {
   var raw = String(cell == null ? "" : cell).trim();
@@ -327,18 +342,21 @@ function parseAtariCell9_(cell) {
   var bonusId = normalizeAtariId_(bidRaw);
   if (!bonusId) return null;
   var base = toNumberOr(parts[2], NaN);
-  var unit = toNumberOr(parts[3], NaN);
+  var unitList = parseUnitPayoutsField_(parts[3]);
   var maxc = toNumberOr(parts[4], NaN);
   var stay = parseModeRef_(parts[5]);
   var nxt = parseModeRef_(parts[6]);
-  if (!isFinite(base) || !isFinite(unit) || !isFinite(maxc) || stay === null || nxt === null) return null;
+  if (!isFinite(base) || unitList === null || !isFinite(maxc) || stay === null || nxt === null) return null;
+  var unitPayouts = unitList.filter(function(x) { return x > 0; });
   var branch = parts[7] || "";
   var promo = normalizePromotionId_(parts[8]);
+  var firstUnit = unitPayouts.length > 0 ? unitPayouts[0] : 0;
   return {
     bonus_id: bonusId,
     name: nm,
     base_payout: Math.max(0, base),
-    unit_payout: Math.max(0, unit),
+    unit_payouts: unitPayouts,
+    unit_payout: firstUnit,
     max_concat: Math.max(0, maxc),
     stay_mode_id: stay,
     next_mode_id: nxt,
