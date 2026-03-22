@@ -13,3 +13,6 @@ node_modules/
 
 # ローカル CI / エージェント用 DerivedData（ワークスペース内ビルド）
 .DerivedData/
+
+# 各機種スペック JSON は GitHub Pages（gh-pages）が正。main では追跡しない（convert 実行時はローカルに生成される）
+master_out/machines/

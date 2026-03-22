@@ -1,6 +1,6 @@
 import Foundation
 
-/// `index.json` と `machines/{id}.json`（MachineFullMaster）を取得する。
+/// `index.json` と `machines/{id}.json`（MachineFullMaster）を取得する。本番は GitHub Pages（`defaultMachineDetailBaseURL`）。バンドル内 `master_out` は任意のオフライン用。
 enum MachineDetailLoader {
     private static let decoder = JSONDecoder()
 
