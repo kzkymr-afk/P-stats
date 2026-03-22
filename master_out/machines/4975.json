@@ -1,0 +1,95 @@
+{
+  "machine_id": "4975",
+  "name": "P モモキュンソード 速撃99ver.",
+  "manufacturer": "ソフィア",
+  "probability": "1/99.9",
+  "machine_type": "デジパチ",
+  "intro_start": "2026/03/16",
+  "spec": "甘デジ",
+  "tags": "なし",
+  "modes": [
+    {
+      "mode_id": 0,
+      "name": "通常時",
+      "densapo": 0,
+      "ui_role": 0
+    },
+    {
+      "mode_id": 1,
+      "name": "RUSH",
+      "densapo": 1,
+      "ui_role": 1
+    }
+  ],
+  "bonuses": [
+    {
+      "bonus_id": "bonus_1",
+      "name": "チャレンジBONUS",
+      "base_payout": 400,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 0,
+      "next_mode_id": 0,
+      "branch_label": "通常へ",
+      "promotion_id": null,
+      "next_ui_role": 0
+    },
+    {
+      "bonus_id": "bonus_2",
+      "name": "チャレンジBONUS",
+      "base_payout": 400,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 0,
+      "next_mode_id": 1,
+      "branch_label": "RUSH突入",
+      "promotion_id": null,
+      "next_ui_role": 1
+    },
+    {
+      "bonus_id": "bonus_3",
+      "name": "神・絶対無敵BONUS",
+      "base_payout": 1400,
+      "unit_payouts": [
+        1
+      ],
+      "unit_payout": 1,
+      "max_concat": 99,
+      "stay_mode_id": 1,
+      "next_mode_id": 1,
+      "branch_label": "RUSH突入",
+      "promotion_id": null,
+      "next_ui_role": 1
+    },
+    {
+      "bonus_id": "bonus_4",
+      "name": "絶鬼BONUS",
+      "base_payout": 400,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 1,
+      "next_mode_id": 1,
+      "branch_label": "",
+      "promotion_id": "bonus_5",
+      "next_ui_role": 1
+    },
+    {
+      "bonus_id": "bonus_5",
+      "name": "神・絶対無敵BONUS",
+      "base_payout": 1400,
+      "unit_payouts": [
+        1000
+      ],
+      "unit_payout": 1000,
+      "max_concat": 99,
+      "stay_mode_id": 1,
+      "next_mode_id": 1,
+      "branch_label": "",
+      "promotion_id": null,
+      "next_ui_role": 1
+    }
+  ]
+}

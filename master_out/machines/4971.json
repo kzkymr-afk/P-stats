@@ -1,0 +1,106 @@
+{
+  "machine_id": "4971",
+  "name": "P Re:ゼロから始める異世界生活 season2 129ver.",
+  "manufacturer": "大都技研",
+  "probability": "1/129.9",
+  "machine_type": "デジパチ",
+  "intro_start": "2026/03/02",
+  "spec": "甘デジ",
+  "tags": "ST/LT",
+  "modes": [
+    {
+      "mode_id": 0,
+      "name": "通常時",
+      "densapo": 0,
+      "ui_role": 0
+    },
+    {
+      "mode_id": 1,
+      "name": "強欲RUSH",
+      "densapo": 120,
+      "ui_role": 1
+    }
+  ],
+  "bonuses": [
+    {
+      "bonus_id": "bonus_1",
+      "name": "強欲チャレンジBONUS",
+      "base_payout": 300,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 0,
+      "next_mode_id": 0,
+      "branch_label": "通常へ",
+      "promotion_id": null,
+      "next_ui_role": 0
+    },
+    {
+      "bonus_id": "bonus_2",
+      "name": "強欲チャレンジBONUS",
+      "base_payout": 300,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 0,
+      "next_mode_id": 1,
+      "branch_label": "RUSH突入",
+      "promotion_id": null,
+      "next_ui_role": 1
+    },
+    {
+      "bonus_id": "bonus_3",
+      "name": "BONUS",
+      "base_payout": 300,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 1,
+      "next_mode_id": 1,
+      "branch_label": "",
+      "promotion_id": null,
+      "next_ui_role": 1
+    },
+    {
+      "bonus_id": "bonus_4",
+      "name": "Re:ゼロBONUS",
+      "base_payout": 750,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 1,
+      "next_mode_id": 1,
+      "branch_label": "",
+      "promotion_id": null,
+      "next_ui_role": 1
+    },
+    {
+      "bonus_id": "bonus_5",
+      "name": "超強欲BONUS",
+      "base_payout": 1500,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 1,
+      "next_mode_id": 1,
+      "branch_label": "",
+      "promotion_id": null,
+      "next_ui_role": 1
+    },
+    {
+      "bonus_id": "bonus_6",
+      "name": "超強欲PREMIUM BONUS",
+      "base_payout": 1800,
+      "unit_payouts": [
+        300
+      ],
+      "unit_payout": 300,
+      "max_concat": 999,
+      "stay_mode_id": 1,
+      "next_mode_id": 1,
+      "branch_label": "",
+      "promotion_id": null,
+      "next_ui_role": 1
+    }
+  ]
+}

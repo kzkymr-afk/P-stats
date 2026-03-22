@@ -1,0 +1,110 @@
+{
+  "machine_id": "4966",
+  "name": "e 魔法少女まどか☆マギカ3 時間遡行〜始まりの願い〜",
+  "manufacturer": "京楽",
+  "probability": "1/319.9",
+  "machine_type": "デジパチ",
+  "intro_start": "2026/03/02",
+  "spec": "ミドル",
+  "tags": "ST/LT/スマパチ",
+  "modes": [
+    {
+      "mode_id": 0,
+      "name": "通常時",
+      "densapo": 0,
+      "ui_role": 0
+    },
+    {
+      "mode_id": 1,
+      "name": "ワルプルギスの夜",
+      "densapo": 100,
+      "ui_role": 1
+    },
+    {
+      "mode_id": 2,
+      "name": "アルティメット超RUSH",
+      "densapo": 130,
+      "ui_role": 2
+    }
+  ],
+  "bonuses": [
+    {
+      "bonus_id": "bonus_1",
+      "name": "チャレンジBONUS",
+      "base_payout": 450,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 0,
+      "next_mode_id": 0,
+      "branch_label": "通常へ",
+      "promotion_id": null,
+      "next_ui_role": 0
+    },
+    {
+      "bonus_id": "bonus_2",
+      "name": "チャレンジBONUS",
+      "base_payout": 450,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 0,
+      "next_mode_id": 1,
+      "branch_label": "ワルプルギスの夜 突入",
+      "promotion_id": null,
+      "next_ui_role": 1
+    },
+    {
+      "bonus_id": "bonus_3",
+      "name": "全回転リーチあたり",
+      "base_payout": 1500,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 0,
+      "next_mode_id": 2,
+      "branch_label": "アルティメット超RUSH 突入",
+      "promotion_id": null,
+      "next_ui_role": 2
+    },
+    {
+      "bonus_id": "bonus_4",
+      "name": "1500BONUS",
+      "base_payout": 1500,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 1,
+      "next_mode_id": 2,
+      "branch_label": "アルティメット超RUSH 突入",
+      "promotion_id": null,
+      "next_ui_role": 2
+    },
+    {
+      "bonus_id": "bonus_5",
+      "name": "アルティメットBONUS",
+      "base_payout": 750,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 2,
+      "next_mode_id": 2,
+      "branch_label": "アルティメット超RUSH 継続",
+      "promotion_id": "bonus_3",
+      "next_ui_role": 2
+    },
+    {
+      "bonus_id": "bonus_6",
+      "name": "アルティメット3000BONUS",
+      "base_payout": 3000,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 2,
+      "next_mode_id": 2,
+      "branch_label": "アルティメット超RUSH 継続",
+      "promotion_id": null,
+      "next_ui_role": 2
+    }
+  ]
+}

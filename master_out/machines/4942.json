@@ -1,0 +1,155 @@
+{
+  "machine_id": "4942",
+  "name": "Pえとたま2 神祭 干支甘",
+  "manufacturer": "メーシー",
+  "probability": "1/99.90",
+  "machine_type": "デジパチ",
+  "intro_start": "2026/03/16",
+  "spec": "甘デジ",
+  "tags": "ST/LT",
+  "modes": [
+    {
+      "mode_id": 0,
+      "name": "通常時",
+      "densapo": 0,
+      "ui_role": 0
+    },
+    {
+      "mode_id": 1,
+      "name": "えとたまチャンス",
+      "densapo": 40,
+      "ui_role": 1
+    },
+    {
+      "mode_id": 2,
+      "name": "えとたまRUSH祭",
+      "densapo": 83,
+      "ui_role": 2
+    },
+    {
+      "mode_id": 3,
+      "name": "超えとたまRUSH祭",
+      "densapo": 160,
+      "ui_role": 1
+    }
+  ],
+  "bonuses": [
+    {
+      "bonus_id": "bonus_1",
+      "name": "えとたまボーナス",
+      "base_payout": 210,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 0,
+      "next_mode_id": 0,
+      "branch_label": "通常へ",
+      "promotion_id": "bonus_2",
+      "next_ui_role": 0
+    },
+    {
+      "bonus_id": "bonus_2",
+      "name": "えとたまボーナス",
+      "base_payout": 210,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 0,
+      "next_mode_id": 1,
+      "branch_label": "えとたまチャンス 突入",
+      "promotion_id": null,
+      "next_ui_role": 1
+    },
+    {
+      "bonus_id": "bonus_3",
+      "name": "祭ボーナス",
+      "base_payout": 210,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 1,
+      "next_mode_id": 1,
+      "branch_label": "えとたまチャンス 継続",
+      "promotion_id": "bonus_5",
+      "next_ui_role": 1
+    },
+    {
+      "bonus_id": "bonus_4",
+      "name": "神ボーナス",
+      "base_payout": 910,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 1,
+      "next_mode_id": 2,
+      "branch_label": "えとたまRUSH祭 突入",
+      "promotion_id": null,
+      "next_ui_role": 2
+    },
+    {
+      "bonus_id": "bonus_5",
+      "name": "祭ボーナス",
+      "base_payout": 210,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 2,
+      "next_mode_id": 2,
+      "branch_label": "えとたまRUSH祭 継続",
+      "promotion_id": "bonus_6",
+      "next_ui_role": 2
+    },
+    {
+      "bonus_id": "bonus_6",
+      "name": "神ボーナス",
+      "base_payout": 910,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 2,
+      "next_mode_id": 2,
+      "branch_label": "えとたまRUSH祭 継続",
+      "promotion_id": null,
+      "next_ui_role": 2
+    },
+    {
+      "bonus_id": "bonus_7",
+      "name": "神ボーナス",
+      "base_payout": 910,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 2,
+      "next_mode_id": 3,
+      "branch_label": "超えとたまRUSH祭 突入",
+      "promotion_id": "bonus_8",
+      "next_ui_role": 1
+    },
+    {
+      "bonus_id": "bonus_8",
+      "name": "祭ボーナス",
+      "base_payout": 210,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 3,
+      "next_mode_id": 3,
+      "branch_label": "超えとたまRUSH祭 継続",
+      "promotion_id": null,
+      "next_ui_role": 1
+    },
+    {
+      "bonus_id": "bonus_9",
+      "name": "超えとたま祭ボーナス",
+      "base_payout": 910,
+      "unit_payouts": [],
+      "unit_payout": 0,
+      "max_concat": 0,
+      "stay_mode_id": 3,
+      "next_mode_id": 3,
+      "branch_label": "超えとたまRUSH祭 継続",
+      "promotion_id": null,
+      "next_ui_role": 1
+    }
+  ]
+}
