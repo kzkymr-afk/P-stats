@@ -33,7 +33,7 @@ jobs:
           python-version: '3.11'
 
       - name: 依存をインストール
-        run: pip install requests
+        run: pip install requests google-auth
 
       # 仕様: mode_0〜mode_7 / 当たり9項目（あたりID先頭）— scripts/convert_master_one_sheet.py と同期
       - name: master_out を生成（CSV→JSON）
@@ -42,12 +42,19 @@ jobs:
           MASTER_ONE_SHEET_OUTPUT_DIR: ${{ github.workspace }}/master_out
           # 完了|公開 などにしたい場合は Repository Variables で上書き
           MASTER_EXPORT_STATUS_VALUES: ${{ vars.MASTER_EXPORT_STATUS_VALUES }}
+          # スプレッドシートを「制限付き」にしたとき必須（JSON 全文を Repository secret に保存）
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: |
           if [ -z "$MASTER_ONE_SHEET_CSV_URL" ]; then
             echo "::error::Repository Variables に MASTER_ONE_SHEET_CSV_URL が未設定です。"
             exit 1
           fi
           echo "CSV URL: $MASTER_ONE_SHEET_CSV_URL"
+          if [ -z "${GOOGLE_SERVICE_ACCOUNT_JSON:-}" ]; then
+            echo "::warning::GOOGLE_SERVICE_ACCOUNT_JSON が空です。シート共有が制限付きのときは 401 になります。Actions の Secrets に JSON 全文を設定してください。"
+          else
+            echo "GOOGLE_SERVICE_ACCOUNT_JSON: 設定済み（${#GOOGLE_SERVICE_ACCOUNT_JSON} 文字）"
+          fi
           python scripts/convert_master_one_sheet.py
           echo "--- master_out ---"
           ls -la master_out

@@ -17,6 +17,10 @@
   python scripts/convert_master_one_sheet.py [CSVのパス]
   MASTER_ONE_SHEET_CSV_URL="https://..." python scripts/convert_master_one_sheet.py
 
+制限付き共有（401 回避）:
+  環境変数 GOOGLE_SERVICE_ACCOUNT_JSON にサービスアカウント鍵の JSON 文字列を設定し、
+  スプレッドシートをそのメールに閲覧者共有。pip install google-auth が必要。
+
 出力:
   master_out/index.json, master_out/machines/<id>.json, master_out/export_status.csv
 
@@ -47,6 +51,11 @@ try:
     import requests
 except ImportError:
     requests = None
+
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+from google_sheets_csv import fetch_spreadsheet_csv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = Path(os.environ.get("MASTER_ONE_SHEET_OUTPUT_DIR", str(REPO_ROOT / "master_out")))
@@ -310,13 +319,7 @@ def _enrich_bonuses_next_ui_role(bonuses: list[dict], modes: list[dict]) -> None
 def fetch_csv_from_url(url: str) -> str:
     if requests is None:
         raise RuntimeError("requests がインストールされていません: pip install requests")
-    r = requests.get(url, timeout=REQUEST_TIMEOUT)
-    r.raise_for_status()
-    r.encoding = "utf-8"
-    raw = r.text
-    if raw.startswith("\uFEFF"):
-        raw = raw[1:]
-    return raw
+    return fetch_spreadsheet_csv(url, timeout=REQUEST_TIMEOUT)
 
 
 def load_and_validate_rows(csv_content: str):

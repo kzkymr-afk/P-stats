@@ -34,10 +34,17 @@ jobs:
           python-version: '3.11'
 
       - name: 依存をインストール
-        run: pip install requests
+        run: pip install requests google-auth
 
       - name: マスターデータを更新
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: |
+          if [ -z "${GOOGLE_SERVICE_ACCOUNT_JSON:-}" ]; then
+            echo "::warning::GOOGLE_SERVICE_ACCOUNT_JSON が空です。シートが制限付きのときは取得に失敗します。"
+          else
+            echo "GOOGLE_SERVICE_ACCOUNT_JSON: 設定済み（${#GOOGLE_SERVICE_ACCOUNT_JSON} 文字）"
+          fi
           python scripts/update_machines.py
           echo "--- 書き込み後のファイル ---"
           ls -la "$MACHINES_JSON_PATH"

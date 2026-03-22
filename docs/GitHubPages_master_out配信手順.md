@@ -34,6 +34,18 @@ Settings → Secrets and variables → Actions → Variables に以下を登録:
   - 例: `完了`（デフォルト）
   - 例: `完了|公開`
 
+### スプレッドシートを「制限付き」共有にしたとき（401 対策）
+
+匿名の `.../export?format=csv&gid=...` は **401** になるため、CI では **Google Sheets API** で読みます。
+
+1. [Google Cloud Console](https://console.cloud.google.com/) でプロジェクトを作成し、**Google Sheets API** を有効化する。
+2. **サービスアカウント**を作成し、**JSON キー**をダウンロードする。
+3. GitHub リポジトリの **Settings → Secrets and variables → Actions → Secrets** に  
+   **`GOOGLE_SERVICE_ACCOUNT_JSON`** という名前で、**JSON ファイルの中身をそのまま**貼り付けて保存する（改行含めて全文）。
+4. Google スプレッドシートの **共有**で、JSON 内の `client_email`（`…@….iam.gserviceaccount.com`）を **閲覧者**として追加する。
+
+週次の **`マスターデータ週次更新`** と **`master_out を GitHub Pages に配信`** の両方で、このシークレットが渡るようにしてある（未設定のままだと従来どおり匿名 GET のみ）。
+
 ---
 
 ## 3. 配信ジョブの実行

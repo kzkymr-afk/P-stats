@@ -4,6 +4,7 @@
 Google スプレッドシートの CSV を取得し、アプリ用 machines.json を生成する。
 列: 機種名, メーカー, 大当り確率, LT有無, 等価ボーダー, 導入日
 環境変数 SPREADSHEET_CSV_URL で URL を指定。未設定時は DEFAULT_CSV_URL を使用。
+制限付き共有時は GOOGLE_SERVICE_ACCOUNT_JSON（サービスアカウント JSON）と google-auth が必要。
 """
 
 import csv
@@ -15,6 +16,11 @@ import unicodedata
 from typing import Dict, List, Optional
 
 import requests
+
+_SCRIPTS_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+from google_sheets_csv import fetch_spreadsheet_csv
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_PATH = os.environ.get("MACHINES_JSON_PATH") or os.path.join(REPO_ROOT, "machines.json")
@@ -70,22 +76,19 @@ def _parse_heso_atari_cell(cell: str) -> Optional[Dict]:
 
 def fetch_and_parse_csv(url: str) -> List[Dict]:
     """CSV URL を取得し、アプリ用の辞書リストに変換する。"""
-    r = requests.get(url, timeout=REQUEST_TIMEOUT)
-    r.raise_for_status()
-    # Google の CSV は UTF-8。CI 等で charset が渡らないと文字化けするため明示する
-    r.encoding = "utf-8"
-    raw = r.text
-    if raw.startswith("\uFEFF"):
-        raw = raw[1:]
+    raw = fetch_spreadsheet_csv(url, timeout=REQUEST_TIMEOUT)
     lines = [line for line in raw.splitlines() if line.strip()]
     if len(lines) < 2:
         # 0件または1行のみ → 診断出力（GoogleがHTMLログイン画面を返しているか確認）
-        ct = r.headers.get("Content-Type", "")
-        print(f"[update_machines] 診断: status={r.status_code}, Content-Type={ct}, 行数={len(lines)}, body長={len(raw)}", flush=True)
+        print(f"[update_machines] 診断: 行数={len(lines)}, body長={len(raw)}", flush=True)
         head = raw.strip()[:600].replace("\r", " ").replace("\n", " ")
         print(f"[update_machines] body先頭: {head!r}", flush=True)
         if "<html" in raw.lower() or "sign in" in raw.lower() or "accounts.google" in raw.lower():
-            print("[update_machines] → HTMLが返っています。スプレッドシートを「リンクを知っている全員が閲覧可」にしてください。", flush=True)
+            print(
+                "[update_machines] → HTML が返っています。共有を制限付きにした場合は "
+                "GOOGLE_SERVICE_ACCOUNT_JSON（Sheets API）を CI に設定し、サービスアカウントへシートを共有してください。",
+                flush=True,
+            )
         return []
     headers = _parse_csv_line(lines[0])
     result = []
