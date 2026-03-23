@@ -530,6 +530,11 @@ def main() -> None:
         print(__doc__.strip(), flush=True)
         sys.exit(0)
 
+    print(
+        f"[convert_master_one_sheet] MASTER_EXPORT_STATUS_VALUES env={_export_status_env!r} -> EXPORT_STATUS_VALUES={sorted(EXPORT_STATUS_VALUES)}",
+        flush=True,
+    )
+
     csv_source = os.environ.get("MASTER_ONE_SHEET_CSV_URL")
     local_path = sys.argv[1].strip() if len(sys.argv) > 1 else None
 
