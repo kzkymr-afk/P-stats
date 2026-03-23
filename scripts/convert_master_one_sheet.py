@@ -381,6 +381,12 @@ def load_and_validate_rows(csv_content: str):
         catalog_rows.append(catalog_entry)
 
         # 更新対象が「対象外」の行は、ステータスが未完了でも既存 JSON を保持する。
+        raw_update_target = ""
+        if "更新対象" in idx:
+            col = idx["更新対象"]
+            raw_update_target = (values[col] if col < len(values) else "") or ""
+            raw_update_target = raw_update_target.strip()
+
         if not _is_export_update_target(values, idx):
             preserve_rows.append(
                 {
@@ -393,7 +399,7 @@ def load_and_validate_rows(csv_content: str):
                     "status": status,
                 }
             )
-            skip_report.append((row_no, machine_id, "skipped", "not_update_target"))
+            skip_report.append((row_no, machine_id, "skipped", f"not_update_target:update_target={raw_update_target}"))
             continue
 
         if _should_skip_status(status):
