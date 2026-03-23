@@ -71,7 +71,10 @@ HEADER_NAMES = [
     "当たり7", "当たり8", "当たり9", "当たり10", "当たり11", "当たり12",
 ]
 
-EXPORT_STATUS_VALUES = {s.strip() for s in os.environ.get("MASTER_EXPORT_STATUS_VALUES", "完了").split("|") if s.strip()}
+_export_status_env = (os.environ.get("MASTER_EXPORT_STATUS_VALUES") or "").strip()
+# 環境変数が「未設定」ではなく「空文字」の場合、set が空になって全行スキップされるのを防ぐ。
+_export_status_base = _export_status_env if _export_status_env else "完了"
+EXPORT_STATUS_VALUES = {s.strip() for s in _export_status_base.split("|") if s.strip()}
 SKIP_STATUS_VALUES = {"スキップ", "無効", "skip", "invalid", "スキップ ", "無効 "}
 
 # 「更新対象」列が「対象外」のときは master_out へ書き出さず、既存 JSON は保持（削除しない）
