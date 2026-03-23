@@ -151,7 +151,9 @@ def _parse_unit_payout_list(token: str) -> Optional[list[int]]:
     """ユニット出玉列: 半角・全角カンマ区切りで複数可。空・不正なら None。"""
     t = (token or "").strip()
     if not t:
-        return None
+        # ユニット出玉が未入力（空）の場合は 0 扱いにする。
+        # シート側で「基本出玉のみ」の定義があるため、空をエラーにすると完了機種が machines JSON に反映されない。
+        return []
     pieces = [p.strip() for p in t.replace("，", ",").split(",")]
     pieces = [p for p in pieces if p]
     if not pieces:
@@ -277,6 +279,9 @@ def _parse_bonus_cell(cell: str) -> Optional[dict]:
     if not cell:
         return None
     parts = [p.strip() for p in cell.split("/")]
+    # 末尾（promotion）が空でスラッシュが省略されるケースを許容する。
+    if len(parts) == 8:
+        parts.append("")
     if len(parts) != 9:
         return None
     raw_bid = parts[0]
@@ -288,7 +293,9 @@ def _parse_bonus_cell(cell: str) -> Optional[dict]:
         return None
     base_payout = _parse_int(parts[2])
     unit_raw = _parse_unit_payout_list(parts[3])
-    max_concat = _parse_int(parts[4])
+    # max_concat は空なら 0 扱い（未定義扱い）。
+    max_concat_raw = (parts[4] or "").strip()
+    max_concat = 0 if not max_concat_raw else _parse_int(max_concat_raw)
     stay = _parse_mode_ref(parts[5])
     nxt = _parse_mode_ref(parts[6])
     if base_payout is None or unit_raw is None or max_concat is None or stay is None or nxt is None:
