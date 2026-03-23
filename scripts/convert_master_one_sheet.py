@@ -164,11 +164,11 @@ def _parse_unit_payout_list(token: str) -> Optional[list[int]]:
 
 def _should_skip_status(status: str) -> bool:
     s = (status or "").strip()
+    # JSON 作成対象は、環境変数 `MASTER_EXPORT_STATUS_VALUES` に含まれるステータスのみ。
+    # それ以外（例: 空以外の中間ステータス）は「未完了」とみなして machines/<id>.json を生成しない。
     if not s:
         return True
-    if s in EXPORT_STATUS_VALUES:
-        return False
-    return _normalize(s) in {t.lower() for t in SKIP_STATUS_VALUES}
+    return s not in EXPORT_STATUS_VALUES
 
 
 def _is_export_update_target(values: list[str], idx: dict[str, int]) -> bool:
@@ -370,10 +370,7 @@ def load_and_validate_rows(csv_content: str):
             catalog_entry["update_target"] = v(values, "更新対象")
         catalog_rows.append(catalog_entry)
 
-        if _should_skip_status(status):
-            skip_report.append((row_no, machine_id, "skipped", "status_not_ready"))
-            continue
-
+        # 更新対象が「対象外」の行は、ステータスが未完了でも既存 JSON を保持する。
         if not _is_export_update_target(values, idx):
             preserve_rows.append(
                 {
@@ -387,6 +384,10 @@ def load_and_validate_rows(csv_content: str):
                 }
             )
             skip_report.append((row_no, machine_id, "skipped", "not_update_target"))
+            continue
+
+        if _should_skip_status(status):
+            skip_report.append((row_no, machine_id, "skipped", "status_not_ready"))
             continue
 
         modes: list[dict] = []
