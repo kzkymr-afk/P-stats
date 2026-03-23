@@ -41,7 +41,8 @@ jobs:
           MASTER_ONE_SHEET_CSV_URL: ${{ vars.MASTER_ONE_SHEET_CSV_URL }}
           MASTER_ONE_SHEET_OUTPUT_DIR: ${{ github.workspace }}/master_out
           # 完了|公開 などにしたい場合は Repository Variables で上書き
-          MASTER_EXPORT_STATUS_VALUES: ${{ vars.MASTER_EXPORT_STATUS_VALUES }}
+          # vars が未設定/空の場合でも、必ずデフォルトで「完了」を対象にする
+          MASTER_EXPORT_STATUS_VALUES: ${{ vars.MASTER_EXPORT_STATUS_VALUES || '完了' }}
           # スプレッドシートを「制限付き」にしたとき必須（JSON 全文を Repository secret に保存）
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: |
