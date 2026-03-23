@@ -571,6 +571,23 @@ def main() -> None:
 
     valid_rows, preserve_rows, catalog_rows, skip_report = load_and_validate_rows(csv_content)
 
+    # デバッグ用: どの理由で反映されていないか内訳を出す（上位だけ）
+    try:
+        from collections import Counter
+        reason_counter = Counter()
+        for _, _, st, detail in skip_report:
+            # detail の先頭（例: parse_error_bonus, status_not_ready, not_update_target）
+            if detail:
+                reason = (detail.split(":")[0] or "").strip()
+            else:
+                reason = ""
+            key = st + ":" + reason if reason else st
+            reason_counter[key] += 1
+        top = reason_counter.most_common(8)
+        print(f"[convert_master_one_sheet] skip_report top={top}", flush=True)
+    except Exception:
+        pass
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     machines_dir = OUTPUT_DIR / MACHINES_SUBDIR
     machines_dir.mkdir(parents=True, exist_ok=True)
