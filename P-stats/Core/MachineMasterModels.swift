@@ -36,6 +36,7 @@ struct MachineFullMaster: Decodable {
     var introStart: String?
     var spec: String?
     var tags: String?
+    /// マスタ1シート仕様では空配列のみ（旧JSON互換のため省略時も空）
     var modes: [MasterMode]
     var bonuses: [MasterBonus]
 
@@ -52,6 +53,20 @@ struct MachineFullMaster: Decodable {
         case bonuses
     }
 
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        machineId = try c.decode(String.self, forKey: .machineId)
+        name = try c.decode(String.self, forKey: .name)
+        manufacturer = try c.decodeIfPresent(String.self, forKey: .manufacturer)
+        probability = try c.decodeIfPresent(String.self, forKey: .probability)
+        machineType = try c.decodeIfPresent(String.self, forKey: .machineType)
+        introStart = try c.decodeIfPresent(String.self, forKey: .introStart)
+        spec = try c.decodeIfPresent(String.self, forKey: .spec)
+        tags = try c.decodeIfPresent(String.self, forKey: .tags)
+        modes = try c.decodeIfPresent([MasterMode].self, forKey: .modes) ?? []
+        bonuses = try c.decodeIfPresent([MasterBonus].self, forKey: .bonuses) ?? []
+    }
+
     func bonuses(forStayModeId modeId: Int) -> [MasterBonus] {
         bonuses.filter { $0.stayModeId == modeId }
     }
@@ -63,6 +78,8 @@ struct MasterMode: Decodable, Identifiable {
     var densapo: MasterDensapo
     /// 0=通常系, 1=RUSH系, 2=LT。JSON 省略時: mode_0→0、それ以外→1（mode_id==2 のみ 2）
     var uiRole: Int
+    /// 電サポ中だが当たり確率は通常と同じ（時短）。JSON 省略時は false。
+    var isTimeShort: Bool
     var id: Int { modeId }
 
     enum CodingKeys: String, CodingKey {
@@ -70,12 +87,14 @@ struct MasterMode: Decodable, Identifiable {
         case name
         case densapo
         case uiRole = "ui_role"
+        case isTimeShort = "is_time_short"
     }
 
-    init(modeId: Int, name: String, densapo: MasterDensapo, uiRole: Int? = nil) {
+    init(modeId: Int, name: String, densapo: MasterDensapo, uiRole: Int? = nil, isTimeShort: Bool = false) {
         self.modeId = modeId
         self.name = name
         self.densapo = densapo
+        self.isTimeShort = isTimeShort
         if let uiRole {
             self.uiRole = uiRole
         } else {
@@ -92,6 +111,7 @@ struct MasterMode: Decodable, Identifiable {
         modeId = try c.decode(Int.self, forKey: .modeId)
         name = try c.decode(String.self, forKey: .name)
         densapo = try c.decode(MasterDensapo.self, forKey: .densapo)
+        isTimeShort = try c.decodeIfPresent(Bool.self, forKey: .isTimeShort) ?? false
         if let r = try c.decodeIfPresent(Int.self, forKey: .uiRole) {
             uiRole = r
         } else {
@@ -275,25 +295,21 @@ struct MasterBonus: Decodable, Identifiable, Hashable {
     }
 }
 
-extension MachineFullMaster {
-    func densapoInt(forNextModeId nextId: Int) -> Int {
-        modes.first(where: { $0.modeId == nextId })?.densapo.intValueOrZero ?? 0
-    }
-}
-
 extension MasterBonus {
-    func asBonusDetail(using master: MachineFullMaster?) -> BonusDetail {
-        let d = master?.densapoInt(forNextModeId: nextModeId) ?? 0
-        let role = nextUiRole ?? master?.modes.first(where: { $0.modeId == nextModeId })?.uiRole
-        return BonusDetail(
-            name: name,
-            baseOut: basePayout,
-            unitOuts: unitPayouts,
-            maxStack: maxConcat,
-            ratio: 0,
-            densapo: d,
-            nextModeId: nextModeId,
-            nextUiRole: role
-        )
+    /// JSON `promotion_id` はカンマ区切りで複数の bonus_id を格納可能（例: `bonus_2,bonus_5`）
+    var promotionTargetBonusIds: [String] {
+        guard let s = promotionTargetBonusId?.trimmingCharacters(in: .whitespacesAndNewlines), !s.isEmpty else { return [] }
+        return s.split(separator: ",").compactMap { token -> String? in
+            let n = Self.normalizeBonusIdToken(String(token))
+            return n.isEmpty ? nil : n
+        }
+    }
+
+    private static func normalizeBonusIdToken(_ token: String) -> String {
+        let t = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.isEmpty { return "" }
+        if t.lowercased().hasPrefix("bonus_") { return t }
+        if t.allSatisfy(\.isNumber) { return "bonus_\(t)" }
+        return t
     }
 }

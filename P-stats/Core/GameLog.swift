@@ -27,29 +27,89 @@ final class GameLog {
     /// 遊技中の1R純増の手動調整値。nilなら機種のaverageNetPerRoundを使用
     var adjustedNetPerRound: Double?
 
+    /// 大当たりモード（時短・RUSH・ST の代わりに、連チャン回数のみを扱う）
+    var isBigHitMode: Bool = false
+    /// 大当たりモード中の連チャン回数（表示用。確定は「通常へ」で入力）
+    var bigHitChainCount: Int = 0
+
     var winRecords: [WinRecord] = []
     var lendingRecords: [LendingRecord] = []
 
-    /// Undo：最後に追加した Record の削除（最大3件）
+    /// Undo：最後に追加した Record の削除（最大3件）。当たりは記録直前の回転・mode_id 状態も復元する。
     private enum UndoAction {
-        case removeWin(id: UUID)
+        case removeWin(id: UUID, before: RotationModeSnapshot)
         case removeLending(id: UUID)
     }
     private var undoStack: [UndoAction] = []
     private let maxUndoCount = 3
 
+    private func captureRotationModeSnapshot() -> RotationModeSnapshot {
+        RotationModeSnapshot(
+            totalRotations: totalRotations,
+            normalRotations: normalRotations,
+            currentState: currentState,
+            currentModeID: currentModeID,
+            currentModeUiRole: currentModeUiRole,
+            remainingSupportCount: remainingSupportCount,
+            supportPhaseInitialCount: supportPhaseInitialCount,
+            isTimeShortMode: isTimeShortMode,
+            isBigHitMode: isBigHitMode,
+            bigHitChainCount: bigHitChainCount
+        )
+    }
+
+    private func restoreRotationModeSnapshot(_ s: RotationModeSnapshot) {
+        totalRotations = s.totalRotations
+        normalRotations = s.normalRotations
+        currentState = s.currentState
+        currentModeID = s.currentModeID
+        currentModeUiRole = s.currentModeUiRole
+        remainingSupportCount = s.remainingSupportCount
+        supportPhaseInitialCount = s.supportPhaseInitialCount
+        isTimeShortMode = s.isTimeShortMode
+        isBigHitMode = s.isBigHitMode ?? false
+        bigHitChainCount = s.bigHitChainCount ?? 0
+    }
+
+    /// 大当たりシートの「回転数」欄のデフォルト（増分）。`atRotation = 前回当たりの rotationAtWin + 入力` と整合するため、
+    /// 前回当たり以降にカウンタタップで積んだ増分（`totalRotations` 差）を使う。電サポ中は total が進まないため通常のみの差分と一致しやすい。
+    var defaultWinInputRotationIncrement: Int {
+        guard let last = winRecords.last else { return totalRotations }
+        return max(0, totalRotations - last.rotationAtWin)
+    }
+
+    /// 永続化用（ResumableState.undoStackEntries）
+    func persistedUndoStack() -> [PersistedUndoEntry] {
+        undoStack.map { action in
+            switch action {
+            case .removeWin(let id, let snap):
+                return PersistedUndoEntry(isWin: true, recordId: id, modeSnapshot: snap)
+            case .removeLending(let id):
+                return PersistedUndoEntry(isWin: false, recordId: id, modeSnapshot: nil)
+            }
+        }
+    }
+
+    private func restoreUndoStack(from entries: [PersistedUndoEntry]?) {
+        guard let entries = entries, !entries.isEmpty else {
+            undoStack = []
+            return
+        }
+        undoStack = entries.compactMap { e in
+            if e.isWin, let s = e.modeSnapshot {
+                return UndoAction.removeWin(id: e.recordId, before: s)
+            }
+            if !e.isWin {
+                return UndoAction.removeLending(id: e.recordId)
+            }
+            return nil
+        }
+    }
+
     /// 持ち玉投資は 1タップ = 125玉。125未満の残りは全額投資として記録
     private let holdingsBallsPerTap: Int = 125
 
     init() {}
-
-    /// 回転で消費した玉数（期待ベース＝回転/250玉 で按分）。収支グラフの過去時点計算用のみ。表示用持ち玉は減らさない（カウントタップで持ち玉が減らないようにする）
-    private var consumedBallsByRotation: Int {
-        let delta = totalRotations - initialDisplayRotation
-        guard delta > 0 else { return 0 }
-        let borderPer250 = max(dynamicBorder, 0.01)
-        return Int((Double(delta) * 250.0 / borderPer250).rounded())
-    }
 
     /// 持ち玉数（初期＋出玉−持ち玉投資のみ）。現金投資は投資額の把握のみで持ち玉は増やさない
     var totalHoldings: Int {
@@ -65,7 +125,8 @@ final class GameLog {
         addRotations(1)
     }
 
-    /// 指定数だけ回転を加算（+10, +100 用）。時短/ST電サポ中は残り回数を減らし0で通常に復帰。総回転数は時短・ST中は加算しない（累積のみ）
+    /// 指定数だけ回転を加算（+10, +100 用）。時短/ST電サポ中は残り回数を減らし0で通常に復帰。
+    /// 電サポ中はタップごとに total は進めず、フェーズ終了時に「このフェーズで消化した回数」をまとめて totalRotations に加え、台ランプ累積と整合させる。
     func addRotations(_ n: Int) {
         guard n > 0 else { return }
         var remaining = n
@@ -75,10 +136,15 @@ final class GameLog {
                 normalRotations += 1
                 remaining -= 1
             } else if (currentState == .support || currentState == .lt), remainingSupportCount > 0 {
-                // 時短またはST電サポ（RUSH/LT）：残り回数カウントダウン、0で通常へ（総回転数は加算しない）
                 remainingSupportCount -= 1
                 remaining -= 1
                 if remainingSupportCount <= 0 {
+                    let phaseGames = supportPhaseInitialCount
+                    if phaseGames > 0 {
+                        totalRotations += phaseGames
+                    }
+                    supportPhaseInitialCount = 0
+                    remainingSupportCount = 0
                     currentState = .normal
                     currentModeID = 0
                     currentModeUiRole = 0
@@ -143,15 +209,6 @@ final class GameLog {
         return Int(round(effective1RNetPerRound))
     }
 
-    /// ui_role から WinType（0=通常, 1=RUSH, 2=LT）
-    private static func winType(fromUiRole role: Int) -> WinType {
-        switch role {
-        case 1: return .rush
-        case 2: return .lt
-        default: return .normal
-        }
-    }
-
     /// `next_mode_id` のみわかっている旧データ向けの ui_role 推定（従来分岐と整合）
     private static func inferredUiRole(fromModeId modeId: Int) -> Int {
         switch modeId {
@@ -162,130 +219,90 @@ final class GameLog {
         }
     }
 
-    /// 当たり1回適用後の状態更新（currentModeID / 電サポ・時短 / currentState）。recordHit と addWin の共通処理。
-    private func setStateAfterHit(nextModeId: Int, densapo: Int, nextUiRole: Int?) {
-        let inferredRole = Self.inferredUiRole(fromModeId: nextModeId)
-        // データ不整合に備えて「モードIDが明確に決め打ちできるケース」だけは推論値を優先する。
-        // 例: next_mode_id==2(LT) なのに next_ui_role==1(RUSH) が入ってしまうケース。
-        let role: Int
-        if let r = nextUiRole {
-            if (nextModeId == 0 && r != 0) || (nextModeId == 2 && r != 2) {
-                role = inferredRole
-            } else {
-                role = r
-            }
-        } else {
-            role = inferredRole
-        }
-        currentModeID = nextModeId
-        currentModeUiRole = role
-        remainingSupportCount = max(0, densapo)
-        supportPhaseInitialCount = remainingSupportCount
-        switch role {
-        case 0:
-            currentState = remainingSupportCount > 0 ? .support : .normal
-            isTimeShortMode = remainingSupportCount > 0
-        case 1:
-            currentState = .support
-            isTimeShortMode = false
-        default:
-            currentState = .lt
-            isTimeShortMode = false
-        }
+    // MARK: - 大当たりモード（時短・RUSH・ST とは別系統。連チャン回数のみ→「通常へ」で回数と総出玉を確定）
+
+    /// 通常画面から大当たりモードへ。回転・投資の蓄積は維持する。
+    func enterBigHitMode() {
+        isBigHitMode = true
+        bigHitChainCount = 1
+        currentState = .normal
+        currentModeID = 0
+        currentModeUiRole = 0
+        remainingSupportCount = 0
+        supportPhaseInitialCount = 0
+        isTimeShortMode = false
     }
 
-    /// 昇格などの「プレビュー操作」で、winRecords を増やさずに mode/UI を即反映するための状態更新。
-    /// - Note: 確定（recordHit/addWin）時の回転率加算判定は、別パラメータで上書き可能にする。
-    func previewSetStateAfterHit(nextModeId: Int, densapo: Int, nextUiRole: Int) {
-        currentModeID = nextModeId
-        currentModeUiRole = nextUiRole
-        remainingSupportCount = max(0, densapo)
-        supportPhaseInitialCount = remainingSupportCount
-        switch nextUiRole {
-        case 0:
-            currentState = remainingSupportCount > 0 ? .support : .normal
-            isTimeShortMode = remainingSupportCount > 0
-        case 1:
-            currentState = .support
-            isTimeShortMode = false
-        default:
-            currentState = .lt
-            isTimeShortMode = false
+    func incrementBigHitChain() {
+        guard isBigHitMode else { return }
+        bigHitChainCount += 1
+    }
+
+    /// 棒グラフ用：大当たりモード中は未確定の1区間を末尾に表示（固定 ID で識別）
+    static let provisionalBigHitChartId = UUID(uuidString: "A0000000-0000-4000-8000-000000000001")!
+
+    /// 大当たり履歴グラフに渡す配列。大当たりモード中は連チャン数をリアルタイム反映した仮行を末尾に付与する。
+    func winRecordsForChartDisplay() -> [WinRecord] {
+        var r = winRecords
+        if isBigHitMode, bigHitChainCount > 0 {
+            var w = WinRecord(type: .normal, prize: nil, rotationAtWin: totalRotations, normalRotationsAtWin: normalRotations)
+            w.id = Self.provisionalBigHitChartId
+            w.bonusSessionHitCount = bigHitChainCount
+            w.timestamp = Date()
+            r.append(w)
+        }
+        return r
+    }
+
+    /// 大当たり1件の「連チャン含む回数」を修正（棒グラフの棒に対応）
+    func updateBonusSessionHitCount(winId: UUID, count: Int) {
+        guard winId != Self.provisionalBigHitChartId else { return }
+        if let index = winRecords.firstIndex(where: { $0.id == winId }) {
+            winRecords[index].bonusSessionHitCount = max(1, count)
         }
     }
 
-    /// フェーズ3: データ駆動の当たり記録。BonusDetail に従い履歴追加・出玉加算・currentModeID と電サポを更新する。既存の addWin と併存。
-    func recordHit(bonus: BonusDetail, atRotation: Int, countNormalRotationsFromState: PlayState? = nil) {
-        recordHit(bonus: bonus, totalPrize: nil, atRotation: atRotation, countNormalRotationsFromState: countNormalRotationsFromState)
-    }
-
-    /// ユニット連結型対応: totalPrize を渡すとその値で確定（nilなら baseOut を使用）
-    func recordHit(bonus: BonusDetail, totalPrize: Int?, atRotation: Int, countNormalRotationsFromState: PlayState? = nil) {
-        let stateForRotationCount = countNormalRotationsFromState ?? currentState
-        let diff = atRotation - totalRotations
-        if diff != 0, stateForRotationCount == .normal { normalRotations += diff }
-        let resolvedBase = bonus.baseOut > 0 ? bonus.baseOut : bonus.payout
-        let raw = totalPrize ?? (resolvedBase > 0 ? resolvedBase : effectiveBallsPerHit)
-        let prize = max(0, raw)
-        var record = WinRecord(
-            type: Self.winType(fromUiRole: currentModeUiRole),
-            prize: prize,
-            rotationAtWin: atRotation,
-            normalRotationsAtWin: normalRotations
-        )
+    /// 大当たりモード終了。1区間の当たりとして `winRecords` に1件追加する。
+    /// - Parameter electricSupportTurns: 確定後に消化する電サポ残り回数。0 なら即通常。電サポは `addRotations` で減算し、0 になった瞬間にそのフェーズ分が `totalRotations` にまとめて反映され、実機ランプ累積と揃う。
+    func commitBigHitSessionToNormal(hitCount: Int, totalPrizeBalls: Int, electricSupportTurns: Int) {
+        let beforeSnapshot = captureRotationModeSnapshot()
+        let h = max(1, hitCount)
+        let prize = max(0, totalPrizeBalls)
+        let support = max(0, electricSupportTurns)
+        var record = WinRecord(type: .normal, prize: prize, rotationAtWin: totalRotations, normalRotationsAtWin: normalRotations)
         record.timestamp = Date()
-        record.modeIdAtWin = currentModeID
-        record.nextModeId = bonus.nextModeId
-        record.bonusName = bonus.name
+        record.bonusSessionHitCount = h
         winRecords.append(record)
-        pushUndo(.removeWin(id: record.id))
-        totalRotations = atRotation
-        setStateAfterHit(
-            nextModeId: bonus.nextModeId,
-            densapo: bonus.densapo,
-            nextUiRole: bonus.nextUiRole
-        )
-    }
-
-    /// 大当たりを1件追加。prizeBalls を指定した場合はその玉数（純増）を使用、nil の場合は effectiveBallsPerHit を使用。
-    /// timeShortFromHit: 単発（通常）当たりで採用した当たりの時短ゲーム数。指定時は機種の timeShortRotations の代わりにこれを時短残りに加算する。
-    func addWin(type: WinType, atRotation: Int, prizeBalls: Int? = nil, timeShortFromHit: Int? = nil, countNormalRotationsFromState: PlayState? = nil) {
-        let stateForRotationCount = countNormalRotationsFromState ?? currentState
-        let diff = atRotation - totalRotations
-        if diff != 0 && stateForRotationCount == .normal { normalRotations += diff }
-        let prize = prizeBalls ?? effectiveBallsPerHit
-        var record = WinRecord(type: type, prize: prize, rotationAtWin: atRotation, normalRotationsAtWin: normalRotations)
-        record.timestamp = Date()
-        winRecords.append(record)
-        pushUndo(.removeWin(id: record.id))
-        totalRotations = atRotation
-        let (nextModeId, densapo): (Int, Int)
-        if type == .normal {
-            let timeShort = timeShortFromHit ?? selectedMachine.timeShortRotations
-            nextModeId = 0
-            densapo = timeShort > 0 ? timeShort : 0
-        } else if type == .lt {
-            nextModeId = 2
-            densapo = selectedMachine.isST ? selectedMachine.supportLimit : 0
+        pushUndo(.removeWin(id: record.id, before: beforeSnapshot))
+        isBigHitMode = false
+        bigHitChainCount = 0
+        currentModeID = 0
+        currentModeUiRole = 0
+        isTimeShortMode = false
+        if support > 0 {
+            currentState = .support
+            remainingSupportCount = support
+            supportPhaseInitialCount = support
         } else {
-            nextModeId = 1
-            densapo = selectedMachine.isST ? selectedMachine.supportLimit : 0
+            currentState = .normal
+            remainingSupportCount = 0
+            supportPhaseInitialCount = 0
         }
-        let nextRole: Int = type == .normal ? 0 : (type == .lt ? 2 : 1)
-        setStateAfterHit(nextModeId: nextModeId, densapo: densapo, nextUiRole: nextRole)
     }
 
-    /// カウントボタン表示用：前回大当たり以降のゲーム数（時短・ST抜けゲーム数含む）
+    /// カウントボタン表示用：前回大当たり以降のゲーム数（時短・ST抜けゲーム数含む）。
+    /// 通常時は totalRotations - lastRot（電サポ終了時に total にフェーズ分をまとめて反映したあと整合）。
+    /// 電サポ/LT 消化中は total がまだ進んでいないため、残りカウントダウン分を加算。
     var gamesSinceLastWin: Int {
         let lastRot = winRecords.last?.rotationAtWin ?? 0
         if winRecords.isEmpty {
             return totalRotations
         }
         let normalSinceWin = totalRotations - lastRot
-        let supportPlayed = (currentState == .support || currentState == .lt)
-            ? (supportPhaseInitialCount - remainingSupportCount)
-            : supportPhaseInitialCount
-        return normalSinceWin + supportPlayed
+        if currentState == .support || currentState == .lt {
+            return normalSinceWin + (supportPhaseInitialCount - remainingSupportCount)
+        }
+        return normalSinceWin
     }
 
     // 計算用
@@ -368,7 +385,8 @@ final class GameLog {
             }
             
             cumulativePrize += win.prize ?? 0
-            let holdingsAtWin = initialHoldings + cumulativePrize - runningHoldBalls - consumedBallsAt(rotation: win.rotationAtWin)
+            let consumedAtWin = consumedBallsForWin(win)
+            let holdingsAtWin = initialHoldings + cumulativePrize - runningHoldBalls - consumedAtWin
             let cost = Double(runningInvYen) + Double(runningHoldBalls) * rate
             let profit = Double(max(0, holdingsAtWin)) * rate - cost
             let xRot = win.normalRotationsAtWin ?? win.rotationAtWin
@@ -410,12 +428,20 @@ final class GameLog {
         return hasher.finalize()
     }
 
-    /// 指定回転数時点での消費玉数（liveChartPoints 用）
-    private func consumedBallsAt(rotation: Int) -> Int {
-        let delta = rotation - initialDisplayRotation
+    /// 当選時点までの消費玉数（liveChartPoints 用）。通常累積が取れるときは **通常回転のみ**（右打ち・電サポ相当を除外）で按分。旧データは総回転ベースで代替。
+    private func consumedBallsForWin(_ win: WinRecord) -> Int {
+        if let nr = win.normalRotationsAtWin {
+            return consumedBallsAtNormalRotation(nr)
+        }
+        let delta = win.rotationAtWin - initialDisplayRotation
         guard delta > 0 else { return 0 }
         let borderPer250 = max(dynamicBorder, 0.01)
         return Int((Double(delta) * 250.0 / borderPer250).rounded())
+    }
+
+    private func consumedBallsAtNormalRotation(_ normalRotation: Int) -> Int {
+        guard normalRotation > 0, dynamicBorder > 0 else { return 0 }
+        return Int((Double(normalRotation) * 250.0 / dynamicBorder).rounded())
     }
 
     /// 実戦で使う1Rあたり純増（遊技中調整 or 機種のaverageNetPerRound）
@@ -463,6 +489,30 @@ final class GameLog {
         let ballsPer1000 = Double(selectedShop.ballsPerCashUnit * 2)
         let cashUnits = ballsPer1000 > 0 ? Double(totalInput) * ballsPer1000 / 250000.0 : Double(totalInput) / 1000.0
         return cashUnits + Double(holdingsInvestedBalls) / 250.0
+    }
+
+    // MARK: - 撃ち玉（T / C / H）・持ち玉比率
+    /// **T**：通常回転のタップから推定した消費玉数（時短・電サポ・右打ち中の回転は含めない。`normalRotations` のみ）。実戦基準値で 250 玉/回換算。
+    var tapDerivedBallsConsumed: Int {
+        guard dynamicBorder > 0, normalRotations > 0 else { return 0 }
+        return Int((Double(normalRotations) * 250.0 / dynamicBorder).rounded())
+    }
+
+    /// **C**：現金投入から換算した撃ち玉数（店の貸玉料金）。
+    var cashOriginBallsConsumed: Int {
+        lendingRecords.filter { $0.type == .cash }.count * selectedShop.ballsPerCashUnit
+    }
+
+    /// **H**：持ち玉由来の撃ち玉数。二重計上防止のため **H = max(0, T − C)** で一意に定義（T＝`tapDerivedBallsConsumed`）。投入記録の持ち玉玉数と乖離しうる。
+    var holdingsOriginBallsFromIdentity: Int {
+        max(0, tapDerivedBallsConsumed - cashOriginBallsConsumed)
+    }
+
+    /// 持ち玉比率 **H / T**。T が 0 のときは nil。
+    var holdingsUsageRatio: Double? {
+        let t = tapDerivedBallsConsumed
+        guard t > 0 else { return nil }
+        return Double(holdingsOriginBallsFromIdentity) / Double(t)
     }
 
     /// 理論値（実戦基準値比）。実質回転率（1000pt・250玉単位）÷ 実戦基準値。1.0で基準、>1で上回り
@@ -651,14 +701,6 @@ final class GameLog {
         totalRotations += diff
     }
 
-    /// 当選時点などに回転数を合わせる（回転率に含める）。syncTotalRotations と同じ
-    func setRotationsTo(_ n: Int) {
-        let v = max(0, n)
-        // setRotationsTo は入力値を「有料回転」として扱い揃える（現状この関数は未使用）
-        totalRotations = v
-        normalRotations = v
-    }
-
     /// 現金投入額をあとから修正（500pt単位。持ち玉投入はそのまま）
     func setCashInput(pt: Int) {
         let cashUnits = max(0, pt / 500)
@@ -690,8 +732,9 @@ final class GameLog {
     func undoLastAction() {
         guard let action = undoStack.popLast() else { return }
         switch action {
-        case .removeWin(id: let id):
+        case .removeWin(id: let id, before: let snap):
             winRecords.removeAll { $0.id == id }
+            restoreRotationModeSnapshot(snap)
         case .removeLending(id: let id):
             lendingRecords.removeAll { $0.id == id }
         }
@@ -734,26 +777,6 @@ final class GameLog {
         }
     }
 
-    /// 最後に記録した通常大当たりをRUSH大当たりに昇格させ、RUSHモードへ移行する（チャンスモード等から呼ぶ）。recordHit 相当の状態遷移に寄せた実装。
-    func promoteLastNormalToRush() {
-        if let lastNormalIndex = winRecords.lastIndex(where: { $0.type == .normal }) {
-            winRecords[lastNormalIndex].type = .rush
-            winRecords[lastNormalIndex].nextModeId = 1
-        }
-        let densapo = selectedMachine.isST ? selectedMachine.supportLimit : 0
-        setStateAfterHit(nextModeId: 1, densapo: densapo, nextUiRole: 1)
-    }
-
-    /// 最後に記録した通常大当たりをLT大当たりに昇格させ、LTモードへ移行する。recordHit 相当の状態遷移に寄せた実装。
-    func promoteLastNormalToLt() {
-        if let lastNormalIndex = winRecords.lastIndex(where: { $0.type == .normal }) {
-            winRecords[lastNormalIndex].type = .lt
-            winRecords[lastNormalIndex].nextModeId = 2
-        }
-        let densapo = selectedMachine.isST ? selectedMachine.supportLimit : 0
-        setStateAfterHit(nextModeId: 2, densapo: densapo, nextUiRole: 2)
-    }
-
     /// 投資1件の内容を差し替え（履歴編集用・timestamp は維持）
     func replaceLendingRecord(id: UUID, type: LendingType, balls: Int?) {
         guard let index = lendingRecords.firstIndex(where: { $0.id == id }) else { return }
@@ -791,6 +814,8 @@ final class GameLog {
         supportPhaseInitialCount = 0
         isTimeShortMode = false
         adjustedNetPerRound = nil
+        isBigHitMode = false
+        bigHitChainCount = 0
         winRecords = []
         lendingRecords = []
     }
@@ -816,7 +841,9 @@ final class GameLog {
         adjustedNetPerRound = state.adjustedNetPerRound
         winRecords = state.winRecords
         lendingRecords = state.lendingRecords
-        undoStack = []
+        isBigHitMode = state.isBigHitMode ?? false
+        bigHitChainCount = state.bigHitChainCount ?? 0
+        restoreUndoStack(from: state.undoStackEntries)
     }
 
     /// 保存データに currentModeID が無いとき、currentState から復元する

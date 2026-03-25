@@ -3,36 +3,23 @@
 """
 1シート・1機種1行のCSVを読み、index.json / machines/{機種ID}.json / export_status.csv を生成する。
 
-仕様（2026-03 固定）:
-- モード列（モード0〜7）: 各セルは
-    mode_N / 表示名 / densapo [/ ui_role]
-  N は 0〜7 のみ。mode_0=通常、mode_1〜7=特殊モード。
-  ui_role: n=通常系(0), r=RUSH系(1), l=LT(2)。省略時は mode_0→n、mode_1〜7→r。
-- 当たり列（当たり1〜12）: スラッシュ9項目（必須）
-    あたりID / あたり名 / 基本出玉 / ユニット出玉(カンマ区切りで複数可) / 最大連結数 /
-    滞在モードID / 移行先モードID / 分岐ラベル / 昇格先あたりID
-  モードIDは mode_0〜mode_7 または整数 0〜7。昇格先は - または空でなし。
+仕様（2026-03 改定）:
+- スプレッドシートは **A〜I の9列のみ**（導入開始日〜ステータス）。モード列・当たり列・更新対象列は廃止。
+- 各 machines/{id}.json は `modes: []` / `bonuses: []` のメタデータのみ（アプリは空配列でもデコード可能）。
+- **導入開始日からカレンダー6年を経過した日の翌日以降**は、ステータスを **対象外** とみなす（CSV が「完了」でも変換時に上書き）。
+- **index.json** および **machines/*.json** には **対象外** の行を含めない（新規登録検索から除外）。
+- `MASTER_EXPORT_STATUS_VALUES` を **未設定**にすると、対象外・ステータス空以外はすべて JSON 化。設定時はその集合に加えて対象外を除外。
 
 使い方:
   python scripts/convert_master_one_sheet.py [CSVのパス]
   MASTER_ONE_SHEET_CSV_URL="https://..." python scripts/convert_master_one_sheet.py
 
-制限付き共有（401 回避）:
-  環境変数 GOOGLE_SERVICE_ACCOUNT_JSON にサービスアカウント鍵の JSON 文字列を設定し、
-  スプレッドシートをそのメールに閲覧者共有。pip install google-auth が必要。
-
 出力:
   master_out/index.json, master_out/machines/<id>.json, master_out/export_status.csv
 
-index.json:
-  CSV 上の全機種を列挙（機種IDが空でなく、重複しない先着行）。ステータス・更新対象に関係なく含める。
-  「更新対象」列があるときは各要素に update_target を含める。
-
 差分更新（既定）:
   既存の master_out/machines/*.json があるとき、JSON を意味比較し変更がない機種はファイルを書き換えない。
-  今回のエクスポート対象に含まれない safe_id の *.json は削除（CSVから消えた・ステータスで落ちた機種）。
-  「更新対象」列が「対象外」の行は JSON を書き換えず、既存ファイルも削除しない。
-  CI では gh-pages 上の master_out を先に checkout してから本スクリプトを実行すること（workflow 参照）。
+  今回のエクスポート対象に含まれない safe_id の *.json は削除。
   全件上書き: 環境変数 MASTER_OUT_FORCE_FULL_WRITE=1
 """
 
@@ -44,6 +31,7 @@ import json
 import os
 import re
 import sys
+from datetime import date, datetime
 from pathlib import Path
 from typing import Optional
 
@@ -63,41 +51,28 @@ MACHINES_SUBDIR = "machines"
 REQUEST_TIMEOUT = 20
 FORCE_FULL_WRITE = os.environ.get("MASTER_OUT_FORCE_FULL_WRITE", "").strip().lower() in ("1", "true", "yes")
 
+# A〜I（列名で解決。順序は不問）
 HEADER_NAMES = [
-    "導入開始日", "機種名", "メーカー", "確率", "機種タイプ", "スペック", "特徴タグ", "機種ID", "ステータス",
-    "更新対象",
-    "モード0", "モード1", "モード2", "モード3", "モード4", "モード5", "モード6", "モード7",
-    "当たり1", "当たり2", "当たり3", "当たり4", "当たり5", "当たり6",
-    "当たり7", "当たり8", "当たり9", "当たり10", "当たり11", "当たり12",
+    "導入開始日",
+    "機種ID",
+    "機種名",
+    "メーカー",
+    "確率",
+    "機種タイプ",
+    "スペック",
+    "特徴タグ",
+    "ステータス",
 ]
 
 _export_status_env = (os.environ.get("MASTER_EXPORT_STATUS_VALUES") or "").strip()
-# 環境変数が「未設定」ではなく「空文字」の場合、set が空になって全行スキップされるのを防ぐ。
-_export_status_base = _export_status_env if _export_status_env else "完了"
-EXPORT_STATUS_VALUES = {s.strip() for s in _export_status_base.split("|") if s.strip()}
-SKIP_STATUS_VALUES = {"スキップ", "無効", "skip", "invalid", "スキップ ", "無効 "}
-
-# 「更新対象」列が「対象外」のときは master_out へ書き出さず、既存 JSON は保持（削除しない）
-UPDATE_TARGET_EXCLUDE_LABELS = {
-    "対象外",
-    "外",
-    "しない",
-    "no",
-    "false",
-    "0",
-    "×",
-    "x",
-    "否",
-    "－",
-    "-",
-}
+# None = 「対象外」以外はすべてエクスポート。非空なら指定ステータスのみ（対象外は常に除外）
+EXPORT_STATUS_VALUES: Optional[set[str]] = (
+    {s.strip() for s in _export_status_env.split("|") if s.strip()} if _export_status_env else None
+)
 
 
 def _normalize(s: str) -> str:
     return (s or "").strip().lower()
-
-
-UPDATE_TARGET_EXCLUDE_NORMALIZED = {_normalize(s) for s in UPDATE_TARGET_EXCLUDE_LABELS}
 
 
 def _col_index(headers: list[str]) -> dict[str, int]:
@@ -106,7 +81,6 @@ def _col_index(headers: list[str]) -> dict[str, int]:
         "機種ID": ["機種id", "machine_id", "machine id"],
         "機種名": ["name", "machine_name", "machine name"],
         "ステータス": ["status"],
-        "更新対象": ["update_target", "update target"],
         "導入開始日": ["導入日", "introduction_date", "introduction date"],
         "機種タイプ": ["type", "machine_type", "machine type"],
     }
@@ -125,7 +99,6 @@ def _col_index(headers: list[str]) -> dict[str, int]:
 
 
 def _canonical_json(obj) -> str:
-    """意味が同じなら一致する比較用文字列（キー順・空白差を無視）。"""
     return json.dumps(obj, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
@@ -137,193 +110,60 @@ def _sanitize_machine_id(machine_id: str) -> str:
     return s or "unknown"
 
 
-def _parse_int(s: str) -> Optional[int]:
-    s = (s or "").strip()
-    if not s:
-        return None
+def _add_calendar_years(d: date, years: int) -> date:
+    y = d.year + years
     try:
-        return int(float(s))
+        return date(y, d.month, d.day)
     except ValueError:
-        return None
+        return date(y, d.month, 28)
 
 
-def _parse_unit_payout_list(token: str) -> Optional[list[int]]:
-    """ユニット出玉列: 半角・全角カンマ区切りで複数可。空・不正なら None。"""
-    t = (token or "").strip()
-    if not t:
-        # ユニット出玉が未入力（空）の場合は 0 扱いにする。
-        # シート側で「基本出玉のみ」の定義があるため、空をエラーにすると完了機種が machines JSON に反映されない。
-        return []
-    pieces = [p.strip() for p in t.replace("，", ",").split(",")]
-    pieces = [p for p in pieces if p]
-    if not pieces:
+def _parse_intro_date(raw: str) -> Optional[date]:
+    s = (raw or "").strip()
+    if not s or s in ("-", "—", "不明"):
         return None
-    out: list[int] = []
-    for p in pieces:
-        v = _parse_int(p)
-        if v is None:
+    for fmt in ("%Y/%m/%d", "%Y-%m-%d", "%Y.%m.%d"):
+        try:
+            return datetime.strptime(s.replace(".", "/"), fmt).date()
+        except ValueError:
+            continue
+    m = re.match(r"^(\d{4})[年/](\d{1,2})[月/](\d{1,2})", s)
+    if m:
+        y, mo, da = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        try:
+            return date(y, mo, da)
+        except ValueError:
             return None
-        out.append(max(0, v))
-    return out
+    return None
 
 
-def _should_skip_status(status: str) -> bool:
+def _effective_status_from_row(
+    values: list,
+    idx: dict[str, int],
+    today: date,
+) -> str:
+    def cell(key: str, default: str = "") -> str:
+        if key not in idx or idx[key] >= len(values):
+            return default
+        return (values[idx[key]] or "").strip() or default
+
+    raw_status = cell("ステータス")
+    intro_raw = cell("導入開始日") or cell("導入日")
+    intro = _parse_intro_date(intro_raw)
+    if intro is not None and today > _add_calendar_years(intro, 6):
+        return "対象外"
+    return raw_status
+
+
+def _should_skip_machine_export(status: str) -> bool:
     s = (status or "").strip()
-    # JSON 作成対象は、環境変数 `MASTER_EXPORT_STATUS_VALUES` に含まれるステータスのみ。
-    # それ以外（例: 空以外の中間ステータス）は「未完了」とみなして machines/<id>.json を生成しない。
     if not s:
         return True
-    return s not in EXPORT_STATUS_VALUES
-
-
-def _is_export_update_target(values: list[str], idx: dict[str, int]) -> bool:
-    """更新対象列が無い CSV は従来どおり全行が配信対象。
-
-    列があるとき: 空白・「対象」は配信対象。「対象外」（および EXCLUDE 表記）のみ除外（既存 JSON は保持）。
-    """
-    if "更新対象" not in idx:
+    if s == "対象外":
         return True
-    col = idx["更新対象"]
-    raw = (values[col] if col < len(values) else "") or ""
-    s = raw.strip()
-    if not s:
-        return True  # 空白 = 「対象」と同じ
-    if s in UPDATE_TARGET_EXCLUDE_LABELS:
-        return False
-    if _normalize(s) in UPDATE_TARGET_EXCLUDE_NORMALIZED:
-        return False
-    return True
-
-
-def _parse_densapo(s: str):
-    t = (s or "").strip()
-    if not t:
-        return 0
-    if t.lower() in {"inf", "∞"}:
-        return "INF"
-    v = _parse_int(t)
-    return v if v is not None else 0
-
-
-def _parse_ui_role_letter(s: str) -> int:
-    t = (s or "").strip().lower()
-    if t in ("n", "normal", "通常"):
-        return 0
-    if t in ("l", "lt", "ＬＴ"):
-        return 2
-    return 1
-
-
-def _parse_mode_cell(cell: str) -> Optional[dict]:
-    """mode_N/表示名/densapo[/ui_role] のみ。N は 0〜7。"""
-    raw = (cell or "").strip()
-    if not raw:
-        return None
-    parts = [p.strip() for p in raw.split("/")]
-    if len(parts) < 3:
-        return None
-    mm = re.match(r"(?i)^mode_(\d+)$", parts[0])
-    if not mm:
-        return None
-    mode_id = int(mm.group(1))
-    if not (0 <= mode_id <= 7):
-        return None
-    name = parts[1] or ""
-    densapo = _parse_densapo(parts[2])
-    if len(parts) >= 4 and (parts[3] or "").strip():
-        ui_role = _parse_ui_role_letter(parts[3])
-    else:
-        # ui_role を省略した場合のデフォルトはアプリ側（MachineMasterModels.swift）の推論に揃える。
-        # - mode_0: 通常(0)
-        # - mode_2: LT(2)
-        # - それ以外: RUSH(1)
-        ui_role = 0 if mode_id == 0 else (2 if mode_id == 2 else 1)
-    return {"mode_id": mode_id, "name": name, "densapo": densapo, "ui_role": ui_role}
-
-
-def _parse_mode_ref(token: str) -> Optional[int]:
-    t = (token or "").strip()
-    if not t:
-        return None
-    mm = re.match(r"(?i)^mode_(\d+)$", t)
-    if mm:
-        v = int(mm.group(1))
-        return v if 0 <= v <= 7 else None
-    v = _parse_int(t)
-    return v if v is not None and 0 <= v <= 7 else None
-
-
-def _normalize_atari_id(token: str) -> str:
-    """あたりIDを JSON 用に正規化（bonus_k 形式は数字部を統一）。その他はトリムのみ。"""
-    t = (token or "").strip()
-    if not t:
-        return ""
-    mm = re.match(r"(?i)^bonus_(\d+)$", t)
-    if mm:
-        return f"bonus_{int(mm.group(1))}"
-    if t.isdigit():
-        return f"bonus_{int(t)}"
-    return t
-
-
-def _normalize_promotion_id(token: str) -> Optional[str]:
-    t = (token or "").strip()
-    if not t or t == "-":
-        return None
-    return _normalize_atari_id(t) or None
-
-
-def _parse_bonus_cell(cell: str) -> Optional[dict]:
-    """9項目固定: id / name / base / unit / max / stay / next / branch / promotion"""
-    cell = (cell or "").strip()
-    if not cell:
-        return None
-    parts = [p.strip() for p in cell.split("/")]
-    # 末尾（promotion）が空でスラッシュが省略されるケースを許容する。
-    if len(parts) == 8:
-        parts.append("")
-    if len(parts) != 9:
-        return None
-    raw_bid = parts[0]
-    name = parts[1] or ""
-    if not raw_bid or not name:
-        return None
-    bonus_id = _normalize_atari_id(raw_bid)
-    if not bonus_id:
-        return None
-    base_payout = _parse_int(parts[2])
-    unit_raw = _parse_unit_payout_list(parts[3])
-    # max_concat は空なら 0 扱い（未定義扱い）。
-    max_concat_raw = (parts[4] or "").strip()
-    max_concat = 0 if not max_concat_raw else _parse_int(max_concat_raw)
-    stay = _parse_mode_ref(parts[5])
-    nxt = _parse_mode_ref(parts[6])
-    if base_payout is None or unit_raw is None or max_concat is None or stay is None or nxt is None:
-        return None
-    unit_payouts = [x for x in unit_raw if x > 0]
-    unit_payout = unit_payouts[0] if unit_payouts else 0
-    branch_label = parts[7] or ""
-    promotion_id = _normalize_promotion_id(parts[8])
-
-    return {
-        "bonus_id": bonus_id,
-        "name": name,
-        "base_payout": max(0, base_payout),
-        "unit_payouts": unit_payouts,
-        "unit_payout": unit_payout,
-        "max_concat": max(0, max_concat),
-        "stay_mode_id": stay,
-        "next_mode_id": nxt,
-        "branch_label": branch_label,
-        "promotion_id": promotion_id,
-    }
-
-
-def _enrich_bonuses_next_ui_role(bonuses: list[dict], modes: list[dict]) -> None:
-    by_mid = {m["mode_id"]: m for m in modes}
-    for b in bonuses:
-        nm = b.get("next_mode_id")
-        b["next_ui_role"] = by_mid[nm]["ui_role"] if nm in by_mid else None
+    if EXPORT_STATUS_VALUES is not None:
+        return s not in EXPORT_STATUS_VALUES
+    return False
 
 
 def fetch_csv_from_url(url: str) -> str:
@@ -332,17 +172,19 @@ def fetch_csv_from_url(url: str) -> str:
     return fetch_spreadsheet_csv(url, timeout=REQUEST_TIMEOUT)
 
 
-def load_and_validate_rows(csv_content: str):
+def load_and_validate_rows(csv_content: str, today: Optional[date] = None):
+    """戻り値: valid_rows, catalog_rows, skip_report"""
+    ref_day = today or date.today()
     lines = [line for line in csv_content.splitlines() if line.strip()]
     if len(lines) < 2:
-        return [], [], [], []
+        return [], [], [(0, "", "error", "empty_csv")]
     reader = csv.reader(io.StringIO(csv_content))
     rows = list(reader)
     headers = rows[0]
     idx = _col_index(headers)
 
     if "機種ID" not in idx or "機種名" not in idx:
-        return [], [], [], [(0, "", "error", "ヘッダーに機種ID・機種名がありません")]
+        return [], [], [(0, "", "error", "ヘッダーに機種ID・機種名がありません")]
 
     def v(values: list, key: str, default: str = "") -> str:
         if key not in idx or idx[key] >= len(values):
@@ -351,13 +193,25 @@ def load_and_validate_rows(csv_content: str):
 
     seen_ids: set[str] = set()
     valid_rows: list[dict] = []
-    preserve_rows: list[dict] = []
     catalog_rows: list[dict] = []
     skip_report: list[tuple[int, str, str, str]] = []
 
     for row_no, values in enumerate(rows[1:], start=2):
         machine_id = v(values, "機種ID")
-        status = v(values, "ステータス")
+        effective_status = _effective_status_from_row(values, idx, ref_day)
+
+        catalog_entry: dict = {
+            "machine_id": machine_id,
+            "name": v(values, "機種名", machine_id or ""),
+            "manufacturer": v(values, "メーカー"),
+            "probability": v(values, "確率"),
+            "machine_type": v(values, "機種タイプ"),
+            "intro_start": v(values, "導入開始日") or v(values, "導入日"),
+            "status": effective_status,
+        }
+        if "更新対象" in idx:
+            catalog_entry["update_target"] = v(values, "更新対象")
+        catalog_rows.append(catalog_entry)
 
         if not machine_id:
             skip_report.append((row_no, machine_id, "skipped", "missing_machine_id"))
@@ -367,147 +221,44 @@ def load_and_validate_rows(csv_content: str):
             continue
         seen_ids.add(machine_id)
 
-        catalog_entry: dict = {
-            "machine_id": machine_id,
-            "name": v(values, "機種名", machine_id),
-            "manufacturer": v(values, "メーカー"),
-            "probability": v(values, "確率"),
-            "machine_type": v(values, "機種タイプ"),
-            "intro_start": v(values, "導入開始日") or v(values, "導入日"),
-            "status": status,
-        }
-        if "更新対象" in idx:
-            catalog_entry["update_target"] = v(values, "更新対象")
-        catalog_rows.append(catalog_entry)
-
-        # 更新対象が「対象外」の行は、ステータスが未完了でも既存 JSON を保持する。
-        raw_update_target = ""
-        if "更新対象" in idx:
-            col = idx["更新対象"]
-            raw_update_target = (values[col] if col < len(values) else "") or ""
-            raw_update_target = raw_update_target.strip()
-
-        if not _is_export_update_target(values, idx):
-            preserve_rows.append(
-                {
-                    "machine_id": machine_id,
-                    "name": v(values, "機種名", machine_id),
-                    "manufacturer": v(values, "メーカー"),
-                    "probability": v(values, "確率"),
-                    "machine_type": v(values, "機種タイプ"),
-                    "intro_start": v(values, "導入開始日") or v(values, "導入日"),
-                    "status": status,
-                }
-            )
-            skip_report.append((row_no, machine_id, "skipped", f"not_update_target:update_target={raw_update_target}"))
+        if _should_skip_machine_export(effective_status):
+            detail = "status_excluded_or_empty"
+            if effective_status == "対象外":
+                detail = "taishogai"
+            elif not (v(values, "ステータス") or "").strip():
+                detail = "status_empty"
+            elif EXPORT_STATUS_VALUES is not None:
+                detail = "status_not_in_MASTER_EXPORT_STATUS_VALUES"
+            skip_report.append((row_no, machine_id, "skipped", detail))
             continue
 
-        if _should_skip_status(status):
-            skip_report.append((row_no, machine_id, "skipped", "status_not_ready"))
-            continue
-
-        modes: list[dict] = []
-        mode_parse_errors: list[str] = []
-        for i in range(8):
-            raw_m = v(values, f"モード{i}", "")
-            if not raw_m:
-                continue
-            parsed_m = _parse_mode_cell(raw_m)
-            if not parsed_m:
-                mode_parse_errors.append(f"モード{i}={raw_m}")
-            else:
-                modes.append(parsed_m)
-
-        bonuses: list[dict] = []
-        bonus_parse_errors: list[str] = []
-        for i in range(1, 13):
-            cell = v(values, f"当たり{i}")
-            if not cell:
-                continue
-            parsed_b = _parse_bonus_cell(cell)
-            if not parsed_b:
-                bonus_parse_errors.append(f"当たり{i}={cell}")
-            else:
-                bonuses.append(parsed_b)
-
-        _enrich_bonuses_next_ui_role(bonuses, modes)
-
-        mode_ids = {m["mode_id"] for m in modes}
-        if mode_parse_errors:
-            skip_report.append((row_no, machine_id, "error", "parse_error_mode: " + "; ".join(mode_parse_errors[:3])))
-            continue
-        if bonus_parse_errors:
-            skip_report.append((row_no, machine_id, "error", "parse_error_bonus: " + "; ".join(bonus_parse_errors[:3])))
-            continue
-
-        if bonuses:
-            if 0 not in mode_ids:
-                skip_report.append((row_no, machine_id, "error", "missing_mode_0: 当たり行がある場合は mode_0（通常）の定義が必須です"))
-                continue
-            bids = [b["bonus_id"] for b in bonuses]
-            if len(bids) != len(set(bids)):
-                skip_report.append((row_no, machine_id, "error", "duplicate_bonus_id"))
-                continue
-            ref_errors: list[str] = []
-            for b in bonuses:
-                if b["stay_mode_id"] not in mode_ids:
-                    ref_errors.append(f"stay_mode_id={b['stay_mode_id']}")
-                if b["next_mode_id"] not in mode_ids:
-                    ref_errors.append(f"next_mode_id={b['next_mode_id']}")
-                pid = b.get("promotion_id")
-                if pid and pid not in bids:
-                    ref_errors.append(f"promotion_id={pid} not in bonus_ids")
-            if ref_errors:
-                skip_report.append((row_no, machine_id, "error", "invalid_ref: " + "; ".join(ref_errors[:8])))
-                continue
-
-        by_stay: dict[int, list[dict]] = {}
-        for b in bonuses:
-            by_stay.setdefault(b["stay_mode_id"], []).append(b)
-        bad_dup: list[str] = []
-        bad_rowdup: list[str] = []
-        for stay, lst in by_stay.items():
-            by_name: dict[str, list[dict]] = {}
-            for b in lst:
-                by_name.setdefault(b["name"], []).append(b)
-            for name, items in by_name.items():
-                if len(items) > 1 and all((it.get("branch_label") or "").strip() == "" for it in items):
-                    bad_dup.append(f"stay={stay},name={name}")
-                seen_keys: set[tuple] = set()
-                for it in items:
-                    key = (it["name"], it["next_mode_id"], (it.get("branch_label") or "").strip())
-                    if key in seen_keys:
-                        bad_rowdup.append(f"stay={stay},name={name}")
-                    seen_keys.add(key)
-        if bad_dup:
-            skip_report.append((row_no, machine_id, "error", "duplicate_bonus_name_without_branch: " + ", ".join(bad_dup[:3])))
-            continue
-        if bad_rowdup:
-            skip_report.append((row_no, machine_id, "error", "duplicate_bonus_row: " + ", ".join(bad_rowdup[:3])))
-            continue
-
-        valid_rows.append({
-            "machine_id": machine_id,
-            "name": v(values, "機種名", machine_id),
-            "manufacturer": v(values, "メーカー"),
-            "probability": v(values, "確率"),
-            "machine_type": v(values, "機種タイプ"),
-            "intro_start": v(values, "導入開始日") or v(values, "導入日"),
-            "spec": v(values, "スペック"),
-            "tags": v(values, "特徴タグ"),
-            "status": status,
-            "modes": modes,
-            "bonuses": bonuses,
-        })
+        valid_rows.append(
+            {
+                "machine_id": machine_id,
+                "name": v(values, "機種名", machine_id),
+                "manufacturer": v(values, "メーカー"),
+                "probability": v(values, "確率"),
+                "machine_type": v(values, "機種タイプ"),
+                "intro_start": v(values, "導入開始日") or v(values, "導入日"),
+                "spec": v(values, "スペック"),
+                "tags": v(values, "特徴タグ"),
+                "status": effective_status,
+                "modes": [],
+                "bonuses": [],
+            }
+        )
 
     for r in valid_rows:
         skip_report.append((0, r["machine_id"], "exported", ""))
-    return valid_rows, preserve_rows, catalog_rows, skip_report
+    return valid_rows, catalog_rows, skip_report
 
 
 def build_index(rows: list[dict]) -> list[dict]:
     out: list[dict] = []
     for r in rows:
+        st = (r.get("status") or "").strip()
+        if st == "対象外":
+            continue
         item = {
             "machine_id": r["machine_id"],
             "name": r["name"],
@@ -515,7 +266,7 @@ def build_index(rows: list[dict]) -> list[dict]:
             "probability": r.get("probability") or "",
             "machine_type": r.get("machine_type") or "",
             "intro_start": r.get("intro_start") or "",
-            "status": r.get("status") or "",
+            "status": st,
         }
         if "update_target" in r:
             item["update_target"] = r.get("update_target") or ""
@@ -544,7 +295,8 @@ def main() -> None:
         sys.exit(0)
 
     print(
-        f"[convert_master_one_sheet] MASTER_EXPORT_STATUS_VALUES env={_export_status_env!r} -> EXPORT_STATUS_VALUES={sorted(EXPORT_STATUS_VALUES)}",
+        f"[convert_master_one_sheet] MASTER_EXPORT_STATUS_VALUES env={_export_status_env!r} -> "
+        f"filter={sorted(EXPORT_STATUS_VALUES) if EXPORT_STATUS_VALUES is not None else '（未指定・対象外以外すべて）'}",
         flush=True,
     )
 
@@ -575,14 +327,13 @@ def main() -> None:
         )
         sys.exit(1)
 
-    valid_rows, preserve_rows, catalog_rows, skip_report = load_and_validate_rows(csv_content)
+    valid_rows, catalog_rows, skip_report = load_and_validate_rows(csv_content)
 
-    # デバッグ用: どの理由で反映されていないか内訳を出す（上位だけ）
     try:
         from collections import Counter
+
         reason_counter = Counter()
         for _, _, st, detail in skip_report:
-            # detail の先頭（例: parse_error_bonus, status_not_ready, not_update_target）
             if detail:
                 reason = (detail.split(":")[0] or "").strip()
             else:
@@ -621,13 +372,12 @@ def main() -> None:
             print(f"[convert_master_one_sheet] index.json: 変更なし（スキップ） {len(index)} 機種", flush=True)
 
     expected_safe_ids: set[str] = set()
-    for pr in preserve_rows:
-        expected_safe_ids.add(_sanitize_machine_id(pr["machine_id"]))
+    for row in valid_rows:
+        expected_safe_ids.add(_sanitize_machine_id(row["machine_id"]))
     n_written = n_unchanged = 0
     for row in valid_rows:
         detail = build_machine_json(row)
         safe_id = _sanitize_machine_id(row["machine_id"])
-        expected_safe_ids.add(safe_id)
         out_path = machines_dir / f"{safe_id}.json"
         if not FORCE_FULL_WRITE and out_path.is_file():
             try:
@@ -650,7 +400,7 @@ def main() -> None:
                 pass
     print(
         f"[convert_master_one_sheet] machines/*.json: 新規・更新={n_written}, 変更なしスキップ={n_unchanged}, "
-        f"削除={n_removed}, 配信JSON行数={len(valid_rows)}, 対象外保持={len(preserve_rows)} -> {machines_dir}"
+        f"削除={n_removed}, 配信JSON行数={len(valid_rows)} -> {machines_dir}"
         + (" [FORCE_FULL_WRITE]" if FORCE_FULL_WRITE else ""),
         flush=True,
     )

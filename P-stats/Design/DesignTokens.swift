@@ -8,17 +8,19 @@ import SwiftUI
 enum DesignTokens {
     enum Color {
         static let backgroundHex = "0A0E1A"
-        static let accentR: Double = 0
-        static let accentG: Double = 0.83
+        /// 黒背景上の視認性（WCAG 観点で純青 #00F より高明度のシアン寄り）
+        static let accentR: Double = 0.35
+        static let accentG: Double = 0.88
         static let accentB: Double = 1.0
         static let rushHex = "FF0000"
-        static let normalHex = "0000FF"
+        /// 通常系ボタン・ラベル用。純青は暗背景でコントラスト不足のため高明度スカイブルー
+        static let normalHex = "78B0FF"
         static let ltR: Double = 0.95
         static let ltG: Double = 0.75
         static let ltB: Double = 0.2
-        /// エッジ発光（青系・+1.5超）
-        static let edgeGlowBlueR: Double = 0.2
-        static let edgeGlowBlueG: Double = 0.45
+        /// エッジ発光（青系・+1.5超）— 暗背景で区別しやすい明るめの青
+        static let edgeGlowBlueR: Double = 0.45
+        static let edgeGlowBlueG: Double = 0.65
         static let edgeGlowBlueB: Double = 1.0
         /// エッジ発光（黄オレンジ・-0.5〜-1.5）
         static let edgeGlowOrangeR: Double = 1.0
@@ -31,8 +33,10 @@ enum DesignTokens {
     }
 
     enum Opacity {
-        static let rowBackground: Double = 0.70
-        static let cardBackground: Double = 0.75
+        /// リスト行・インサイト等（壁紙上でも読みやすく）
+        static let rowBackground: Double = 0.88
+        /// カード・パネル全般
+        static let cardBackground: Double = 0.90
         static let rushBackground: Double = 0.12
         static let normalBackground: Double = 0.12
         static let ltBackground: Double = 0.12

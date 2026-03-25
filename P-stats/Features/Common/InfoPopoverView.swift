@@ -25,17 +25,3 @@ struct InfoIconView: View {
         .presentationCompactAdaptation(.popover)
     }
 }
-
-/// ラベルとⓘを横に並べる。タイトル右に説明アイコンを置く用
-struct LabelWithInfo: View {
-    let title: String
-    let explanation: String
-    var tint: Color = .white.opacity(0.7)
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Text(title)
-            InfoIconView(explanation: explanation, tint: tint)
-        }
-    }
-}

@@ -10,7 +10,9 @@ enum PresetItem: Identifiable {
 
     var id: String {
         switch self {
-        case .server(let s): return "s-\(s.name)-\(s.probability ?? "")-\(s.manufacturer ?? "")-\(s.introductionDateRaw ?? "")"
+        case .server(let s):
+            let mid = (s.machineId ?? "").trimmingCharacters(in: .whitespaces)
+            return mid.isEmpty ? "s-\(s.name)-\(s.probability ?? "")-\(s.manufacturer ?? "")" : "s-\(mid)"
         case .cloudShared(let c): return "c-\(c.id)"
         case .local(let m): return "l-\(m.persistentModelID.hashValue)"
         }
@@ -89,7 +91,12 @@ struct MachineEditView: View, Equatable {
     @State private var isLoadingPresets = false
     /// マスタ検索の表示用（バックグラウンドでフィルタ＋導入日順ソートした結果）
     @State private var displayPresetsCache: [PresetItem] = []
+    /// `index.json` 取得結果（スペック完了フィルタ用）。取得失敗時は `loadedOK == false`。
+    @State private var registrationIndexEntries: [MachineMasterIndexEntry] = []
+    @State private var registrationIndexLoadedOK = false
     @AppStorage("machineMasterDataURL") private var machineMasterDataURL: String = ""
+    /// 遊技画面と同じ。`index.json` の取得元（空なら `PresetServiceConfig.defaultMachineDetailBaseURL`）。
+    @AppStorage("machineDetailBaseURL") private var machineDetailBaseURL: String = ""
     @AppStorage("machineMasterListURL") private var machineMasterListURL: String = ""
     @State private var machineMasterItems: [MachineMasterItem] = []
     @State private var showMasterPicker = false
@@ -187,18 +194,23 @@ struct MachineEditView: View, Equatable {
             } message: {
                 Text(errorMessage)
             }
-            .task {
+            .task(id: "\(machineMasterDataURL)_\(machineDetailBaseURL)") {
                 let url = machineMasterDataURL.trimmingCharacters(in: .whitespaces).isEmpty
                     ? PresetServiceConfig.defaultMachineMasterDataURL
                     : machineMasterDataURL
+                let base = machineDetailBaseURL.trimmingCharacters(in: .whitespaces)
                 isLoadingPresets = true
                 defer { isLoadingPresets = false }
-                let result = await Task.detached(priority: .userInitiated) {
+                async let presetsTask = Task.detached(priority: .userInitiated) {
                     await PresetService.fetchPresets(from: url)
                 }.value
+                let indexList = await MachineDetailLoader.fetchIndex(baseURL: base.isEmpty ? nil : base)
+                let result = await presetsTask
                 serverPresetsHolder = result.map { PresetListHolder($0) }
+                registrationIndexLoadedOK = (indexList != nil)
+                registrationIndexEntries = indexList ?? []
             }
-            .task(id: "\(presetSearchText)_\(showNewest20)_\(isLoadingPresets)_\(serverPresetsHolder?.items.count ?? 0)") {
+            .task(id: "\(presetSearchText)_\(showNewest20)_\(isLoadingPresets)_\(serverPresetsHolder?.items.count ?? 0)_\(registrationIndexLoadedOK)_\(registrationIndexEntries.count)") {
                 if isLoadingPresets && serverPresetsHolder == nil {
                     displayPresetsCache = []
                     return
@@ -210,22 +222,19 @@ struct MachineEditView: View, Equatable {
                     return
                 }
                 if let holder = serverPresetsHolder, !holder.items.isEmpty {
-                    let items = await Task.detached(priority: .userInitiated) { [holder] in
-                        let sorted = holder.items.sorted { (a, b) in
-                            (a.introductionDateRaw ?? "") > (b.introductionDateRaw ?? "")
-                        }
-                        let filtered: [PresetFromServer]
-                        let limit: Int
-                        if key.isEmpty {
-                            filtered = Array(sorted.prefix(20))
-                            limit = 20
-                        } else {
-                            filtered = sorted.filter { $0.name.lowercased().contains(key) }
-                            limit = 30
-                        }
-                        return Array(filtered.prefix(limit)).map { PresetItem.server($0) }
-                    }.value
-                    displayPresetsCache = items
+                    // index と突合：対象外除外・index のみの行は minimal プリセットで補完（MasterMachineSearchView と同じ）
+                    let merged = MasterSpecRegistrationGate.mergeServerPresetsWithIndex(holder.items, indexEntries: registrationIndexLoadedOK ? registrationIndexEntries : nil)
+                    let sorted = merged.sorted { (a, b) in
+                        (a.introductionDateRaw ?? "") > (b.introductionDateRaw ?? "")
+                    }
+                    let specReadySorted = sorted
+                    let filtered: [PresetFromServer]
+                    if key.isEmpty {
+                        filtered = Array(specReadySorted.prefix(20))
+                    } else {
+                        filtered = Array(specReadySorted.filter { $0.name.lowercased().contains(key) }.prefix(30))
+                    }
+                    displayPresetsCache = filtered.map { PresetItem.server($0) }
                 } else {
                     let sorted = allPresets.sorted { ($0.lastUsedAt ?? .distantPast) > ($1.lastUsedAt ?? .distantPast) }
                     let filtered = key.isEmpty ? Array(sorted.prefix(20)) : allPresets.filter { $0.name.lowercased().contains(key) }
@@ -293,11 +302,21 @@ struct MachineEditView: View, Equatable {
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
     }
 
+    private func emptyPresetListMessage(keyEmpty: Bool, holderHasRows: Bool) -> String {
+        if !registrationIndexLoadedOK, holderHasRows {
+            return "スペック一覧を取得できないため、ここには表示できません。"
+        }
+        if keyEmpty {
+            return "該当する機種が新台20件に含まれていないか、検索に一致しません。"
+        }
+        return "該当する機種がありません。"
+    }
+
     @ViewBuilder
     private var presetPanel: some View {
         let keyEmpty = presetSearchText.trimmingCharacters(in: .whitespaces).isEmpty
         let showListArea = showNewest20 || !keyEmpty || isLoadingPresets
-        editPanel(title: "機種を検索", trailing: { InfoIconView(explanation: "設定のマスターデータURLから取得した一覧。検索するか「新台から探す」で表示。選ぶと機種名・メーカー以下が自動入力されます。", tint: .white.opacity(0.6)) }) {
+            editPanel(title: "機種を検索", trailing: { InfoIconView(explanation: "設定のマスターデータURLから取得した一覧を、マシン詳細マスタ（index.json）と突き合わせます。ステータスが「対象外」（導入から6年経過後など）の機種は表示しません。検索するか「新台から探す」で表示。選ぶと機種名・メーカー以下が自動入力されます。", tint: .white.opacity(0.6)) }) {
             HStack(spacing: 10) {
                 TextField("機種名で検索", text: $presetSearchText)
                     .textContentType(.none)
@@ -320,6 +339,16 @@ struct MachineEditView: View, Equatable {
                 Text("マスタを読み込めませんでした。設定のマスターデータURLを確認するか、機種名・メーカーを手入力してください。")
                     .font(.caption)
                     .foregroundStyle(.orange.opacity(0.9))
+            }
+            if let holder = serverPresetsHolder, !holder.items.isEmpty, !registrationIndexLoadedOK, !isLoadingPresets {
+                Text("スペック一覧（index.json）を取得できませんでした。一覧のみの表示になります（対象外の除外ができません）。ネットワークとマシン詳細マスタのベースURLを確認するか、手入力してください。")
+                    .font(.caption)
+                    .foregroundStyle(.orange.opacity(0.9))
+            }
+            if registrationIndexLoadedOK {
+                Text("※ index.json に載る機種のうち、ステータス「対象外」以外を表示しています。")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
             if !showListArea {
                 Text("検索窓に文字を入力するか「新台から探す」をタップすると、該当機種を導入日が新しい順で表示します。")
@@ -382,7 +411,8 @@ struct MachineEditView: View, Equatable {
                     .scrollDismissesKeyboard(.interactively)
                     .frame(maxHeight: 220)
                     if displayPresetsCache.isEmpty {
-                        Text(keyEmpty ? "新台20件の取得に失敗しているか、マスタが空です。" : "該当する機種がありません。")
+                        let holderHasRows = (serverPresetsHolder?.items.isEmpty == false)
+                        Text(emptyPresetListMessage(keyEmpty: keyEmpty, holderHasRows: holderHasRows))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }

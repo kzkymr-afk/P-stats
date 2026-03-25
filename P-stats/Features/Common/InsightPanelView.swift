@@ -227,6 +227,84 @@ struct InsightPanelView: View {
                     }
                     HStack {
                         HStack(spacing: 4) {
+                            labelText("持ち玉投資")
+                            InfoIconView(explanation: "今回の遊技で使った持ち玉の玉数。", tint: cyan.opacity(0.7))
+                        }
+                        Spacer()
+                        Text("\(log.holdingsInvestedBalls) 玉")
+                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .foregroundColor(cyan.opacity(0.95))
+                    }
+                    if log.dynamicBorder > 0 {
+                        HStack {
+                            HStack(spacing: 4) {
+                                labelText("推定消費玉（T）")
+                                InfoIconView(explanation: "通常回転と実戦基準値から推定した撃ち込み玉数。時短・電サポ・右打ち中の回転は含みません。", tint: cyan.opacity(0.7))
+                            }
+                            Spacer()
+                            Text("\(log.tapDerivedBallsConsumed) 玉")
+                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .foregroundColor(cyan.opacity(0.95))
+                        }
+                        HStack {
+                            HStack(spacing: 4) {
+                                labelText("現金由来（C）")
+                                InfoIconView(explanation: "現金投入を店の貸玉料金で換算した玉数。", tint: cyan.opacity(0.7))
+                            }
+                            Spacer()
+                            Text("\(log.cashOriginBallsConsumed) 玉")
+                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .foregroundColor(cyan.opacity(0.95))
+                        }
+                        HStack {
+                            HStack(spacing: 4) {
+                                labelText("持ち玉由来（H）")
+                                InfoIconView(explanation: "二重計上を避けるため H＝max(0, T−C) で定義。上の「持ち玉投資」とは一致しない場合があります。", tint: cyan.opacity(0.7))
+                            }
+                            Spacer()
+                            Text("\(log.holdingsOriginBallsFromIdentity) 玉")
+                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .foregroundColor(cyan.opacity(0.95))
+                        }
+                        HStack {
+                            HStack(spacing: 4) {
+                                labelText("持ち玉比率")
+                                InfoIconView(explanation: "H÷T。Tが0のときは表示しません。", tint: cyan.opacity(0.7))
+                            }
+                            Spacer()
+                            if let r = log.holdingsUsageRatio {
+                                Text(String(format: "%.1f%%", r * 100))
+                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .foregroundColor(cyan.opacity(0.95))
+                            } else {
+                                Text("—")
+                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .foregroundColor(cyan.opacity(0.6))
+                            }
+                        }
+                    }
+                    HStack {
+                        HStack(spacing: 4) {
+                            labelText("実費換算")
+                            InfoIconView(explanation: "現金＋持ち玉を払出係数でpt換算した合計（回転率・期待値の実費ベース）。", tint: cyan.opacity(0.7))
+                        }
+                        Spacer()
+                        Text(String(format: "%.0f pt", log.totalRealCost))
+                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .foregroundColor(cyan.opacity(0.95))
+                    }
+                    HStack {
+                        HStack(spacing: 4) {
+                            labelText("換算単位")
+                            InfoIconView(explanation: "回転率の分母。1単位＝現金1000pt相当＋持ち玉250玉。店の貸玉料金で換算。", tint: cyan.opacity(0.7))
+                        }
+                        Spacer()
+                        Text(String(format: "%.2f 単位", log.effectiveUnitsForBorder))
+                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .foregroundColor(cyan.opacity(0.95))
+                    }
+                    HStack {
+                        HStack(spacing: 4) {
                             labelText("公式基準値")
                             InfoIconView(explanation: "メーカー公表の等価基準値（回/1000pt）。通常回転のみ。", tint: cyan.opacity(0.7))
                         }
@@ -309,9 +387,9 @@ struct InsightPanelView: View {
                         Button(action: onCorrectCash) {
                             HStack(alignment: .center) {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("投入を修正")
+                                    Text("投資を修正")
                                         .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                    Text("投入した現金の合計")
+                                    Text("総投資（pt・現金の合計）")
                                         .font(.system(size: 10, weight: .regular))
                                         .foregroundColor(cyan.opacity(0.6))
                                 }
@@ -353,7 +431,7 @@ struct InsightPanelView: View {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("当選回数を修正")
                                         .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                    Text("RUSH・通常の当選回数を直す")
+                                    Text("棒グラフの棒をタップして1区間ずつ直すか、ここで RUSH・通常の合計を修正")
                                         .font(.system(size: 10, weight: .regular))
                                         .foregroundColor(cyan.opacity(0.6))
                                 }
@@ -374,8 +452,8 @@ struct InsightPanelView: View {
                 .background(AppGlassStyle.rowBackground)
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(cyan.opacity(0.2), lineWidth: 1))
 
-                // モード切替：左手/右手・省エネモード（設定は上段に1つのみ）
-                if onToggleRightHandMode != nil || onOpenPowerSaving != nil {
+                // モード切替：左手/右手のみ（省エネは効果が限定的のためドロワーからは外す）
+                if onToggleRightHandMode != nil {
                     VStack(alignment: .leading, spacing: 4) {
                         panelTitle("モード切替")
                         if let onToggle = onToggleRightHandMode {
@@ -399,29 +477,6 @@ struct InsightPanelView: View {
                                 .padding(.horizontal, 10)
                             }
                             .buttonStyle(.plain)
-                        }
-                        if let onOpenPowerSaving = onOpenPowerSaving {
-                            Button(action: onOpenPowerSaving) {
-                                HStack(alignment: .center) {
-                                    Image(systemName: "leaf.fill")
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("省エネモード")
-                                            .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                        Text("省電力表示・シンプルな画面")
-                                            .font(.system(size: 10, weight: .regular))
-                                            .foregroundColor(cyan.opacity(0.6))
-                                    }
-                                    Spacer()
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption2)
-                                        .foregroundColor(cyan.opacity(0.6))
-                                }
-                                .foregroundColor(cyan)
-                                .padding(.vertical, 6)
-                                .padding(.horizontal, 10)
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("省エネモード")
                         }
                     }
                     .padding(12)

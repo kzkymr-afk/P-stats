@@ -9,8 +9,11 @@ struct MasterMachineSearchView: View {
 
     @Query(sort: \PresetMachine.name) private var localPresets: [PresetMachine]
     @AppStorage("machineMasterDataURL") private var machineMasterDataURL: String = ""
+    @AppStorage("machineDetailBaseURL") private var machineDetailBaseURL: String = ""
     @State private var urlPresets: [PresetFromServer]?
     @State private var urlLoadError: String?
+    /// index.json 取得失敗時（一覧を空にした理由）
+    @State private var specIndexGateMessage: String?
     @State private var cloudSharedPresets: [SharedMachineFromCloud]?
     @State private var searchText: String = ""
     @State private var searchTextDebounced: String = ""
@@ -39,9 +42,14 @@ struct MasterMachineSearchView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                Text("マスタから機種を選び、マイリストに追加できます。")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.75))
+                VStack(spacing: 6) {
+                    Text("マスタから機種を選び、マイリストに追加できます。")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.75))
+                    Text("※ index.json に載る機種のうち、ステータス「対象外」（導入から6年超など）以外を表示します。詳細は machines.json 優先。")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.55))
+                }
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 20)
@@ -69,6 +77,14 @@ struct MasterMachineSearchView: View {
                     if let err = urlLoadError {
                         Section {
                             Text(err)
+                                .foregroundStyle(.orange)
+                                .font(.subheadline)
+                        }
+                        .listRowBackground(Color.clear)
+                    }
+                    if let gateMsg = specIndexGateMessage {
+                        Section {
+                            Text(gateMsg)
                                 .foregroundStyle(.orange)
                                 .font(.subheadline)
                         }
@@ -117,11 +133,26 @@ struct MasterMachineSearchView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
-            .task(id: "\(refreshID)_\(effectiveMasterDataURL)") {
+            .task(id: "\(refreshID)_\(effectiveMasterDataURL)_\(machineDetailBaseURL)") {
                 urlLoadError = nil
-                urlPresets = await PresetService.fetchPresets(from: effectiveMasterDataURL)
-                if urlPresets == nil && !effectiveMasterDataURL.isEmpty {
+                specIndexGateMessage = nil
+                let raw = await PresetService.fetchPresets(from: effectiveMasterDataURL)
+                let base = machineDetailBaseURL.trimmingCharacters(in: .whitespaces)
+                let idx = await MachineDetailLoader.fetchIndex(baseURL: base.isEmpty ? nil : base)
+
+                if raw == nil && !effectiveMasterDataURL.isEmpty {
                     urlLoadError = "URLからの取得に失敗しました。ネットワーク接続と設定の「マスターデータURL」を確認してください。"
+                }
+
+                if let r = raw {
+                    if let indexEntries = idx {
+                        urlPresets = MasterSpecRegistrationGate.mergeServerPresetsWithIndex(r, indexEntries: indexEntries)
+                    } else {
+                        urlPresets = r
+                        specIndexGateMessage = "index.json を取得できませんでした。一覧はマスターデータのみ表示しています（対象外の除外・index との突合ができません）。ベースURLを確認してください。"
+                    }
+                } else {
+                    urlPresets = nil
                 }
                 cloudSharedPresets = await SharedMachineCloudKitService.fetchSharedMachines(searchText: nil)
             }

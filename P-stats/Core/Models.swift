@@ -298,6 +298,8 @@ struct WinRecord: Identifiable, Codable {
     var bonusName: String? = nil
     /// RUSH終了時にユーザーが入力した「このRUSHで遊んだ総ゲーム数」（時短抜け含む）。RUSH 1 run のみ使用
     var rushGamesPlayed: Int? = nil
+    /// 大当たりモード終了時に確定した「この区間の大当たり回数（連チャン含む）」。旧データは nil
+    var bonusSessionHitCount: Int? = nil
 }
 
 struct LendingRecord: Identifiable, Codable {
@@ -306,6 +308,28 @@ struct LendingRecord: Identifiable, Codable {
     let timestamp: Date
     /// 持ち玉補充のときの実際の玉数（125未満は残り全額）。現金のときは nil（店の貸玉料金で計算）
     var balls: Int? = nil
+}
+
+/// 大当たり記録直前の回転・モード状態（Undo で復元する）
+struct RotationModeSnapshot: Codable, Equatable {
+    var totalRotations: Int
+    var normalRotations: Int
+    var currentState: PlayState
+    var currentModeID: Int
+    var currentModeUiRole: Int
+    var remainingSupportCount: Int
+    var supportPhaseInitialCount: Int
+    var isTimeShortMode: Bool
+    /// 大当たりモード（Undo 復元用）。旧データは nil
+    var isBigHitMode: Bool? = nil
+    var bigHitChainCount: Int? = nil
+}
+
+/// Undo スタックの永続化用（当たりは `RotationModeSnapshot` 付き）
+struct PersistedUndoEntry: Codable, Equatable {
+    var isWin: Bool
+    var recordId: UUID
+    var modeSnapshot: RotationModeSnapshot?
 }
 
 /// 続きから用：遊技ログのスナップショット（保存して終了・バックグラウンド時に永続化）
@@ -327,14 +351,23 @@ struct ResumableState: Codable {
     var currentModeID: Int? = nil
     /// 現在のモードの UI ロール（0/1/2）。nil のときは currentModeID から推定
     var currentModeUiRole: Int? = nil
+    /// Undo スタック（最大3件）。旧データは nil
+    var undoStackEntries: [PersistedUndoEntry]? = nil
+    /// 大当たりモード（通常画面と切り替え）。旧データは nil
+    var isBigHitMode: Bool? = nil
+    var bigHitChainCount: Int? = nil
 }
 
 // --- 3. テーマ定義 (⚠️ここが1回だけであることを確認！) ---
 
 /// 起動画面の色（P-STATSフォント色と同色→黒へ変化で文字が徐々に見える）
 enum LaunchAppearance {
-    /// 起動直後の背景＝P-STATSのフォント色（シアン）と同色
-    static let launchStartColor = Color(red: 0, green: 0.83, blue: 1.0)
+    /// 起動直後の背景＝アクセントと同色（`DesignTokens.Color.accent*` と整合）
+    static let launchStartColor = Color(
+        red: DesignTokens.Color.accentR,
+        green: DesignTokens.Color.accentG,
+        blue: DesignTokens.Color.accentB
+    )
     /// グラデーション終了・黒
     static let launchEndColor = Color(red: 28/255, green: 28/255, blue: 30/255)
     /// 従来の単色用（他で参照されている場合）

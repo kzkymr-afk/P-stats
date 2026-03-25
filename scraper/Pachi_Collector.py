@@ -1,12 +1,11 @@
 """
 p-town カレンダーから機種一覧を取得し、各機種のHTMLをGASに送って解析。
 取得成功時はマスター仕様のCSVに1行追記する（MASTER_CSV_PATH が設定時）。
-マスターデータ最新ヘッダー（30列）:
-  導入開始日, 機種名, メーカー, 確率, 機種タイプ, スペック, 特徴タグ, 機種ID, ステータス,
-  更新対象, モード0〜モード7, 当たり1〜当たり12
+マスターデータヘッダー（9列・A〜I）:
+  導入開始日, 機種ID, 機種名, メーカー, 確率, 機種タイプ, スペック, 特徴タグ, ステータス
 
-※ Collector は基本的に A〜I（導入開始日〜ステータス）までしか関与しない想定。
-   モード/当たり列は空欄で追記し、別アプリ/手入力で埋める。
+※ Collector は追記時に主に B・C・I（機種ID・機種名・ステータス）を埋め、他は空。
+   GAS がシートに書く行は convert_master_one_sheet の HEADER_NAMES と同じ順序。
 """
 import csv
 import os
@@ -21,15 +20,19 @@ from playwright.sync_api import sync_playwright
 GAS_URL = "https://script.google.com/macros/s/AKfycbzO6zlH-FQ7ERic0BbaFr0ITBhygY1Kul6Uoa8tVsVovVXJL1pWgdPgDI2hxkaDgA0y/exec"
 BASE_URL = "https://p-town.dmm.com/machines/new_calendar"
 
-# マスターデータ最新仕様：1機種1行・30列（スプレッドシート・convert_master_one_sheet と同一）
-MASTER_HEADER_30 = [
-    "導入開始日", "機種名", "メーカー", "確率", "機種タイプ", "スペック", "特徴タグ", "機種ID", "ステータス",
-    "更新対象",
-    "モード0", "モード1", "モード2", "モード3", "モード4", "モード5", "モード6", "モード7",
-    "当たり1", "当たり2", "当たり3", "当たり4", "当たり5", "当たり6",
-    "当たり7", "当たり8", "当たり9", "当たり10", "当たり11", "当たり12",
+# マスターデータ仕様：1機種1行・9列（scripts/convert_master_one_sheet.py の HEADER_NAMES と同一順）
+MASTER_HEADER_9 = [
+    "導入開始日",
+    "機種ID",
+    "機種名",
+    "メーカー",
+    "確率",
+    "機種タイプ",
+    "スペック",
+    "特徴タグ",
+    "ステータス",
 ]
-# 取得成功時に追記するCSVのパス（空なら追記しない）。convert_master_one_sheet と同じ30列仕様。
+# 取得成功時に追記するCSVのパス（空なら追記しない）
 MASTER_CSV_PATH = os.environ.get("PACHI_MASTER_CSV", str(Path(__file__).resolve().parent.parent / "master_out" / "master_one_sheet.csv"))
 
 def _parse_machine_name_from_response(response_text):
@@ -45,26 +48,26 @@ def _parse_machine_name_from_response(response_text):
 
 
 def _build_master_row(machine_id, response_text):
-    """30列マスターの1行分のリストを返す。解析成功時は機種ID・機種名・ステータスのみ埋め、他は空。"""
+    """9列マスターの1行分のリストを返す。解析成功時は機種ID・機種名・ステータスのみ埋め、他は空。"""
     name = _parse_machine_name_from_response(response_text)
     status = "完了" if ("成功" in (response_text or "") or "完了" in (response_text or "")) else "要確認"
     row = [
-        "",              # 導入開始日（Collectorでは未入力）
-        name or "",      # 機種名
-        "", "", "",      # メーカー, 確率, 機種タイプ
-        "", "",          # スペック, 特徴タグ
-        machine_id,      # 機種ID
-        status,          # ステータス
-        "対象",          # 更新対象（Collector 追記分は master_out 配信対象とする）
-        "", "", "", "", "", "", "", "",  # モード0〜7
-        "", "", "", "", "", "", "", "", "", "", "", "",  # 当たり1〜12
+        "",  # 導入開始日（Collectorでは未入力）
+        machine_id or "",
+        name or "",
+        "",  # メーカー
+        "",  # 確率
+        "",  # 機種タイプ
+        "",  # スペック
+        "",  # 特徴タグ
+        status,
     ]
-    assert len(row) == len(MASTER_HEADER_30), "row length must match MASTER_HEADER_30"
+    assert len(row) == len(MASTER_HEADER_9), "row length must match MASTER_HEADER_9"
     return row
 
 
 def _append_master_csv_row(machine_id, response_text):
-    """取得成功時、30列ヘッダーに沿ってCSVに1行追記する。convert_master_one_sheet と同一フォーマット。"""
+    """取得成功時、9列ヘッダーに沿ってCSVに1行追記する。convert_master_one_sheet と同一フォーマット。"""
     if not MASTER_CSV_PATH:
         return
     path = Path(MASTER_CSV_PATH)
@@ -74,7 +77,7 @@ def _append_master_csv_row(machine_id, response_text):
     with open(path, "a", encoding="utf-8", newline="") as f:
         w = csv.writer(f)
         if not file_exists:
-            w.writerow(MASTER_HEADER_30)
+            w.writerow(MASTER_HEADER_9)
         w.writerow(row)
     print(f"  └ マスターCSV追記: {path}", flush=True)
 
@@ -168,7 +171,7 @@ def run_archive_scan():
                             # 解析に成功したら、今回のセッション中も二度と行かないようにセットに追加
                             if "成功" in res.text or "完了" in res.text:
                                 done_set.add(m_id)
-                                # 25列マスター仕様のCSVに1行追記（MASTER_CSV_PATH が設定されている場合）
+                                # 9列マスター仕様のCSVに1行追記（MASTER_CSV_PATH が設定されている場合）
                                 _append_master_csv_row(m_id, res.text)
                             
                         except Exception as e:

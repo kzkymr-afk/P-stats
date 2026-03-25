@@ -119,6 +119,9 @@ struct SettingsTabView: View {
                             }
                             .pickerStyle(.segmented)
                             .labelsHidden()
+                            Text("省エネは演出・情報の表示を抑え、画面の更新を減らします。バッテリー効果は端末・状況により限定的です。アプリを閉じる・画面を落とす方が効果が大きい場合があります。")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.65))
                         }
                     }
 

@@ -1,7 +1,7 @@
 /** マスターシートのスプレッドシートID */
 var SS_ID = "1fSGx5EmcSOD68itgBRxjGyUGz0Wh5u1Lnbw-dyvchz4";
 // デプロイ版の動作確認用（Webアプリがどのコードを動かしているか判別）
-var BUILD_TAG = "2026-03-21_update_target_col_j";
+var BUILD_TAG = "2026-03-25_master_9cols_no_mode_bonus";
 
 /**
  * master_out を GitHub Actions でビルド・Pages 配信するときの Script Properties（プロジェクトの設定）:
@@ -15,14 +15,10 @@ var MASTER_DEPLOY_WORKFLOW_DEFAULT = "deploy-master-out-pages.yml";
 var MASTER_DEPLOY_REF_DEFAULT = "main";
 
 /**
- * 実際のスプレッドシートのヘッダー（A〜AD = 30列）。
- * A=導入開始日, B=機種ID, C=機種名, D=メーカー, E=確率, F=機種タイプ, G=スペック, H=特徴タグ, I=ステータス, J=更新対象, K〜R=モード0〜7, S〜AD=当たり1〜12（30列・A〜AD）
+ * マスターシートのヘッダー（A〜I = 9列）。モード・当たり・更新対象列は廃止。
  */
 var HEADER_ROW = [
-  "導入開始日", "機種ID", "機種名", "メーカー", "確率", "機種タイプ", "スペック", "特徴タグ", "ステータス",
-  "更新対象",
-  "モード0", "モード1", "モード2", "モード3", "モード4", "モード5", "モード6", "モード7",
-  "当たり1", "当たり2", "当たり3", "当たり4", "当たり5", "当たり6", "当たり7", "当たり8", "当たり9", "当たり10", "当たり11", "当たり12"
+  "導入開始日", "機種ID", "機種名", "メーカー", "確率", "機種タイプ", "スペック", "特徴タグ", "ステータス"
 ];
 
 function onOpen() {
@@ -147,7 +143,7 @@ function doPost(e) {
       return createJsonResponse({
         ok: true,
         build_tag: BUILD_TAG,
-        notes: "I列ステータス手動。J列更新対象（対象/対象外）。マスタ: mode_0〜7、当たり9項目（あたりID/名/…）",
+        notes: "A〜Iの9列。I列ステータス手動。machines JSON は modes/bonuses 空配列（メタのみ）。",
         header_len: HEADER_ROW.length,
         master_deploy_webhook: !!PropertiesService.getScriptProperties().getProperty("MASTER_DEPLOY_WEBHOOK_SECRET")
       });
@@ -184,8 +180,8 @@ function doPost(e) {
       var sheet = ss.getSheets()[0];
       var lastRow = sheet.getLastRow();
       if (lastRow <= 1) return createResponse("");
-      // 30列: 列B(2)=機種ID, 列I(9)=ステータス
-      var data = sheet.getRange(2, 1, lastRow - 1, 30).getValues();
+      // 9列: B=機種ID, I=ステータス
+      var data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
       var doneIds = data.filter(function(row) { return row[8] === "完了"; }).map(function(row) { return String(row[1]); });
       return createResponse(doneIds.join(","));
     }
@@ -196,7 +192,7 @@ function doPost(e) {
       var sheetSkip = ssSkip.getSheets()[0];
       var lastRowSkip = sheetSkip.getLastRow();
       if (lastRowSkip <= 1) return createResponse("");
-      var dataSkip = sheetSkip.getRange(2, 1, lastRowSkip - 1, 30).getValues();
+      var dataSkip = sheetSkip.getRange(2, 1, lastRowSkip - 1, 9).getValues();
       var ids = dataSkip
         .filter(function(row) {
           var idv = String(row[1] || "").trim(); // B列
@@ -237,134 +233,6 @@ function createJsonResponse(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function toNumberOr(value, fallback) {
-  var n = Number(String(value).trim());
-  return isFinite(n) ? n : fallback;
-}
-
-function parseUiRoleLetter_(s) {
-  var t = String(s == null ? "" : s).trim().toLowerCase();
-  if (t === "n" || t === "normal" || t === "通常") return 0;
-  if (t === "l" || t === "lt") return 2;
-  return 1;
-}
-
-function parseDensapoToken_(s) {
-  var t = String(s == null ? "" : s).trim();
-  if (!t) return 0;
-  var low = t.toLowerCase();
-  if (low === "inf" || t === "∞") return "INF";
-  var n = Number(t);
-  return isFinite(n) ? n : 0;
-}
-
-/** モード: mode_N/表示/densapo[/ui_role] のみ。N=0〜7（mode_0=通常、1〜7=特殊） */
-function parseModeCell_(cell) {
-  var raw = String(cell == null ? "" : cell).trim();
-  if (!raw) return null;
-  var parts = raw.split("/").map(function(x) { return String(x).trim(); });
-  if (parts.length < 3) return null;
-  var mm = String(parts[0]).match(/^mode_(\d+)$/i);
-  if (!mm) return null;
-  var mid = parseInt(mm[1], 10);
-  if (mid < 0 || mid > 7) return null;
-  var dens = parseDensapoToken_(parts[2]);
-  var ui = (parts.length >= 4 && parts[3]) ? parseUiRoleLetter_(parts[3]) : (mid === 0 ? 0 : 1);
-  return { mode_id: mid, name: parts[1] || "", densapo: dens, ui_role: ui };
-}
-
-function parseModeRef_(token) {
-  var t = String(token == null ? "" : token).trim();
-  if (!t) return null;
-  var mm = t.match(/^mode_(\d+)$/i);
-  if (mm) {
-    var v = parseInt(mm[1], 10);
-    return (v >= 0 && v <= 7) ? v : null;
-  }
-  var n = toNumberOr(t, NaN);
-  return (isFinite(n) && n >= 0 && n <= 7) ? n : null;
-}
-
-/** あたりID（昇格先含む）を正規化 */
-function normalizeAtariId_(token) {
-  var t = String(token == null ? "" : token).trim();
-  if (!t) return "";
-  var mm = t.match(/^bonus_(\d+)$/i);
-  if (mm) return "bonus_" + parseInt(mm[1], 10);
-  if (/^\d+$/.test(t)) return "bonus_" + parseInt(t, 10);
-  return t;
-}
-
-function normalizePromotionId_(token) {
-  var t = String(token == null ? "" : token).trim();
-  if (!t || t === "-") return null;
-  return normalizeAtariId_(t) || null;
-}
-
-function enrichBonusesNextUiRole_(bonuses, modes) {
-  var byId = {};
-  for (var i = 0; i < modes.length; i++) {
-    byId[modes[i].mode_id] = modes[i];
-  }
-  for (var j = 0; j < bonuses.length; j++) {
-    var nm = bonuses[j].next_mode_id;
-    bonuses[j].next_ui_role = byId[nm] != null ? byId[nm].ui_role : null;
-  }
-}
-
-/** ユニット出玉列: カンマ区切りで複数可（例 "300, 1500"） */
-function parseUnitPayoutsField_(token) {
-  var t = String(token == null ? "" : token).trim();
-  if (!t) return null;
-  var chunks = t.split(/[,，]/).map(function(x) { return String(x).trim(); }).filter(function(x) { return x.length > 0; });
-  if (chunks.length === 0) return null;
-  var out = [];
-  for (var i = 0; i < chunks.length; i++) {
-    var n = toNumberOr(chunks[i], NaN);
-    if (!isFinite(n)) return null;
-    out.push(Math.max(0, Math.floor(n)));
-  }
-  return out;
-}
-
-/**
- * 当たりセル9項目:
- * あたりID/あたり名/基本/ユニット(複数可)/最大連結/滞在モード/移行先/分岐/昇格先
- */
-function parseAtariCell9_(cell) {
-  var raw = String(cell == null ? "" : cell).trim();
-  if (!raw) return null;
-  var parts = raw.split("/").map(function(x) { return String(x).trim(); });
-  if (parts.length !== 9) return null;
-  var bidRaw = parts[0];
-  var nm = parts[1];
-  if (!bidRaw || !nm) return null;
-  var bonusId = normalizeAtariId_(bidRaw);
-  if (!bonusId) return null;
-  var base = toNumberOr(parts[2], NaN);
-  var unitList = parseUnitPayoutsField_(parts[3]);
-  var maxc = toNumberOr(parts[4], NaN);
-  var stay = parseModeRef_(parts[5]);
-  var nxt = parseModeRef_(parts[6]);
-  if (!isFinite(base) || unitList === null || !isFinite(maxc) || stay === null || nxt === null) return null;
-  var unitPayouts = unitList.filter(function(x) { return x > 0; });
-  var branch = parts[7] || "";
-  var promo = normalizePromotionId_(parts[8]);
-  var firstUnit = unitPayouts.length > 0 ? unitPayouts[0] : 0;
-  return {
-    bonus_id: bonusId,
-    name: nm,
-    base_payout: Math.max(0, base),
-    unit_payouts: unitPayouts,
-    unit_payout: firstUnit,
-    max_concat: Math.max(0, maxc),
-    stay_mode_id: stay,
-    next_mode_id: nxt,
-    branch_label: branch,
-    promotion_id: promo
-  };
-}
-
 function findRowIndexByMachineId_(sheet, machineId) {
   var lastRow = sheet.getLastRow();
   if (lastRow <= 1) return -1;
@@ -396,8 +264,8 @@ function buildMachineJsonById(machineId) {
   }
   if (rowIndex === -1) return null;
 
-  // A〜AD（30列）を取得
-  var row = sheet.getRange(rowIndex, 1, 1, 30).getValues()[0];
+  // A〜I（9列）
+  var row = sheet.getRange(rowIndex, 1, 1, 9).getValues()[0];
 
   var introDate = String(row[0] || "").trim();
   var id = String(row[1] || "").trim();
@@ -408,20 +276,6 @@ function buildMachineJsonById(machineId) {
   var specType = String(row[6] || "").trim();
   var tags = String(row[7] || "").trim();
   var status = String(row[8] || "").trim();
-  // row[9] = J列 更新対象（空白・対象・対象外。空白=対象。master_out 配信は Python 側で解釈）
-
-  var modes = [];
-  for (var m = 0; m < 8; m++) {
-    var pm = parseModeCell_(row[10 + m]);
-    if (pm) modes.push(pm);
-  }
-
-  var flatBonuses = [];
-  for (var a = 0; a < 12; a++) {
-    var nb = parseAtariCell9_(row[18 + a]);
-    if (nb) flatBonuses.push(nb);
-  }
-  enrichBonusesNextUiRole_(flatBonuses, modes);
 
   return {
     machine_id: id,
@@ -433,14 +287,13 @@ function buildMachineJsonById(machineId) {
     spec: specType,
     tags: tags,
     status: status,
-    modes: modes,
-    bonuses: flatBonuses
+    modes: [],
+    bonuses: []
   };
 }
 
 /**
- * 解析メイン。HTMLから取得できる項目を30列（A〜AD）の該当列に書き込む。
- * A=導入開始日, B=機種ID, C=機種名, D=メーカー, E=確率, F=機種タイプ, G=スペック, H=特徴タグ, I=ステータス, J=更新対象(既定「対象」), K〜R=モード0〜7(空), S〜AD=当たり1〜12(空)
+ * 解析メイン。HTMLから取得できる項目を9列（A〜I）に書き込む。
  */
 function processPachinkoText(rawInput, manualUrl) {
   try {
@@ -537,15 +390,10 @@ function processPachinkoText(rawInput, manualUrl) {
       return "スキップ: 既に埋まっています " + name;
     }
 
-    // 新規行: 2行目に追加（A〜Hのみ埋め、I列=ステータスは空、J列=更新対象は「対象」、右は空）
-    var newRow = [
-      introDate, mCode, name, maker, probability, machineType, specType, tagString, "",
-      "対象",
-      "", "", "", "", "", "", "", "",
-      "", "", "", "", "", "", "", "", "", "", "", ""
-    ];
+    // 新規行: 2行目に追加（A〜Hのみ埋め、I列=ステータスは空）
+    var newRow = [introDate, mCode, name, maker, probability, machineType, specType, tagString, ""];
     sheet.insertRowBefore(2);
-    sheet.getRange(2, 1, 1, HEADER_ROW.length).setValues([newRow]);
+    sheet.getRange(2, 1, 1, 9).setValues([newRow]);
     return "追加: " + name;
   } catch (e) {
     return "解析エラー: " + e.toString();

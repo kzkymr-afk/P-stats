@@ -68,6 +68,8 @@ struct HomeView: View {
     @Query(sort: \Machine.name) private var machines: [Machine]
     @Query(sort: \Shop.name) private var shops: [Shop]
     @State private var selectedTab: HomeTab = .home
+    /// 実戦中にドロワーから設定へ来たとき「実戦に戻る」を出す
+    @State private var showReturnToPlayFromSettings = false
     @State private var homeNavigationPath: [HomeRoute] = []
     @State private var appeared = false
     @State private var orbPhase: CGFloat = 0
@@ -89,6 +91,12 @@ struct HomeView: View {
 
     /// 画面幅の約5.5%（最小20・最大32）。ドックなどで使用
     private func contentHorizontalPadding(_ width: CGFloat) -> CGFloat { min(32, max(20, width * 0.055)) }
+
+    /// `GeometryReader` 初期レイアウト等で非有限・0 以下になり得る値をガードする
+    private static func clampLayoutDimension(_ value: CGFloat, minimum: CGFloat = 1) -> CGFloat {
+        guard value.isFinite else { return minimum }
+        return Swift.max(minimum, value)
+    }
 
     private var periodProfit: Int {
         let cal = Calendar.current
@@ -116,6 +124,11 @@ struct HomeView: View {
             return acc + (rate - s.formulaBorderPer1k)
         }
         return sumDiff / Double(list.count)
+    }
+
+    /// ホーム下ドックを表示するか（分析プッシュ時のみ非表示）
+    private var showsHomeDock: Bool {
+        selectedTab != .home || homeNavigationPath != [.analytics]
     }
 
     /// 抜本対策：タブ切り替えでビューを破棄しない。4タブ分を常に保持し表示だけ切り替える。
@@ -172,20 +185,34 @@ struct HomeView: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbarColorScheme(.dark, for: .navigationBar)
                     .preferredColorScheme(.dark)
+                    .toolbar {
+                        if showReturnToPlayFromSettings {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("実戦に戻る") {
+                                    showReturnToPlayFromSettings = false
+                                    isPlaying = true
+                                }
+                                .fontWeight(.semibold)
+                                .foregroundColor(AppGlassStyle.accent)
+                            }
+                        }
+                    }
             }
             .opacity(selectedTab == .settings ? 1 : 0)
             .allowsHitTesting(selectedTab == .settings)
             .zIndex(selectedTab == .settings ? 1 : 0)
-
-            // ドックは分析画面のときのみ非表示（分析は分析用ドックのみ）。履歴表示時は表示し、ホームタップでトップに戻る
-            if selectedTab != .home || homeNavigationPath != [.analytics] {
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if showsHomeDock {
                 footerTabBar
-                    .zIndex(10)
             }
         }
         .onChange(of: selectedTab) { _, new in
             if new != .home {
                 homeNavigationPath = []
+            }
+            if new != .settings {
+                showReturnToPlayFromSettings = false
             }
         }
         .fullScreenCover(isPresented: $showMachineShopGate) {
@@ -209,6 +236,7 @@ struct HomeView: View {
         }
         .fullScreenCover(isPresented: $isPlaying) {
             PlayView(log: log, theme: $theme, onOpenSettingsTab: {
+                showReturnToPlayFromSettings = true
                 isPlaying = false
                 selectedTab = .settings
             })
@@ -333,26 +361,36 @@ struct HomeView: View {
             let w = geo.size.width
             let h = geo.size.height
             let contentPad = contentHorizontalPadding(w)
-            let verticalSpacing = min(44, max(28, h * 0.032))
-            let gridSpacing = min(18, max(12, w * 0.04))
-            let gridSide = max(120, min(220, (w - contentPad * 2 - gridSpacing) / 2))
-            let topPad = max(20, min(36, h * 0.028))
-            let bottomPad = max(80, min(140, h * 0.12))
-            let cardPad = min(24, max(14, w * 0.04))
-            VStack(spacing: 0) {
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: verticalSpacing) {
-                        earningsCard(padding: cardPad)
-                            .padding(.horizontal, contentPad)
-                        borderDiffCard(padding: cardPad)
-                            .padding(.horizontal, contentPad)
-                        mainActionsGrid(side: gridSide, gridSpacing: gridSpacing)
-                            .padding(.horizontal, contentPad)
-                    }
-                    .padding(.top, topPad)
-                    .padding(.bottom, bottomPad)
-                }
+            let verticalSpacing = min(22, max(10, h * 0.018))
+            /// グリッド内の行間・列間のみ。成績／基準値差パネル間や、最上段パネル〜新規スタート間は `verticalSpacing` のまま
+            let actionGridSpacing = min(10, max(5, w * 0.026))
+            let innerW = Self.clampLayoutDimension(w - contentPad * 2)
+            let topPad = max(10, min(24, h * 0.02))
+            let cardPad = min(20, max(12, w * 0.036))
+            /// 最下段ボタン〜ドック上端の隙間は、成績〜基準値差パネル間と同じ `verticalSpacing`
+            let gapAboveDock = verticalSpacing
+            /// 成績＋基準値差の2カード分。過小だとグリッドがドックと重なるため実測より大きめ（Dynamic Type・長い数値にも余裕）
+            let estimatedTwoCards: CGFloat = 260
+            /// レイアウト誤差・ボタン影の下方向はみ出し用（ドックとの干渉を防ぐ）
+            let homeGridLayoutSafetyBuffer: CGFloat = 10
+            let gridHeightBudget = max(
+                0,
+                h - topPad - estimatedTwoCards - 2 * verticalSpacing - gapAboveDock - homeGridLayoutSafetyBuffer
+            )
+            VStack(spacing: verticalSpacing) {
+                earningsCard(padding: cardPad)
+                borderDiffCard(padding: cardPad)
+                mainActionsGrid(
+                    innerWidth: innerW,
+                    gridSpacing: actionGridSpacing,
+                    gridHeightBudget: gridHeightBudget
+                )
+                Spacer(minLength: 0)
             }
+            .padding(.horizontal, contentPad)
+            .padding(.top, topPad)
+            .padding(.bottom, gapAboveDock)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // opacity 0 だと起動直後〜アニメ中にタップが効かないケースがあるため、不透明度は維持しオフセットのみ演出する
@@ -390,7 +428,7 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(cardPad)
-            .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 14))
+            .background(AppGlassStyle.cardBackground, in: RoundedRectangle(cornerRadius: 14))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(
@@ -438,7 +476,7 @@ struct HomeView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(cardPad)
-            .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 14))
+            .background(AppGlassStyle.cardBackground, in: RoundedRectangle(cornerRadius: 14))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(
@@ -458,98 +496,165 @@ struct HomeView: View {
         .buttonStyle(.plain)
     }
 
-    private func mainActionsGrid(side: CGFloat, gridSpacing: CGFloat) -> some View {
-        let leftColumnTotalHeight = 2 * side + gridSpacing
+    private func mainActionsGrid(
+        innerWidth: CGFloat,
+        gridSpacing: CGFloat,
+        gridHeightBudget: CGFloat
+    ) -> some View {
+        let iw = Self.clampLayoutDimension(innerWidth)
+        let gs = gridSpacing.isFinite ? Swift.max(0, gridSpacing) : 0
+        let columnW = (iw - gs) / 2
+        let cellW = max(52, columnW)
+        /// 行3つ＋行間2つが `gridHeightBudget` に収まる高さ。新規スタート 3/7、続きから行・下段行 各 2/7 で目立たせる
+        let inner = max(0, gridHeightBudget - 2 * gs)
+        var newStart: CGFloat = 60
+        var secondary: CGFloat = 50
+        if inner > 2 {
+            newStart = inner * 3 / 7
+            secondary = inner * 2 / 7
+            let sum = newStart + 2 * secondary
+            if sum > inner, sum > 0 {
+                let s = inner / sum
+                newStart *= s
+                secondary *= s
+            }
+        }
+        /// `inner` が極端に小さいときの既定値が合計を超えないよう、グリッド全体を `gridHeightBudget` に収める
+        let totalGrid = newStart + 2 * secondary + 2 * gs
+        if totalGrid > gridHeightBudget, gridHeightBudget > 0, totalGrid > 0 {
+            let s = gridHeightBudget / totalGrid
+            newStart *= s
+            secondary *= s
+        }
+        return mainActionsGridContent(
+            iw: iw,
+            gs: gs,
+            cellW: cellW,
+            newStartHeight: newStart,
+            secondaryHeight: secondary,
+            gridSpacing: gs
+        )
+        .frame(maxHeight: gridHeightBudget)
+        .frame(maxWidth: .infinity)
+    }
 
-        return HStack(alignment: .top, spacing: gridSpacing) {
-            VStack(spacing: gridSpacing) {
-                HomeGridButton(title: "新規スタート", icon: "plus.circle", cyan: cyan, size: side) {
+    @ViewBuilder
+    private func mainActionsGridContent(
+        iw: CGFloat,
+        gs: CGFloat,
+        cellW: CGFloat,
+        newStartHeight: CGFloat,
+        secondaryHeight: CGFloat,
+        gridSpacing: CGFloat
+    ) -> some View {
+        VStack(spacing: gridSpacing) {
+            Button {
+                HapticUtil.impact(.medium)
+                log.reset()
+                ResumableStateStore.clear()
+                showMachineShopGate = true
+            } label: {
+                HomeGridButtonLabelSplit(
+                    title: "新規スタート",
+                    icon: "plus.circle",
+                    width: iw,
+                    height: newStartHeight
+                )
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(HomeStyleGridButtonPressStyle())
+
+            HStack(spacing: gridSpacing) {
+                Button {
                     HapticUtil.impact(.medium)
-                    log.reset()
-                    ResumableStateStore.clear()
-                    showMachineShopGate = true
+                    if let state = ResumableStateStore.load(),
+                       let machine = machines.first(where: { $0.name == state.machineName }),
+                       let shop = shops.first(where: { $0.name == state.shopName }) {
+                        log.applyResumableState(state, machine: machine, shop: shop)
+                        isPlaying = true
+                    } else {
+                        continueRestoreFailed = ResumableStateStore.load() != nil
+                        showContinueSelection = true
+                    }
+                } label: {
+                    HomeGridButtonLabelSplit(
+                        title: "続きから",
+                        icon: "play.circle",
+                        width: cellW,
+                        height: secondaryHeight
+                    )
+                    .contentShape(Rectangle())
                 }
-                HomeGridButton(title: "シンプル入力", icon: "square.and.pencil", cyan: cyan, size: side) {
+                .buttonStyle(HomeStyleGridButtonPressStyle())
+
+                Button {
+                    HapticUtil.impact(.medium)
+                    homeNavigationPath = [.history]
+                } label: {
+                    HomeGridButtonLabelSplit(
+                        title: "実践履歴",
+                        icon: "calendar",
+                        width: cellW,
+                        height: secondaryHeight
+                    )
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(HomeStyleGridButtonPressStyle())
+            }
+
+            HStack(spacing: gridSpacing) {
+                Button {
                     HapticUtil.impact(.medium)
                     showGameSessionEdit = true
+                } label: {
+                    HomeGridButtonLabelSplit(
+                        title: "シンプル入力",
+                        icon: "square.and.pencil",
+                        width: cellW,
+                        height: secondaryHeight
+                    )
+                    .contentShape(Rectangle())
                 }
-            }
-            .frame(width: side)
+                .buttonStyle(HomeStyleGridButtonPressStyle())
 
-            GeometryReader { geo in
-                let rowH = max(48, (geo.size.height - 2 * gridSpacing) / 3)
-                VStack(spacing: gridSpacing) {
-                    Button {
-                        HapticUtil.impact(.medium)
-                        if let state = ResumableStateStore.load(),
-                           let machine = machines.first(where: { $0.name == state.machineName }),
-                           let shop = shops.first(where: { $0.name == state.shopName }) {
-                            log.applyResumableState(state, machine: machine, shop: shop)
-                            isPlaying = true
-                        } else {
-                            continueRestoreFailed = ResumableStateStore.load() != nil
-                            showContinueSelection = true
-                        }
-                    } label: {
-                        HomeGridButtonLabelSplit(
-                            title: "続きから",
-                            icon: "play.circle",
-                            cyan: cyan,
-                            width: side,
-                            height: rowH
-                        )
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-
-                    Button {
-                        HapticUtil.impact(.medium)
-                        homeNavigationPath = [.history]
-                    } label: {
-                        HomeGridButtonLabelSplit(
-                            title: "実践履歴",
-                            icon: "calendar",
-                            cyan: cyan,
-                            width: side,
-                            height: rowH
-                        )
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-
-                    Button {
-                        HapticUtil.impact(.medium)
-                        homeNavigationPath = [.analytics]
-                    } label: {
-                        HomeGridButtonLabelSplit(
-                            title: "データ分析",
-                            icon: "chart.bar",
-                            cyan: cyan,
-                            width: side,
-                            height: rowH
-                        )
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+                Button {
+                    HapticUtil.impact(.medium)
+                    homeNavigationPath = [.analytics]
+                } label: {
+                    HomeGridButtonLabelSplit(
+                        title: "データ分析",
+                        icon: "chart.bar",
+                        width: cellW,
+                        height: secondaryHeight
+                    )
+                    .contentShape(Rectangle())
                 }
-                .frame(width: side, height: geo.size.height, alignment: .top)
+                .buttonStyle(HomeStyleGridButtonPressStyle())
             }
-            .frame(width: side, height: leftColumnTotalHeight)
         }
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - ホーム右列など（高さ可変ラベル）
     private struct HomeGridButtonLabelSplit: View {
         let title: String
         let icon: String
-        var cyan: Color = AppGlassStyle.accent
         let width: CGFloat
         let height: CGFloat
 
-        private var cornerRadius: CGFloat { min(20, max(14, height * 0.22)) }
-        private var minDim: CGFloat { min(width, height) }
-        private var iconSize: CGFloat { min(32, max(18, minDim * 0.18)) }
-        private var titleSize: CGFloat { min(14, max(10, minDim * 0.075)) }
+        private var safeW: CGFloat {
+            guard width.isFinite, width > 0 else { return 1 }
+            return width
+        }
+        private var safeH: CGFloat {
+            guard height.isFinite, height > 0 else { return 1 }
+            return height
+        }
+
+        private var cornerRadius: CGFloat { min(20, max(14, safeH * 0.22)) }
+        private var minDim: CGFloat { min(safeW, safeH) }
+        private var iconSize: CGFloat { min(36, max(20, minDim * 0.205)) }
+        private var titleSize: CGFloat { min(16, max(11, minDim * 0.088)) }
         private var innerSpacing: CGFloat { max(4, minDim * 0.06) }
 
         var body: some View {
@@ -562,138 +667,70 @@ struct HomeView: View {
                     .lineLimit(2)
             }
             .foregroundColor(.white.opacity(0.95))
-            .frame(width: width, height: height)
-            .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: cornerRadius))
+            .frame(width: safeW, height: safeH)
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(AppGlassStyle.cardBackground)
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.4),
-                                cyan.opacity(0.25),
-                                Color.white.opacity(0.08)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
             )
+            .compositingGroup()
         }
     }
 
+    /// 下部タブバー。不透明の黒のみ。下端は `ignoresSafeArea(.bottom)` で隙間を埋める。
     private var footerTabBar: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .bottom) {
-                Color.clear
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .allowsHitTesting(false)
-                HStack(spacing: 0) {
-                    ForEach(HomeTab.allCases, id: \.self) { tab in
-                        Button {
-                            HapticUtil.impact(.light)
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                selectedTab = tab
-                                if tab == .home {
-                                    homeNavigationPath = []
-                                }
-                            }
-                        } label: {
-                            VStack(spacing: 4) {
-                                Image(systemName: tab.icon)
-                                    .font(.system(size: 22, weight: .medium))
-                                Text(tab.rawValue)
-                                    .font(.system(size: 10, weight: .medium, design: .rounded))
-                            }
-                            .foregroundColor(selectedTab == tab ? .white : .white.opacity(0.6))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .padding(.horizontal, 20)
+        HStack(alignment: .center, spacing: 0) {
+            ForEach(HomeTab.allCases, id: \.self) { tab in
+                Button {
+                    HapticUtil.impact(.light)
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        selectedTab = tab
+                        if tab == .home {
+                            homeNavigationPath = []
                         }
-                        .buttonStyle(.plain)
-                        .contentShape(Rectangle())
                     }
+                } label: {
+                    ZStack {
+                        VStack(spacing: 2) {
+                            Image(systemName: tab.icon)
+                                .font(.system(size: AppGlassStyle.MainTabDock.iconPointSize, weight: .medium))
+                            Text(tab.rawValue)
+                                .font(.system(size: AppGlassStyle.MainTabDock.labelPointSize, weight: .medium, design: .rounded))
+                        }
+                        .foregroundColor(selectedTab == tab ? .white : .white.opacity(0.6))
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(
-                    Color.black
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .clipShape(RoundedRectangle(cornerRadius: 28))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 28)
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    Color.white.opacity(0.35),
-                                    Color.white.opacity(0.1),
-                                    Color.white.opacity(0.05)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 0.8
-                        )
-                )
-                .padding(.horizontal, contentHorizontalPadding(geo.size.width))
-                .padding(.bottom, 0)
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-    }
-}
-
-// MARK: - ホーム用 2x2 四角グリッドボタン（ウィジェットサイズ・押下で沈み込み＋Haptics）
-struct HomeGridButton: View {
-    let title: String
-    let icon: String
-    var cyan: Color = AppGlassStyle.accent
-    var size: CGFloat = 160
-    let action: () -> Void
-    @State private var isPressed = false
-
-    private var iconSize: CGFloat { min(32, max(24, size * 0.175)) }
-    private var titleSize: CGFloat { min(14, max(11, size * 0.075)) }
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: max(6, size * 0.06)) {
-                Image(systemName: icon)
-                    .font(.system(size: iconSize, weight: .medium))
-                Text(title)
-                    .font(.system(size: titleSize, weight: .medium, design: .rounded))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-            }
-            .foregroundColor(.white.opacity(0.95))
-            .frame(width: size, height: size)
-            .background(Color.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 20))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.4),
-                                cyan.opacity(0.25),
-                                Color.white.opacity(0.08)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
+        .frame(height: AppGlassStyle.MainTabDock.tabRowHeight)
+        .padding(.horizontal, AppGlassStyle.MainTabDock.innerHorizontalPadding)
+        .padding(.top, AppGlassStyle.MainTabDock.paddingTop)
+        .padding(.bottom, AppGlassStyle.MainTabDock.paddingBottom)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, AppGlassStyle.MainTabDock.horizontalInset)
+        // 手前：角丸の黒パネル。奥：同じ黒を下端まで伸ばし、safeAreaInset とホームインジケータの間の隙間を埋める。
+        .background {
+            UnevenRoundedRectangle(
+                topLeadingRadius: AppGlassStyle.MainTabDock.topCornerRadius,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: AppGlassStyle.MainTabDock.topCornerRadius,
+                style: .continuous
             )
-            .scaleEffect(isPressed ? 0.96 : 1)
+            .fill(Color.black)
         }
-        .buttonStyle(.plain)
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    withAnimation(.easeInOut(duration: 0.15)) { isPressed = true }
-                }
-                .onEnded { _ in
-                    withAnimation(.easeInOut(duration: 0.2)) { isPressed = false }
-                }
-        )
+        .background {
+            Color.black
+                .frame(maxWidth: .infinity)
+                .ignoresSafeArea(edges: .bottom)
+        }
+        /// 縦に余計に伸びて safeAreaInset の占有が増えるのを防ぐ
+        .fixedSize(horizontal: false, vertical: true)
     }
 }

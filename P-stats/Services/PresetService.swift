@@ -124,6 +124,30 @@ struct PresetFromServer: Codable {
         /// 後方互換: 旧JSONの rounds は読み捨て（R数は廃止）
         var rounds: Int? = nil
     }
+
+    /// `machines.json` に行が無くても `index.json` に載る機種を新規登録検索に出すための最小行
+    static func minimalFromIndexEntry(_ e: MachineMasterIndexEntry) -> PresetFromServer {
+        PresetFromServer(
+            name: e.name,
+            machineTypeRaw: e.machineType,
+            supportLimit: nil,
+            timeShortRotations: nil,
+            defaultPrize: nil,
+            probability: e.probability,
+            border: nil,
+            prizeEntries: nil,
+            entryRate: nil,
+            continuationRate: nil,
+            countPerRound: nil,
+            netPerRoundBase: nil,
+            manufacturer: e.manufacturer,
+            hesoAtari: nil,
+            denchu_prizes: nil,
+            introductionDateRaw: e.introStart,
+            ltRaw: nil,
+            machineId: e.machineId
+        )
+    }
 }
 
 /// マスタ一覧を参照で渡すためのホルダー。Task.detached でコピーせず渡し、メインスレッドのブロックを防ぐ。

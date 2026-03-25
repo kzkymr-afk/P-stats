@@ -69,7 +69,7 @@ private enum AnalyticsPanelStyle {
     static let rowBackground = Color.black.opacity(0.85)
 }
 
-// MARK: - 分析フッター（ドック。YouTube風フローティングピル）
+// MARK: - 分析フッター（ドック。ホーム下部タブバーと同一の黒パネル・下寄せ）
 private struct AnalyticsBottomBarView: View {
     @Binding var bottomSegment: AnalyticsBottomSegment
     @Binding var selectedFilterLabel: String?
@@ -80,30 +80,25 @@ private struct AnalyticsBottomBarView: View {
     /// 戻るタップで一つ前の画面へ（分析ルートではアプリホームへ）
     var onHomeTap: (() -> Void)? = nil
 
-    private var cyan: Color { AppGlassStyle.accent }
     private var mutedGray: Color { Color.white.opacity(0.6) }
-    private let iconSize: CGFloat = 20
-    private let fontSize: CGFloat = 10
 
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(alignment: .center, spacing: 0) {
             Button {
                 HapticUtil.impact(.light)
                 onHomeTap?()
             } label: {
-                VStack(spacing: 4) {
+                VStack(spacing: 2) {
                     Image(systemName: "chevron.left")
-                        .font(.system(size: iconSize, weight: .medium))
+                        .font(.system(size: AppGlassStyle.MainTabDock.iconPointSize, weight: .medium))
                     Text("戻る")
-                        .font(.system(size: fontSize, weight: .medium, design: .rounded))
+                        .font(.system(size: AppGlassStyle.MainTabDock.labelPointSize, weight: .medium, design: .rounded))
                 }
                 .foregroundColor(mutedGray)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 2)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .buttonStyle(.plain)
-            .contentShape(Rectangle())
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             ForEach([AnalyticsBottomSegment.overview, .shop, .machine, .manufacturer], id: \.self) { seg in
                 Button {
                     HapticUtil.impact(.light)
@@ -113,55 +108,59 @@ private struct AnalyticsBottomBarView: View {
                     }
                     onSegmentTap?()
                 } label: {
-                    VStack(spacing: 4) {
+                    VStack(spacing: 2) {
                         Image(systemName: seg.icon)
-                            .font(.system(size: iconSize, weight: .medium))
+                            .font(.system(size: AppGlassStyle.MainTabDock.iconPointSize, weight: .medium))
                         Text(seg.rawValue)
-                            .font(.system(size: fontSize, weight: .medium, design: .rounded))
+                            .font(.system(size: AppGlassStyle.MainTabDock.labelPointSize, weight: .medium, design: .rounded))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
                     }
                     .foregroundColor(seg == bottomSegment ? .white : mutedGray)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 2)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 .buttonStyle(.plain)
-                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             Button {
                 HapticUtil.impact(.light)
                 showPeriodSheet = true
             } label: {
-                VStack(spacing: 4) {
+                VStack(spacing: 2) {
                     Image(systemName: AnalyticsBottomSegment.period.icon)
-                        .font(.system(size: iconSize, weight: .medium))
+                        .font(.system(size: AppGlassStyle.MainTabDock.iconPointSize, weight: .medium))
                     Text(periodFilter.label)
-                        .font(.system(size: fontSize, weight: .medium, design: .rounded))
+                        .font(.system(size: AppGlassStyle.MainTabDock.labelPointSize, weight: .medium, design: .rounded))
                         .lineLimit(1)
-                        .minimumScaleFactor(0.7)
+                        .minimumScaleFactor(0.65)
                 }
-                .foregroundColor(.white.opacity(0.9))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 2)
+                .foregroundColor(.white.opacity(0.92))
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .buttonStyle(.plain)
-            .contentShape(Rectangle())
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .frame(height: AppGlassStyle.MainTabDock.tabRowHeight)
+        .padding(.horizontal, AppGlassStyle.MainTabDock.innerHorizontalPadding)
+        .padding(.top, AppGlassStyle.MainTabDock.paddingTop)
+        .padding(.bottom, AppGlassStyle.MainTabDock.paddingBottom)
         .frame(maxWidth: .infinity)
-        .background(
+        .padding(.horizontal, AppGlassStyle.MainTabDock.horizontalInset)
+        .background {
+            UnevenRoundedRectangle(
+                topLeadingRadius: AppGlassStyle.MainTabDock.topCornerRadius,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: AppGlassStyle.MainTabDock.topCornerRadius,
+                style: .continuous
+            )
+            .fill(Color.black)
+        }
+        .background {
             Color.black
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .clipShape(Capsule())
-        )
-        .overlay(
-            Capsule()
-                .stroke(Color.white.opacity(0.18), lineWidth: 0.5)
-        )
-        .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 4)
-        .padding(.horizontal, 20)
-        .padding(.bottom, 0)
+                .frame(maxWidth: .infinity)
+                .ignoresSafeArea(edges: .bottom)
+        }
     }
 }
 
@@ -308,8 +307,6 @@ struct AnalyticsDashboardView: View {
                             .padding(.bottom, 8)
                     }
                     bottomSegmentBar
-                        .frame(height: 88)
-                        .frame(maxHeight: 88)
                 }
             }
         }
@@ -1229,8 +1226,6 @@ private struct AnalyticsSessionDetailView: View {
                 dismiss()
                 DispatchQueue.main.async { onDismissToRoot?() }
             })
-                .frame(height: 88)
-                .frame(maxHeight: 88)
         }
     }
 }
@@ -1278,8 +1273,6 @@ private struct AnalyticsDayDetailView: View {
         .preferredColorScheme(.dark)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             AnalyticsBottomBarView(bottomSegment: $bottomSegment, selectedFilterLabel: $selectedFilterLabel, periodFilter: $periodFilter, showPeriodSheet: $showPeriodSheet, onSegmentTap: { dismiss() })
-                .frame(height: 88)
-                .frame(maxHeight: 88)
         }
     }
 }
@@ -1345,8 +1338,6 @@ struct AnalyticsSessionListView: View {
         .preferredColorScheme(.dark)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             AnalyticsBottomBarView(bottomSegment: $bottomSegment, selectedFilterLabel: $selectedFilterLabel, periodFilter: $periodFilter, showPeriodSheet: $showPeriodSheet, onSegmentTap: { dismiss() })
-                .frame(height: 88)
-                .frame(maxHeight: 88)
         }
     }
 }
@@ -1518,8 +1509,6 @@ private struct AnalyticsShopDetailView: View {
         .preferredColorScheme(.dark)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             AnalyticsBottomBarView(bottomSegment: $bottomSegment, selectedFilterLabel: $selectedFilterLabel, periodFilter: $periodFilter, showPeriodSheet: $showPeriodSheet, onSegmentTap: { dismiss() })
-                .frame(height: 88)
-                .frame(maxHeight: 88)
         }
     }
 }
@@ -1684,8 +1673,6 @@ private struct AnalyticsMachineDetailView: View {
         .preferredColorScheme(.dark)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             AnalyticsBottomBarView(bottomSegment: $bottomSegment, selectedFilterLabel: $selectedFilterLabel, periodFilter: $periodFilter, showPeriodSheet: $showPeriodSheet, onSegmentTap: { dismiss() })
-                .frame(height: 88)
-                .frame(maxHeight: 88)
         }
     }
 }
@@ -1851,8 +1838,6 @@ private struct AnalyticsManufacturerDetailView: View {
         .preferredColorScheme(.dark)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             AnalyticsBottomBarView(bottomSegment: $bottomSegment, selectedFilterLabel: $selectedFilterLabel, periodFilter: $periodFilter, showPeriodSheet: $showPeriodSheet, onSegmentTap: { dismiss() })
-                .frame(height: 88)
-                .frame(maxHeight: 88)
         }
     }
 }

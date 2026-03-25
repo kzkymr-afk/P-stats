@@ -29,7 +29,7 @@ P-stats/
 ├── Core/                               # モデル・永続化・ゲームロジック
 │   ├── Models.swift
 │   ├── GameLog.swift
-│   ├── MachineDetailModels.swift
+│   ├── MachineMasterModels.swift
 │   ├── MachineDetailLoader.swift
 │   ├── PrizeStringParser.swift
 │   └── ResumableStateStore.swift
@@ -42,10 +42,7 @@ P-stats/
 ├── Features/                           # 画面・機能ごと（SwiftUI View が中心）
 │   ├── Play/
 │   │   ├── PlayView.swift
-│   │   ├── ChanceModeView.swift
-│   │   ├── RushFocusView.swift
-│   │   ├── BonusMonitorView.swift
-│   │   └── BonusStandbyView.swift
+│   │   └── BigHitModeView.swift
 │   ├── MachineShop/
 │   │   ├── MachineShopSelectionView.swift
 │   │   ├── MachineEditView.swift
@@ -63,7 +60,6 @@ P-stats/
 │       ├── GameSessionEditView.swift
 │       └── PrizeSetListView.swift
 ├── Utilities/                          # 汎用ヘルパー
-│   ├── OrganicHaptics.swift
 │   └── PlaceSearchFilter.swift
 └── Resources/
     └── Assets.xcassets

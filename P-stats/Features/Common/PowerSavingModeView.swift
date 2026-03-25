@@ -1,18 +1,19 @@
-import SwiftUI
 import SwiftData
+import SwiftUI
+
+// 省エネ：フレームレート制限と簡略表示による節電は実機・状況差が大きく、効果を数値保証しにくい。ドロワーからは外し、必要なら設定から利用する想定。
 
 // MARK: - 省エネモード（ジェスチャー＋タップ・周辺発光・ミニマルUI）
-/// 上半分＝現金投資、下半分＝持ち玉投資。スワイプは左→右に統一。下15％にRUSH/通常ボタン。ゲームカウントはタップで+1。
+/// 上半分＝現金投資、下半分＝持ち玉投資。スワイプは左→右に統一。下部に大当たりボタン。ゲームカウントはタップで+1。
 struct PowerSavingModeView: View {
     @Bindable var log: GameLog
     /// true＝右手操作、false＝左手操作（スワイプは左手モードでも左→右に統一）
     var rightHandMode: Bool = false
-    /// 滞在モード表示用（`PlayModeVocabulary`）。nil のときはマスタ名なしのフォールバックのみ。
+    /// 滞在モード表示用。nil のときはマスタ名なしのフォールバックのみ。
     var machineMaster: MachineFullMaster? = nil
     let onExit: () -> Void
-    let onOpenRush: () -> Void
-    let onOpenNormal: () -> Void
-    var onOpenLt: (() -> Void)? = nil
+    /// 大当たりモードへ（実戦画面と同じ遷移）
+    let onBigHit: () -> Void
 
     @State private var ripplePoint: CGPoint?
     @State private var rippleScale: CGFloat = 0.3
@@ -26,7 +27,7 @@ struct PowerSavingModeView: View {
     /// 現金は500円単位（1スワイプ＝1000円＝2単位）
     private let cashYenPerSwipe: Int = 1000
 
-    /// 画面下部の高さ比率（RUSH・通常ボタン領域）。はみ出し防止のため多めに確保
+    /// 画面下部の高さ比率（大当たりボタン）
     private let bottomButtonAreaRatio: CGFloat = 0.22
 
     private var edgeGlowColor: Color {
@@ -71,49 +72,18 @@ struct PowerSavingModeView: View {
                     mainActionRow(geo: geo, totalWidth: w, totalHeight: mainH)
                     .frame(maxHeight: .infinity)
 
-                    // 下部: RUSH / LT（ltFromNormal時） / 通常（画面内に必ず収める）
-                    HStack(spacing: 0) {
-                        Button(action: {
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            onOpenRush()
-                        }) {
-                            Text("RUSH")
-                                .font(.system(size: 20, weight: .bold, design: .monospaced))
-                                .foregroundColor(AppGlassStyle.rushColor)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        }
-                        .buttonStyle(.plain)
-                        .background(AppGlassStyle.rushColor.opacity(0.2))
-                        .overlay(RoundedRectangle(cornerRadius: 0).stroke(AppGlassStyle.rushColor.opacity(0.6), lineWidth: 1))
-
-                        if log.selectedMachine.ltFromNormal, let onOpenLt = onOpenLt {
-                            Button(action: {
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                onOpenLt()
-                            }) {
-                                Text("LT")
-                                    .font(.system(size: 20, weight: .bold, design: .monospaced))
-                                    .foregroundColor(AppGlassStyle.ltColor)
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            }
-                            .buttonStyle(.plain)
-                            .background(AppGlassStyle.ltColor.opacity(0.2))
-                            .overlay(RoundedRectangle(cornerRadius: 0).stroke(AppGlassStyle.ltColor.opacity(0.6), lineWidth: 1))
-                        }
-
-                        Button(action: {
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            onOpenNormal()
-                        }) {
-                            Text("通常")
-                                .font(.system(size: 20, weight: .bold, design: .monospaced))
-                                .foregroundColor(AppGlassStyle.normalColor)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        }
-                        .buttonStyle(.plain)
-                        .background(AppGlassStyle.normalColor.opacity(0.2))
-                        .overlay(RoundedRectangle(cornerRadius: 0).stroke(AppGlassStyle.normalColor.opacity(0.6), lineWidth: 1))
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        onBigHit()
+                    }) {
+                        Text("大当たり")
+                            .font(.system(size: 22, weight: .bold, design: .monospaced))
+                            .foregroundColor(AppGlassStyle.normalColor)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
+                    .buttonStyle(.plain)
+                    .background(AppGlassStyle.normalColor.opacity(0.2))
+                    .overlay(RoundedRectangle(cornerRadius: 0).stroke(AppGlassStyle.normalColor.opacity(0.6), lineWidth: 1))
                     .frame(height: bottomBarFixedHeight)
                     .padding(.bottom, safeBottom)
                 }
@@ -125,9 +95,9 @@ struct PowerSavingModeView: View {
 
     private func headerView(geo: GeometryProxy, headerHeight: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("\(PlayPresentationSurface.powerSaving.userFacingTitle) · \(log.stayModeDisplayName(machineMaster: machineMaster))")
+            Text("省エネモード · \(log.stayModeDisplayName(machineMaster: machineMaster))")
                 .font(.caption.weight(.semibold))
-                .foregroundColor(AppGlassStyle.modeColor(modeId: log.currentModeID))
+                .foregroundColor(AppGlassStyle.modeAccentColor(master: machineMaster, modeId: log.currentModeID))
                 .lineLimit(2)
                 .minimumScaleFactor(0.85)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -149,19 +119,15 @@ struct PowerSavingModeView: View {
                 Spacer(minLength: 6)
 
                 VStack(alignment: .leading, spacing: 0) {
-                row(label: "現在の回転数", value: "\(log.gamesSinceLastWin)回")
-                Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
-                row(label: "総投入", value: log.totalInput.formattedPtWithUnit)
-                Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
-                row(label: "総持ち玉投資", value: "\(log.holdingsInvestedBalls)玉")
-                Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
-                row(label: "現在の持ち玉数", value: "\(log.totalHoldings)玉")
-                Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
-                    HStack(spacing: 12) {
-                        row(label: "RUSH", value: "\(log.rushWinCount)回")
-                        row(label: "通常", value: "\(log.normalWinCount)回")
-                        row(label: "LT", value: "\(log.ltWinCount)回")
-                    }
+                    row(label: "現在の回転数", value: "\(log.gamesSinceLastWin)回")
+                    Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
+                    row(label: "総投入", value: log.totalInput.formattedPtWithUnit)
+                    Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
+                    row(label: "総持ち玉投資", value: "\(log.holdingsInvestedBalls)玉")
+                    Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
+                    row(label: "現在の持ち玉数", value: "\(log.totalHoldings)玉")
+                    Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
+                    row(label: "大当たり（記録）", value: "\(log.normalWinCount)回")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 10)

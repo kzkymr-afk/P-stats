@@ -30,12 +30,31 @@ enum AppGlassStyle {
     static let normalTitleOpacity: Double = DesignTokens.Opacity.normalTitle
     static let ltTitleOpacity: Double = DesignTokens.Opacity.ltTitle
 
-    /// フェーズ4: mode_id に応じたモード色（0=通常=青, 1=RUSH=赤, 2=LT=ゴールド）
+    /// フェーズ4: mode_id のみからの従来色（マスタ未取得時のフォールバック）。
     static func modeColor(modeId: Int) -> Color {
         switch modeId {
         case 1: return rushColor
         case 2: return ltColor
         default: return normalColor
+        }
+    }
+
+    /// 滞在モードの見出し色。マスタの `ui_role` と `is_time_short` を反映する。
+    ///
+    /// §6 論点（電サポ＝親のときの優先）: `is_time_short == true` なら **ui_role より先に** 青系（`normalColor`）を採用する。
+    /// 突入先未確定と時短はどちらも青系になりうるため、文言は `PlayModeVocabulary` / 当たりシートのラベルで区別する。
+    ///
+    /// - `is_time_short == true` のときは `ui_role` が RUSH でも青系（通常色）を優先する。
+    /// - マスタが無いときは `modeColor(modeId:)` にフォールバックする。
+    static func modeAccentColor(master: MachineFullMaster?, modeId: Int) -> Color {
+        guard let mm = master?.modes.first(where: { $0.modeId == modeId }) else {
+            return modeColor(modeId: modeId)
+        }
+        if mm.isTimeShort { return normalColor }
+        switch mm.uiRole {
+        case 0: return normalColor
+        case 2: return ltColor
+        default: return rushColor
         }
     }
 
@@ -76,5 +95,19 @@ enum AppGlassStyle {
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
+    }
+
+    /// ホーム下部タブバーとデータ分析ドックで共通の寸法・タイポ（見た目を揃える）
+    enum MainTabDock {
+        /// タブ行＋上下パディングの合計が低いほどドックが「上に伸びた」ように見えにくい
+        static let tabRowHeight: CGFloat = 40
+        static let paddingTop: CGFloat = 4
+        static let paddingBottom: CGFloat = 4
+        static let iconPointSize: CGFloat = 20
+        static let labelPointSize: CGFloat = 9
+        /// バー高さに対して大きすぎると角の円弧がコンテンツ側へ食い込んで見える
+        static let topCornerRadius: CGFloat = 18
+        static let horizontalInset: CGFloat = 20
+        static let innerHorizontalPadding: CGFloat = 8
     }
 }

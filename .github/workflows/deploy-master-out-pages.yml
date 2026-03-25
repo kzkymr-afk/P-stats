@@ -35,14 +35,13 @@ jobs:
       - name: 依存をインストール
         run: pip install requests google-auth
 
-      # 仕様: mode_0〜mode_7 / 当たり9項目（あたりID先頭）— scripts/convert_master_one_sheet.py と同期
+      # 仕様: A〜I の9列（メタのみ、modes/bonuses は空配列）— scripts/convert_master_one_sheet.py と同期
       - name: master_out を生成（CSV→JSON）
         env:
           MASTER_ONE_SHEET_CSV_URL: ${{ vars.MASTER_ONE_SHEET_CSV_URL }}
           MASTER_ONE_SHEET_OUTPUT_DIR: ${{ github.workspace }}/master_out
-          # 完了|公開 などにしたい場合は Repository Variables で上書き
-          # vars が未設定/空の場合でも、必ずデフォルトで「完了」を対象にする
-          MASTER_EXPORT_STATUS_VALUES: ${{ vars.MASTER_EXPORT_STATUS_VALUES || '完了' }}
+          # 空（未設定）= 対象外以外はすべて JSON 化。絞り込みたいときのみ Repository Variables に「完了|要確認」など
+          MASTER_EXPORT_STATUS_VALUES: ${{ vars.MASTER_EXPORT_STATUS_VALUES }}
           # スプレッドシートを「制限付き」にしたとき必須（JSON 全文を Repository secret に保存）
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
         run: |

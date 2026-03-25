@@ -49,8 +49,10 @@ struct PlayEventHistoryView: View {
             .keyboardDismissToolbar()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("閉じる") {
+                    Button {
                         onDismiss()
+                    } label: {
+                        Text("＜　実戦へ戻る")
                     }
                     .foregroundColor(accent)
                 }

@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 /// 遊戯開始ゲート用：店舗・機種が未選択のときは遊戯開始できない
 struct MachineShopSelectionView: View {
@@ -8,6 +9,8 @@ struct MachineShopSelectionView: View {
     var gateMode: Bool = false
     var onGateStart: (() -> Void)? = nil
     var onGateCancel: (() -> Void)? = nil
+    /// 実戦画面のシートから開いたとき true（左上に「実戦へ戻る」）
+    var presentedFromPlaySession: Bool = false
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -25,10 +28,10 @@ struct MachineShopSelectionView: View {
     @State private var errorMessage = ""
     /// 新規開始時：台・ランプの現在回転数（ゲート時のみ使用）
     @State private var initialRotationText = ""
-    @FocusState private var focusedInitialRotation: Bool
+    /// 開始回転パネル全体タップでテンキーを出す
+    @State private var rotationFieldFocusTrigger = 0
     /// 新規開始時：貯玉で開始する場合の持ち玉数（ゲート時のみ使用）
     @State private var initialHoldingsText = ""
-    @FocusState private var focusedInitialHoldings: Bool
     @AppStorage("startWithZeroHoldings") private var startWithZeroHoldings = false
 
     /// 選択中の機種が登録一覧に含まれるか
@@ -137,12 +140,13 @@ struct MachineShopSelectionView: View {
     /// ゲート用：選択可能な1行カード（タップで選択・チェックマーク表示）
     private func gateSelectRow(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 12) {
+            HStack(alignment: .center, spacing: 10) {
                 Text(title)
                     .font(AppTypography.bodyRounded)
                     .foregroundColor(.white)
                     .multilineTextAlignment(.leading)
-                Spacer(minLength: 8)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.title3)
@@ -157,212 +161,281 @@ struct MachineShopSelectionView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - ゲートモード（新規遊技）：機種・店舗・現在回転数 → 遊戯開始
+    // MARK: - ゲートモード（新規遊技）：機種 → 店舗 → 回転数 → 持ち玉 → 遊戯開始（外側はスクロールなし・高さは比率配分）
     private var gateModeContent: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 20) {
-                // 機種（見出し＋リストを1カードに収める）
-                glassCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        sectionTitle("機種")
-                        if savedMachines.isEmpty {
-                            HStack {
-                                Text("機種がありません")
-                                    .font(AppTypography.bodyRounded)
-                                    .foregroundColor(.white.opacity(0.9))
-                                Spacer()
-                                Button(action: { showNewMachineSheet = true }) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "plus.circle.fill")
-                                            .font(.subheadline)
-                                        Text("追加")
-                                            .font(AppTypography.bodyRounded)
-                                            .fontWeight(.semibold)
-                                    }
-                                    .foregroundColor(accent)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        } else {
-                            VStack(spacing: 8) {
-                                ForEach(sortedMachines) { m in
-                                    gateSelectRow(
-                                        title: m.name,
-                                        isSelected: log.selectedMachine.persistentModelID == m.persistentModelID
-                                    ) {
-                                        log.selectedMachine = m
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+        GeometryReader { outerGeo in
+            let h = outerGeo.size.height
+            let topPad: CGFloat = 8
+            let bottomPad: CGFloat = 8
+            let gapCount: CGFloat = 4
+            let gap = max(6, min(12, h * 0.012))
+            let gapTotal = gap * gapCount
+            let contentH = max(120, h - topPad - bottomPad - gapTotal)
+            let mH = contentH * 0.35
+            let sH = contentH * 0.30
+            let rH = contentH * 0.10
+            let hH = contentH * 0.10
+            let bH = contentH * 0.15
 
-                // 店舗（見出し＋リストを1カードに収める）
-                glassCard {
-                    VStack(alignment: .leading, spacing: 10) {
-                        sectionTitle("店舗")
-                        if savedShops.isEmpty {
-                            HStack {
-                                Text("店舗がありません")
-                                    .font(AppTypography.bodyRounded)
-                                    .foregroundColor(.white.opacity(0.9))
-                                Spacer()
-                                Button(action: { showNewShopSheet = true }) {
-                                    HStack(spacing: 6) {
-                                        Image(systemName: "plus.circle.fill")
-                                            .font(.subheadline)
-                                        Text("追加")
-                                            .font(AppTypography.bodyRounded)
-                                            .fontWeight(.semibold)
-                                    }
-                                    .foregroundColor(accent)
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 8)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        } else {
-                            VStack(spacing: 8) {
-                                ForEach(sortedShops) { s in
-                                    gateSelectRow(
-                                        title: s.name,
-                                        isSelected: log.selectedShop.persistentModelID == s.persistentModelID
-                                    ) {
-                                        log.selectedShop = s
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // 開始時の回転数（必須）— パネル全体タップでフォーカス
-                Button {
-                    focusedInitialRotation = true
-                } label: {
-                    glassCard {
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack(spacing: 4) {
-                                Text("開始時の回転数")
-                                    .font(AppTypography.panelHeading)
-                                    .foregroundColor(.white.opacity(0.95))
-                                Text("（必須）")
-                                    .font(AppTypography.bodyRounded)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.red)
-                            }
-                            HStack {
-                                TextField("0", text: $initialRotationText)
-                                    .keyboardType(.numberPad)
-                                    .focused($focusedInitialRotation)
-                                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
-                                    .foregroundColor(.white)
-                                    .onChange(of: initialRotationText) { newValue, _ in
-                                        if let val = Int(newValue), val < 0 {
-                                            initialRotationText = "" // 簡易的にクリア
-                                        }
-                                    }
-                                Spacer()
-                                InfoIconView(explanation: "遊戯開始時点のデータランプに表示された回転数を入力してください。", tint: accent.opacity(0.6))
-                            }
-                            .padding(.vertical, 4)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
-                .contentShape(Rectangle())
-
-                // 開始時の持ち玉（貯玉）
-                glassCard {
-                    VStack(alignment: .leading, spacing: 12) {
-                        sectionTitle("開始時の持ち玉（貯玉）")
-                        Button {
-                            focusedInitialHoldings = true
-                        } label: {
-                            HStack {
-                                TextField("0", text: $initialHoldingsText)
-                                    .keyboardType(.numberPad)
-                                    .focused($focusedInitialHoldings)
-                                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
-                                    .foregroundColor(.white)
-                                    .onChange(of: initialHoldingsText) { newValue, _ in
-                                        if let val = Int(newValue), val < 0 {
-                                            initialHoldingsText = "" // 簡易的にクリア
-                                        }
-                                    }
-                                Spacer()
-                            }
-                            .padding(.vertical, 4)
-                        }
-                        .buttonStyle(.plain)
-                        .contentShape(Rectangle())
-                        Text("貯玉で遊び始める場合は、開始時点の玉数を入力（未入力・0のときは持ち玉なしで開始）")
-                            .font(.system(size: 11, weight: .regular, design: .rounded))
-                            .foregroundColor(accent.opacity(0.6))
-                    }
-                }
-
-                // 遊戯開始ボタン（収支パネルと同様のグラデ枠・角丸14）
-                let canStart = isSelectedMachineValid && isSelectedShopValid && hasValidInitialRotation && hasValidInitialHoldings
-                Button {
-                    let n = Int(initialRotationText.trimmingCharacters(in: .whitespaces)) ?? 0
-                    if n < 0 {
-                        errorMessage = "負の数は入力できません"
-                        showErrorAlert = true
-                        return
-                    }
-                    log.setInitialDisplayRotation(max(0, n))
-                    let h = Int(initialHoldingsText.trimmingCharacters(in: .whitespaces)) ?? 0
-                    if h < 0 {
-                        errorMessage = "負の数は入力できません"
-                        showErrorAlert = true
-                        return
-                    }
-                    log.initialHoldings = max(0, h)
-                    onGateStart?()
-                } label: {
-                    Text("遊戯開始")
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 14)
-                                .fill(canStart ? accent : accent.opacity(0.35))
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.white.opacity(canStart ? 0.4 : 0.2),
-                                            accent.opacity(canStart ? 0.3 : 0.15),
-                                            Color.white.opacity(0.06)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 1
-                                )
-                        )
-                }
-                .disabled(!canStart)
-                .buttonStyle(.plain)
-                .padding(.top, 4)
-                .alert(isPresented: $showErrorAlert) {
-                    Alert(title: Text("エラー"), message: Text(errorMessage), dismissButton: .default(Text("OK")))
-                }
+            VStack(spacing: gap) {
+                gateMachineSection(height: mH)
+                gateShopSection(height: sH)
+                gateRotationSection(height: rH)
+                gateHoldingsSection(height: hH)
+                gateStartButtonArea(height: bH)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 40)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding(.horizontal, 16)
+            .padding(.top, topPad)
+            .padding(.bottom, bottomPad)
         }
-        .keyboardDismissToolbar()
         .onAppear {
             if startWithZeroHoldings { initialHoldingsText = "0" }
+        }
+    }
+
+    private func gateMachineSection(height: CGFloat) -> some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .center, spacing: 8) {
+                    sectionTitle("機種")
+                    Spacer(minLength: 4)
+                    NavigationLink {
+                        MyListMachinesView(log: log)
+                    } label: {
+                        Image(systemName: "list.bullet.rectangle")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(accent)
+                            .frame(width: 36, height: 36)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("機種マイリストの編集")
+                }
+                if savedMachines.isEmpty {
+                    HStack {
+                        Text("機種がありません")
+                            .font(AppTypography.bodyRounded)
+                            .foregroundColor(.white.opacity(0.9))
+                        Spacer()
+                        Button(action: { showNewMachineSheet = true }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.subheadline)
+                                Text("追加")
+                                    .font(AppTypography.bodyRounded)
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(accent)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } else {
+                    VStack(spacing: 8) {
+                        ForEach(sortedMachines) { m in
+                            gateSelectRow(
+                                title: m.name,
+                                isSelected: log.selectedMachine.persistentModelID == m.persistentModelID
+                            ) {
+                                log.selectedMachine = m
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: height)
+        .background(AppGlassStyle.rowBackground, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent.opacity(0.2), lineWidth: 1))
+    }
+
+    private func gateShopSection(height: CGFloat) -> some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .center, spacing: 8) {
+                    sectionTitle("店舗")
+                    Spacer(minLength: 4)
+                    NavigationLink {
+                        MyListShopsView(log: log)
+                    } label: {
+                        Image(systemName: "list.bullet.rectangle")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(accent)
+                            .frame(width: 36, height: 36)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("店舗マイリストの編集")
+                }
+                if savedShops.isEmpty {
+                    HStack {
+                        Text("店舗がありません")
+                            .font(AppTypography.bodyRounded)
+                            .foregroundColor(.white.opacity(0.9))
+                        Spacer()
+                        Button(action: { showNewShopSheet = true }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.subheadline)
+                                Text("追加")
+                                    .font(AppTypography.bodyRounded)
+                                    .fontWeight(.semibold)
+                            }
+                            .foregroundColor(accent)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                } else {
+                    VStack(spacing: 8) {
+                        ForEach(sortedShops) { s in
+                            gateSelectRow(
+                                title: s.name,
+                                isSelected: log.selectedShop.persistentModelID == s.persistentModelID
+                            ) {
+                                log.selectedShop = s
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(12)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: height)
+        .background(AppGlassStyle.rowBackground, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent.opacity(0.2), lineWidth: 1))
+    }
+
+    private func gateRotationSection(height: CGFloat) -> some View {
+        HStack(alignment: .center, spacing: 6) {
+            Button {
+                rotationFieldFocusTrigger += 1
+            } label: {
+                HStack(spacing: 6) {
+                    Text("開始時の回転数")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.white.opacity(0.95))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                    Text("（必須）")
+                        .font(.caption.weight(.bold))
+                        .foregroundColor(.red)
+                        .fixedSize()
+                }
+            }
+            .buttonStyle(.plain)
+            Spacer(minLength: 4)
+                .frame(minHeight: 36)
+                .contentShape(Rectangle())
+                .onTapGesture { rotationFieldFocusTrigger += 1 }
+            NumberPadTextField(
+                text: $initialRotationText,
+                placeholder: "",
+                maxDigits: 4,
+                font: .monospacedSystemFont(ofSize: 17, weight: .semibold),
+                textColor: .white,
+                accentColor: UIColor(accent),
+                doneTitle: "完了",
+                focusTrigger: rotationFieldFocusTrigger
+            )
+            .frame(minWidth: 72, maxWidth: .infinity, alignment: .trailing)
+            InfoIconView(explanation: "遊戯開始時点のデータランプに表示された回転数を入力してください。見出し・余白をタップしてもテンキーを開けます。", tint: accent.opacity(0.6))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: max(height, 52))
+        .background(AppGlassStyle.rowBackground, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent.opacity(0.2), lineWidth: 1))
+    }
+
+    private func gateHoldingsSection(height: CGFloat) -> some View {
+        HStack(alignment: .center, spacing: 6) {
+            Text("開始時の持ち玉")
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.white.opacity(0.95))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .layoutPriority(1)
+            Spacer(minLength: 4)
+            NumberPadTextField(
+                text: $initialHoldingsText,
+                placeholder: "",
+                maxDigits: 5,
+                font: .monospacedSystemFont(ofSize: 17, weight: .semibold),
+                textColor: .white,
+                accentColor: UIColor(accent),
+                doneTitle: "完了"
+            )
+            .frame(width: 88, alignment: .trailing)
+            InfoIconView(explanation: "貯玉で始める場合は玉数を入力。未入力・0のときは持ち玉なしで開始。", tint: accent.opacity(0.6))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .frame(height: height)
+        .background(AppGlassStyle.rowBackground, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent.opacity(0.2), lineWidth: 1))
+    }
+
+    private func gateStartButtonArea(height: CGFloat) -> some View {
+        let canStart = isSelectedMachineValid && isSelectedShopValid && hasValidInitialRotation && hasValidInitialHoldings
+        return Button {
+            let n = Int(initialRotationText.trimmingCharacters(in: .whitespaces)) ?? 0
+            if n < 0 {
+                errorMessage = "負の数は入力できません"
+                showErrorAlert = true
+                return
+            }
+            log.setInitialDisplayRotation(max(0, n))
+            let holdings = Int(initialHoldingsText.trimmingCharacters(in: .whitespaces)) ?? 0
+            if holdings < 0 {
+                errorMessage = "負の数は入力できません"
+                showErrorAlert = true
+                return
+            }
+            log.initialHoldings = max(0, holdings)
+            onGateStart?()
+        } label: {
+            Text("遊戯開始")
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(.horizontal, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(canStart ? accent : accent.opacity(0.35))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(canStart ? 0.4 : 0.2),
+                                    accent.opacity(canStart ? 0.3 : 0.15),
+                                    Color.white.opacity(0.06)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+        }
+        .disabled(!canStart)
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+        .frame(height: height)
+        .alert(isPresented: $showErrorAlert) {
+            Alert(title: Text("エラー"), message: Text(errorMessage), dismissButton: .default(Text("OK")))
         }
     }
 
@@ -515,6 +588,7 @@ struct MachineShopSelectionView: View {
                 Group {
                     if gateMode {
                         gateModeContent
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
                         myListContent
                     }
@@ -523,14 +597,31 @@ struct MachineShopSelectionView: View {
             }
             .navigationTitle(gateMode ? "新規遊技" : "マイリスト")
             .navigationBarTitleDisplayMode(.inline)
-            .keyboardDismissToolbar()
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
+            /// 回転数・持ち玉は `NumberPadTextField` の inputAccessoryView で「完了」を表示（フルスクリーンでも確実に閉じられる）
             .toolbar {
                 if gateMode {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("キャンセル") { onGateCancel?() }
-                            .foregroundColor(accent)
+                        Button {
+                            onGateCancel?()
+                        } label: {
+                            if presentedFromPlaySession {
+                                Text("＜　実戦へ戻る")
+                            } else {
+                                Text("キャンセル")
+                            }
+                        }
+                        .foregroundColor(accent)
+                    }
+                } else if presentedFromPlaySession {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Text("＜　実戦へ戻る")
+                        }
+                        .foregroundColor(accent)
                     }
                 }
             }

@@ -1,37 +1,43 @@
 import SwiftUI
 import UIKit
 
-// MARK: - キーボード・テンキー用：テンキー枠内右上にチェックマークで閉じる（全画面で統一）
+// MARK: - テンキー・キーボードを閉じる（キーウィンドウ優先）
+extension UIApplication {
+    /// `numberPad` / `decimalPad` 等で `resignFirstResponder` が効かない端末向けに `endEditing` を優先
+    static func dismissKeyboard() {
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene else {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            return
+        }
+        for window in scene.windows where window.isKeyWindow {
+            window.endEditing(true)
+            return
+        }
+        scene.windows.first?.endEditing(true)
+    }
+}
+
+// MARK: - キーボード・テンキー用：右側に「完了」（閉じる）を表示（全画面で統一）
 extension View {
     func keyboardDismissToolbar() -> some View {
         self.toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                // 上：戻る / 下：次へ（キーボード・テンキー共通アクセサリ）
-                Button {
-                    // `UIResponder.selectPreviousKeyView` は Swift の型定義に無い場合があるため、
-                    // セレクタは文字列指定で呼ぶ（存在しない場合は単に何もしない）
-                    UIApplication.shared.sendAction(NSSelectorFromString("selectPreviousKeyView:"), to: nil, from: nil, for: nil)
-                    UIApplication.shared.sendAction(NSSelectorFromString("selectPreviousKeyView"), to: nil, from: nil, for: nil)
-                } label: {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.title2)
+            ToolbarItem(placement: .keyboard) {
+                HStack {
+                    Spacer(minLength: 0)
+                    Button {
+                        UIApplication.dismissKeyboard()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.title3)
+                            Text("完了")
+                                .font(.body.weight(.semibold))
+                        }
                         .foregroundStyle(AppGlassStyle.accent)
+                    }
+                    .accessibilityLabel("キーボードを閉じる")
                 }
-                Button {
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                } label: {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(AppGlassStyle.accent)
-                }
-                Button {
-                    UIApplication.shared.sendAction(NSSelectorFromString("selectNextKeyView:"), to: nil, from: nil, for: nil)
-                    UIApplication.shared.sendAction(NSSelectorFromString("selectNextKeyView"), to: nil, from: nil, for: nil)
-                } label: {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(AppGlassStyle.accent)
-                }
+                .frame(maxWidth: .infinity)
             }
         }
     }
