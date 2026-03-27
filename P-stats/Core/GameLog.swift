@@ -106,8 +106,8 @@ final class GameLog {
         }
     }
 
-    /// 持ち玉投資は 1タップ = 125玉。125未満の残りは全額投資として記録
-    private let holdingsBallsPerTap: Int = 125
+    /// 持ち玉投資は 1タップ＝店の貸玉数（500ptと同単位の玉数）。残りが少ないときは全額
+    private var holdingsBallsPerTap: Int { max(1, selectedShop.ballsPerCashUnit) }
 
     init() {}
 
@@ -183,7 +183,7 @@ final class GameLog {
         }
     }
 
-    /// 持ち玉投資：指定玉数を一括で記録。125・500・1000玉など
+    /// 持ち玉投資：指定玉数を一括で記録（省エネのスワイプなど）
     func addHoldingsInvestment(balls: Int) {
         let deduct = min(balls, max(0, totalHoldings))
         guard deduct > 0 else { return }
@@ -288,6 +288,13 @@ final class GameLog {
             remainingSupportCount = 0
             supportPhaseInitialCount = 0
         }
+    }
+
+    /// 大当たりモードのみ終了し、`winRecords` には追加しない（誤タップで入った場合など）。回転・投入の累積はそのまま。
+    func abandonBigHitSessionWithoutRecording() {
+        guard isBigHitMode else { return }
+        isBigHitMode = false
+        bigHitChainCount = 0
     }
 
     /// カウントボタン表示用：前回大当たり以降のゲーム数（時短・ST抜けゲーム数含む）。
@@ -463,7 +470,9 @@ final class GameLog {
 
     /// 公式基準値（回転/1000pt）。メーカー公表値（機種マスターまたはユーザー入力の border）に、
     /// 店舗の貸玉料金（1000ptあたり玉数）と払出係数（pt/玉）を考慮して算出。
-    /// 公式＝等価(4pt/玉・250玉/1000pt)基準。実戦 = 公式 × (貸玉料金/250) × (4/払出係数)
+    /// 公式＝等価(4pt/玉・250玉/1000pt)基準。
+    /// 実戦＝公式 × (250÷貸玉1000円玉数) × (4÷払出係数)。1000円あたり玉が少ないほど分母が小さくボーダーは上がる（厳しくなる）。
+    /// 払出係数が等価4より大きい（換金が良い）ほど (4/係数) でボーダーは下がる。
     /// ※通常回転のみ（時短・電サポは含めない）。実質回転率と比較可能。
     var dynamicBorder: Double {
         let rate = selectedShop.payoutCoefficient
@@ -471,24 +480,25 @@ final class GameLog {
         let ballsPer1000 = Double(selectedShop.ballsPerCashUnit * 2)
         guard ballsPer1000 > 0 else { return 0 }
         let formula = formulaBorderAsNumber
-        let loanCorrection = ballsPer1000 / 250.0   // 250玉基準→貸玉料金に変更（230玉なら×0.92）
-        let exchangeCorrection = 4.0 / rate         // 払出係数補正
+        let loanCorrection = 250.0 / ballsPer1000
+        let exchangeCorrection = 4.0 / rate
         if formula > 0 {
             return formula * loanCorrection * exchangeCorrection
         }
         guard effective1RNetPerRound > 0 else { return 0 }
         let prob = selectedMachine.probabilityDenominator
         if prob > 0 {
-            return prob * ballsPer1000 / effective1RNetPerRound * (4.0 / rate)
+            return prob * 250.0 / effective1RNetPerRound * loanCorrection * exchangeCorrection
         }
-        return 1000.0 * ballsPer1000 / (effective1RNetPerRound * 250.0 * rate)
+        // 確率未使用のフォールバック（旧式の貸玉項を打ち消して等価換算に統一）
+        return 1000.0 / (effective1RNetPerRound * rate)
     }
 
-    /// 実践基準値用：店舗の貸玉料金を考慮した「単位」数。1単位＝等価1000pt(250玉)。投入ptを貸玉料金で換算
+    /// 実践基準値用：店舗の貸玉料金を考慮した「単位」数。1単位＝等価1000pt（＝貸玉×2）。投入ptを貸玉料金で換算
     var effectiveUnitsForBorder: Double {
-        let ballsPer1000 = Double(selectedShop.ballsPerCashUnit * 2)
+        let ballsPer1000 = Double(max(1, selectedShop.ballsPerCashUnit * 2))
         let cashUnits = ballsPer1000 > 0 ? Double(totalInput) * ballsPer1000 / 250000.0 : Double(totalInput) / 1000.0
-        return cashUnits + Double(holdingsInvestedBalls) / 250.0
+        return cashUnits + Double(holdingsInvestedBalls) / ballsPer1000
     }
 
     // MARK: - 撃ち玉（T / C / H）・持ち玉比率

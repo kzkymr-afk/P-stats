@@ -171,9 +171,9 @@ struct MachineShopSelectionView: View {
             let gap = max(6, min(12, h * 0.012))
             let gapTotal = gap * gapCount
             let contentH = max(120, h - topPad - bottomPad - gapTotal)
-            let mH = contentH * 0.35
-            let sH = contentH * 0.30
-            let rH = contentH * 0.10
+            let mH = contentH * 0.34
+            let sH = contentH * 0.29
+            let rH = contentH * 0.12
             let hH = contentH * 0.10
             let bH = contentH * 0.15
 
@@ -315,24 +315,27 @@ struct MachineShopSelectionView: View {
     }
 
     private func gateRotationSection(height: CGFloat) -> some View {
-        HStack(alignment: .center, spacing: 6) {
+        /// 最大4桁のみ。等幅16pt＋`adjustsFontSizeToFitWidth` で桁に見合う狭い列幅
+        let rotationFieldWidth: CGFloat = 52
+        return HStack(alignment: .center, spacing: 6) {
             Button {
                 rotationFieldFocusTrigger += 1
             } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     Text("開始時の回転数")
-                        .font(.subheadline.weight(.semibold))
                         .foregroundColor(.white.opacity(0.95))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
                     Text("（必須）")
-                        .font(.caption.weight(.bold))
                         .foregroundColor(.red)
-                        .fixedSize()
+                        .fixedSize(horizontal: true, vertical: false)
                 }
+                .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.plain)
-            Spacer(minLength: 4)
+            .layoutPriority(1)
+            Spacer(minLength: 2)
                 .frame(minHeight: 36)
                 .contentShape(Rectangle())
                 .onTapGesture { rotationFieldFocusTrigger += 1 }
@@ -340,19 +343,22 @@ struct MachineShopSelectionView: View {
                 text: $initialRotationText,
                 placeholder: "",
                 maxDigits: 4,
-                font: .monospacedSystemFont(ofSize: 17, weight: .semibold),
+                font: .monospacedSystemFont(ofSize: 16, weight: .semibold),
                 textColor: .white,
                 accentColor: UIColor(accent),
                 doneTitle: "完了",
-                focusTrigger: rotationFieldFocusTrigger
+                focusTrigger: rotationFieldFocusTrigger,
+                adjustsFontSizeToFitWidth: true,
+                minimumFontSize: 11
             )
-            .frame(minWidth: 72, maxWidth: .infinity, alignment: .trailing)
+            .frame(width: rotationFieldWidth, alignment: .trailing)
+            .layoutPriority(2)
             InfoIconView(explanation: "遊戯開始時点のデータランプに表示された回転数を入力してください。見出し・余白をタップしてもテンキーを開けます。", tint: accent.opacity(0.6))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
-        .frame(minHeight: max(height, 52))
+        .frame(minHeight: max(height, 56))
         .background(AppGlassStyle.rowBackground, in: RoundedRectangle(cornerRadius: 12))
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent.opacity(0.2), lineWidth: 1))
     }
@@ -597,6 +603,8 @@ struct MachineShopSelectionView: View {
             }
             .navigationTitle(gateMode ? "新規遊技" : "マイリスト")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color.black, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
             /// 回転数・持ち玉は `NumberPadTextField` の inputAccessoryView で「完了」を表示（フルスクリーンでも確実に閉じられる）
@@ -612,7 +620,7 @@ struct MachineShopSelectionView: View {
                                 Text("キャンセル")
                             }
                         }
-                        .foregroundColor(accent)
+                        .foregroundColor(.white)
                     }
                 } else if presentedFromPlaySession {
                     ToolbarItem(placement: .cancellationAction) {
@@ -621,7 +629,7 @@ struct MachineShopSelectionView: View {
                         } label: {
                             Text("＜　実戦へ戻る")
                         }
-                        .foregroundColor(accent)
+                        .foregroundColor(.white)
                     }
                 }
             }
@@ -761,8 +769,11 @@ struct MyListMachinesView: View {
         }
         .navigationTitle("登録済み機種")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarBackground(Color.black, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
+        .tint(.white)
         .sheet(item: $machineToEdit, onDismiss: { machineToEdit = nil }) { m in
             MachineEditView(editing: m)
                 .equatable()
@@ -854,8 +865,11 @@ struct MyListShopsView: View {
         }
         .navigationTitle("登録済み店舗")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarBackground(Color.black, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
+        .tint(.white)
         .sheet(item: $shopToEdit, onDismiss: { shopToEdit = nil }) { s in
             ShopEditView(shop: s) { shopToEdit = nil }
                 .presentationDetents([.medium, .large])
@@ -911,7 +925,7 @@ private enum ExchangeRatePreset: String, CaseIterable {
     }
 }
 
-// MARK: - 店舗の新規登録・編集（貸玉料金・払出係数を実戦基準値算出に利用）
+// MARK: - 店舗の新規登録・編集（レートを実戦基準値算出に利用）
 struct ShopEditView: View {
     /// 編集時は既存の店舗を渡す。nil のときは新規登録。
     let shop: Shop?
@@ -933,6 +947,8 @@ struct ShopEditView: View {
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
     @StateObject private var placeSearchService = PlaceSearchService()
+    /// 下部バー：左＝登録フォーム、右＝店名＋「交換率」で Google 検索（アプリ内）
+    @State private var isShopBrowserExpanded = false
 
     private var isNew: Bool { shop == nil }
     private var accent: Color { AppGlassStyle.accent }
@@ -955,6 +971,16 @@ struct ShopEditView: View {
             return customYenPerBallFromBalls
         }
         return nil
+    }
+
+    /// アプリ内ブラウザ：`店舗名` と「交換率」での Google 検索（店名が空なら nil）
+    private var shopResearchGoogleURL: URL? {
+        let raw = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else { return nil }
+        let query = "\(raw) 交換率"
+        var c = URLComponents(string: "https://www.google.com/search")
+        c?.queryItems = [URLQueryItem(name: "q", value: query)]
+        return c?.url
     }
 
     @ViewBuilder
@@ -1040,7 +1066,7 @@ struct ShopEditView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .bottom) {
                 AppGlassStyle.background.ignoresSafeArea()
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
@@ -1136,7 +1162,7 @@ struct ShopEditView: View {
                                 .disabled(placeSearchService.isLoadingMore)
                             }
                         }
-                        shopEditPanel(title: "貸玉料金・払出係数（実戦基準値算出に使用）", trailing: { InfoIconView(explanation: "貸玉数: 500ptで何玉借りられるか（等価125玉）。払出係数: 1玉何ptで換金か。玉/100ptかpt交換のどちらかを入力するともう片方も自動計算されます。", tint: .white.opacity(0.7)) }) {
+                        shopEditPanel(title: "レート（実戦の基準値計算に使用）", trailing: { InfoIconView(explanation: "貸玉数は 500pt あたりの玉数。交換率は 1 玉あたりの換金（pt）。メニューでよくある組み合わせを選ぶか「その他」で自由入力。玉/100pt と pt/玉は連動します。", tint: .white.opacity(0.7)) }) {
                             HStack {
                                 Text("貸玉数（500ptあたり）")
                                     .foregroundColor(.white.opacity(0.9))
@@ -1147,51 +1173,58 @@ struct ShopEditView: View {
                                     .multilineTextAlignment(.trailing)
                                     .foregroundColor(.white)
                             }
-                            VStack(alignment: .leading, spacing: 10) {
-                                Text("払出係数（pt/玉）")
+                            HStack(alignment: .center, spacing: 10) {
+                                Text("交換率")
                                     .foregroundColor(.white.opacity(0.9))
-                                Picker("払出係数", selection: $exchangeRatePreset) {
+                                    .lineLimit(1)
+                                Spacer(minLength: 8)
+                                Picker("交換率", selection: $exchangeRatePreset) {
                                     ForEach(ExchangeRatePreset.allCases, id: \.self) { preset in
                                         Text(preset.rawValue).tag(preset)
                                     }
                                 }
+                                .labelsHidden()
                                 .pickerStyle(.menu)
                                 .tint(accent)
-                                if exchangeRatePreset == .other {
-                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                        Text("玉/100pt")
-                                            .foregroundColor(.white.opacity(0.85))
-                                        TextField("25.0", text: $customBallsPer100YenStr)
-                                            .keyboardType(.decimalPad)
-                                            .multilineTextAlignment(.trailing)
-                                            .foregroundColor(.white)
-                                            .onChange(of: customBallsPer100YenStr) { _, new in
-                                                guard !isSyncingCustomRate, !new.isEmpty, let y = customYenPerBallFromBalls else { return }
-                                                isSyncingCustomRate = true
-                                                customYenPerBallStr = String(format: "%.2f", y)
-                                                DispatchQueue.main.async { isSyncingCustomRate = false }
-                                            }
-                                        Text(customYenPerBallFromBalls.map { "→ \(String(format: "%.2f", $0))pt/玉" } ?? "→ — pt/玉")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                        Text("pt交換")
-                                            .foregroundColor(.white.opacity(0.85))
-                                        TextField("4.00", text: $customYenPerBallStr)
-                                            .keyboardType(.decimalPad)
-                                            .multilineTextAlignment(.trailing)
-                                            .foregroundColor(.white)
-                                            .onChange(of: customYenPerBallStr) { _, new in
-                                                guard !isSyncingCustomRate, !new.isEmpty, let b = customBallsPer100FromYen else { return }
-                                                isSyncingCustomRate = true
-                                                customBallsPer100YenStr = String(format: "%.1f", b)
-                                                DispatchQueue.main.async { isSyncingCustomRate = false }
-                                            }
-                                        Text(customBallsPer100FromYen.map { "→ \(String(format: "%.1f", $0))玉/100pt" } ?? "→ — 玉/100pt")
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
+                            }
+                            .accessibilityElement(children: .combine)
+                            .accessibilityLabel("交換率")
+                            if exchangeRatePreset == .other {
+                                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                    Text("玉/100pt")
+                                        .foregroundColor(.white.opacity(0.85))
+                                    TextField("25.0", text: $customBallsPer100YenStr)
+                                        .keyboardType(.decimalPad)
+                                        .multilineTextAlignment(.trailing)
+                                        .foregroundColor(.white)
+                                        .onChange(of: customBallsPer100YenStr) { _, new in
+                                            guard !isSyncingCustomRate, !new.isEmpty, let y = customYenPerBallFromBalls else { return }
+                                            isSyncingCustomRate = true
+                                            customYenPerBallStr = String(format: "%.2f", y)
+                                            DispatchQueue.main.async { isSyncingCustomRate = false }
+                                        }
+                                    Text(customYenPerBallFromBalls.map { "→ \(String(format: "%.2f", $0))pt/玉" } ?? "→ — pt/玉")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                }
+                                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                    Text("pt交換")
+                                        .foregroundColor(.white.opacity(0.85))
+                                    TextField("4.00", text: $customYenPerBallStr)
+                                        .keyboardType(.decimalPad)
+                                        .multilineTextAlignment(.trailing)
+                                        .foregroundColor(.white)
+                                        .onChange(of: customYenPerBallStr) { _, new in
+                                            guard !isSyncingCustomRate, !new.isEmpty, let b = customBallsPer100FromYen else { return }
+                                            isSyncingCustomRate = true
+                                            customBallsPer100YenStr = String(format: "%.1f", b)
+                                            DispatchQueue.main.async { isSyncingCustomRate = false }
+                                        }
+                                    Text(customBallsPer100FromYen.map { "→ \(String(format: "%.1f", $0))玉/100pt" } ?? "→ — 玉/100pt")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
                                 }
                             }
                         }
@@ -1254,12 +1287,28 @@ struct ShopEditView: View {
                         }
                     }
                     .padding(16)
-                    .padding(.bottom, 40)
+                    .padding(.bottom, 96)
                 }
+                .opacity(isShopBrowserExpanded ? 0 : 1)
+                .allowsHitTesting(!isShopBrowserExpanded)
+                .animation(.easeInOut(duration: 0.22), value: isShopBrowserExpanded)
+
+                if let url = shopResearchGoogleURL {
+                    InAppWebView(url: url)
+                        .id(url.absoluteString)
+                        .background(AppGlassStyle.background)
+                        .opacity(isShopBrowserExpanded ? 1 : 0)
+                        .allowsHitTesting(isShopBrowserExpanded)
+                        .animation(.easeInOut(duration: 0.22), value: isShopBrowserExpanded)
+                }
+
+                shopBrowserSwipeBar
             }
             .navigationTitle(isNew ? "新規店舗登録" : "店舗を編集")
             .navigationBarTitleDisplayMode(.inline)
             .keyboardDismissToolbar()
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color.black, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
             .tint(accent)
@@ -1282,7 +1331,7 @@ struct ShopEditView: View {
                             return
                         }
                         guard let rate = effectiveExchangeRate, rate > 0 else {
-                            errorMessage = exchangeRatePreset == .other ? "その他の場合は玉/100ptかpt交換を入力してください" : "払出係数を選択してください"
+                            errorMessage = exchangeRatePreset == .other ? "その他の場合は玉/100ptかpt交換を入力してください" : "交換率を選んでください"
                             showErrorAlert = true
                             return
                         }
@@ -1316,8 +1365,210 @@ struct ShopEditView: View {
                     let defaultBalls = Int(UserDefaults.standard.string(forKey: "defaultBallsPerCash") ?? "125") ?? 125
                     ballsPerCashUnitStr = "\(defaultBalls)"
                 }
+                isShopBrowserExpanded = false
             }
         }
+    }
+
+    /// 店名＋「交換率」Google 検索と登録フォームの切替（機種編集の DMM バーと同系）
+    @ViewBuilder
+    private var shopBrowserSwipeBar: some View {
+        let barHeight: CGFloat = 72
+        GeometryReader { geo in
+            let w = geo.size.width
+            let edgeW = max(92, min(124, w * 0.255))
+            let stripCorner: CGFloat = 10
+            let urlReady = shopResearchGoogleURL != nil
+            let queryHint: String = {
+                let q = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                return q.isEmpty ? "検索: 店名 ＋ 交換率" : "\(q) 交換率"
+            }()
+
+            ZStack {
+                HStack(spacing: 0) {
+                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                        .fill(
+                            !isShopBrowserExpanded
+                                ? accent.opacity(0.22)
+                                : Color.white.opacity(0.06)
+                        )
+                        .frame(width: edgeW + 8)
+                        .padding(.leading, 6)
+                    Spacer(minLength: 0)
+                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                        .fill(
+                            isShopBrowserExpanded && urlReady
+                                ? accent.opacity(0.2)
+                                : (urlReady ? Color.white.opacity(0.05) : Color.white.opacity(0.03))
+                        )
+                        .frame(width: edgeW + 8)
+                        .padding(.trailing, 6)
+                }
+                .allowsHitTesting(false)
+
+                HStack(spacing: 0) {
+                    shopBrowserRegisterEdge(width: edgeW, stripCorner: stripCorner)
+                    Spacer(minLength: 0)
+                    shopBrowserWebEdge(width: edgeW, stripCorner: stripCorner)
+                }
+
+                VStack(spacing: 3) {
+                    Text(isShopBrowserExpanded ? "Google 検索 表示中" : "店舗の登録")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.92))
+                    Text("左端・右端をタップ")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.62))
+                    Text(queryHint)
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.48))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
+                }
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: max(120, w - edgeW * 2 - 20))
+                .allowsHitTesting(false)
+            }
+            .frame(width: w, height: barHeight)
+        }
+        .frame(height: barHeight)
+        .padding(.horizontal, 8)
+        .contentShape(Rectangle())
+        .highPriorityGesture(
+            DragGesture(minimumDistance: 50)
+                .onEnded { value in
+                    let dx = value.translation.width
+                    let dy = value.translation.height
+                    guard abs(dx) > abs(dy) * 1.2 else { return }
+                    if dx < -40 {
+                        guard shopResearchGoogleURL != nil else { return }
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                            isShopBrowserExpanded = true
+                        }
+                    } else if dx > 40 {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                            isShopBrowserExpanded = false
+                        }
+                    }
+                }
+        )
+        .background(Color.black.opacity(0.92))
+        .overlay(
+            RoundedRectangle(cornerRadius: 0)
+                .stroke(Color.white.opacity(0.35), lineWidth: 1)
+                .padding(1)
+        )
+    }
+
+    private func shopBrowserRegisterEdge(width: CGFloat, stripCorner: CGFloat) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                isShopBrowserExpanded = false
+            }
+        } label: {
+            VStack(alignment: .center, spacing: 4) {
+                HStack(spacing: 3) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 11, weight: .bold))
+                    Image(systemName: "doc.text.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .foregroundStyle(.white.opacity(!isShopBrowserExpanded ? 1.0 : 0.75))
+                Text("登録画面")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text(!isShopBrowserExpanded ? "いま表示中" : "端をタップで戻る")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.58))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.85)
+            }
+            .frame(width: width)
+            .frame(maxHeight: .infinity)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+            .background(
+                RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(!isShopBrowserExpanded ? 0.42 : 0.18),
+                                accent.opacity(!isShopBrowserExpanded ? 0.35 : 0.12)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: !isShopBrowserExpanded ? 1.25 : 0.85
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("店舗登録フォームに戻る")
+        .accessibilityHint("タップで編集画面を表示します。")
+    }
+
+    @ViewBuilder
+    private func shopBrowserWebEdge(width: CGFloat, stripCorner: CGFloat) -> some View {
+        let urlReady = shopResearchGoogleURL != nil
+        Button {
+            guard urlReady else { return }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                isShopBrowserExpanded = true
+            }
+        } label: {
+            VStack(alignment: .center, spacing: 4) {
+                HStack(spacing: 3) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.system(size: 14, weight: .semibold))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .bold))
+                }
+                .foregroundStyle(.white.opacity(urlReady ? (isShopBrowserExpanded ? 1.0 : 0.88) : 0.38))
+                Text("検索")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(urlReady ? 1.0 : 0.45))
+                Text(
+                    urlReady
+                        ? (isShopBrowserExpanded ? "いま表示中" : "端をタップで開く")
+                        : "先に店名を入力"
+                )
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(urlReady ? 0.58 : 0.42))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.85)
+            }
+            .frame(width: width)
+            .frame(maxHeight: .infinity)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+            .background(
+                RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                accent.opacity(urlReady && isShopBrowserExpanded ? 0.5 : 0.2),
+                                Color.white.opacity(urlReady ? 0.28 : 0.12)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: urlReady && isShopBrowserExpanded ? 1.25 : 0.85
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(!urlReady)
+        .opacity(urlReady ? 1.0 : 0.72)
+        .accessibilityLabel("店舗名と交換率でGoogle検索を開く")
+        .accessibilityHint(
+            urlReady
+                ? "タップでアプリ内ブラウザに切り替わります。"
+                : "店名を入力すると利用できます。"
+        )
     }
 
     private func applyExchangeRateToPreset(_ rate: Double) {
@@ -1366,7 +1617,7 @@ struct ShopEditView: View {
         }
         let balls = Int(ballsPerCashUnitStr) ?? 125
         guard let rate = effectiveExchangeRate, rate > 0 else {
-            errorMessage = "払出係数を選択するか、その他の場合は玉/100ptかpt交換を入力してください"
+            errorMessage = "交換率を選ぶか、その他の場合は玉/100ptかpt交換を入力してください"
             showErrorAlert = true
             return
         }

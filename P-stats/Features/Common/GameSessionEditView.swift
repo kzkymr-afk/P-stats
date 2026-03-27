@@ -242,22 +242,22 @@ struct GameSessionEditView: View {
         let realCost = Double(invCash) + Double(holdBalls) * rate
         let ballsPer1000 = Double(shop.ballsPerCashUnit * 2)
         let cashUnits = ballsPer1000 > 0 ? Double(invCash) * ballsPer1000 / 250000.0 : Double(invCash) / 1000.0
-        let effectiveUnitsForBorder = cashUnits + Double(holdBalls) / 250.0
+        let effectiveUnitsForBorder = cashUnits + (ballsPer1000 > 0 ? Double(holdBalls) / ballsPer1000 : Double(holdBalls) / 250.0)
         let realRate = effectiveUnitsForBorder > 0 ? Double(nRotations) / effectiveUnitsForBorder : 0.0
         
-        // dynamicBorder の計算
+        // dynamicBorder の計算（GameLog.dynamicBorder と同一の貸玉・交換補正）
         let formula = parseFormulaBorder(machine.border)
         let effective1RNet = machine.averageNetPerRound
         let dynamicBorder: Double
-        let loanCorrection = ballsPer1000 > 0 ? ballsPer1000 / 250.0 : 1.0
+        let loanCorrection = ballsPer1000 > 0 ? 250.0 / ballsPer1000 : 1.0
         let exchangeCorrection = rate > 0 ? 4.0 / rate : 1.0
         
         if formula > 0 {
             dynamicBorder = formula * loanCorrection * exchangeCorrection
         } else if effective1RNet > 0 && machine.probabilityDenominator > 0 && rate > 0 && ballsPer1000 > 0 {
-            dynamicBorder = machine.probabilityDenominator * ballsPer1000 / effective1RNet * (4.0 / rate)
-        } else if effective1RNet > 0 && rate > 0 && ballsPer1000 > 0 {
-            dynamicBorder = 1000.0 * ballsPer1000 / (effective1RNet * 250.0 * rate)
+            dynamicBorder = machine.probabilityDenominator * 250.0 / effective1RNet * loanCorrection * exchangeCorrection
+        } else if effective1RNet > 0 && rate > 0 {
+            dynamicBorder = 1000.0 / (effective1RNet * rate)
         } else {
             dynamicBorder = 0
         }

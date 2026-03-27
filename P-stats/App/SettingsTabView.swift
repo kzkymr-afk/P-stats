@@ -23,6 +23,7 @@ struct SettingsTabView: View {
     @AppStorage("defaultMachineName") private var defaultMachineName = ""
     @AppStorage("defaultShopName") private var defaultShopName = ""
     @AppStorage("alwaysShowBothInvestmentButtons") private var alwaysShowBothInvestmentButtons = true
+    @AppStorage("bigHitSlideRailStyle") private var bigHitSlideRailStyleRaw = BigHitSlideRailStyle.defaultStorageValue
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selectedPlayPhotoItem: PhotosPickerItem?
     @State private var isSavingPhoto = false
@@ -168,6 +169,21 @@ struct SettingsTabView: View {
                                 .foregroundColor(.white.opacity(0.9))
                         }
                         .tint(cyan)
+                    }
+
+                    settingsCard(title: "大当たり開始スライド", icon: "arrow.left.circle") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("実戦画面（通常モード）下部の「スライドで大当たり」のデザインを選べます。")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                            Picker("デザイン", selection: $bigHitSlideRailStyleRaw) {
+                                ForEach(BigHitSlideRailStyle.allCases) { s in
+                                    Text(s.displayName).tag(s.rawValue)
+                                }
+                            }
+                            .tint(cyan)
+                            .labelsHidden()
+                        }
                     }
 
                     // 7. テーマ

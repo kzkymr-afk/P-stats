@@ -22,8 +22,6 @@ struct PowerSavingModeView: View {
 
     private let cyan = AppGlassStyle.accent
     private let swipeThreshold: CGFloat = 50
-    /// 持ち玉は125玉単位（1スワイプ＝125玉）
-    private let holdingsBallsPerSwipe: Int = 125
     /// 現金は500円単位（1スワイプ＝1000円＝2単位）
     private let cashYenPerSwipe: Int = 1000
 
@@ -167,8 +165,8 @@ struct PowerSavingModeView: View {
         let halfH = max(36, rowH / 2)
         HStack(spacing: 0) {
             VStack(spacing: 0) {
-                investmentZone(width: leftW, height: halfH, isCash: true, label: "現金 500pt", sub: "タップ or スワイプ")
-                investmentZone(width: leftW, height: halfH, isCash: false, label: "持ち玉 125玉", sub: "タップ or スワイプ")
+                investmentZone(width: leftW, height: halfH, isCash: true)
+                investmentZone(width: leftW, height: halfH, isCash: false)
             }
             .frame(width: leftW, height: rowH)
             Button(action: {
@@ -194,8 +192,11 @@ struct PowerSavingModeView: View {
         .frame(height: rowH)
     }
 
-    private func investmentZone(width: CGFloat, height: CGFloat, isCash: Bool, label: String, sub: String) -> some View {
-        ZStack {
+    private func investmentZone(width: CGFloat, height: CGFloat, isCash: Bool) -> some View {
+        let ballsSwipe = max(1, log.selectedShop.ballsPerCashUnit)
+        let title = isCash ? "現金 500pt" : "持ち玉 \(ballsSwipe)玉"
+        let cumulative = isCash ? "計 \(log.totalInput)pt" : "計 \(log.holdingsInvestedBalls)玉"
+        return ZStack {
             Color.clear
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -215,18 +216,23 @@ struct PowerSavingModeView: View {
                             if isCash {
                                 log.addCashInput(pt: cashYenPerSwipe)
                             } else {
-                                log.addHoldingsInvestment(balls: holdingsBallsPerSwipe)
+                                log.addHoldingsInvestment(balls: ballsSwipe)
                             }
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         }
                 )
-            VStack(spacing: 6) {
-                Text(label)
+            VStack(spacing: 5) {
+                Text(title)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(cyan.opacity(0.9))
-                Text(sub)
+                Text("タップ or スワイプ")
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundColor(cyan.opacity(0.5))
+                Text(cumulative)
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .foregroundColor(cyan.opacity(0.72))
+                    .minimumScaleFactor(0.8)
+                    .lineLimit(1)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .allowsHitTesting(false)

@@ -543,7 +543,7 @@ struct MachineEditView: View, Equatable {
                 }
                 .buttonStyle(.plain)
                 .foregroundColor(.white)
-                Text("アプリ内ブラウザで開きます。画面下の「登録画面」を押すと、この登録フォームにすぐ戻れます。")
+                Text("アプリ内ブラウザで開きます。画面下の左端をタップすると、この登録フォームにすぐ戻れます。")
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.72))
             } else {
@@ -803,69 +803,64 @@ struct MachineEditView: View, Equatable {
         return URL(string: "https://p-town.dmm.com/machines/\(id)")
     }
     
-    /// 最下部に常時表示。左右のタブで「登録画面」「DMMブラウザ」を切り替え。スワイプは補助。
+    /// 最下部に常時表示。左端＝登録フォームへ、右端＝DMMアプリ内ブラウザ（空間メタファー＋スワイプ補助）。
     @ViewBuilder
     private var dmmSwipeBar: some View {
-        let handleHeight: CGFloat = 60
-        VStack(spacing: 6) {
-            Text(isDMMPanelExpanded ? "表示中: DMMブラウザ" : "表示中: 登録画面")
-                .font(.caption2.weight(.semibold))
-                .foregroundColor(.white.opacity(0.8))
+        let barHeight: CGFloat = 72
+        GeometryReader { geo in
+            let w = geo.size.width
+            let edgeW = max(92, min(124, w * 0.255))
+            let stripCorner: CGFloat = 10
 
-            HStack(spacing: 12) {
-            Button {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-                    isDMMPanelExpanded = false
+            ZStack {
+                // 端の「現在位置」を淡く照らす（プリアテンション：どちらがアクティブか）
+                HStack(spacing: 0) {
+                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                        .fill(
+                            !isDMMPanelExpanded
+                                ? accent.opacity(0.22)
+                                : Color.white.opacity(0.06)
+                        )
+                        .frame(width: edgeW + 8)
+                        .padding(.leading, 6)
+                    Spacer(minLength: 0)
+                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                        .fill(
+                            isDMMPanelExpanded && dmmMachineURL != nil
+                                ? accent.opacity(0.2)
+                                : (dmmMachineURL != nil ? Color.white.opacity(0.05) : Color.white.opacity(0.03))
+                        )
+                        .frame(width: edgeW + 8)
+                        .padding(.trailing, 6)
                 }
-            } label: {
-                        Label("登録画面", systemImage: "doc.text")
-                    .font(.caption.weight(.semibold))
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 10)
-                    .background(isDMMPanelExpanded ? Color.white.opacity(0.08) : AppGlassStyle.accent.opacity(0.35))
-                    .clipShape(Capsule())
-                    .foregroundColor(.white)
-            }
-            .buttonStyle(.plain)
-            .opacity(isDMMPanelExpanded ? 1 : 0.7)
+                .allowsHitTesting(false)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("スペックを調べる")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.white.opacity(0.98))
-                if dmmMachineURL == nil {
-                    Text("機種を検索で選ぶとスペックページを開けます")
-                        .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.7))
-                } else {
-                    Text("タブをタップして切り替えます")
-                        .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.8))
+                HStack(spacing: 0) {
+                    dmmEdgeRegisterZone(width: edgeW, stripCorner: stripCorner)
+                    Spacer(minLength: 0)
+                    dmmEdgeBrowserZone(width: edgeW, stripCorner: stripCorner)
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
 
-            Button {
-                guard dmmMachineURL != nil else { return }
-                // 読み込み完了を待たず、タップしたら即ブラウザ表示に切り替える
-                isDMMPanelExpanded = true
-            } label: {
-                Label("ブラウザ", systemImage: "safari")
-                    .font(.caption.weight(.semibold))
-                    .padding(.vertical, 6)
-                    .padding(.horizontal, 10)
-                    .background(isDMMPanelExpanded && dmmMachineURL != nil ? AppGlassStyle.accent.opacity(0.35) : Color.white.opacity(0.08))
-                    .clipShape(Capsule())
-                    .foregroundColor(.white.opacity(dmmMachineURL == nil ? 0.4 : 1.0))
+                // 中央はヒット不要（端操作への誤爆を減らす）
+                VStack(spacing: 3) {
+                    Text(isDMMPanelExpanded ? "DMM ぱちタウン 表示中" : "機種の登録フォーム")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.92))
+                    Text("左端・右端をタップ")
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.white.opacity(0.62))
+                    Text("または横スワイプ")
+                        .font(.caption2)
+                        .foregroundStyle(.white.opacity(0.48))
+                }
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: max(120, w - edgeW * 2 - 20))
+                .allowsHitTesting(false)
             }
-            .buttonStyle(.plain)
-            .disabled(dmmMachineURL == nil)
-            }
+            .frame(width: w, height: barHeight)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .frame(maxWidth: .infinity)
-        .frame(height: handleHeight)
+        .frame(height: barHeight)
+        .padding(.horizontal, 8)
         .contentShape(Rectangle())
         .highPriorityGesture(
             DragGesture(minimumDistance: 50)
@@ -873,7 +868,9 @@ struct MachineEditView: View, Equatable {
                     let dx = value.translation.width
                     let dy = value.translation.height
                     guard abs(dx) > abs(dy) * 1.2 else { return }
+                    // 指が左へ＝ブラウザ（右ペインへ進む）、右へ＝登録へ戻る（LTR の空間と一致）
                     if dx < -40 {
+                        guard dmmMachineURL != nil else { return }
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
                             isDMMPanelExpanded = true
                         }
@@ -889,6 +886,119 @@ struct MachineEditView: View, Equatable {
             RoundedRectangle(cornerRadius: 0)
                 .stroke(Color.white.opacity(0.35), lineWidth: 1)
                 .padding(1)
+        )
+    }
+
+    /// 左端：登録画面へ戻る（戻る＝左のメンタルモデルに合わせ chevron.left を手前に）
+    private func dmmEdgeRegisterZone(width: CGFloat, stripCorner: CGFloat) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                isDMMPanelExpanded = false
+            }
+        } label: {
+            VStack(alignment: .center, spacing: 4) {
+                HStack(spacing: 3) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 11, weight: .bold))
+                    Image(systemName: "doc.text.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .foregroundStyle(.white.opacity(!isDMMPanelExpanded ? 1.0 : 0.75))
+                Text("登録画面")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                Text(!isDMMPanelExpanded ? "いま表示中" : "端をタップで戻る")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.58))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.85)
+            }
+            .frame(width: width)
+            .frame(maxHeight: .infinity)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+            .background(
+                RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(!isDMMPanelExpanded ? 0.42 : 0.18),
+                                accent.opacity(!isDMMPanelExpanded ? 0.35 : 0.12)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: !isDMMPanelExpanded ? 1.25 : 0.85
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("登録画面に戻る")
+        .accessibilityHint("タップで機種登録フォームを表示します。")
+    }
+
+    /// 右端：DMM アプリ内ブラウザ（進む・外部コンテンツ＝右方向の慣例に合わせ safari と chevron.right）
+    @ViewBuilder
+    private func dmmEdgeBrowserZone(width: CGFloat, stripCorner: CGFloat) -> some View {
+        let urlReady = dmmMachineURL != nil
+        Button {
+            guard urlReady else { return }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                isDMMPanelExpanded = true
+            }
+        } label: {
+            VStack(alignment: .center, spacing: 4) {
+                HStack(spacing: 3) {
+                    Image(systemName: "safari")
+                        .font(.system(size: 14, weight: .semibold))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .bold))
+                }
+                .foregroundStyle(.white.opacity(urlReady ? (isDMMPanelExpanded ? 1.0 : 0.88) : 0.38))
+                Text("DMM")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white.opacity(urlReady ? 1.0 : 0.45))
+                Text(
+                    urlReady
+                        ? (isDMMPanelExpanded ? "いま表示中" : "端をタップで開く")
+                        : "先に機種を検索"
+                )
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(urlReady ? 0.58 : 0.42))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.85)
+            }
+            .frame(width: width)
+            .frame(maxHeight: .infinity)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+            .background(
+                RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                accent.opacity(urlReady && isDMMPanelExpanded ? 0.5 : 0.2),
+                                Color.white.opacity(urlReady ? 0.28 : 0.12)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: urlReady && isDMMPanelExpanded ? 1.25 : 0.85
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(!urlReady)
+        .opacity(urlReady ? 1.0 : 0.72)
+        .accessibilityLabel("DMMぱちタウンをアプリ内ブラウザで開く")
+        .accessibilityHint(
+            urlReady
+                ? "タップで公式スペックページを表示します。"
+                : "マスタ検索で機種を選ぶと利用できます。"
         )
     }
 }

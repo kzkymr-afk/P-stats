@@ -12,6 +12,10 @@ struct NumberPadTextField: UIViewRepresentable {
     var doneTitle: String
     /// 値を変えるたびにキーボードを開く（親から `+= 1` してフォーカス要求）
     var focusTrigger: Int = 0
+    /// 幅が狭いとき数字が切れないよう小さくする（横はみ出し対策）
+    var adjustsFontSizeToFitWidth: Bool = false
+    /// `adjustsFontSizeToFitWidth` 利用時の最小フォント（pt）
+    var minimumFontSize: CGFloat = 11
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, maxDigits: maxDigits)
@@ -28,6 +32,8 @@ struct NumberPadTextField: UIViewRepresentable {
         tf.autocorrectionType = .no
         tf.spellCheckingType = .no
         tf.text = text
+        tf.adjustsFontSizeToFitWidth = adjustsFontSizeToFitWidth
+        if adjustsFontSizeToFitWidth { tf.minimumFontSize = minimumFontSize }
         tf.inputAccessoryView = makeToolbar(coordinator: context.coordinator)
         return tf
     }
@@ -47,6 +53,8 @@ struct NumberPadTextField: UIViewRepresentable {
                 uiView.becomeFirstResponder()
             }
         }
+        uiView.adjustsFontSizeToFitWidth = adjustsFontSizeToFitWidth
+        if adjustsFontSizeToFitWidth { uiView.minimumFontSize = minimumFontSize }
     }
 
     private func makeToolbar(coordinator: Coordinator) -> UIToolbar {
