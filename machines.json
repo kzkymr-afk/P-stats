@@ -1,5 +1,41 @@
 [
   {
+    "name": "PA戦国乙女7 終焉の関ヶ原 ときめき78バージョン",
+    "probability": "1/78.21",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4979"
+  },
+  {
+    "name": "e ゴジラ対エヴァンゲリオン セカンドインパクト G 破壊神覚醒",
+    "probability": "1/499.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4695"
+  },
+  {
     "name": "eリング 最恐領域",
     "probability": "1/399",
     "border": "",
@@ -52,6 +88,42 @@
       }
     ],
     "machineId": "4958"
+  },
+  {
+    "name": "eリコリス・リコイル",
+    "probability": "1/259.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4982"
+  },
+  {
+    "name": "e転生したらスライムだった件2",
+    "probability": "1/399.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サンセイR＆D",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4990"
   },
   {
     "name": "P ウルトラマンメビウス デカヘソ319",
@@ -126,42 +198,6 @@
     "machineId": "4988"
   },
   {
-    "name": "eリコリス・リコイル",
-    "probability": "1/259.7",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "ニューギン",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4982"
-  },
-  {
-    "name": "e転生したらスライムだった件2",
-    "probability": "1/399.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "サンセイR＆D",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4990"
-  },
-  {
     "name": "e 終末のワルキューレ",
     "probability": "1/219.9",
     "border": "",
@@ -216,24 +252,6 @@
     "machineId": "4978"
   },
   {
-    "name": "PキングモンスターRUSH 67Ver.",
-    "probability": "1/67.6",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "竹屋",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4977"
-  },
-  {
     "name": "e 乃木坂46 Ⅱ SWEET Version",
     "probability": "1/129.9",
     "border": "",
@@ -286,6 +304,24 @@
       }
     ],
     "machineId": "4942"
+  },
+  {
+    "name": "PキングモンスターRUSH 67Ver.",
+    "probability": "1/67.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "竹屋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4977"
   },
   {
     "name": "P Re:ゼロから始める異世界生活 season2 249ver.",
@@ -486,6 +522,60 @@
     "machineId": "4935"
   },
   {
+    "name": "e異世界でチート能力を手にした俺は現実世界をも無双する 〜レベルアップは人生を変えた〜",
+    "probability": "1/179",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4947"
+  },
+  {
+    "name": "e 真・北斗無双 第5章 夢幻闘双",
+    "probability": "1/159.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4927"
+  },
+  {
+    "name": "eフィーバーBASTARD!! -暗黒の破壊神-",
+    "probability": "1/399.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4923"
+  },
+  {
     "name": "PA乗物娘 WITH CYBER JAPAN DANCERS 2nd season 59ver.",
     "probability": "1/59.95",
     "border": "",
@@ -576,24 +666,6 @@
     "machineId": "4951"
   },
   {
-    "name": "e異世界でチート能力を手にした俺は現実世界をも無双する 〜レベルアップは人生を変えた〜",
-    "probability": "1/179",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "藤商事",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4947"
-  },
-  {
     "name": "P黄門ちゃま寿限無 99ver.",
     "probability": "1/99.9",
     "border": "",
@@ -630,14 +702,14 @@
     "machineId": "4944"
   },
   {
-    "name": "e 真・北斗無双 第5章 夢幻闘双",
-    "probability": "1/159.8",
+    "name": "e範馬刃牙 199ver.",
+    "probability": "1/199.8",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "サミー",
+    "manufacturer": "アムテックス",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -645,25 +717,7 @@
         "balls": 1500
       }
     ],
-    "machineId": "4927"
-  },
-  {
-    "name": "eフィーバーBASTARD!! -暗黒の破壊神-",
-    "probability": "1/399.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "SANKYO",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4923"
+    "machineId": "4933"
   },
   {
     "name": "e ULTRAMAN 4500 超ライト",
@@ -702,14 +756,14 @@
     "machineId": "4948"
   },
   {
-    "name": "e範馬刃牙 199ver.",
-    "probability": "1/199.8",
+    "name": "eようこそ実力至上主義の教室へ",
+    "probability": "1/349.9",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "アムテックス",
+    "manufacturer": "サンセイR＆D",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -717,7 +771,43 @@
         "balls": 1500
       }
     ],
-    "machineId": "4933"
+    "machineId": "4936"
+  },
+  {
+    "name": "e吉宗 極乗3000ver.",
+    "probability": "1/199.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "大都技研",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4932"
+  },
+  {
+    "name": "Pフィーバー彼女、お借りします LT-Light ver.",
+    "probability": "1/189.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4916"
   },
   {
     "name": "e ソードアート・オンライン 閃光の軌跡 99Ver.",
@@ -792,24 +882,6 @@
     "machineId": "4937"
   },
   {
-    "name": "eようこそ実力至上主義の教室へ",
-    "probability": "1/349.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "サンセイR＆D",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4936"
-  },
-  {
     "name": "P【超甘LT】華牌RR 1/49×99de遊タイム",
     "probability": "1/49.9",
     "border": "",
@@ -826,24 +898,6 @@
       }
     ],
     "machineId": "4934"
-  },
-  {
-    "name": "e吉宗 極乗3000ver.",
-    "probability": "1/199.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "大都技研",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4932"
   },
   {
     "name": "PA清流物語4 ウキウキ79ver.",
@@ -882,24 +936,6 @@
     "machineId": "4917"
   },
   {
-    "name": "Pフィーバー彼女、お借りします LT-Light ver.",
-    "probability": "1/189.7",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "SANKYO",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4916"
-  },
-  {
     "name": "e盾の勇者の成り上がり アルティメット199ver.",
     "probability": "1/199",
     "border": "",
@@ -916,6 +952,24 @@
       }
     ],
     "machineId": "4910"
+  },
+  {
+    "name": "e 新世紀エヴァンゲリオン 〜はじまりの記憶〜",
+    "probability": "1/399.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4894"
   },
   {
     "name": "P少女☆歌劇 レヴュースタァライト 99 LT3000",
@@ -954,42 +1008,6 @@
     "machineId": "4905"
   },
   {
-    "name": "e 新世紀エヴァンゲリオン 〜はじまりの記憶〜",
-    "probability": "1/399.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "ビスティ",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4894"
-  },
-  {
-    "name": "PA野生の王国Ⅵ",
-    "probability": "1/99.90",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "ニューギン",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4922"
-  },
-  {
     "name": "e地獄少女7500Ver.",
     "probability": "1/49",
     "border": "",
@@ -1024,6 +1042,60 @@
       }
     ],
     "machineId": "4918"
+  },
+  {
+    "name": "e 北斗の拳11 暴凶星",
+    "probability": "1/399.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4897"
+  },
+  {
+    "name": "Pフィーバーからくりサーカス2 Light ver.",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4875"
+  },
+  {
+    "name": "PA野生の王国Ⅵ",
+    "probability": "1/99.90",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ニューギン",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4922"
   },
   {
     "name": "P【超甘LT】この素晴らしい世界に祝福を！最終クエスト1/49",
@@ -1098,42 +1170,6 @@
     "machineId": "4899"
   },
   {
-    "name": "e 北斗の拳11 暴凶星",
-    "probability": "1/399.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "サミー",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4897"
-  },
-  {
-    "name": "Pフィーバーからくりサーカス2 Light ver.",
-    "probability": "1/99.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "SANKYO",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4875"
-  },
-  {
     "name": "Pメイドインアビス 奈落の連環蝕",
     "probability": "1/129.7",
     "border": "",
@@ -1150,24 +1186,6 @@
       }
     ],
     "machineId": "4882"
-  },
-  {
-    "name": "P Re:ゼロから始める異世界生活 鬼がかり 199ver.",
-    "probability": "1/199.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "大都技研",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4902"
   },
   {
     "name": "P Re:ゼロから始める異世界生活 鬼がかり 99ver.",
@@ -1204,6 +1222,60 @@
       }
     ],
     "machineId": "4900"
+  },
+  {
+    "name": "eフィーバーもののがたり",
+    "probability": "1/149.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4876"
+  },
+  {
+    "name": "eノーゲーム・ノーライフ 199Ver.",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "高尾",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4863"
+  },
+  {
+    "name": "P Re:ゼロから始める異世界生活 鬼がかり 199ver.",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "大都技研",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4902"
   },
   {
     "name": "P転生したらスライムだった件129ver.",
@@ -1296,24 +1368,6 @@
     "machineId": "4879"
   },
   {
-    "name": "eフィーバーもののがたり",
-    "probability": "1/149.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "SANKYO",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4876"
-  },
-  {
     "name": "P いくさの子 戦極最強ドデカ199ver.",
     "probability": "1/199",
     "border": "",
@@ -1330,24 +1384,6 @@
       }
     ],
     "machineId": "4872"
-  },
-  {
-    "name": "eノーゲーム・ノーライフ 199Ver.",
-    "probability": "1/199.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "高尾",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4863"
   },
   {
     "name": "eノーゲーム・ノーライフ 319Ver.",
@@ -1404,6 +1440,42 @@
     "machineId": "4878"
   },
   {
+    "name": "eとある科学の超電磁砲 PHASE NEXT",
+    "probability": "1/169.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "オレンジ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4874"
+  },
+  {
+    "name": "Pスーパー海物語IN沖縄6",
+    "probability": "1/319.6",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "三洋",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4857"
+  },
+  {
     "name": "デカスタPシュタインズ・ゲート ゼロ まゆしぃば〜じょん",
     "probability": "1/99.9",
     "border": "",
@@ -1456,24 +1528,6 @@
       }
     ],
     "machineId": "4881"
-  },
-  {
-    "name": "eとある科学の超電磁砲 PHASE NEXT",
-    "probability": "1/169.7",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "オレンジ",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4874"
   },
   {
     "name": "PA義風堂々!!〜兼続と慶次〜3 99ver.",
@@ -1548,24 +1602,6 @@
     "machineId": "4858"
   },
   {
-    "name": "Pスーパー海物語IN沖縄6",
-    "probability": "1/319.6",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "三洋",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4857"
-  },
-  {
     "name": "〜廻るヘソワイド〜PホワイトシャカRUSH",
     "probability": "1/199.8",
     "border": "",
@@ -1600,6 +1636,24 @@
       }
     ],
     "machineId": "4852"
+  },
+  {
+    "name": "eフィーバーブルーロック",
+    "probability": "1/399.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4837"
   },
   {
     "name": "デカスタPデビルマン THE FINAL 179ver.",
@@ -1744,24 +1798,6 @@
       }
     ],
     "machineId": "4851"
-  },
-  {
-    "name": "eフィーバーブルーロック",
-    "probability": "1/399.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "SANKYO",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4837"
   },
   {
     "name": "e女神のカフェテラス",
@@ -2052,6 +2088,42 @@
     "machineId": "4822"
   },
   {
+    "name": "eフィーバー炎炎ノ消防隊2 紅丸ver.",
+    "probability": "1/399.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4811"
+  },
+  {
+    "name": "e東京リベンジャーズ",
+    "probability": "1/319.7",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "サミー",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4796"
+  },
+  {
     "name": "P CYBORG009 RULE OF SACRIFICE LT99ver.",
     "probability": "1/99.9",
     "border": "",
@@ -2142,24 +2214,6 @@
     "machineId": "4815"
   },
   {
-    "name": "eフィーバー炎炎ノ消防隊2 紅丸ver.",
-    "probability": "1/399.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "SANKYO",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4811"
-  },
-  {
     "name": "eフィーバー炎炎ノ消防隊2 シンラver.",
     "probability": "1/399.9",
     "border": "",
@@ -2194,24 +2248,6 @@
       }
     ],
     "machineId": "4802"
-  },
-  {
-    "name": "e東京リベンジャーズ",
-    "probability": "1/319.7",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "サミー",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4796"
   },
   {
     "name": "PLT激デジ ジューシーハニー極嬢",
@@ -3420,24 +3456,6 @@
     "machineId": "4688"
   },
   {
-    "name": "e ULTRAMAN 2400★80",
-    "probability": "1/318.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "OK!!",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4716"
-  },
-  {
     "name": "eぱちんこ押忍！番長 漢の頂",
     "probability": "1/179.5",
     "border": "",
@@ -3454,6 +3472,24 @@
       }
     ],
     "machineId": "4714"
+  },
+  {
+    "name": "e ULTRAMAN 2400★80",
+    "probability": "1/318.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "OK!!",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4716"
   },
   {
     "name": "PLTジューシーハニー極嬢",
@@ -3564,6 +3600,24 @@
     "machineId": "4684"
   },
   {
+    "name": "e ソードアート・オンライン 閃光の軌跡",
+    "probability": "1/199.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "京楽",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4687"
+  },
+  {
     "name": "eA夏色日記GO",
     "probability": "1/89.8",
     "border": "",
@@ -3618,42 +3672,6 @@
     "machineId": "4697"
   },
   {
-    "name": "P真・一騎当千～桃園の誓い～199LTver.",
-    "probability": "1/199.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "D-light",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4691"
-  },
-  {
-    "name": "e ソードアート・オンライン 閃光の軌跡",
-    "probability": "1/199.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "京楽",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4687"
-  },
-  {
     "name": "Pシュタインズ・ゲート ゼロ",
     "probability": "1/319.68",
     "border": "",
@@ -3670,6 +3688,24 @@
       }
     ],
     "machineId": "4659"
+  },
+  {
+    "name": "P真・一騎当千～桃園の誓い～199LTver.",
+    "probability": "1/199.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4691"
   },
   {
     "name": "P GO!GO!郷 豪遊の5",
@@ -3852,6 +3888,24 @@
     "machineId": "4657"
   },
   {
+    "name": "eフィーバーからくりサーカス2 魔王ver.",
+    "probability": "1/399.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4649"
+  },
+  {
     "name": "PAナナシー〜お江戸77ver.〜",
     "probability": "1/77.4",
     "border": "",
@@ -3994,24 +4048,6 @@
       }
     ],
     "machineId": "4655"
-  },
-  {
-    "name": "eフィーバーからくりサーカス2 魔王ver.",
-    "probability": "1/399.9",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "SANKYO",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4649"
   },
   {
     "name": "Pフィーバーからくりサーカス2 運命ver.",
@@ -5634,6 +5670,24 @@
     "machineId": "4489"
   },
   {
+    "name": "P新世紀エヴァンゲリオン〜未来への咆哮〜PREMIUM MODEL",
+    "probability": "1/129.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4498"
+  },
+  {
     "name": "PニュートキオGREEN",
     "probability": "-",
     "border": "",
@@ -5668,24 +5722,6 @@
       }
     ],
     "machineId": "4499"
-  },
-  {
-    "name": "P新世紀エヴァンゲリオン〜未来への咆哮〜PREMIUM MODEL",
-    "probability": "1/129.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "ビスティ",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4498"
   },
   {
     "name": "Pサラリーマン金太郎 159をなめんじゃねぇver.",
@@ -6012,24 +6048,6 @@
     "machineId": "4461"
   },
   {
-    "name": "P真・一騎当千 Light Ver.",
-    "probability": "1/129.8",
-    "border": "",
-    "machineTypeRaw": "kakugen",
-    "supportLimit": 0,
-    "timeShortRotations": 0,
-    "countPerRound": 10,
-    "manufacturer": "Daiichi",
-    "defaultPrize": 1500,
-    "prizeEntries": [
-      {
-        "label": "1500玉",
-        "balls": 1500
-      }
-    ],
-    "machineId": "4475"
-  },
-  {
     "name": "ぱちんこ シン・エヴァンゲリオン Type レイ",
     "probability": "1/319.7",
     "border": "",
@@ -6046,6 +6064,24 @@
       }
     ],
     "machineId": "4452"
+  },
+  {
+    "name": "P真・一騎当千 Light Ver.",
+    "probability": "1/129.8",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "Daiichi",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4475"
   },
   {
     "name": "スマパチ シン・エヴァンゲリオン Type カヲル",
