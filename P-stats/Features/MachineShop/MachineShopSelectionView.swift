@@ -932,7 +932,7 @@ private enum ExchangeRatePreset: String, CaseIterable {
     }
 }
 
-// MARK: - 店舗の新規登録・編集（レートを実戦基準値算出に利用）
+// MARK: - 店舗の新規登録・編集（レートを実戦ボーダー算出に利用）
 struct ShopEditView: View {
     /// 編集時は既存の店舗を渡す。nil のときは新規登録。
     let shop: Shop?
@@ -1171,7 +1171,7 @@ struct ShopEditView: View {
                                 .disabled(placeSearchService.isLoadingMore)
                             }
                         }
-                        shopEditPanel(title: "レート（実戦の基準値計算に使用）", trailing: { InfoIconView(explanation: "貸玉数は 500pt あたりの玉数。交換率は 1 玉あたりの換金（pt）。メニューでよくある組み合わせを選ぶか「その他」で自由入力。玉/100pt と pt/玉は連動します。", tint: .white.opacity(0.7)) }) {
+                        shopEditPanel(title: "レート（実戦のボーダー計算に使用）", trailing: { InfoIconView(explanation: "貸玉数は 500pt あたりの玉数。交換率は 1 玉あたりの換金（pt）。メニューでよくある組み合わせを選ぶか「その他」で自由入力。玉/100pt と pt/玉は連動します。", tint: .white.opacity(0.7)) }) {
                             HStack {
                                 Text("貸玉数（500ptあたり）")
                                     .foregroundColor(.white.opacity(0.9))

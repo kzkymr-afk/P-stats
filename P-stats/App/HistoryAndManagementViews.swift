@@ -575,7 +575,7 @@ struct SessionDetailView: View {
                             detailRow(label: "総投入額（現金）", value: session.inputCash.formattedPtWithUnit)
                             detailRow(label: "回収出球", value: "\(session.totalHoldings) 玉")
                             detailRow(label: "回収額（pt換算）", value: recoveryPt.formattedPtWithUnit)
-                            detailRow(label: "理論値", value: "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)")
+                            detailRow(label: "期待値", value: "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)")
                             detailRow(label: "欠損・余剰", value: "\(session.deficitSurplus >= 0 ? "+" : "")\(session.deficitSurplus.formattedPtWithUnit)")
                             HStack {
                                 Text("実成績")
@@ -592,7 +592,7 @@ struct SessionDetailView: View {
 
                     detailPanel(title: "分析（入力データから算出）") {
                         VStack(alignment: .leading, spacing: 8) {
-                            detailRow(label: "理論値比（保存時）", value: session.expectationRatioAtSave > 0 ? String(format: "%.2f%%", session.expectationRatioAtSave * 100) : "—")
+                            detailRow(label: "期待値比（保存時）", value: session.expectationRatioAtSave > 0 ? String(format: "%.2f%%", session.expectationRatioAtSave * 100) : "—")
                             detailRow(label: "実質回転率", value: String(format: "%.1f 回/1k", rotationPer1k))
                             detailRow(label: "RUSH当選", value: "\(session.rushWinCount) 回")
                             detailRow(label: "通常当選", value: "\(session.normalWinCount) 回")
@@ -709,7 +709,7 @@ struct HistorySessionCard: View {
             .foregroundColor(.white.opacity(0.85))
             HStack(alignment: .top, spacing: 16) {
                 miniblock("実戦回転率", value: rotationRateDisplay, valueColor: .white)
-                miniblock("理論値", value: "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)", valueColor: .white.opacity(0.9))
+                miniblock("期待値", value: "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)", valueColor: .white.opacity(0.9))
                 deficitSurplusBlock
             }
             .font(.caption)
@@ -954,7 +954,7 @@ struct SessionEditView: View {
                 .listRowBackground(AppGlassStyle.rowBackground)
             }
 
-            Section("計算用（変更時は理論値を再計算）") {
+            Section("計算用（変更時は期待値を再計算）") {
                 HStack {
                     Text("実質投入（pt）")
                     Spacer()
@@ -975,7 +975,7 @@ struct SessionEditView: View {
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
-                    Text("基準値比（保存時）")
+                    Text("ボーダー比（保存時）")
                     Spacer()
                     DecimalPadTextField(
                         text: Binding(
@@ -994,12 +994,12 @@ struct SessionEditView: View {
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 if session.expectationRatioAtSave == 0 || session.totalRealCost == 0 {
-                    Text("理論値を出すには「実質投入」と「基準値比」を入力し、「理論値を再計算」をタップしてください。1.0＝基準、1.1＝10%上回り。")
+                    Text("期待値を出すには「実質投入」と「ボーダー比」を入力し、「期待値を再計算」をタップしてください。1.0＝基準、1.1＝10%上回り。")
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.7))
                         .listRowBackground(AppGlassStyle.rowBackground)
                 }
-                Button("理論値を再計算") {
+                Button("期待値を再計算") {
                     let ratio = session.expectationRatioAtSave > 0 ? session.expectationRatioAtSave : 1.0
                     let cost = session.totalRealCost > 0 ? session.totalRealCost : Double(session.inputCash)
                     session.theoreticalValue = Int(round(cost * (ratio - 1)))
@@ -1025,7 +1025,7 @@ struct SessionEditView: View {
             if selectedShop == nil {
                 selectedShop = shops.first { $0.name == session.shopName }
             }
-            // 実質投入が未入力で総投入額がある場合は、現金投入を実質投入として補正（理論値計算のため）
+            // 実質投入が未入力で総投入額がある場合は、現金投入を実質投入として補正（期待値計算のため）
             if session.totalRealCost == 0 && session.inputCash > 0 {
                 session.totalRealCost = Double(session.inputCash)
             }

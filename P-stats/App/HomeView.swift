@@ -21,10 +21,10 @@ enum EarningsPeriod: String, CaseIterable {
     /// ボーダー差パネル用ラベル（期間ごとの数字）
     var borderDiffTitle: String {
         switch self {
-        case .month: return "今月の基準値差"
-        case .year: return "今年の基準値差"
-        case .week: return "今週の基準値差"
-        case .day: return "今日の基準値差"
+        case .month: return "今月のボーダー差"
+        case .year: return "今年のボーダー差"
+        case .week: return "今週のボーダー差"
+        case .day: return "今日のボーダー差"
         }
     }
 }

@@ -732,7 +732,7 @@ struct GameSessionEditView: View {
         dismiss()
     }
 
-    /// シンプル入力：投資・回収は pt。回収は店舗の払出係数で玉数に換算。回転・当選・理論値は 0 / 中立で保存。
+    /// シンプル入力：投資・回収は pt。回収は店舗の払出係数で玉数に換算。回転・当選・期待値は 0 / 中立で保存。
     private func saveSimpleNewSession(machine: Machine, shop: Shop) {
         let invCash = Int(investmentCash) ?? 0
         let recPt = Int(recoveryAmountPt) ?? 0

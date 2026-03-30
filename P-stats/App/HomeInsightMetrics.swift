@@ -89,7 +89,7 @@ enum HomeInsightMetrics {
         }
     }
 
-    /// 直近N日・理論値に対する余剰が大きい機種上位3（同一機種は集計済み想定で `AnalyticsEngine` を利用）
+    /// 直近N日・期待値に対する余剰が大きい機種上位3（同一機種は集計済み想定で `AnalyticsEngine` を利用）
     static func affinityTop3(sessionsInWindow: [GameSession]) -> [(name: String, deficitSurplus: Int)] {
         let groups = AnalyticsEngine.byMachine(sessionsInWindow)
         let ranked = groups.filter { $0.sessionCount > 0 }
@@ -107,7 +107,7 @@ enum HomeInsightMetrics {
         let name: String
         /// 実戦回転率（回/1k）
         let avgRotationPer1k: Double
-        /// 公式基準値との差の平均（回/1k）。nil は比較不可
+        /// 公式ボーダーとの差の平均（回/1k）。nil は比較不可
         let avgDiffFromFormula: Double?
     }
 
@@ -150,12 +150,12 @@ enum HomeInfoPanelSectionID: Int, CaseIterable {
     var settingsLabel: String {
         switch self {
         case .balance: return "収支・欠損／余剰"
-        case .theoretical: return "理論値の積み上げ"
+        case .theoretical: return "期待値の積み上げ"
         case .firstHitAvg: return "初当たりまでの平均投資"
         case .last7Streak: return "直近7実戦の星取り"
         case .miniTrend: return "累積収支ミニチャート"
         case .affinityTop3: return "相性の良い台 Top3"
-        case .rotationTop3: return "主力機種の回転率（基準値差）"
+        case .rotationTop3: return "主力機種の回転率（ボーダー差）"
         }
     }
 }

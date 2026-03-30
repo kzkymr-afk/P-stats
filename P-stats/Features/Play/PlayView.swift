@@ -958,10 +958,10 @@ struct PlayView: View {
                 infoStatPanel(strokeTint: a) {
                     HStack {
                         HStack(spacing: 4) {
-                            Text("理論値")
+                            Text("期待値")
                                 .font(AppTypography.sectionSubheading)
                                 .foregroundColor(a.opacity(0.85))
-                            InfoIconView(explanation: "実質回転率÷実戦基準値。1.0で基準、1.0超で理論値プラス。", tint: a.opacity(0.6))
+                            InfoIconView(explanation: "実質回転率÷実戦ボーダー。1.0で基準、1.0超で期待値プラス。", tint: a.opacity(0.6))
                         }
                         Spacer()
                         Text(log.dynamicBorder > 0 && log.effectiveUnitsForBorder > 0 ? String(format: "%.2f%%", log.expectationRatio * 100) : "—")
@@ -1492,7 +1492,7 @@ struct PlayView: View {
                 }
             }
         }
-        // 理論期待値計算用：実質投資が0の場合は現金＋持ち玉円換算で補正（記録漏れ対策）
+        // 期待値計算用：実質投資が0の場合は現金＋持ち玉円換算で補正（記録漏れ対策）
         let realCost = log.totalRealCost > 0
             ? log.totalRealCost
             : Double(log.totalInput) + Double(log.holdingsInvestedBalls) * log.selectedShop.payoutCoefficient

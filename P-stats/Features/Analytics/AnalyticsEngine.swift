@@ -94,7 +94,7 @@ private func specificDayLabelSortOrder(_ label: String) -> Int {
 enum CrossAnalysisSortAxis: String, CaseIterable, Identifiable {
     case sessionsDesc = "実戦件数"
     case rotationDesc = "回転率"
-    case borderDiffDesc = "基準値差"
+    case borderDiffDesc = "ボーダー差"
     case profitAbsDesc = "実成績（変動）"
     case profitDesc = "実成績（プラス优先）"
 
@@ -105,7 +105,7 @@ enum CrossAnalysisSortAxis: String, CaseIterable, Identifiable {
         switch self {
         case .sessionsDesc: return "実戦件数（多い順）"
         case .rotationDesc: return "回転率（高い順）"
-        case .borderDiffDesc: return "基準値差（高い順・未設定は後ろ）"
+        case .borderDiffDesc: return "ボーダー差（高い順・未設定は後ろ）"
         case .profitAbsDesc: return "実成績（絶対値が大きい順）"
         case .profitDesc: return "実成績（プラスが上）"
         }
@@ -159,12 +159,12 @@ struct AnalyticsGroup: Identifiable {
     let label: String
     let sessionCount: Int
     let avgRotationRate: Double       // 平均実戦回転率（回転/1000円）
-    let totalTheoreticalProfit: Int   // 合計理論期待値（円）
+    let totalTheoreticalProfit: Int   // 合計期待値（円）
     let totalProfit: Int              // 合計実収支（円）
-    let totalDeficitSurplus: Int      // 合計欠損・余剰（円）= 実収支 - 理論
+    let totalDeficitSurplus: Int      // 合計欠損・余剰（円）= 実収支 - 期待値
     /// 総投資（円・実質投資の合計）。店舗分析のグラデーション色に使用
     let totalInvestment: Int
-    /// 欠損・余剰率（理論期待値に対する。0で一致、正で上振れ）
+    /// 欠損・余剰率（期待値に対する。0で一致、正で上振れ）
     var deficitSurplusRate: Double {
         guard totalTheoreticalProfit != 0 else { return 0 }
         return Double(totalDeficitSurplus) / Double(abs(totalTheoreticalProfit))
@@ -489,7 +489,7 @@ enum AnalyticsEngine {
         )
     }
 
-    /// 月別累計（収支トレンドグラフ用）。月キー昇順で、各月までの累計実収支・累計理論期待値を返す
+    /// 月別累計（収支トレンドグラフ用）。月キー昇順で、各月までの累計実収支・累計期待値を返す
     static func monthlyCumulativeTrend(_ sessions: [GameSession]) -> [(month: String, cumulativeProfit: Int, cumulativeTheoretical: Int)] {
         let byMonth = Dictionary(grouping: sessions) { monthKey(from: $0.date) }
         let sortedKeys = byMonth.keys.sorted()

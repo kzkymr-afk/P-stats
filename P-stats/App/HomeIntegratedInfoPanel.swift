@@ -13,10 +13,10 @@ extension EarningsPeriod {
 
     var homeTheoreticalTitle: String {
         switch self {
-        case .month: return "今月の理論値の積み上げ"
-        case .year: return "今年の理論値の積み上げ"
-        case .week: return "今週の理論値の積み上げ"
-        case .day: return "今日の理論値の積み上げ"
+        case .month: return "今月の期待値の積み上げ"
+        case .year: return "今年の期待値の積み上げ"
+        case .week: return "今週の期待値の積み上げ"
+        case .day: return "今日の期待値の積み上げ"
         }
     }
 
@@ -121,7 +121,7 @@ struct HomeIntegratedInfoPanel: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - ② 理論値積み上げ
+    // MARK: - ② 期待値積み上げ
 
     private var theoreticalBlock: some View {
         Button(action: cyclePeriod) {
@@ -134,7 +134,7 @@ struct HomeIntegratedInfoPanel: View {
                     .font(.system(size: 17, weight: .bold, design: .rounded).monospacedDigit())
                     .foregroundStyle(t >= 0 ? cyan : lossPink)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text("※理論値＝基準値比に基づく期待損益の合算です。")
+                Text("※期待値＝ボーダー比に基づく期待損益の合算です。")
                     .font(.system(size: 10, weight: .regular, design: .rounded))
                     .foregroundColor(.white.opacity(0.55))
             }
@@ -291,7 +291,7 @@ struct HomeIntegratedInfoPanel: View {
                     }
                 }
             }
-            Text("並び：理論値に対する余剰が大きい順（理論より上振れしている度合いの目安）。")
+            Text("並び：期待値に対する余剰が大きい順（期待値より上振れしている度合いの目安）。")
                 .font(.system(size: 9, weight: .regular, design: .rounded))
                 .foregroundColor(.white.opacity(0.48))
         }
@@ -336,7 +336,7 @@ struct HomeIntegratedInfoPanel: View {
                     }
                 }
             }
-            Text("並び：通常回転数の合計が多い機種順。括弧は公式基準値との差（回/1k）の平均。")
+            Text("並び：通常回転数の合計が多い機種順。括弧は公式ボーダーとの差（回/1k）の平均。")
                 .font(.system(size: 9, weight: .regular, design: .rounded))
                 .foregroundColor(.white.opacity(0.48))
         }

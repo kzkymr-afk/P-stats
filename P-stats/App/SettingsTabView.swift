@@ -247,7 +247,7 @@ struct SettingsTabView: View {
 
                     settingsCard(title: "ホームの情報パネル", icon: "rectangle.on.rectangle.angled") {
                         VStack(alignment: .leading, spacing: 14) {
-                            Text("ホーム上部のガラスパネル表示の並びと出し分けです。広告が表示されているときは「収支」と「理論値の積み上げ」だけがパネルに出ます（バナー枠はパネル内）。広告オフ時はトグルに従い、⑥⑦は直近N日で集計します。")
+                            Text("ホーム上部のガラスパネル表示の並びと出し分けです。広告が表示されているときは「収支」と「期待値の積み上げ」だけがパネルに出ます（バナー枠はパネル内）。広告オフ時はトグルに従い、⑥⑦は直近N日で集計します。")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.68))
                             HStack {

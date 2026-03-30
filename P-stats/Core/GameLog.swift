@@ -568,7 +568,7 @@ final class GameLog {
     /// 公式ボーダー（等価時）の数値。UI表示用
     var formulaBorderValue: Double { formulaBorderAsNumber }
 
-    /// 公式基準値（回転/1000pt）。メーカー公表値（機種マスターまたはユーザー入力の border）に、
+    /// 公式ボーダー（回転/1000pt）。メーカー公表値（機種マスターまたはユーザー入力の border）に、
     /// 店舗の貸玉料金（1000ptあたり玉数）と払出係数（pt/玉）を考慮して算出。
     /// 公式＝等価(4pt/玉・250玉/1000pt)基準。
     /// 実戦＝公式 × (250÷貸玉1000円玉数) × (4÷払出係数)。1000円あたり玉が少ないほど分母が小さくボーダーは上がる（厳しくなる）。
@@ -594,7 +594,7 @@ final class GameLog {
         return 1000.0 / (effective1RNetPerRound * rate)
     }
 
-    /// 実戦基準値用：店舗の貸玉料金を考慮した「単位」数。1単位＝等価1000pt（＝貸玉×2）。投入ptを貸玉料金で換算
+    /// 実戦ボーダー用：店舗の貸玉料金を考慮した「単位」数。1単位＝等価1000pt（＝貸玉×2）。投入ptを貸玉料金で換算
     var effectiveUnitsForBorder: Double {
         let ballsPer1000 = Double(max(1, selectedShop.ballsPerCashUnit * 2))
         let cashUnits = ballsPer1000 > 0 ? Double(totalInput) * ballsPer1000 / 250000.0 : Double(totalInput) / 1000.0
@@ -602,7 +602,7 @@ final class GameLog {
     }
 
     // MARK: - 撃ち玉（T / C / H）・持ち玉比率
-    /// **T**：通常回転のタップから推定した消費玉数（時短・電サポ・右打ち中の回転は含めない。`normalRotations` のみ）。実戦基準値で 250 玉/回換算。
+    /// **T**：通常回転のタップから推定した消費玉数（時短・電サポ・右打ち中の回転は含めない。`normalRotations` のみ）。実戦ボーダーで 250 玉/回換算。
     var tapDerivedBallsConsumed: Int {
         guard dynamicBorder > 0, normalRotations > 0 else { return 0 }
         return Int((Double(normalRotations) * 250.0 / dynamicBorder).rounded())
@@ -625,7 +625,7 @@ final class GameLog {
         return Double(holdingsOriginBallsFromIdentity) / Double(t)
     }
 
-    /// 理論値（実戦基準値比）。実質回転率（1000pt・250玉単位）÷ 実戦基準値。1.0で基準、>1で上回り
+    /// 期待値（実戦ボーダー比）。実質回転率（1000pt・250玉単位）÷ 実戦ボーダー。1.0で基準、>1で上回り
     var expectationRatio: Double {
         if let cached = _cachedExpectationRatio, _lastExpectationStateHash == expectationStateHash {
             return cached
@@ -657,8 +657,8 @@ final class GameLog {
         return hasher.finalize()
     }
 
-    /// 実質回転率（回転/単位）。1単位＝現金1000pt または 持ち玉250玉。店舗の貸玉料金・払出係数は実戦基準値側で参照
-    /// 分子は normalRotations（通常回転のみ・時短・電サポ除く）。公式基準値と同定義。
+    /// 実質回転率（回転/単位）。1単位＝現金1000pt または 持ち玉250玉。店舗の貸玉料金・払出係数は実戦ボーダー側で参照
+    /// 分子は normalRotations（通常回転のみ・時短・電サポ除く）。公式ボーダーと同定義。
     var realRate: Double {
         effectiveUnitsForBorder > 0 ? Double(normalRotations) / effectiveUnitsForBorder : 0.0
     }

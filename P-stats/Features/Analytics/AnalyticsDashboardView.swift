@@ -150,6 +150,47 @@ private extension View {
     }
 }
 
+/// 左端から右へスワイプして戻る（`analyticsNavPath` が空ならホームへ閉じる／単体表示なら `dismiss`）。ドックの「戻る」と同じ動き。
+private struct AnalyticsInteractiveEdgeSwipeBack: ViewModifier {
+    @ObservedObject var model: AnalyticsDashboardSharedModel
+    var onDismissEmbeddedToHome: (() -> Void)?
+    @Environment(\.dismiss) private var dismiss
+
+    func body(content: Content) -> some View {
+        content.simultaneousGesture(
+            DragGesture(minimumDistance: 24, coordinateSpace: .local)
+                .onEnded { value in
+                    let edgeWidth: CGFloat = 26
+                    guard value.startLocation.x <= edgeWidth else { return }
+                    guard value.translation.width >= 72 else { return }
+                    guard value.translation.width > abs(value.translation.height) * 1.08 else { return }
+                    HapticUtil.impact(.light)
+                    if model.analyticsNavPath.isEmpty {
+                        if let onDismissEmbeddedToHome {
+                            onDismissEmbeddedToHome()
+                        } else {
+                            dismiss()
+                        }
+                    } else {
+                        model.analyticsNavPath.removeLast()
+                    }
+                }
+        )
+    }
+}
+
+private extension View {
+    func analyticsInteractiveEdgeSwipeBack(
+        model: AnalyticsDashboardSharedModel,
+        onDismissEmbeddedToHome: (() -> Void)?
+    ) -> some View {
+        modifier(AnalyticsInteractiveEdgeSwipeBack(
+            model: model,
+            onDismissEmbeddedToHome: onDismissEmbeddedToHome
+        ))
+    }
+}
+
 /// データ分析内パネル用スタイル（不透明度を15%上げて背景との重なりで文字が見にくくなるのを軽減）
 private enum AnalyticsPanelStyle {
     static let panelBackground = Color.black.opacity(0.90)
@@ -438,6 +479,7 @@ struct AnalyticsDashboardView: View {
                         .analyticsNavigationBarChrome()
                 }
         }
+        .analyticsInteractiveEdgeSwipeBack(model: model, onDismissEmbeddedToHome: onDismissEmbeddedToHome)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if embedBottomChrome {
                 analyticsBottomChrome
@@ -1189,7 +1231,7 @@ private struct CrossAnalysisPairRowCard: View {
             HStack(spacing: 14) {
                 crossAnalysisMetric(title: "回転率", value: avgRotationPer1k > 0 ? String(format: "%.1f/1k", avgRotationPer1k) : "—")
                 crossAnalysisMetric(
-                    title: "基準値差",
+                    title: "ボーダー差",
                     value: avgDiffFromFormulaBorder.map { String(format: "%+.1f", $0) } ?? "—",
                     valueColor: (avgDiffFromFormulaBorder ?? 0) >= 0 ? cyan : Color.orange
                 )
@@ -1439,14 +1481,13 @@ private struct SpecificDayBarChartSection: View {
     }
 }
 
-// MARK: - 月間／週間 収支トレンド（累計実成績・累計理論期待値。タップで切替）
+// MARK: - 月間／週間 収支トレンド（累計実成績・累計期待値＋差の棒。タップで切替）
 private struct CumulativeProfitTrendSection: View {
     let sessions: [GameSession]
     let cyan: Color
 
     @State private var showsWeekly = false
 
-    /// 累計実成績が累計理論値を下回る区間用（上振れは `cyan`）
     private var underperformRed: Color {
         Color(
             red: DesignTokens.Color.edgeGlowRedR,
@@ -1471,60 +1512,22 @@ private struct CumulativeProfitTrendSection: View {
         showsWeekly ? weeklyRows : monthlyRows
     }
 
-    private struct TrendRow: Identifiable {
+    private struct TrendDiffBar: Identifiable {
         let id: String
-        let axisLabel: String
-        let cumulativeProfit: Int
-        let cumulativeTheoretical: Int
+        let diff: Int
     }
 
-    private struct ProfitTrendSegment: Identifiable {
-        let id: Int
-        /// true: 累計実成績 ≥ 累計理論値（期待上振れ）
-        let isOutperforming: Bool
-        let rows: [TrendRow]
-    }
-
-    /// 上振れ／下振れが切り替わる境界で期間を共有し、折れ線が途切れないようにする
-    private var profitTrendSegments: [ProfitTrendSegment] {
-        guard !trendData.isEmpty else { return [] }
-        var segments: [ProfitTrendSegment] = []
-        var segId = 0
-        var startIdx = 0
-        var currentOut = trendData[0].cumulativeProfit >= trendData[0].cumulativeTheoretical
-        for i in 1..<trendData.count {
-            let d = trendData[i]
-            let out = d.cumulativeProfit >= d.cumulativeTheoretical
-            if out != currentOut {
-                let slice = Array(trendData[startIdx...i])
-                segments.append(ProfitTrendSegment(
-                    id: segId,
-                    isOutperforming: currentOut,
-                    rows: slice.map {
-                        TrendRow(id: $0.periodKey, axisLabel: $0.axisLabel, cumulativeProfit: $0.cumulativeProfit, cumulativeTheoretical: $0.cumulativeTheoretical)
-                    }
-                ))
-                segId += 1
-                startIdx = i
-                currentOut = out
-            }
+    private var trendDiffBars: [TrendDiffBar] {
+        trendData.map {
+            TrendDiffBar(id: $0.periodKey, diff: $0.cumulativeProfit - $0.cumulativeTheoretical)
         }
-        let slice = Array(trendData[startIdx...])
-        segments.append(ProfitTrendSegment(
-            id: segId,
-            isOutperforming: currentOut,
-            rows: slice.map {
-                TrendRow(id: $0.periodKey, axisLabel: $0.axisLabel, cumulativeProfit: $0.cumulativeProfit, cumulativeTheoretical: $0.cumulativeTheoretical)
-            }
-        ))
-        return segments
     }
 
     private static let chartExplanationMonthly =
-        "各月の点は、その月までの累計実成績（●）と累計理論値（□）。累計実成績の折れ線と塗りは、その時点で理論より上なら期待上振れ（シアン系）、下なら期待下振れ（赤系）です。破線は累計理論値の推移です。"
+        "上段の折れ線は、各月末時点の累計実成績（実線・●）と累計期待値（破線・□）です。下段の棒は同じ時点での「累計実成績 − 累計期待値」。棒がゼロより上ならその時点では期待値より上振れ、下なら下振れです。"
 
     private static let chartExplanationWeekly =
-        "各点は、その週の週頭日（カレンダー週の始まり）までの累計実成績（●）と累計理論値（□）。横軸は週のはじまりを「M/d〜」で表します。直近12週分（データがある週）を表示します。色の意味は月間表示と同じです。"
+        "上段は、各週の週頭日までの累計実成績と累計期待値（週の並びはカレンダー週・直近12週）。下段の棒は累計の差（実−期待値）。横軸の週は「M/d〜」表記です。"
 
     private var chartExplanation: String {
         showsWeekly ? Self.chartExplanationWeekly : Self.chartExplanationMonthly
@@ -1587,69 +1590,23 @@ private struct CumulativeProfitTrendSection: View {
                     .accessibilityHint("タップで月間と週間を切り替え")
                     InfoIconView(explanation: chartExplanation, tint: .white.opacity(0.6))
                 }
-                Chart {
-                    ForEach(profitTrendSegments) { seg in
-                        let lineTop = seg.isOutperforming ? cyan : underperformRed
-                        ForEach(seg.rows) { r in
-                            AreaMark(
-                                x: .value("期間", r.id),
-                                y: .value("実成績", r.cumulativeProfit)
-                            )
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [lineTop.opacity(0.42), lineTop.opacity(0.06)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
-                            LineMark(
-                                x: .value("期間", r.id),
-                                y: .value("実成績", r.cumulativeProfit)
-                            )
-                            .foregroundStyle(lineTop)
-                            .lineStyle(StrokeStyle(lineWidth: 2))
-                            .symbol(.circle)
-                        }
-                    }
-                    ForEach(trendData, id: \.periodKey) { d in
-                        LineMark(
-                            x: .value("期間", d.periodKey),
-                            y: .value("理論値", d.cumulativeTheoretical)
-                        )
-                        .foregroundStyle(Color.white.opacity(0.85))
-                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-                        .symbol(.square)
-                    }
+                Text("折れ線は累計の推移。棒はその時点の累計「実成績−期待値」。")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundColor(.white.opacity(0.58))
+                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 10) {
+                    cumulativeTrendLinesChart
+                    cumulativeDiffBarsChart
                 }
-                .chartYAxis {
-                    AxisMarks(position: .leading, values: .automatic(desiredCount: 6)) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.2))
-                        AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(Color.white.opacity(0.7))
-                    }
-                }
-                .chartXAxis {
-                    AxisMarks(values: xAxisPeriodKeys) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.12))
-                        AxisTick(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.35))
-                        AxisValueLabel(centered: true) {
-                            if let s = value.as(String.self) {
-                                Text(axisLabel(for: s))
-                                    .font(.system(size: 9, weight: .medium, design: .rounded))
-                                    .foregroundStyle(Color.white.opacity(0.78))
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.75)
-                            }
-                        }
-                    }
-                }
-                .frame(height: 200)
-                .chartLegend(.hidden)
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 14) {
-                        legendDot(cyan, label: "上振れ（実≥理論）")
-                        legendDot(underperformRed, label: "下振れ（実<理論）")
+                        legendDot(cyan, label: "累計実成績", symbolCircle: true)
+                        legendDot(Color.white.opacity(0.88), label: "累計期待値", dashed: true, symbolSquare: true)
                     }
-                    legendDot(Color.white.opacity(0.85), label: "累計理論値", dashed: true)
+                    HStack(spacing: 14) {
+                        legendDot(cyan, label: "差＋（上振れ）", bar: true)
+                        legendDot(underperformRed, label: "差−（下振れ）", bar: true)
+                    }
                 }
                 .font(.caption)
                 .foregroundColor(.white.opacity(0.8))
@@ -1663,12 +1620,116 @@ private struct CumulativeProfitTrendSection: View {
         }
     }
 
-    private func legendDot(_ color: Color, label: String, dashed: Bool = false) -> some View {
+    private var cumulativeTrendLinesChart: some View {
+        Chart {
+            ForEach(trendData, id: \.periodKey) { d in
+                LineMark(
+                    x: .value("期間", d.periodKey),
+                    y: .value("pt", d.cumulativeProfit)
+                )
+                .interpolationMethod(.monotone)
+                .foregroundStyle(cyan)
+                .lineStyle(StrokeStyle(lineWidth: 2.25))
+                .symbol(.circle)
+                .symbolSize(36)
+            }
+            ForEach(trendData, id: \.periodKey) { d in
+                LineMark(
+                    x: .value("期間", d.periodKey),
+                    y: .value("pt", d.cumulativeTheoretical)
+                )
+                .interpolationMethod(.monotone)
+                .foregroundStyle(Color.white.opacity(0.88))
+                .lineStyle(StrokeStyle(lineWidth: 1.6, dash: [6, 4]))
+                .symbol(.square)
+                .symbolSize(28)
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 6)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.2))
+                AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(Color.white.opacity(0.7))
+            }
+        }
+        .chartXAxis { trendXAxisMarks(showLabels: false) }
+        .frame(height: 168)
+        .chartLegend(.hidden)
+    }
+
+    private var cumulativeDiffBarsChart: some View {
+        Chart {
+            RuleMark(y: .value("同点", 0))
+                .foregroundStyle(Color.white.opacity(0.38))
+                .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+            ForEach(trendDiffBars) { row in
+                BarMark(
+                    x: .value("期間", row.id),
+                    y: .value("差", row.diff),
+                    width: .ratio(0.62)
+                )
+                .foregroundStyle(row.diff >= 0 ? cyan : underperformRed)
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.15))
+                AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(Color.white.opacity(0.65))
+            }
+        }
+        .chartXAxis { trendXAxisMarks(showLabels: true) }
+        .frame(height: 96)
+        .chartLegend(.hidden)
+    }
+
+    @AxisContentBuilder
+    private func trendXAxisMarks(showLabels: Bool) -> some AxisContent {
+        AxisMarks(values: xAxisPeriodKeys) { value in
+            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(showLabels ? 0.12 : 0.07))
+            if showLabels {
+                AxisTick(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.35))
+                AxisValueLabel(centered: true) {
+                    if let s = value.as(String.self) {
+                        Text(axisLabel(for: s))
+                            .font(.system(size: 9, weight: .medium, design: .rounded))
+                            .foregroundStyle(Color.white.opacity(0.78))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+                    }
+                }
+            }
+        }
+    }
+
+    private func legendDot(
+        _ color: Color,
+        label: String,
+        dashed: Bool = false,
+        symbolCircle: Bool = false,
+        symbolSquare: Bool = false,
+        bar: Bool = false
+    ) -> some View {
         HStack(spacing: 6) {
-            if dashed {
-                Rectangle()
-                    .stroke(color, style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
-                    .frame(width: 20, height: 2)
+            if bar {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(color)
+                    .frame(width: 14, height: 8)
+            } else if dashed {
+                HStack(spacing: 2) {
+                    Image(systemName: "square.fill")
+                        .font(.system(size: 6))
+                        .foregroundStyle(color.opacity(0.9))
+                    Rectangle()
+                        .stroke(color, style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
+                        .frame(width: 14, height: 2)
+                }
+            } else if symbolCircle {
+                Image(systemName: "circle.fill")
+                    .font(.system(size: 7))
+                    .foregroundStyle(color)
+            } else if symbolSquare {
+                Image(systemName: "square.fill")
+                    .font(.system(size: 7))
+                    .foregroundStyle(color)
             } else {
                 Circle().fill(color).frame(width: 8, height: 8)
             }
@@ -1892,7 +1953,7 @@ private struct AnalyticsSessionCardView: View {
         guard session.totalRealCost > 0 else { return 0 }
         return (Double(session.normalRotations) / session.totalRealCost) * 1000
     }
-    /// 実戦回転率の表示文字列（公式基準値との差を括弧内に表示）
+    /// 実戦回転率の表示文字列（公式ボーダーとの差を括弧内に表示）
     private var rotationRateDisplay: String {
         if session.excludesFromRotationExpectationAnalytics { return "—（帳簿）" }
         if rotationPer1k <= 0 { return "—" }
@@ -1933,7 +1994,7 @@ private struct AnalyticsSessionCardView: View {
             .foregroundColor(.white.opacity(0.85))
             HStack(alignment: .top, spacing: 16) {
                 miniblock("実戦回転率", value: rotationRateDisplay, valueColor: .white)
-                miniblock("理論値", value: "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)", valueColor: .white.opacity(0.9))
+                miniblock("期待値", value: "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)", valueColor: .white.opacity(0.9))
                 deficitSurplusBlock
             }
             .font(.caption)
@@ -2021,7 +2082,7 @@ private struct AnalyticsSessionDetailView: View {
                         sessionDetailDivider()
                         sessionDetailLabeledRow("回収額（pt換算）", recoveryPt.formattedPtWithUnit)
                         sessionDetailDivider()
-                        sessionDetailLabeledRow("理論値", "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)")
+                        sessionDetailLabeledRow("期待値", "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)")
                         sessionDetailDivider()
                         sessionDetailLabeledRow("欠損・余剰", "\(session.deficitSurplus >= 0 ? "+" : "")\(session.deficitSurplus.formattedPtWithUnit)")
                         sessionDetailDivider()
@@ -2038,7 +2099,7 @@ private struct AnalyticsSessionDetailView: View {
                     }
                     sessionDetailPanel(title: "分析") {
                         sessionDetailLabeledRow(
-                            "理論値比（保存時）",
+                            "期待値比（保存時）",
                             session.expectationRatioAtSave > 0 ? String(format: "%.2f%%", session.expectationRatioAtSave * 100) : "—"
                         )
                         sessionDetailDivider()
@@ -2544,11 +2605,11 @@ struct AnalyticsGroupCard: View {
 
     private var useCompactLayout: Bool { compactListSessions != nil }
 
-    /// 二行目：実戦回転率・回数・公式基準値との差（あれば）
+    /// 二行目：実戦回転率・回数・公式ボーダーとの差（あれば）
     private var secondLineText: String {
         var s = "実戦回転率 \(String(format: "%.1f", group.avgRotationRate))/1kpt · \(group.sessionCount)回"
         if let diff = group.avgDiffFromFormulaBorder {
-            s += " （公式基準値との差: \(String(format: "%+.1f 回/1k", diff))"
+            s += " （公式ボーダーとの差: \(String(format: "%+.1f 回/1k", diff))"
         }
         return s
     }
@@ -2649,7 +2710,7 @@ struct AnalyticsGroupCard: View {
                         .foregroundColor(group.totalProfit >= 0 ? effectiveAccent : effectiveLossColor)
                 }
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("理論")
+                    Text("期待値")
                         .font(AppTypography.sectionSubheading)
                         .foregroundColor(.white.opacity(0.8))
                     Text("\(group.totalTheoreticalProfit >= 0 ? "+" : "")\(group.totalTheoreticalProfit)")
@@ -2667,7 +2728,7 @@ struct AnalyticsGroupCard: View {
                         .foregroundColor(group.totalDeficitSurplus >= 0 ? effectiveAccent : effectiveLossColor)
                 }
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("理論との差")
+                    Text("期待値との差")
                         .font(AppTypography.bodyRounded)
                         .foregroundColor(.white.opacity(0.55))
                     DeficitSurplusBarView(
@@ -2701,20 +2762,20 @@ struct AnalyticsGroupCard: View {
     }
 }
 
-// MARK: - 理論との差（余剰・欠損）をゼロ中心の1本バーで表示
+// MARK: - 期待値との差（余剰・欠損）をゼロ中心の1本バーで表示
 // 代替案メモ:
-// - 旧: 理論・実成績の2本並び → 長さの意味が伝わりにくい
-// - 案A: 共通ゼロ軸で理論・実成績を左右に同じスケールで描く（情報量多め）
-// - 案B: 理論を100%とする達成率バー（理論0や負のときは要工夫）
-// 採用: 差だけ表示＝「理論よりどれだけ出た/損したか」がひと目で分かる
+// - 旧: 期待値・実成績の2本並び → 長さの意味が伝わりにくい
+// - 案A: 共通ゼロ軸で期待値・実成績を左右に同じスケールで描く（情報量多め）
+// - 案B: 期待値を100%とする達成率バー（期待値0や負のときは要工夫）
+// 採用: 差だけ表示＝「期待値よりどれだけ出た/損したか」がひと目で分かる
 struct DeficitSurplusBarView: View {
     let deficitSurplus: Int
     let accent: Color
     var lossColor: Color = Color.orange
-    /// 店舗分析時のみ指定。実成績がマイナスなら右伸びの棒も lossColor に（「理論よりマシだが実成績は赤字」と分かる）
+    /// 店舗分析時のみ指定。実成績がマイナスなら右伸びの棒も lossColor に（「期待値よりマシだが実成績は赤字」と分かる）
     var barColorByActualProfit: Int? = nil
 
-    /// 右方向の棒（理論との差プラス）の色。実成績マイナスならマゼンタ
+    /// 右方向の棒（期待値との差プラス）の色。実成績マイナスならマゼンタ
     private var rightBarColor: Color {
         if let actual = barColorByActualProfit, actual < 0 { return lossColor }
         return accent
@@ -2733,7 +2794,7 @@ struct DeficitSurplusBarView: View {
                     .fill(Color.white.opacity(0.35))
                     .frame(width: 2)
                 if deficitSurplus > 0 {
-                    // 余剰: 中央から右へ（実成績マイナスならマゼンタで「理論よりマシだがまだ赤字」）
+                    // 余剰: 中央から右へ（実成績マイナスならマゼンタで「期待値よりマシだがまだ赤字」）
                     RoundedRectangle(cornerRadius: 3)
                         .fill(rightBarColor.opacity(0.9))
                         .frame(width: max(4, barW), height: 14)

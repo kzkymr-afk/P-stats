@@ -412,12 +412,12 @@ final class GameSession {
     var totalUsedBalls: Int = 0        // 総消費玉数
     var payoutCoefficient: Double = 0.0 // 払出係数（統計シミュレーション用）
     var totalRealCost: Double = 0      // 実質投入（pt換算）
-    var expectationRatioAtSave: Double = 0  // 保存時基準値比
-    var theoreticalValue: Int = 0      // 理論値（pt）
+    var expectationRatioAtSave: Double = 0  // 保存時ボーダー比
+    var theoreticalValue: Int = 0      // 期待値（pt）
     var rushWinCount: Int = 0          // 実戦で入力したRUSH当選回数
     var normalWinCount: Int = 0        // 実戦で入力した通常当選回数
     var ltWinCount: Int = 0            // 実戦で入力したLT（上位RUSH）当選回数
-    /// 保存時の公式基準値（回/1k・等価）。実戦回転率との差表示用
+    /// 保存時の公式ボーダー（回/1k・等価）。実戦回転率との差表示用
     var formulaBorderPer1k: Double = 0
     /// 初当たり時点までの実質投入（pt）。実戦からの保存時のみ埋まる。手入力・旧データは nil
     var firstHitRealCostPt: Double? = nil
@@ -427,7 +427,7 @@ final class GameSession {
     var exchangeCashProceedsPt: Int = 0
     /// この実戦の保存で店舗の貯玉残高に加算した玉数（貯玉精算＝全玉、換金＝端数玉）。
     var chodamaBalanceDeltaBalls: Int = 0
-    /// シンプル入力など「投入・回収のみ」の行。分析では回転率・基準値差・基準値比の平均から除外（実成績・理論値の合計は従来どおり）。
+    /// シンプル入力など「投入・回収のみ」の行。分析では回転率・ボーダー差・ボーダー比の平均から除外（実成績・期待値の合計は従来どおり）。
     var isCashflowOnlyRecord: Bool = false
     /// 詳細編集の「初当たりブロック」JSON（空＝未使用・旧フォーム相当）
     var editSessionPhasesJSON: String = ""
@@ -456,7 +456,7 @@ final class GameSession {
         return recovery - inputCash
     }
 
-    /// 欠損・余剰（成績 − 理論値）。正＝理論より得、負＝理論より損
+    /// 欠損・余剰（成績 − 期待値）。正＝期待値より得、負＝期待値より損
     var deficitSurplus: Int { performance - theoreticalValue }
 }
 
@@ -474,7 +474,7 @@ extension GameSession {
     /// 加重回転率・グループ平均回転率に含める
     var participatesInRotationRateAnalytics: Bool { !excludesFromRotationExpectationAnalytics }
 
-    /// 平均基準値差に含める（回転実績ありのみ）
+    /// 平均ボーダー差に含める（回転実績ありのみ）
     var participatesInFormulaBorderDiffAnalytics: Bool {
         !excludesFromRotationExpectationAnalytics
             && formulaBorderPer1k > 0
@@ -482,7 +482,7 @@ extension GameSession {
             && normalRotations > 0
     }
 
-    /// 保存時基準値比の平均に含める
+    /// 保存時ボーダー比の平均に含める
     var participatesInExpectationRatioAggregate: Bool {
         !excludesFromRotationExpectationAnalytics && expectationRatioAtSave > 0
     }
