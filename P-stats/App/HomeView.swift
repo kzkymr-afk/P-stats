@@ -583,7 +583,7 @@ struct HomeView: View {
                     homeNavigationPath = [.history]
                 } label: {
                     HomeGridButtonLabelSplit(
-                        title: "実践履歴",
+                        title: "実戦履歴",
                         icon: "calendar",
                         width: cellW,
                         height: secondaryHeight

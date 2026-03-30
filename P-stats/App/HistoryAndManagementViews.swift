@@ -708,7 +708,7 @@ struct HistorySessionCard: View {
             .font(.caption)
             .foregroundColor(.white.opacity(0.85))
             HStack(alignment: .top, spacing: 16) {
-                miniblock("実践回転率", value: rotationRateDisplay, valueColor: .white)
+                miniblock("実戦回転率", value: rotationRateDisplay, valueColor: .white)
                 miniblock("理論値", value: "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)", valueColor: .white.opacity(0.9))
                 deficitSurplusBlock
             }

@@ -171,13 +171,13 @@ struct HomeIntegratedInfoPanel: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - ④ 直近7実践
+    // MARK: - ④ 直近7実戦
 
     private var streakBlock: some View {
         let ordered = HomeInsightMetrics.lastUpToSevenSessions(newestFirst: sessions)
             .sorted { $0.date < $1.date }
         return VStack(alignment: .leading, spacing: 8) {
-            Text("直近\(ordered.count)実践の星取り")
+            Text("直近\(ordered.count)実戦の星取り")
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                 .foregroundColor(.white.opacity(0.92))
             HStack(spacing: 4) {
@@ -195,7 +195,7 @@ struct HomeIntegratedInfoPanel: View {
                     .frame(maxWidth: .infinity)
                 }
                 if ordered.isEmpty {
-                    Text("実践データがありません")
+                    Text("実戦データがありません")
                         .font(.system(size: 12, weight: .regular, design: .rounded))
                         .foregroundColor(.white.opacity(0.5))
                 }
@@ -249,7 +249,7 @@ struct HomeIntegratedInfoPanel: View {
                         .foregroundColor(Color.orange.opacity(0.92))
                 }
             } else {
-                Text("2ステップ以上の実践が集まると折れ線が表示されます。")
+                Text("2ステップ以上の実戦が集まると折れ線が表示されます。")
                     .font(.system(size: 11, weight: .regular, design: .rounded))
                     .foregroundColor(.white.opacity(0.55))
                     .frame(height: 40, alignment: .leading)

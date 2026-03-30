@@ -2,6 +2,19 @@ import SwiftUI
 import SwiftData
 import UIKit
 
+private struct PhaseDraft: Identifiable, Equatable {
+    var id: UUID
+    var rotationsUntilFirstHit: String
+    var investmentCashPt: String
+    var investmentHoldingsBalls: String
+    var bigHitCount: String
+    var recoveryHoldingsBalls: String
+
+    static func empty(id: UUID = UUID()) -> PhaseDraft {
+        PhaseDraft(id: id, rotationsUntilFirstHit: "", investmentCashPt: "", investmentHoldingsBalls: "", bigHitCount: "", recoveryHoldingsBalls: "")
+    }
+}
+
 struct GameSessionEditView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -18,12 +31,12 @@ struct GameSessionEditView: View {
     @State private var selectedShop: Shop?
 
     @State private var investmentCash: String = ""
-    /// シンプル入力: 回収額（pt）。詳細入力: 従来どおり回収は「玉」で `totalHoldings` に入れる
+    /// シンプル入力: 回収額（pt）。詳細入力: 最終の総回収出玉
     @State private var recoveryAmountPt: String = ""
-    @State private var holdingsInvestedBalls: String = "0"
     @State private var totalHoldings: String = ""
-    @State private var normalRotations: String = ""
-    @State private var rushWinCount: String = ""
+    /// 詳細のみ。空欄なら各区間の回転合計を総回転として保存
+    @State private var totalRotationsOverride: String = ""
+    @State private var phases: [PhaseDraft] = [PhaseDraft.empty()]
     @State private var normalWinCount: String = ""
     @State private var ltWinCount: String = ""
     @State private var showErrorAlert = false
@@ -50,10 +63,7 @@ struct GameSessionEditView: View {
                 if isSimpleInput {
                     simpleInputRoot
                 } else {
-                    Form {
-                        fullInputSections
-                    }
-                    .environment(\.locale, Locale(identifier: "ja_JP"))
+                    detailEditRoot
                 }
             }
             .navigationTitle(navigationTitleText)
@@ -90,7 +100,18 @@ struct GameSessionEditView: View {
                                 return
                             }
                         } else {
-                            if (Int(investmentCash) ?? 0) < 0 || (Int(holdingsInvestedBalls) ?? 0) < 0 || (Int(totalHoldings) ?? 0) < 0 || (Int(normalRotations) ?? 0) < 0 || (Int(rushWinCount) ?? 0) < 0 || (Int(normalWinCount) ?? 0) < 0 || (Int(ltWinCount) ?? 0) < 0 {
+                            if parsePhasesForSave() == nil {
+                                errorMessage = "セッション内訳の数値を確認してください（負の数・未入力は 0 として扱いますが、ブロックは1つ以上必要です）"
+                                showErrorAlert = true
+                                return
+                            }
+                            if (Int(totalHoldings) ?? 0) < 0 || (Int(normalWinCount) ?? 0) < 0 || (Int(ltWinCount) ?? 0) < 0 {
+                                errorMessage = "負の数は入力できません"
+                                showErrorAlert = true
+                                return
+                            }
+                            let tor = totalRotationsOverride.trimmingCharacters(in: .whitespaces)
+                            if !tor.isEmpty, (Int(tor) ?? -1) < 0 {
                                 errorMessage = "負の数は入力できません"
                                 showErrorAlert = true
                                 return
@@ -106,21 +127,50 @@ struct GameSessionEditView: View {
                 Text(errorMessage)
             }
             .onAppear {
-                guard let s = sessionToEdit, !isSimpleInput else { return }
-                date = s.date
-                selectedMachine = machines.first(where: { $0.name == s.machineName })
-                selectedShop = shops.first(where: { $0.name == s.shopName })
-                investmentCash = "\(s.inputCash)"
-                totalHoldings = "\(s.totalHoldings)"
-                normalRotations = "\(s.normalRotations)"
-                rushWinCount = "\(s.rushWinCount)"
-                normalWinCount = "\(s.normalWinCount)"
-                ltWinCount = "\(s.ltWinCount)"
-                // holdingsInvestedBalls は厳密な復元が難しいが、totalUsedBalls から現金分を引いて近似する
-                let ballsPer1k = selectedShop.map { Double($0.ballsPerCashUnit * 2) } ?? 250.0
-                let cashBalls = Double(s.inputCash) / 1000.0 * ballsPer1k
-                let hBalls = max(0, Int(Double(s.totalUsedBalls) - cashBalls))
-                holdingsInvestedBalls = "\(hBalls)"
+                guard !isSimpleInput else { return }
+                if let s = sessionToEdit {
+                    date = s.date
+                    selectedMachine = machines.first(where: { $0.name == s.machineName })
+                    selectedShop = shops.first(where: { $0.name == s.shopName })
+                    totalHoldings = "\(s.totalHoldings)"
+                    normalWinCount = "\(s.normalWinCount)"
+                    ltWinCount = "\(s.ltWinCount)"
+                    totalRotationsOverride = ""
+                    if !s.editSessionPhasesJSON.isEmpty {
+                        let decoded = GameSessionEditPhasesStorage.decode(s.editSessionPhasesJSON)
+                        phases = decoded.map { p in
+                            PhaseDraft(
+                                id: p.id,
+                                rotationsUntilFirstHit: "\(p.rotationsUntilFirstHit)",
+                                investmentCashPt: "\(p.investmentCashPt)",
+                                investmentHoldingsBalls: "\(p.investmentHoldingsBalls)",
+                                bigHitCount: "\(p.bigHitCount)",
+                                recoveryHoldingsBalls: "\(p.recoveryHoldingsBalls)"
+                            )
+                        }
+                    } else {
+                        let shop = shops.first(where: { $0.name == s.shopName })
+                        let ballsPer1k = shop.map { Double($0.ballsPerCashUnit * 2) } ?? 250.0
+                        let cashBalls = Double(s.inputCash) / 1000.0 * ballsPer1k
+                        let hBalls = max(0, Int(Double(s.totalUsedBalls) - cashBalls))
+                        phases = [
+                            PhaseDraft(
+                                id: UUID(),
+                                rotationsUntilFirstHit: "\(s.normalRotations)",
+                                investmentCashPt: "\(s.inputCash)",
+                                investmentHoldingsBalls: "\(hBalls)",
+                                bigHitCount: "\(s.rushWinCount)",
+                                recoveryHoldingsBalls: "\(s.totalHoldings)"
+                            )
+                        ]
+                    }
+                } else {
+                    phases = [PhaseDraft.empty()]
+                    totalRotationsOverride = ""
+                    totalHoldings = ""
+                    normalWinCount = ""
+                    ltWinCount = ""
+                }
             }
         }
     }
@@ -136,7 +186,7 @@ struct GameSessionEditView: View {
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
-                        simpleInputCardHeader(title: "実践日", systemImage: "calendar") {
+                        simpleInputCardHeader(title: "実戦日", systemImage: "calendar") {
                             Text(JapaneseDateFormatters.yearMonthDay.string(from: date))
                                 .font(AppTypography.bodyRounded)
                                 .foregroundColor(.white.opacity(0.95))
@@ -307,110 +357,265 @@ struct GameSessionEditView: View {
         .id(scrollId)
     }
 
+    private var detailEditRoot: some View {
+        ZStack {
+            StaticHomeBackgroundView()
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    editDetailCard(title: "実戦日", systemImage: "calendar") {
+                        Text(JapaneseDateFormatters.yearMonthDay.string(from: date))
+                            .font(AppTypography.bodyRounded)
+                            .foregroundColor(.white.opacity(0.95))
+                        DatePicker("", selection: $date, displayedComponents: .date)
+                            .datePickerStyle(.graphical)
+                            .labelsHidden()
+                            .tint(cyan)
+                            .colorScheme(.dark)
+                    }
+
+                    editDetailCard(title: "基本情報", systemImage: "dice.fill") {
+                        editDetailPickerRow(label: "機種") {
+                            Picker("", selection: $selectedMachine) {
+                                Text("未選択").tag(Machine?(nil))
+                                ForEach(machines) { m in
+                                    Text(m.name).tag(Machine?(m))
+                                }
+                            }
+                            .labelsHidden()
+                            .tint(cyan)
+                        }
+                        editDetailPickerRow(label: "店舗") {
+                            Picker("", selection: $selectedShop) {
+                                Text("未選択").tag(Shop?(nil))
+                                ForEach(shops) { s in
+                                    Text(s.name).tag(Shop?(s))
+                                }
+                            }
+                            .labelsHidden()
+                            .tint(cyan)
+                        }
+                    }
+
+                    editDetailCard(title: "セッション内訳", systemImage: "square.stack.3d.up.fill") {
+                        Text("各区間＝その初当たりまで。RUSH 当選回数は各区間の「大当たり」を合算して保存します。")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.72))
+                            .fixedSize(horizontal: false, vertical: true)
+                        ForEach($phases) { $phase in
+                            phaseEditorCard(
+                                ordinal: (phases.firstIndex(where: { $0.id == phase.id }) ?? 0) + 1,
+                                phase: $phase
+                            )
+                        }
+                        HStack(spacing: 12) {
+                            Button {
+                                phases.append(PhaseDraft.empty())
+                            } label: {
+                                Label("区間を追加", systemImage: "plus.circle.fill")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundColor(cyan)
+                            }
+                            .buttonStyle(.plain)
+                            Spacer()
+                        }
+                    }
+
+                    editDetailCard(title: "総回転数（保存）", systemImage: "arrow.triangle.2.circlepath") {
+                        Text("空欄なら各区間の回転の合計。保存する総回転と合計が異なるとき、投資（pt・持ち玉）と実質投入は回転比でスケールして誤差を吸収します。")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.72))
+                            .fixedSize(horizontal: false, vertical: true)
+                        editDetailNumberRow(label: "総回転数（通常）", placeholder: "空欄＝区間合計", text: $totalRotationsOverride, maxDigits: 7)
+                    }
+
+                    editDetailCard(title: "最終の総回収出玉", systemImage: "circle.grid.cross.fill") {
+                        Text("セッション全体の回収出玉の確定値を入力します（区間ごとの回収とは別に扱います）。")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.72))
+                            .fixedSize(horizontal: false, vertical: true)
+                        editDetailNumberRow(label: "総回収出玉（玉）", placeholder: "0", text: $totalHoldings, maxDigits: 9)
+                    }
+
+                    editDetailCard(title: "その他の当選", systemImage: "star.fill") {
+                        editDetailNumberRow(label: "通常当選回数", placeholder: "0", text: $normalWinCount, maxDigits: 5)
+                        editDetailNumberRow(label: "LT 当選回数", placeholder: "0", text: $ltWinCount, maxDigits: 5)
+                    }
+
+                    if let rec = sessionToEdit,
+                       !rec.settlementModeRaw.isEmpty || rec.exchangeCashProceedsPt > 0 || rec.chodamaBalanceDeltaBalls > 0 {
+                        editDetailCard(title: "精算（記録・参照のみ）", systemImage: "doc.plaintext") {
+                            settlementReadonlyContent(rec)
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 280)
+            }
+        }
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .preferredColorScheme(.dark)
+        .environment(\.locale, Locale(identifier: "ja_JP"))
+    }
+
+    private func editDetailCard<Content: View>(
+        title: String,
+        systemImage: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 14))
+                    .foregroundColor(cyan)
+                Text(title)
+                    .font(AppTypography.panelHeading)
+                    .foregroundColor(.white.opacity(0.95))
+            }
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(AppGlassStyle.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
+        )
+    }
+
+    private func editDetailPickerRow<Content: View>(label: String, @ViewBuilder trailing: () -> Content) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text(label)
+                .font(AppTypography.sectionSubheading)
+                .foregroundColor(.white.opacity(0.88))
+                .frame(minWidth: 100, alignment: .leading)
+            Spacer(minLength: 8)
+            trailing()
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+    }
+
+    private func editDetailNumberRow(label: String, placeholder: String, text: Binding<String>, maxDigits: Int) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text(label)
+                .font(AppTypography.sectionSubheading)
+                .foregroundColor(.white.opacity(0.88))
+                .frame(minWidth: 148, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            IntegerPadTextField(
+                text: text,
+                placeholder: placeholder,
+                maxDigits: maxDigits,
+                font: .systemFont(ofSize: 18, weight: .semibold),
+                textColor: .white,
+                accentColor: UIColor(cyan),
+                focusTrigger: 0,
+                adjustsFontSizeToFitWidth: true,
+                minimumFontSize: 12,
+                onPreviousField: nil,
+                onNextField: nil
+            )
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .trailing)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func phaseEditorCard(ordinal: Int, phase: Binding<PhaseDraft>) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("\(ordinal) 回目の区間（初当たりまで）")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.white.opacity(0.92))
+                Spacer()
+                if phases.count > 1 {
+                    Button(role: .destructive) {
+                        let pid = phase.wrappedValue.id
+                        guard let idx = phases.firstIndex(where: { $0.id == pid }) else { return }
+                        phases.remove(at: idx)
+                    } label: {
+                        Image(systemName: "minus.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(.orange.opacity(0.95))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            Rectangle()
+                .fill(Color.white.opacity(0.12))
+                .frame(height: 1)
+            editDetailNumberRow(label: "初当たりまでの回転数", placeholder: "0", text: phase.rotationsUntilFirstHit, maxDigits: 7)
+            editDetailNumberRow(label: "初当たりまでの投資（pt）", placeholder: "0", text: phase.investmentCashPt, maxDigits: 9)
+            editDetailNumberRow(label: "初当たりまでの持ち玉投資（玉）", placeholder: "0", text: phase.investmentHoldingsBalls, maxDigits: 8)
+            editDetailNumberRow(label: "この区間の大当たり回数", placeholder: "0", text: phase.bigHitCount, maxDigits: 5)
+            editDetailNumberRow(label: "この区間の回収出玉", placeholder: "0", text: phase.recoveryHoldingsBalls, maxDigits: 9)
+        }
+        .padding(12)
+        .background(Color.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
     @ViewBuilder
-    private var fullInputSections: some View {
-        Section {
-            LabeledContent("実践日") {
-                Text(JapaneseDateFormatters.yearMonthDay.string(from: date))
-                    .foregroundStyle(.primary)
+    private func settlementReadonlyContent(_ rec: GameSession) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let m = SessionSettlementMode(rawValue: rec.settlementModeRaw) {
+                HStack {
+                    Text("区分").foregroundColor(.white.opacity(0.65))
+                    Spacer()
+                    Text(m.displayName).foregroundColor(.white.opacity(0.95))
+                }
+                .font(AppTypography.bodyRounded)
+            } else if !rec.settlementModeRaw.isEmpty {
+                HStack {
+                    Text("区分").foregroundColor(.white.opacity(0.65))
+                    Spacer()
+                    Text(rec.settlementModeRaw).foregroundColor(.white.opacity(0.95))
+                }
+                .font(AppTypography.bodyRounded)
             }
-            DatePicker("", selection: $date, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-        }
-
-        Section("基本情報") {
-            Picker("機種", selection: $selectedMachine) {
-                Text("未選択").tag(Machine?(nil))
-                ForEach(machines) { m in
-                    Text(m.name).tag(Machine?(m))
+            if rec.exchangeCashProceedsPt > 0 {
+                HStack {
+                    Text("換金（500pt刻み）").foregroundColor(.white.opacity(0.65))
+                    Spacer()
+                    Text("\(rec.exchangeCashProceedsPt) pt").foregroundColor(.white.opacity(0.95))
                 }
+                .font(AppTypography.bodyRounded)
             }
-            Picker("店舗", selection: $selectedShop) {
-                Text("未選択").tag(Shop?(nil))
-                ForEach(shops) { s in
-                    Text(s.name).tag(Shop?(s))
+            if rec.chodamaBalanceDeltaBalls > 0 {
+                HStack {
+                    Text("貯玉へ加算").foregroundColor(.white.opacity(0.65))
+                    Spacer()
+                    Text("\(rec.chodamaBalanceDeltaBalls) 玉").foregroundColor(.white.opacity(0.95))
                 }
-            }
-        }
-
-        Section(header: Text("実践データ"), footer: Text("総回転数＝通常回転のみ（時短・電サポ除く）").font(.caption)) {
-            IntegerPadTextField(
-                text: $normalRotations,
-                placeholder: "通常回転数",
-                maxDigits: 7,
-                font: .preferredFont(forTextStyle: .body),
-                textColor: UIColor.label,
-                accentColor: UIColor.systemBlue
-            )
-            IntegerPadTextField(
-                text: $investmentCash,
-                placeholder: "投入 (pt)",
-                maxDigits: 9,
-                font: .preferredFont(forTextStyle: .body),
-                textColor: UIColor.label,
-                accentColor: UIColor.systemBlue
-            )
-            IntegerPadTextField(
-                text: $holdingsInvestedBalls,
-                placeholder: "持ち玉投資 (玉)",
-                maxDigits: 7,
-                font: .preferredFont(forTextStyle: .body),
-                textColor: UIColor.label,
-                accentColor: UIColor.systemBlue
-            )
-            IntegerPadTextField(
-                text: $totalHoldings,
-                placeholder: "回収出玉 (玉)",
-                maxDigits: 8,
-                font: .preferredFont(forTextStyle: .body),
-                textColor: UIColor.label,
-                accentColor: UIColor.systemBlue
-            )
-        }
-
-        Section("当選回数") {
-            IntegerPadTextField(
-                text: $rushWinCount,
-                placeholder: "RUSH回数",
-                maxDigits: 5,
-                font: .preferredFont(forTextStyle: .body),
-                textColor: UIColor.label,
-                accentColor: UIColor.systemBlue
-            )
-            IntegerPadTextField(
-                text: $normalWinCount,
-                placeholder: "通常回数",
-                maxDigits: 5,
-                font: .preferredFont(forTextStyle: .body),
-                textColor: UIColor.label,
-                accentColor: UIColor.systemBlue
-            )
-            IntegerPadTextField(
-                text: $ltWinCount,
-                placeholder: "LT回数",
-                maxDigits: 5,
-                font: .preferredFont(forTextStyle: .body),
-                textColor: UIColor.label,
-                accentColor: UIColor.systemBlue
-            )
-        }
-
-        if let rec = sessionToEdit,
-           !rec.settlementModeRaw.isEmpty || rec.exchangeCashProceedsPt > 0 || rec.chodamaBalanceDeltaBalls > 0 {
-            Section("精算（記録）") {
-                if let m = SessionSettlementMode(rawValue: rec.settlementModeRaw) {
-                    LabeledContent("区分", value: m.displayName)
-                } else if !rec.settlementModeRaw.isEmpty {
-                    LabeledContent("区分", value: rec.settlementModeRaw)
-                }
-                if rec.exchangeCashProceedsPt > 0 {
-                    LabeledContent("換金（500pt刻み）", value: "\(rec.exchangeCashProceedsPt) pt")
-                }
-                if rec.chodamaBalanceDeltaBalls > 0 {
-                    LabeledContent("貯玉へ加算", value: "\(rec.chodamaBalanceDeltaBalls) 玉")
-                }
+                .font(AppTypography.bodyRounded)
             }
         }
+    }
+
+    /// `nil`＝区間が空、または負の数が含まれる
+    private func parsePhasesForSave() -> [GameSessionEditPhaseStored]? {
+        guard !phases.isEmpty else { return nil }
+        var out: [GameSessionEditPhaseStored] = []
+        for pPh in phases {
+            let r = Int(pPh.rotationsUntilFirstHit) ?? 0
+            let c = Int(pPh.investmentCashPt) ?? 0
+            let h = Int(pPh.investmentHoldingsBalls) ?? 0
+            let b = Int(pPh.bigHitCount) ?? 0
+            let rec = Int(pPh.recoveryHoldingsBalls) ?? 0
+            if r < 0 || c < 0 || h < 0 || b < 0 || rec < 0 { return nil }
+            out.append(
+                GameSessionEditPhaseStored(
+                    id: pPh.id,
+                    rotationsUntilFirstHit: r,
+                    investmentCashPt: c,
+                    investmentHoldingsBalls: h,
+                    bigHitCount: b,
+                    recoveryHoldingsBalls: rec
+                )
+            )
+        }
+        return out
     }
 
     private func save() {
@@ -431,22 +636,28 @@ struct GameSessionEditView: View {
             return
         }
 
-        let invCash = Int(investmentCash) ?? 0
-        let holdBalls = Int(holdingsInvestedBalls) ?? 0
-        let tHoldings = Int(totalHoldings) ?? 0
-        let nRotations = Int(normalRotations) ?? 0
-        let rWin = Int(rushWinCount) ?? 0
-        let nWin = Int(normalWinCount) ?? 0
-        let lWin = Int(ltWinCount) ?? 0
-        if invCash < 0 || holdBalls < 0 || tHoldings < 0 || nRotations < 0 || rWin < 0 || nWin < 0 || lWin < 0 {
-            errorMessage = "負の数は入力できません"
+        guard let parsedPhases = parsePhasesForSave() else {
+            errorMessage = "セッション内訳を確認してください"
             showErrorAlert = true
             return
         }
 
-        // 計算ロジック
+        let tHoldings = Int(totalHoldings) ?? 0
+        let nWin = Int(normalWinCount) ?? 0
+        let lWin = Int(ltWinCount) ?? 0
+        let sumR = GameSessionEditPhasesStorage.sumRotations(parsedPhases)
+        let torStr = totalRotationsOverride.trimmingCharacters(in: .whitespaces)
+        let nRotations = torStr.isEmpty ? sumR : (Int(torStr) ?? sumR)
+        let rWin = parsedPhases.reduce(0) { $0 + $1.bigHitCount }
+
+        // 計算ロジック（区間合計を基準に、保存する総回転との差を回転比でスケールして実質投入へ反映）
         let rate = shop.payoutCoefficient
-        let realCost = Double(invCash) + Double(holdBalls) * rate
+        let scale: Double = sumR > 0 ? Double(nRotations) / Double(sumR) : 1.0
+        let sumCash = parsedPhases.reduce(0) { $0 + $1.investmentCashPt }
+        let sumHold = parsedPhases.reduce(0) { $0 + $1.investmentHoldingsBalls }
+        let invCash = Int(round(Double(sumCash) * scale))
+        let holdBalls = Int(round(Double(sumHold) * scale))
+        let realCost = GameSessionEditPhasesStorage.rawTotalRealCost(phases: parsedPhases, payoutPerBall: rate) * scale
         let ballsPer1000 = Double(shop.ballsPerCashUnit * 2)
         let cashUnits = ballsPer1000 > 0 ? Double(invCash) * ballsPer1000 / 250000.0 : Double(invCash) / 1000.0
         let effectiveUnitsForBorder = cashUnits + (ballsPer1000 > 0 ? Double(holdBalls) / ballsPer1000 : Double(holdBalls) / 250.0)
@@ -493,6 +704,7 @@ struct GameSessionEditView: View {
             s.ltWinCount = lWin
             s.formulaBorderPer1k = formula > 0 ? formula : 0
             s.isCashflowOnlyRecord = false
+            s.editSessionPhasesJSON = GameSessionEditPhasesStorage.encode(parsedPhases)
         } else {
             // 新規
             let newSession = GameSession(
@@ -513,6 +725,7 @@ struct GameSessionEditView: View {
             )
             newSession.date = date
             newSession.isCashflowOnlyRecord = false
+            newSession.editSessionPhasesJSON = GameSessionEditPhasesStorage.encode(parsedPhases)
             modelContext.insert(newSession)
         }
         

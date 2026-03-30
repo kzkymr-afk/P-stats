@@ -414,10 +414,10 @@ final class GameSession {
     var totalRealCost: Double = 0      // 実質投入（pt換算）
     var expectationRatioAtSave: Double = 0  // 保存時基準値比
     var theoreticalValue: Int = 0      // 理論値（pt）
-    var rushWinCount: Int = 0          // 実践で入力したRUSH当選回数
-    var normalWinCount: Int = 0        // 実践で入力した通常当選回数
-    var ltWinCount: Int = 0            // 実践で入力したLT（上位RUSH）当選回数
-    /// 保存時の公式基準値（回/1k・等価）。実践回転率との差表示用
+    var rushWinCount: Int = 0          // 実戦で入力したRUSH当選回数
+    var normalWinCount: Int = 0        // 実戦で入力した通常当選回数
+    var ltWinCount: Int = 0            // 実戦で入力したLT（上位RUSH）当選回数
+    /// 保存時の公式基準値（回/1k・等価）。実戦回転率との差表示用
     var formulaBorderPer1k: Double = 0
     /// 初当たり時点までの実質投入（pt）。実戦からの保存時のみ埋まる。手入力・旧データは nil
     var firstHitRealCostPt: Double? = nil
@@ -425,10 +425,12 @@ final class GameSession {
     var settlementModeRaw: String = ""
     /// 「換金」を選んだときの 500pt 刻みの換金額。貯玉のみのときは 0。
     var exchangeCashProceedsPt: Int = 0
-    /// この実践の保存で店舗の貯玉残高に加算した玉数（貯玉精算＝全玉、換金＝端数玉）。
+    /// この実戦の保存で店舗の貯玉残高に加算した玉数（貯玉精算＝全玉、換金＝端数玉）。
     var chodamaBalanceDeltaBalls: Int = 0
     /// シンプル入力など「投入・回収のみ」の行。分析では回転率・基準値差・基準値比の平均から除外（実成績・理論値の合計は従来どおり）。
     var isCashflowOnlyRecord: Bool = false
+    /// 詳細編集の「初当たりブロック」JSON（空＝未使用・旧フォーム相当）
+    var editSessionPhasesJSON: String = ""
 
     init(machineName: String, shopName: String, manufacturerName: String = "", inputCash: Int, totalHoldings: Int, normalRotations: Int, totalUsedBalls: Int, payoutCoefficient: Double, totalRealCost: Double = 0, expectationRatioAtSave: Double = 0, rushWinCount: Int = 0, normalWinCount: Int = 0, ltWinCount: Int = 0, formulaBorderPer1k: Double = 0) {
         self.machineName = machineName
@@ -485,7 +487,7 @@ extension GameSession {
         !excludesFromRotationExpectationAnalytics && expectationRatioAtSave > 0
     }
 
-    /// 通算実践回転率の加重平均の分母（pt）。`totalRealCost` を優先し、0 の旧データは `inputCash`（pt）で代替（実戦保存時の補正と同趣旨）。
+    /// 通算実戦回転率の加重平均の分母（pt）。`totalRealCost` を優先し、0 の旧データは `inputCash`（pt）で代替（実戦保存時の補正と同趣旨）。
     var rotationRateDenominatorPt: Double {
         if totalRealCost > 0 { return totalRealCost }
         return Double(inputCash)

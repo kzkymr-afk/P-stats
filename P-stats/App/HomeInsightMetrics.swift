@@ -105,7 +105,7 @@ enum HomeInsightMetrics {
     struct RotationLeader: Identifiable {
         let id: String
         let name: String
-        /// 実践回転率（回/1k）
+        /// 実戦回転率（回/1k）
         let avgRotationPer1k: Double
         /// 公式基準値との差の平均（回/1k）。nil は比較不可
         let avgDiffFromFormula: Double?
@@ -152,7 +152,7 @@ enum HomeInfoPanelSectionID: Int, CaseIterable {
         case .balance: return "収支・欠損／余剰"
         case .theoretical: return "理論値の積み上げ"
         case .firstHitAvg: return "初当たりまでの平均投資"
-        case .last7Streak: return "直近7実践の星取り"
+        case .last7Streak: return "直近7実戦の星取り"
         case .miniTrend: return "累積収支ミニチャート"
         case .affinityTop3: return "相性の良い台 Top3"
         case .rotationTop3: return "主力機種の回転率（基準値差）"

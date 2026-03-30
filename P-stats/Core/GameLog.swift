@@ -408,7 +408,7 @@ final class GameLog {
         let holdingsBalls = lendingRecords.filter { $0.type == .holdings }.reduce(0) { $0 + ($1.balls ?? holdingsBallsPerTap) }
         return cashBalls + holdingsBalls
     }
-    /// 持ち玉で投資した玉数（実践ボーダー・チャート損益の算出に使用）
+    /// 持ち玉で投資した玉数（実戦ボーダー・チャート損益の算出に使用）
     var holdingsInvestedBalls: Int {
         lendingRecords.filter { $0.type == .holdings }.reduce(0) { $0 + ($1.balls ?? holdingsBallsPerTap) }
     }
@@ -594,7 +594,7 @@ final class GameLog {
         return 1000.0 / (effective1RNetPerRound * rate)
     }
 
-    /// 実践基準値用：店舗の貸玉料金を考慮した「単位」数。1単位＝等価1000pt（＝貸玉×2）。投入ptを貸玉料金で換算
+    /// 実戦基準値用：店舗の貸玉料金を考慮した「単位」数。1単位＝等価1000pt（＝貸玉×2）。投入ptを貸玉料金で換算
     var effectiveUnitsForBorder: Double {
         let ballsPer1000 = Double(max(1, selectedShop.ballsPerCashUnit * 2))
         let cashUnits = ballsPer1000 > 0 ? Double(totalInput) * ballsPer1000 / 250000.0 : Double(totalInput) / 1000.0

@@ -126,7 +126,7 @@ struct ShopManufacturerCrossRow: Identifiable {
     let shop: String
     let manufacturer: String
     let sessionCount: Int
-    /// 実践回転率（回/1k）のセッション平均
+    /// 実戦回転率（回/1k）のセッション平均
     let avgRotationPer1k: Double
     let totalProfit: Int
     let avgDiffFromFormulaBorder: Double?
@@ -158,7 +158,7 @@ struct AnalyticsGroup: Identifiable {
     let id: String
     let label: String
     let sessionCount: Int
-    let avgRotationRate: Double       // 平均実践回転率（回転/1000円）
+    let avgRotationRate: Double       // 平均実戦回転率（回転/1000円）
     let totalTheoreticalProfit: Int   // 合計理論期待値（円）
     let totalProfit: Int              // 合計実収支（円）
     let totalDeficitSurplus: Int      // 合計欠損・余剰（円）= 実収支 - 理論
@@ -171,7 +171,7 @@ struct AnalyticsGroup: Identifiable {
     }
     /// 平均ボーダー比（期待値仕事量の傾向）
     let avgExpectationRatio: Double
-    /// 公式ボーダーとの差の平均（回/千円）。実践回転率 − 公式ボーダー。nil は対象セッションなし
+    /// 公式ボーダーとの差の平均（回/千円）。実戦回転率 − 公式ボーダー。nil は対象セッションなし
     let avgDiffFromFormulaBorder: Double?
     /// 並び順用（月別・年別は日付の新しい順）
     var sortKey: String { id }
@@ -540,5 +540,95 @@ enum AnalyticsEngine {
             guard let list = grouped[raw], !list.isEmpty else { return nil }
             return aggregate(label: label, sessions: list)
         }
+    }
+}
+
+// MARK: - 全般「通算サマリー」（分析ダッシュボード・全般タブ専用）
+
+/// 全般タブ上部の「通算サマリー」カード用。`sessions` は期間フィルタ済み。
+struct AnalyticsOverviewTotalSummary {
+    let sessionCount: Int
+    let totalPerformance: Int
+    let totalInputCash: Int
+    let totalRecoveryPt: Int
+    let winCount: Int
+    let loseCount: Int
+    let winRatePercent: Double?
+    let avgFirstHitProbabilityText: String?
+    let totalTheoretical: Int
+    let totalExpectationDiff: Int
+    let avgRotationPer1k: Double?
+    let avgBorderDiffPer1k: Double?
+    let maxDailyInput: Int
+    let maxDailyRecovery: Int
+    let maxDailyPerformance: Int
+    let avgPerformancePerSession: Double?
+
+    static func compute(sessions: [GameSession], machinesByName: [String: Machine]) -> AnalyticsOverviewTotalSummary {
+        let cal = Calendar.current
+        let sessionCount = sessions.count
+        let totalPerformance = sessions.reduce(0) { $0 + $1.performance }
+        let totalInputCash = sessions.reduce(0) { $0 + $1.inputCash }
+        let totalRecoveryPt = sessions.reduce(0) { $0 + Int(Double($1.totalHoldings) * $1.payoutCoefficient) }
+        let winCount = sessions.filter { $0.performance > 0 }.count
+        let loseCount = sessions.filter { $0.performance < 0 }.count
+        let winRatePercent: Double? = sessionCount > 0 ? Double(winCount) / Double(sessionCount) * 100 : nil
+
+        var denomSum = 0.0
+        var denomCount = 0
+        for s in sessions {
+            let key = s.machineName.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let m = machinesByName[key], m.probabilityDenominator > 0 else { continue }
+            denomSum += m.probabilityDenominator
+            denomCount += 1
+        }
+        let avgFirstHitProbabilityText: String? = denomCount > 0
+            ? String(format: "1/%.1f", denomSum / Double(denomCount))
+            : nil
+
+        let totalTheoretical = sessions.reduce(0) { $0 + $1.theoreticalValue }
+        let totalExpectationDiff = sessions.reduce(0) { $0 + $1.deficitSurplus }
+
+        let rotList = sessions.filter(\.participatesInRotationRateAnalytics)
+        let totalRotations = rotList.reduce(0) { $0 + $1.normalRotations }
+        let totalCost = rotList.reduce(0.0) { $0 + $1.rotationRateDenominatorPt }
+        let avgRotationPer1k: Double? = totalCost > 0 ? Double(totalRotations) / (totalCost / 1000.0) : nil
+
+        let borderList = sessions.filter(\.participatesInFormulaBorderDiffAnalytics)
+        let avgBorderDiffPer1k: Double? = {
+            guard !borderList.isEmpty else { return nil }
+            let sum = borderList.reduce(0.0) { acc, s in
+                let rate = (Double(s.normalRotations) / s.totalRealCost) * 1000.0
+                return acc + (rate - s.formulaBorderPer1k)
+            }
+            return sum / Double(borderList.count)
+        }()
+
+        let byDay = Dictionary(grouping: sessions) { cal.startOfDay(for: $0.date) }
+        let maxDailyInput = byDay.values.map { $0.reduce(0) { $0 + $1.inputCash } }.max() ?? 0
+        let maxDailyRecovery = byDay.values.map { daySessions in
+            daySessions.reduce(0) { $0 + Int(Double($1.totalHoldings) * $1.payoutCoefficient) }
+        }.max() ?? 0
+        let maxDailyPerformance = byDay.values.map { $0.reduce(0) { $0 + $1.performance } }.max() ?? 0
+        let avgPerformancePerSession: Double? = sessionCount > 0 ? Double(totalPerformance) / Double(sessionCount) : nil
+
+        return AnalyticsOverviewTotalSummary(
+            sessionCount: sessionCount,
+            totalPerformance: totalPerformance,
+            totalInputCash: totalInputCash,
+            totalRecoveryPt: totalRecoveryPt,
+            winCount: winCount,
+            loseCount: loseCount,
+            winRatePercent: winRatePercent,
+            avgFirstHitProbabilityText: avgFirstHitProbabilityText,
+            totalTheoretical: totalTheoretical,
+            totalExpectationDiff: totalExpectationDiff,
+            avgRotationPer1k: avgRotationPer1k,
+            avgBorderDiffPer1k: avgBorderDiffPer1k,
+            maxDailyInput: maxDailyInput,
+            maxDailyRecovery: maxDailyRecovery,
+            maxDailyPerformance: maxDailyPerformance,
+            avgPerformancePerSession: avgPerformancePerSession
+        )
     }
 }
