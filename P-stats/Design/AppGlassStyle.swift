@@ -97,17 +97,198 @@ enum AppGlassStyle {
         )
     }
 
-    /// ホーム下部タブバーとデータ分析ドックで共通の寸法・タイポ（見た目を揃える）
+    /// ホーム下部タブバーとデータ分析ドックで共通の寸法・タイポ（参考: Prime Video 系下部ナビ）
     enum MainTabDock {
-        /// タブ行＋上下パディングの合計が低いほどドックが「上に伸びた」ように見えにくい
-        static let tabRowHeight: CGFloat = 40
-        static let paddingTop: CGFloat = 4
-        static let paddingBottom: CGFloat = 4
-        static let iconPointSize: CGFloat = 20
-        static let labelPointSize: CGFloat = 9
-        /// バー高さに対して大きすぎると角の円弧がコンテンツ側へ食い込んで見える
-        static let topCornerRadius: CGFloat = 18
-        static let horizontalInset: CGFloat = 20
-        static let innerHorizontalPadding: CGFloat = 8
+        /// 1 タブ列の最小高（アイコン＋ラベルを縦方向センタリング）
+        static let tabRowHeight: CGFloat = 44
+        /// グレア帯〜タブ行の間（ドック全体を低く見せるため抑えめ）
+        static let paddingTopBelowGlare: CGFloat = 2
+        /// ホームインジケータ上の最小すきま（`safeAreaInsets.bottom` に加算）。Prime 相当で余分な持ち上げを避ける
+        static let paddingBottomInterior: CGFloat = 3
+        static let iconPointSize: CGFloat = 23
+        static let labelPointSize: CGFloat = 10
+        static let tabIconLabelSpacing: CGFloat = 2
+        static let horizontalInset: CGFloat = 0
+        static let innerHorizontalPadding: CGFloat = 10
+        static let inactiveTint = Color(red: 0.6, green: 0.6, blue: 0.6)
+        /// 選択列スポットライト（ドック高さを抑えつつアイコン背後に収める）
+        static let selectedGlowSlotHeight: CGFloat = 56
+        /// Prime 風：純黒ではなくわずかに青みのあるチャコール
+        static let dockBackgroundTop = Color(red: 0.11, green: 0.12, blue: 0.14)
+        static let dockBackgroundBottom = Color(red: 0.035, green: 0.036, blue: 0.042)
+    }
+
+    /// 選択列背面：アイコン直下を最亮にし、下方向と画面奥へフェード（下端への垂れ下がりを抑える）
+    private struct MainTabDockPrimeSelectedGlow: View {
+        var body: some View {
+            ZStack(alignment: .top) {
+                LinearGradient(
+                    stops: [
+                        .init(color: Color.white.opacity(0.36), location: 0),
+                        .init(color: Color.white.opacity(0.14), location: 0.22),
+                        .init(color: Color.white.opacity(0.05), location: 0.42),
+                        .init(color: Color.clear, location: 0.78)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .mask {
+                    EllipticalGradient(
+                        stops: [
+                            .init(color: .white, location: 0),
+                            .init(color: .white.opacity(0.62), location: 0.48),
+                            .init(color: .clear, location: 1)
+                        ],
+                        center: UnitPoint(x: 0.5, y: 0.02),
+                        startRadiusFraction: 0,
+                        endRadiusFraction: 0.98
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .blur(radius: 7)
+            .opacity(0.82)
+            .allowsHitTesting(false)
+        }
+    }
+
+    /// `GeometryReader` 由来の下端セーフエリア（`@Environment(\.safeAreaInsets)` が使えないターゲット向け）
+    private struct MainTabDockSafeBottomKey: PreferenceKey {
+        static var defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+            value = nextValue()
+        }
+    }
+
+    private struct MainTabDockBackground: View {
+        var body: some View {
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        MainTabDock.dockBackgroundTop,
+                        MainTabDock.dockBackgroundBottom
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                LinearGradient(
+                    stops: [
+                        .init(color: Color.white.opacity(0.055), location: 0),
+                        .init(color: Color.clear, location: 0.38)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                LinearGradient(
+                    stops: [
+                        .init(color: Color.clear, location: 0),
+                        .init(color: Color.black.opacity(0.22), location: 1)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+        }
+    }
+
+    /// ドック上縁：非選択時は極細の分離線、選択グレアあり時は上向き光でエッジが照らされたように見せる
+    private struct DockTopEdgeHighlight: View {
+        var isLit: Bool
+
+        var body: some View {
+            ZStack(alignment: .top) {
+                if isLit {
+                    LinearGradient(
+                        stops: [
+                            .init(color: Color.white.opacity(0.2), location: 0),
+                            .init(color: Color.white.opacity(0.05), location: 0.45),
+                            .init(color: Color.clear, location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 6)
+                    .blur(radius: 1.5)
+                    .allowsHitTesting(false)
+                }
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(isLit ? 0.42 : 0.09),
+                                Color.white.opacity(isLit ? 0.18 : 0.04),
+                                Color.white.opacity(isLit ? 0.05 : 0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                    .frame(height: isLit ? 1.5 : 0.85)
+                    .allowsHitTesting(false)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    /// チャコールグラデーション＋上端シアン。選択列はアイコン寄りを照らすスポットライト。
+    struct MainTabDockChrome<Content: View>: View {
+        var selectedTabIndex: Int?
+        var tabCount: Int
+        @ViewBuilder var content: () -> Content
+
+        @State private var safeBottomInset: CGFloat = 0
+
+        var body: some View {
+            let glowH = MainTabDock.selectedGlowSlotHeight
+            let bottomPad = safeBottomInset + MainTabDock.paddingBottomInterior
+            let hasSelectionGlare = selectedTabIndex != nil
+            VStack(spacing: 0) {
+                ZStack(alignment: .bottom) {
+                    MainTabDockBackground()
+
+                    HStack(spacing: 0) {
+                        ForEach(0..<max(tabCount, 1), id: \.self) { i in
+                            Group {
+                                if let s = selectedTabIndex, s == i {
+                                    MainTabDockPrimeSelectedGlow()
+                                } else {
+                                    Color.clear
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: glowH)
+                        }
+                    }
+                    .frame(height: glowH)
+                    .allowsHitTesting(false)
+
+                    VStack(spacing: 0) {
+                        content()
+                            .padding(.horizontal, MainTabDock.innerHorizontalPadding)
+                            .padding(.top, MainTabDock.paddingTopBelowGlare)
+                            .padding(.bottom, bottomPad)
+                    }
+                }
+                .overlay(alignment: .top) {
+                    DockTopEdgeHighlight(isLit: hasSelectionGlare)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
+                .background {
+                    MainTabDockBackground()
+                        .ignoresSafeArea(edges: .bottom)
+                }
+            }
+            .padding(.horizontal, MainTabDock.horizontalInset)
+            .background {
+                GeometryReader { geo in
+                    Color.clear
+                        .preference(key: MainTabDockSafeBottomKey.self, value: geo.safeAreaInsets.bottom)
+                        .allowsHitTesting(false)
+                }
+            }
+            .onPreferenceChange(MainTabDockSafeBottomKey.self) { safeBottomInset = $0 }
+            .ignoresSafeArea(edges: .bottom)
+        }
     }
 }

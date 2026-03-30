@@ -220,6 +220,10 @@ final class Shop {
     var ballsPerCashUnit: Int = 125
     /// 払出係数（1玉あたりのpt換算）。統計シミュレーション用
     var payoutCoefficient: Double = 4.0
+    /// 店が貯玉（カウンター預かり）に対応しているか。実戦終了時の「貯玉」精算や端数の貯玉反映に使用。
+    var supportsChodamaService: Bool = false
+    /// その店の貯玉残高（玉数）。精算のたびに増加、店舗編集で手修正可能。
+    var chodamaBalanceBalls: Int = 0
     /// Google Places API から取得した場所の一意なID（重複登録防止など）
     var placeID: String?
     /// 店舗の住所
@@ -228,7 +232,7 @@ final class Shop {
     var specificDayOfMonthStorage: String = ""
     /// 日の下一桁がこの数字の日を特定日とする（カンマ区切り）。新UI用 specificDayRulesStorage が空のときのみ使用
     var specificLastDigitsStorage: String = ""
-    /// 特定日ルールの追加順（最大4つ）。形式: "M13,L5,L7,L8" → M=毎月N日, L=Nのつく日。空なら旧2フィールドから復元
+    /// 特定日ルールの追加順（最大6つ）。形式: "M13,L5,L7,L8" → M=毎月N日, L=Nのつく日。空なら旧2フィールドから復元
     var specificDayRulesStorage: String = ""
     init(name: String, ballsPerCashUnit: Int, payoutCoefficient: Double, placeID: String? = nil, address: String = "") {
         self.name = name
@@ -356,6 +360,10 @@ struct ResumableState: Codable {
     /// 大当たりモード（通常画面と切り替え）。旧データは nil
     var isBigHitMode: Bool? = nil
     var bigHitChainCount: Int? = nil
+    /// 大当たり突入時に確定した「当選時点の通常回転」。旧データは nil
+    var bigHitSessionNormalRotationsAtWin: Int? = nil
+    /// 当選時点の総回転（ランプ想定）。旧データは nil
+    var bigHitSessionTotalRotationsAtWin: Int? = nil
 }
 
 // --- 3. テーマ定義 (⚠️ここが1回だけであることを確認！) ---
@@ -411,6 +419,16 @@ final class GameSession {
     var ltWinCount: Int = 0            // 実践で入力したLT（上位RUSH）当選回数
     /// 保存時の公式基準値（回/1k・等価）。実践回転率との差表示用
     var formulaBorderPer1k: Double = 0
+    /// 初当たり時点までの実質投入（pt）。実戦からの保存時のみ埋まる。手入力・旧データは nil
+    var firstHitRealCostPt: Double? = nil
+    /// 実戦終了時の精算区分。空＝未記録（アップデート前データ）
+    var settlementModeRaw: String = ""
+    /// 「換金」を選んだときの 500pt 刻みの換金額。貯玉のみのときは 0。
+    var exchangeCashProceedsPt: Int = 0
+    /// この実践の保存で店舗の貯玉残高に加算した玉数（貯玉精算＝全玉、換金＝端数玉）。
+    var chodamaBalanceDeltaBalls: Int = 0
+    /// シンプル入力など「投入・回収のみ」の行。分析では回転率・基準値差・基準値比の平均から除外（実成績・理論値の合計は従来どおり）。
+    var isCashflowOnlyRecord: Bool = false
 
     init(machineName: String, shopName: String, manufacturerName: String = "", inputCash: Int, totalHoldings: Int, normalRotations: Int, totalUsedBalls: Int, payoutCoefficient: Double, totalRealCost: Double = 0, expectationRatioAtSave: Double = 0, rushWinCount: Int = 0, normalWinCount: Int = 0, ltWinCount: Int = 0, formulaBorderPer1k: Double = 0) {
         self.machineName = machineName
@@ -438,5 +456,39 @@ final class GameSession {
 
     /// 欠損・余剰（成績 − 理論値）。正＝理論より得、負＝理論より損
     var deficitSurplus: Int { performance - theoreticalValue }
+}
+
+// MARK: - 分析での母集団（帳簿のみ行の扱い）
+
+extension GameSession {
+    /// 分析の「回転・期待値系」から外す行（フラグ付き、または旧DBでシンプル入力と同型の行）
+    var excludesFromRotationExpectationAnalytics: Bool {
+        if isCashflowOnlyRecord { return true }
+        return normalRotations == 0
+            && expectationRatioAtSave == 1.0
+            && rushWinCount == 0 && normalWinCount == 0 && ltWinCount == 0
+    }
+
+    /// 加重回転率・グループ平均回転率に含める
+    var participatesInRotationRateAnalytics: Bool { !excludesFromRotationExpectationAnalytics }
+
+    /// 平均基準値差に含める（回転実績ありのみ）
+    var participatesInFormulaBorderDiffAnalytics: Bool {
+        !excludesFromRotationExpectationAnalytics
+            && formulaBorderPer1k > 0
+            && totalRealCost > 0
+            && normalRotations > 0
+    }
+
+    /// 保存時基準値比の平均に含める
+    var participatesInExpectationRatioAggregate: Bool {
+        !excludesFromRotationExpectationAnalytics && expectationRatioAtSave > 0
+    }
+
+    /// 通算実践回転率の加重平均の分母（pt）。`totalRealCost` を優先し、0 の旧データは `inputCash`（pt）で代替（実戦保存時の補正と同趣旨）。
+    var rotationRateDenominatorPt: Double {
+        if totalRealCost > 0 { return totalRealCost }
+        return Double(inputCash)
+    }
 }
 

@@ -1,0 +1,56 @@
+{
+  "identifier" : "PStatsStoreKit01",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21482000",
+      "localizations" : [
+        {
+          "description" : "広告非表示と分析機能のフル利用",
+          "displayName" : "P-stats プレミアム",
+          "locale" : "ja_JP"
+        }
+      ],
+      "name" : "P-stats プレミアム",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "450",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "SUBPREM01",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "アプリ内広告を非表示にし、すべての分析機能を利用できます。",
+              "displayName" : "プレミアム（月額）",
+              "locale" : "ja_JP"
+            }
+          ],
+          "productID" : "jp.kzkymr.p-stats.sub.premium.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Premium Monthly",
+          "subscriptionGroupID" : "21482000",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

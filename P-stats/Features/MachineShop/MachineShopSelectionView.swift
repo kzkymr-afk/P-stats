@@ -339,14 +339,13 @@ struct MachineShopSelectionView: View {
                 .frame(minHeight: 36)
                 .contentShape(Rectangle())
                 .onTapGesture { rotationFieldFocusTrigger += 1 }
-            NumberPadTextField(
+            IntegerPadTextField(
                 text: $initialRotationText,
                 placeholder: "",
                 maxDigits: 4,
                 font: .monospacedSystemFont(ofSize: 16, weight: .semibold),
                 textColor: .white,
                 accentColor: UIColor(accent),
-                doneTitle: "完了",
                 focusTrigger: rotationFieldFocusTrigger,
                 adjustsFontSizeToFitWidth: true,
                 minimumFontSize: 11
@@ -372,14 +371,13 @@ struct MachineShopSelectionView: View {
                 .minimumScaleFactor(0.75)
                 .layoutPriority(1)
             Spacer(minLength: 4)
-            NumberPadTextField(
+            IntegerPadTextField(
                 text: $initialHoldingsText,
                 placeholder: "",
                 maxDigits: 5,
                 font: .monospacedSystemFont(ofSize: 17, weight: .semibold),
                 textColor: .white,
-                accentColor: UIColor(accent),
-                doneTitle: "完了"
+                accentColor: UIColor(accent)
             )
             .frame(width: 88, alignment: .trailing)
             InfoIconView(explanation: "貯玉で始める場合は玉数を入力。未入力・0のときは持ち玉なしで開始。", tint: accent.opacity(0.6))
@@ -817,11 +815,20 @@ struct MyListShopsView: View {
             List {
                 ForEach(sortedShopsForList) { s in
                     HStack(spacing: 12) {
-                        Button(s.name) {
+                        Button {
                             log.selectedShop = s
                             dismiss()
+                        } label: {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(s.name)
+                                    .foregroundColor(.white)
+                                if s.supportsChodamaService || s.chodamaBalanceBalls > 0 {
+                                    Text("貯玉 \(s.chodamaBalanceBalls)玉")
+                                        .font(.caption2)
+                                        .foregroundStyle(.white.opacity(0.72))
+                                }
+                            }
                         }
-                        .foregroundColor(.white)
                         .buttonStyle(.plain)
                         Spacer(minLength: 8)
                         Button {
@@ -943,6 +950,8 @@ struct ShopEditView: View {
     @State private var isSyncingCustomRate = false
     /// 特定日ルール最大4件。追加順に 特定日① 毎月13日, 特定日② 5のつく日 のように表示
     @State private var specificDayEntries: [(type: SpecificDayRuleType, value: String)] = Array(repeating: (.lastDigit, ""), count: 4)
+    @State private var supportsChodamaService = false
+    @State private var chodamaBalanceStr: String = "0"
 
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
@@ -1168,10 +1177,15 @@ struct ShopEditView: View {
                                     .foregroundColor(.white.opacity(0.9))
                                     .fixedSize(horizontal: true, vertical: false)
                                 Spacer()
-                                TextField("125", text: $ballsPerCashUnitStr)
-                                    .keyboardType(.numberPad)
+                                IntegerPadTextField(
+                                    text: $ballsPerCashUnitStr,
+                                    placeholder: "125",
+                                    maxDigits: 4,
+                                    font: .preferredFont(forTextStyle: .body),
+                                    textColor: UIColor.white,
+                                    accentColor: UIColor(accent)
+                                )
                                     .multilineTextAlignment(.trailing)
-                                    .foregroundColor(.white)
                             }
                             HStack(alignment: .center, spacing: 10) {
                                 Text("交換率")
@@ -1193,10 +1207,16 @@ struct ShopEditView: View {
                                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                                     Text("玉/100pt")
                                         .foregroundColor(.white.opacity(0.85))
-                                    TextField("25.0", text: $customBallsPer100YenStr)
-                                        .keyboardType(.decimalPad)
+                                    DecimalPadTextField(
+                                        text: $customBallsPer100YenStr,
+                                        placeholder: "25.0",
+                                        maxIntegerDigits: 4,
+                                        maxFractionDigits: 3,
+                                        font: .preferredFont(forTextStyle: .body),
+                                        textColor: UIColor.white,
+                                        accentColor: UIColor(accent)
+                                    )
                                         .multilineTextAlignment(.trailing)
-                                        .foregroundColor(.white)
                                         .onChange(of: customBallsPer100YenStr) { _, new in
                                             guard !isSyncingCustomRate, !new.isEmpty, let y = customYenPerBallFromBalls else { return }
                                             isSyncingCustomRate = true
@@ -1211,10 +1231,16 @@ struct ShopEditView: View {
                                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                                     Text("pt交換")
                                         .foregroundColor(.white.opacity(0.85))
-                                    TextField("4.00", text: $customYenPerBallStr)
-                                        .keyboardType(.decimalPad)
+                                    DecimalPadTextField(
+                                        text: $customYenPerBallStr,
+                                        placeholder: "4.00",
+                                        maxIntegerDigits: 4,
+                                        maxFractionDigits: 4,
+                                        font: .preferredFont(forTextStyle: .body),
+                                        textColor: UIColor.white,
+                                        accentColor: UIColor(accent)
+                                    )
                                         .multilineTextAlignment(.trailing)
-                                        .foregroundColor(.white)
                                         .onChange(of: customYenPerBallStr) { _, new in
                                             guard !isSyncingCustomRate, !new.isEmpty, let b = customBallsPer100FromYen else { return }
                                             isSyncingCustomRate = true
@@ -1226,6 +1252,24 @@ struct ShopEditView: View {
                                         .foregroundStyle(.secondary)
                                         .lineLimit(1)
                                 }
+                            }
+                        }
+                        shopEditPanel(title: "貯玉", trailing: { InfoIconView(explanation: "貯玉（カウンター預かり）に対応している店だけオンにしてください。オンにすると実戦終了時に「貯玉」精算が選べ、換金時の端数玉を残高へ自動加算できます。残高は手入力で合わせたり、精算のたびに増えます。", tint: .white.opacity(0.7)) }) {
+                            Toggle("貯玉サービスを利用する", isOn: $supportsChodamaService)
+                                .foregroundColor(.white.opacity(0.92))
+                            HStack {
+                                Text("貯玉残高（玉）")
+                                    .foregroundColor(.white.opacity(0.9))
+                                Spacer()
+                                IntegerPadTextField(
+                                    text: $chodamaBalanceStr,
+                                    placeholder: "0",
+                                    maxDigits: 9,
+                                    font: .preferredFont(forTextStyle: .body),
+                                    textColor: UIColor.white,
+                                    accentColor: UIColor(accent)
+                                )
+                                    .multilineTextAlignment(.trailing)
                             }
                         }
                         shopEditPanel(title: "特定日ルール（分析で使用・最大4つ）", trailing: { InfoIconView(explanation: "種類で「毎月N日」か「Nのつく日」を選び、右のN欄に数字を入力。個別店舗分析の「特定日傾向」に追加順で表示されます。", tint: .white.opacity(0.7)) }) {
@@ -1263,17 +1307,22 @@ struct ShopEditView: View {
                                         .labelsHidden()
                                         .tint(accent)
                                         .fixedSize(horizontal: true, vertical: false)
-                                        TextField(specificDayEntries[i].type == .monthDay ? "1〜31" : "0〜9", text: Binding(
-                                            get: { specificDayEntries[i].value },
-                                            set: { newVal in
-                                                var arr = specificDayEntries
-                                                arr[i].value = newVal
-                                                specificDayEntries = arr
-                                            }
-                                        ))
-                                        .keyboardType(.numberPad)
+                                        IntegerPadTextField(
+                                            text: Binding(
+                                                get: { specificDayEntries[i].value },
+                                                set: { newVal in
+                                                    var arr = specificDayEntries
+                                                    arr[i].value = newVal
+                                                    specificDayEntries = arr
+                                                }
+                                            ),
+                                            placeholder: specificDayEntries[i].type == .monthDay ? "1〜31" : "0〜9",
+                                            maxDigits: 2,
+                                            font: .preferredFont(forTextStyle: .body),
+                                            textColor: UIColor.white,
+                                            accentColor: UIColor(accent)
+                                        )
                                         .multilineTextAlignment(.center)
-                                        .foregroundColor(.white)
                                         .frame(width: 48)
                                         if !displayLabel(for: i).isEmpty {
                                             Text(displayLabel(for: i))
@@ -1357,6 +1406,8 @@ struct ShopEditView: View {
                     ballsPerCashUnitStr = "\(s.ballsPerCashUnit)"
                     applyExchangeRateToPreset(s.payoutCoefficient)
                     loadSpecificDayEntries(from: s)
+                    supportsChodamaService = s.supportsChodamaService
+                    chodamaBalanceStr = "\(s.chodamaBalanceBalls)"
                 } else {
                     address = ""
                     placeID = nil
@@ -1364,6 +1415,8 @@ struct ShopEditView: View {
                     applyExchangeRateToPreset(defaultRate)
                     let defaultBalls = Int(UserDefaults.standard.string(forKey: "defaultBallsPerCash") ?? "125") ?? 125
                     ballsPerCashUnitStr = "\(defaultBalls)"
+                    supportsChodamaService = false
+                    chodamaBalanceStr = "0"
                 }
                 isShopBrowserExpanded = false
             }
@@ -1638,6 +1691,7 @@ struct ShopEditView: View {
             }
             .joined(separator: ",")
         
+        let chodamaBal = max(0, Int(chodamaBalanceStr.trimmingCharacters(in: .whitespaces)) ?? 0)
         if let existing = shop {
             existing.name = n
             existing.address = address.trimmingCharacters(in: .whitespaces)
@@ -1645,6 +1699,8 @@ struct ShopEditView: View {
             existing.ballsPerCashUnit = balls
             existing.payoutCoefficient = rate
             existing.specificDayRulesStorage = rulesStorage
+            existing.supportsChodamaService = supportsChodamaService
+            existing.chodamaBalanceBalls = chodamaBal
         } else {
             let newShop = Shop(
                 name: n,
@@ -1654,6 +1710,8 @@ struct ShopEditView: View {
                 address: address.trimmingCharacters(in: .whitespaces)
             )
             newShop.specificDayRulesStorage = rulesStorage
+            newShop.supportsChodamaService = supportsChodamaService
+            newShop.chodamaBalanceBalls = chodamaBal
             modelContext.insert(newShop)
         }
         dismiss()

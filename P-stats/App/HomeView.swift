@@ -30,9 +30,9 @@ enum EarningsPeriod: String, CaseIterable {
 }
 
 // MARK: - ホームから遷移する画面（遅延構築用）
+/// 分析は `NavigationStack` へ push しない（内側スタックとの二重化でパス不整合・ドック消失を起こすため）。`isHomeAnalyticsPresented` でオーバーレイ表示する。
 private enum HomeRoute: String, Hashable {
     case history
-    case analytics
 }
 
 // MARK: - ホーム画面タブ
@@ -40,14 +40,15 @@ enum HomeTab: String, CaseIterable {
     case home = "ホーム"
     case machines = "機種管理"
     case shops = "店舗管理"
-    case settings = "Settings"
+    case settings = "設定"
 
-    var icon: String {
+    /// Prime 風：非選択はアウトライン、選択はフィル
+    func symbolName(isSelected: Bool) -> String {
         switch self {
-        case .home: return "house.fill"
-        case .machines: return "cpu"
-        case .shops: return "mappin.circle"
-        case .settings: return "gearshape"
+        case .home: return isSelected ? "house.fill" : "house"
+        case .machines: return isSelected ? "cpu.fill" : "cpu"
+        case .shops: return isSelected ? "mappin.circle.fill" : "mappin.circle"
+        case .settings: return isSelected ? "gearshape.fill" : "gearshape"
         }
     }
 }
@@ -68,17 +69,39 @@ struct HomeView: View {
     @Query(sort: \Machine.name) private var machines: [Machine]
     @Query(sort: \Shop.name) private var shops: [Shop]
     @State private var selectedTab: HomeTab = .home
+    @StateObject private var homeAnalyticsModel = AnalyticsDashboardSharedModel()
     /// 実戦中にドロワーから設定へ来たとき「実戦に戻る」を出す
     @State private var showReturnToPlayFromSettings = false
     @State private var homeNavigationPath: [HomeRoute] = []
+    /// データ分析をホーム上にフルスクリーンオーバーレイ（単一 `NavigationStack` は履歴専用）
+    @State private var isHomeAnalyticsPresented = false
     @State private var appeared = false
     @State private var orbPhase: CGFloat = 0
     @State private var geoAngle: Double = 0
-    @State private var earningsPeriod: EarningsPeriod = .month
-    @State private var borderDiffPeriod: EarningsPeriod = .month
+    /// ホーム統合パネル①〜③の共通期間（タップでローテーション）
+    @State private var statsPeriod: EarningsPeriod = .month
     @State private var loadedBackgroundImage: UIImage?
 
+    @AppStorage("homeInfoPanelOrder") private var homeInfoPanelOrderRaw = HomeInfoPanelSettings.defaultOrderCSV
+    @AppStorage("homeInfoPanelHidden") private var homeInfoPanelHiddenRaw = ""
+    @AppStorage("homeStatsLookbackDays") private var homeStatsLookbackDays = 30
+
+    @ObservedObject private var entitlements = EntitlementsStore.shared
+    @ObservedObject private var adVisibility = AdVisibilityManager.shared
+
     @Query(sort: \GameSession.date, order: .reverse) private var allSessions: [GameSession]
+
+    private var homeInfoPanelOrderParsed: [Int] {
+        HomeInfoPanelSettings.normalizedOrder(from: homeInfoPanelOrderRaw)
+    }
+
+    private var homeInfoPanelHiddenParsed: Set<Int> {
+        HomeInfoPanelSettings.hiddenSet(from: homeInfoPanelHiddenRaw)
+    }
+
+    private var homeLookbackClamped: Int {
+        min(365, max(7, homeStatsLookbackDays))
+    }
 
     /// 通常モードでのバッテリー節約：アニメーションはホームタブ・フォアグラウンド・低電力でない時のみ
     private var shouldRunBackgroundAnimation: Bool {
@@ -98,118 +121,202 @@ struct HomeView: View {
         return Swift.max(minimum, value)
     }
 
-    private var periodProfit: Int {
-        let cal = Calendar.current
-        return allSessions
-            .filter { cal.isDate($0.date, equalTo: Date(), toGranularity: earningsPeriod.calendarComponent) }
-            .reduce(0) { $0 + $1.performance }
-    }
+    /// ホーム「パネル下端〜広告上端＝ボタン帯」を **一続きの式** で決める。
+    /// - Note: 親は `VStack { メイン領域 ; 広告＋ドック }` とし、`GeometryReader` には **広告上端より上の残り高さだけ**が提案される（`NavigationStack`＋`safeAreaInset` の組み合わせでは提案がフル画面になりボタンが広告裏に回り込むことがあったため）。
+    private struct HomeMainColumnLayout {
+        let width: CGFloat
+        /// `GeometryReader` が受け取る高さ（広告・ドックの上からナビ／画面上端まで）
+        let heightAboveAdTop: CGFloat
+        let contentPad: CGFloat
+        let topPad: CGFloat
+        /// ボタン列の下と広告上端のあいだの余白（メイン列の内側の下端パディング）
+        let bottomVisualGap: CGFloat
+        let verticalSpacing: CGFloat
+        let actionGridSpacing: CGFloat
+        let innerW: CGFloat
+        let columnW: CGFloat
+        let cellW: CGFloat
+        let cardPad: CGFloat
+        /// パネル＋ボタン列を置く縦幅（上下パディングを除いたメイン列の確定高）
+        let contentBodyH: CGFloat
+        let panelSlotH: CGFloat
+        let buttonColumnH: CGFloat
+        let rowUnit: CGFloat
 
-    private var periodDeficitSurplus: Int {
-        let cal = Calendar.current
-        return allSessions
-            .filter { cal.isDate($0.date, equalTo: Date(), toGranularity: earningsPeriod.calendarComponent) }
-            .reduce(0) { $0 + $1.deficitSurplus }
-    }
-
-    /// 期間内の公式基準値との差の平均（回/1k）。実質回転率 − 公式基準値。nil は対象なし
-    private var periodBorderDiff: Double? {
-        let cal = Calendar.current
-        let list = allSessions
-            .filter { cal.isDate($0.date, equalTo: Date(), toGranularity: borderDiffPeriod.calendarComponent) }
-            .filter { $0.formulaBorderPer1k > 0 && $0.totalRealCost > 0 }
-        guard !list.isEmpty else { return nil }
-        let sumDiff = list.reduce(0.0) { acc, s in
-            let rate = (Double(s.normalRotations) / s.totalRealCost) * 1000.0
-            return acc + (rate - s.formulaBorderPer1k)
+        /// ルート `safeAreaInset` に載せている下端クロームと同じ積算（自己文書化・将来の寸法変更時に `AdaptiveBannerSlot` / `MainTabDockChrome` と数を揃える）
+        static func bottomChromeHeightForInset(width: CGFloat, showBanner: Bool, safeAreaBottomForHomeIndicator: CGFloat) -> CGFloat {
+            let bannerH = showBanner ? AdaptiveBannerLayout.slotHeight(forWidth: width) : 0
+            let dockH = max(
+                AppGlassStyle.MainTabDock.selectedGlowSlotHeight,
+                AppGlassStyle.MainTabDock.paddingTopBelowGlare
+                    + AppGlassStyle.MainTabDock.tabRowHeight
+                    + safeAreaBottomForHomeIndicator
+                    + AppGlassStyle.MainTabDock.paddingBottomInterior
+            )
+            return bannerH + dockH
         }
-        return sumDiff / Double(list.count)
-    }
 
-    /// ホーム下ドックを表示するか（分析プッシュ時のみ非表示）
-    private var showsHomeDock: Bool {
-        selectedTab != .home || homeNavigationPath != [.analytics]
+        static func make(
+            geo: GeometryProxy,
+            hasBanner: Bool,
+            contentHorizontalPadding: (CGFloat) -> CGFloat,
+            panelSlotHeight: (CGFloat, Bool) -> CGFloat
+        ) -> HomeMainColumnLayout {
+            let w = geo.size.width
+            let hRaw = geo.size.height
+            let h = max(1, hRaw.isFinite ? hRaw : 1)
+            let contentPad = contentHorizontalPadding(w)
+            let verticalSpacing = min(22, max(10, h * 0.018))
+            let actionGridSpacing = min(10, max(5, w * 0.026))
+            let innerW = HomeView.clampLayoutDimension(w - contentPad * 2)
+            let topPad = max(10, min(24, h * 0.02))
+            let cardPad = min(20, max(12, w * 0.036))
+            let bottomVisualGap = max(8, verticalSpacing * 0.55)
+            let columnW = (innerW - actionGridSpacing) / 2
+            let cellW = max(52, columnW)
+            let contentBodyH = max(1, h - topPad - bottomVisualGap)
+            let minReserveForButtons: CGFloat = 148
+            let panelCap = panelSlotHeight(contentBodyH, hasBanner)
+            let panelSlotH = min(
+                panelCap,
+                max(96, contentBodyH - verticalSpacing - minReserveForButtons)
+            )
+            let buttonColumnH = max(0, contentBodyH - panelSlotH - verticalSpacing)
+            let spacingTotal = actionGridSpacing * 2
+            let rowAlloc = max(0, buttonColumnH - spacingTotal)
+            let rowUnit = rowAlloc > 0 ? rowAlloc / 5 : 0
+            return HomeMainColumnLayout(
+                width: w,
+                heightAboveAdTop: h,
+                contentPad: contentPad,
+                topPad: topPad,
+                bottomVisualGap: bottomVisualGap,
+                verticalSpacing: verticalSpacing,
+                actionGridSpacing: actionGridSpacing,
+                innerW: innerW,
+                columnW: columnW,
+                cellW: cellW,
+                cardPad: cardPad,
+                contentBodyH: contentBodyH,
+                panelSlotH: panelSlotH,
+                buttonColumnH: buttonColumnH,
+                rowUnit: rowUnit
+            )
+        }
     }
 
     /// 抜本対策：タブ切り替えでビューを破棄しない。4タブ分を常に保持し表示だけ切り替える。
+    /// 下端の広告＋ドックは `safeAreaInset` ではなく **`VStack` 下部に固定**し、上段メインに残り高さだけを渡す（ボタンが広告・ドックの下に回り込まないようにする）。
     var body: some View {
-        ZStack {
-            // ホーム（背景＋コンテンツを同一レイヤーにして背景が確実に表示される）
-            NavigationStack(path: $homeNavigationPath) {
+        VStack(spacing: 0) {
+            ZStack {
+                // ホーム（背景＋コンテンツを同一レイヤーにして背景が確実に表示される）
                 ZStack {
-                    backgroundLayer
-                    mainContent
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .navigationDestination(for: HomeRoute.self) { route in
-                    switch route {
-                    case .history: HistoryListView()
-                    case .analytics: AnalyticsDashboardView()
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .navigationBarHidden(homeNavigationPath.isEmpty)
-            .opacity(selectedTab == .home ? 1 : 0)
-            .allowsHitTesting(selectedTab == .home)
-            .zIndex(selectedTab == .home ? 1 : 0)
-
-            // 機種管理
-            NavigationStack {
-                MachineManagementView()
-                    .navigationTitle(HomeTab.machines.rawValue)
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbarColorScheme(.dark, for: .navigationBar)
-                    .preferredColorScheme(.dark)
-            }
-            .opacity(selectedTab == .machines ? 1 : 0)
-            .allowsHitTesting(selectedTab == .machines)
-            .zIndex(selectedTab == .machines ? 1 : 0)
-
-            // 店舗管理
-            NavigationStack {
-                ShopManagementView()
-                    .navigationTitle(HomeTab.shops.rawValue)
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbarColorScheme(.dark, for: .navigationBar)
-                    .preferredColorScheme(.dark)
-            }
-            .opacity(selectedTab == .shops ? 1 : 0)
-            .allowsHitTesting(selectedTab == .shops)
-            .zIndex(selectedTab == .shops ? 1 : 0)
-
-            // 設定
-            NavigationStack {
-                SettingsTabView(theme: $theme)
-                    .navigationTitle(HomeTab.settings.rawValue)
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbarColorScheme(.dark, for: .navigationBar)
-                    .preferredColorScheme(.dark)
-                    .toolbar {
-                        if showReturnToPlayFromSettings {
-                            ToolbarItem(placement: .confirmationAction) {
-                                Button("実戦に戻る") {
-                                    showReturnToPlayFromSettings = false
-                                    isPlaying = true
-                                }
-                                .fontWeight(.semibold)
-                                .foregroundColor(AppGlassStyle.accent)
+                    NavigationStack(path: $homeNavigationPath) {
+                        ZStack {
+                            backgroundLayer
+                            mainContent
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .navigationDestination(for: HomeRoute.self) { route in
+                            switch route {
+                            case .history: HistoryListView()
                             }
                         }
                     }
+                    if isHomeAnalyticsPresented {
+                        AnalyticsDashboardView(
+                            model: homeAnalyticsModel,
+                            embedBottomChrome: true,
+                            onDismissEmbeddedToHome: { isHomeAnalyticsPresented = false }
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .transition(.opacity)
+                        .zIndex(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .navigationBarHidden(homeNavigationPath.isEmpty)
+                .opacity(selectedTab == .home ? 1 : 0)
+                .allowsHitTesting(selectedTab == .home)
+                .zIndex(selectedTab == .home ? 1 : 0)
+
+                // 機種管理
+                NavigationStack {
+                    MachineManagementView()
+                        .navigationTitle(HomeTab.machines.rawValue)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbarColorScheme(.dark, for: .navigationBar)
+                        .preferredColorScheme(.dark)
+                }
+                .opacity(selectedTab == .machines ? 1 : 0)
+                .allowsHitTesting(selectedTab == .machines)
+                .zIndex(selectedTab == .machines ? 1 : 0)
+
+                // 店舗管理
+                NavigationStack {
+                    ShopManagementView()
+                        .navigationTitle(HomeTab.shops.rawValue)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbarColorScheme(.dark, for: .navigationBar)
+                        .preferredColorScheme(.dark)
+                }
+                .opacity(selectedTab == .shops ? 1 : 0)
+                .allowsHitTesting(selectedTab == .shops)
+                .zIndex(selectedTab == .shops ? 1 : 0)
+
+                // 設定
+                NavigationStack {
+                    SettingsTabView(theme: $theme)
+                        .navigationTitle(HomeTab.settings.rawValue)
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbarColorScheme(.dark, for: .navigationBar)
+                        .preferredColorScheme(.dark)
+                        .toolbar {
+                            if showReturnToPlayFromSettings {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button("実戦に戻る") {
+                                        showReturnToPlayFromSettings = false
+                                        isPlaying = true
+                                    }
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(AppGlassStyle.accent)
+                                }
+                            }
+                        }
+                }
+                .opacity(selectedTab == .settings ? 1 : 0)
+                .allowsHitTesting(selectedTab == .settings)
+                .zIndex(selectedTab == .settings ? 1 : 0)
             }
-            .opacity(selectedTab == .settings ? 1 : 0)
-            .allowsHitTesting(selectedTab == .settings)
-            .zIndex(selectedTab == .settings ? 1 : 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            if !(selectedTab == .home && isHomeAnalyticsPresented) {
+                VStack(spacing: 0) {
+                    if adVisibility.shouldShowBanner {
+                        AdaptiveBannerSlot(adUnitID: AdMobConfig.bannerUnitID)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.black)
+                    }
+                    footerTabBar
+                }
+            }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if showsHomeDock {
-                footerTabBar
+        .onChange(of: homeNavigationPath) { _, newPath in
+            if newPath == [.history] {
+                isHomeAnalyticsPresented = false
+            }
+        }
+        .onChange(of: isHomeAnalyticsPresented) { _, on in
+            if on {
+                homeAnalyticsModel.analyticsNavPath = []
+                homeAnalyticsModel.selectedFilterLabel = nil
             }
         }
         .onChange(of: selectedTab) { _, new in
             if new != .home {
                 homeNavigationPath = []
+                isHomeAnalyticsPresented = false
             }
             if new != .settings {
                 showReturnToPlayFromSettings = false
@@ -240,6 +347,15 @@ struct HomeView: View {
                 isPlaying = false
                 selectedTab = .settings
             })
+        }
+        .onAppear {
+            syncAdPresentationGateForAppOpen()
+        }
+        .onChange(of: isPlaying) { _, _ in
+            syncAdPresentationGateForAppOpen()
+        }
+        .onChange(of: showReturnToPlayFromSettings) { _, _ in
+            syncAdPresentationGateForAppOpen()
         }
         .sheet(isPresented: $showGameSessionEdit) {
             GameSessionEditView()
@@ -356,41 +472,54 @@ struct HomeView: View {
         .allowsHitTesting(false)
     }
 
+    /// 情報パネル用の**固定スロット高**（表示セクションが変わってもレイアウト高はここで一定。溢れはパネル内スクロールのみ。ホーム全体はスクロールしない）。
+    private func homePanelSlotHeight(containerHeight h: CGFloat, hasBanner: Bool) -> CGFloat {
+        if hasBanner {
+            return min(278, max(196, h * 0.26))
+        }
+        return min(400, max(232, h * 0.42))
+    }
+
     private var mainContent: some View {
         GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            let contentPad = contentHorizontalPadding(w)
-            let verticalSpacing = min(22, max(10, h * 0.018))
-            /// グリッド内の行間・列間のみ。成績／基準値差パネル間や、最上段パネル〜新規スタート間は `verticalSpacing` のまま
-            let actionGridSpacing = min(10, max(5, w * 0.026))
-            let innerW = Self.clampLayoutDimension(w - contentPad * 2)
-            let topPad = max(10, min(24, h * 0.02))
-            let cardPad = min(20, max(12, w * 0.036))
-            /// 最下段ボタン〜ドック上端の隙間は、成績〜基準値差パネル間と同じ `verticalSpacing`
-            let gapAboveDock = verticalSpacing
-            /// 成績＋基準値差の2カード分。過小だとグリッドがドックと重なるため実測より大きめ（Dynamic Type・長い数値にも余裕）
-            let estimatedTwoCards: CGFloat = 260
-            /// レイアウト誤差・ボタン影の下方向はみ出し用（ドックとの干渉を防ぐ）
-            let homeGridLayoutSafetyBuffer: CGFloat = 10
-            let gridHeightBudget = max(
-                0,
-                h - topPad - estimatedTwoCards - 2 * verticalSpacing - gapAboveDock - homeGridLayoutSafetyBuffer
+            let hasBanner = adVisibility.shouldShowBanner
+            let m = HomeMainColumnLayout.make(
+                geo: geo,
+                hasBanner: hasBanner,
+                contentHorizontalPadding: contentHorizontalPadding,
+                panelSlotHeight: { homePanelSlotHeight(containerHeight: $0, hasBanner: $1) }
             )
-            VStack(spacing: verticalSpacing) {
-                earningsCard(padding: cardPad)
-                borderDiffCard(padding: cardPad)
-                mainActionsGrid(
-                    innerWidth: innerW,
-                    gridSpacing: actionGridSpacing,
-                    gridHeightBudget: gridHeightBudget
+
+            VStack(spacing: m.verticalSpacing) {
+                ScrollView(showsIndicators: false) {
+                    HomeIntegratedInfoPanel(
+                        sessions: allSessions,
+                        statsPeriod: $statsPeriod,
+                        orderedSectionIDs: homeInfoPanelOrderParsed,
+                        hiddenSectionIDs: homeInfoPanelHiddenParsed,
+                        lookbackDays: homeLookbackClamped,
+                        freeTierWithAds: hasBanner,
+                        cardPadding: m.cardPad
+                    )
+                }
+                .frame(height: m.panelSlotH, alignment: .top)
+
+                mainActionsGridContent(
+                    iw: m.innerW,
+                    gs: m.actionGridSpacing,
+                    cellW: m.cellW,
+                    newStartHeight: m.rowUnit * 3,
+                    secondaryHeight: m.rowUnit * 1,
+                    gridSpacing: m.actionGridSpacing
                 )
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity)
+                .frame(height: m.buttonColumnH, alignment: .top)
             }
-            .padding(.horizontal, contentPad)
-            .padding(.top, topPad)
-            .padding(.bottom, gapAboveDock)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            /// メイン列の縦をここで一回だけ確定し、`maxHeight: .infinity` 由来の二段階レイアウト・下端クリップを防ぐ
+            .frame(height: m.contentBodyH, alignment: .top)
+            .padding(.horizontal, m.contentPad)
+            .padding(.top, m.topPad)
+            .padding(.bottom, m.bottomVisualGap)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // opacity 0 だと起動直後〜アニメ中にタップが効かないケースがあるため、不透明度は維持しオフセットのみ演出する
@@ -398,144 +527,6 @@ struct HomeView: View {
         .onAppear {
             withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) { appeared = true }
         }
-    }
-
-    private func earningsCard(padding cardPad: CGFloat = 16) -> some View {
-        Button {
-            HapticUtil.impact(.light)
-            withAnimation(.easeInOut(duration: 0.2)) {
-                let all = EarningsPeriod.allCases
-                let idx = all.firstIndex(of: earningsPeriod).map { ($0 + 1) % all.count } ?? 0
-                earningsPeriod = all[idx]
-            }
-        } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(earningsPeriod.rawValue)
-                    .font(AppTypography.panelHeading)
-                    .foregroundColor(.white.opacity(0.95))
-                Text("\(periodProfit >= 0 ? "+" : "")\(periodProfit.formattedPtWithUnit)")
-                    .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
-                    .foregroundStyle(periodProfit >= 0 ? cyan : Color(red: 0.95, green: 0.3, blue: 0.5))
-                    .frame(maxWidth: .infinity)
-                HStack {
-                    Spacer(minLength: 0)
-                    Text(periodDeficitSurplus >= 0 ? "余剰 +\(periodDeficitSurplus.formattedPtWithUnit)" : "欠損 \(periodDeficitSurplus.formattedPtWithUnit)")
-                        .font(AppTypography.bodyRounded)
-                        .fontWeight(.semibold)
-                        .monospacedDigit()
-                        .foregroundColor(periodDeficitSurplus >= 0 ? Color(red: 0.3, green: 0.95, blue: 0.5) : Color.orange)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(cardPad)
-            .background(AppGlassStyle.cardBackground, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.38),
-                                Color.white.opacity(0.12),
-                                Color.white.opacity(0.06)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// 公式基準値と実質回転率の差分パネル（成績パネルと同じ大きさ・フォント。タップで期間切替）
-    private func borderDiffCard(padding cardPad: CGFloat = 16) -> some View {
-        Button {
-            HapticUtil.impact(.light)
-            withAnimation(.easeInOut(duration: 0.2)) {
-                let all = EarningsPeriod.allCases
-                let idx = all.firstIndex(of: borderDiffPeriod).map { ($0 + 1) % all.count } ?? 0
-                borderDiffPeriod = all[idx]
-            }
-        } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(borderDiffPeriod.borderDiffTitle)
-                    .font(AppTypography.panelHeading)
-                    .foregroundColor(.white.opacity(0.95))
-                if let diff = periodBorderDiff {
-                    Text(String(format: "%+.1f 回/1k", diff))
-                        .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
-                        .foregroundStyle(diff >= 0 ? cyan : Color(red: 0.95, green: 0.3, blue: 0.5))
-                        .frame(maxWidth: .infinity)
-                } else {
-                    Text("—")
-                        .font(.system(size: 28, weight: .bold, design: .rounded).monospacedDigit())
-                        .foregroundColor(.white.opacity(0.6))
-                        .frame(maxWidth: .infinity)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(cardPad)
-            .background(AppGlassStyle.cardBackground, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.38),
-                                Color.white.opacity(0.12),
-                                Color.white.opacity(0.06)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func mainActionsGrid(
-        innerWidth: CGFloat,
-        gridSpacing: CGFloat,
-        gridHeightBudget: CGFloat
-    ) -> some View {
-        let iw = Self.clampLayoutDimension(innerWidth)
-        let gs = gridSpacing.isFinite ? Swift.max(0, gridSpacing) : 0
-        let columnW = (iw - gs) / 2
-        let cellW = max(52, columnW)
-        /// 行3つ＋行間2つが `gridHeightBudget` に収まる高さ。新規スタート 3/7、続きから行・下段行 各 2/7 で目立たせる
-        let inner = max(0, gridHeightBudget - 2 * gs)
-        var newStart: CGFloat = 60
-        var secondary: CGFloat = 50
-        if inner > 2 {
-            newStart = inner * 3 / 7
-            secondary = inner * 2 / 7
-            let sum = newStart + 2 * secondary
-            if sum > inner, sum > 0 {
-                let s = inner / sum
-                newStart *= s
-                secondary *= s
-            }
-        }
-        /// `inner` が極端に小さいときの既定値が合計を超えないよう、グリッド全体を `gridHeightBudget` に収める
-        let totalGrid = newStart + 2 * secondary + 2 * gs
-        if totalGrid > gridHeightBudget, gridHeightBudget > 0, totalGrid > 0 {
-            let s = gridHeightBudget / totalGrid
-            newStart *= s
-            secondary *= s
-        }
-        return mainActionsGridContent(
-            iw: iw,
-            gs: gs,
-            cellW: cellW,
-            newStartHeight: newStart,
-            secondaryHeight: secondary,
-            gridSpacing: gs
-        )
-        .frame(maxHeight: gridHeightBudget)
-        .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
@@ -619,7 +610,8 @@ struct HomeView: View {
 
                 Button {
                     HapticUtil.impact(.medium)
-                    homeNavigationPath = [.analytics]
+                    homeNavigationPath = []
+                    isHomeAnalyticsPresented = true
                 } label: {
                     HomeGridButtonLabelSplit(
                         title: "データ分析",
@@ -680,57 +672,53 @@ struct HomeView: View {
         }
     }
 
-    /// 下部タブバー。不透明の黒のみ。下端は `ignoresSafeArea(.bottom)` で隙間を埋める。
+    private func syncAdPresentationGateForAppOpen() {
+        AdPresentationGate.shared.setPlaySessionBlockingAppOpen(isPlaying || showReturnToPlayFromSettings)
+    }
+
+    /// 下部タブバー（黒帯・グレー非選択／白選択・選択直上の細ラインのみ）
     private var footerTabBar: some View {
-        HStack(alignment: .center, spacing: 0) {
-            ForEach(HomeTab.allCases, id: \.self) { tab in
-                Button {
-                    HapticUtil.impact(.light)
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        selectedTab = tab
-                        if tab == .home {
-                            homeNavigationPath = []
+        AppGlassStyle.MainTabDockChrome(
+            selectedTabIndex: HomeTab.allCases.firstIndex(of: selectedTab),
+            tabCount: HomeTab.allCases.count
+        ) {
+            HStack(alignment: .center, spacing: 0) {
+                ForEach(HomeTab.allCases, id: \.self) { tab in
+                    let on = selectedTab == tab
+                    Button {
+                        HapticUtil.impact(.light)
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                            selectedTab = tab
+                            if tab == .home {
+                                homeNavigationPath = []
+                                isHomeAnalyticsPresented = false
+                            }
                         }
-                    }
-                } label: {
-                    ZStack {
-                        VStack(spacing: 2) {
-                            Image(systemName: tab.icon)
-                                .font(.system(size: AppGlassStyle.MainTabDock.iconPointSize, weight: .medium))
+                    } label: {
+                        VStack(spacing: AppGlassStyle.MainTabDock.tabIconLabelSpacing) {
+                            Image(systemName: tab.symbolName(isSelected: on))
+                                .font(.system(
+                                    size: AppGlassStyle.MainTabDock.iconPointSize,
+                                    weight: on ? .semibold : .light
+                                ))
                             Text(tab.rawValue)
-                                .font(.system(size: AppGlassStyle.MainTabDock.labelPointSize, weight: .medium, design: .rounded))
+                                .font(.system(
+                                    size: AppGlassStyle.MainTabDock.labelPointSize,
+                                    weight: on ? .semibold : .regular,
+                                    design: .default
+                                ))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
                         }
-                        .foregroundColor(selectedTab == tab ? .white : .white.opacity(0.6))
+                        .foregroundColor(on ? Color.white : AppGlassStyle.MainTabDock.inactiveTint)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: AppGlassStyle.MainTabDock.tabRowHeight, alignment: .center)
+                        .contentShape(Rectangle())
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(maxWidth: .infinity)
         }
-        .frame(height: AppGlassStyle.MainTabDock.tabRowHeight)
-        .padding(.horizontal, AppGlassStyle.MainTabDock.innerHorizontalPadding)
-        .padding(.top, AppGlassStyle.MainTabDock.paddingTop)
-        .padding(.bottom, AppGlassStyle.MainTabDock.paddingBottom)
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, AppGlassStyle.MainTabDock.horizontalInset)
-        // 手前：角丸の黒パネル。奥：同じ黒を下端まで伸ばし、safeAreaInset とホームインジケータの間の隙間を埋める。
-        .background {
-            UnevenRoundedRectangle(
-                topLeadingRadius: AppGlassStyle.MainTabDock.topCornerRadius,
-                bottomLeadingRadius: 0,
-                bottomTrailingRadius: 0,
-                topTrailingRadius: AppGlassStyle.MainTabDock.topCornerRadius,
-                style: .continuous
-            )
-            .fill(Color.black)
-        }
-        .background {
-            Color.black
-                .frame(maxWidth: .infinity)
-                .ignoresSafeArea(edges: .bottom)
-        }
-        /// 縦に余計に伸びて safeAreaInset の占有が増えるのを防ぐ
-        .fixedSize(horizontal: false, vertical: true)
     }
 }

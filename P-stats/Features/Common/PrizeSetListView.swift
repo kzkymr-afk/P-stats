@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import SwiftData
 
 /// ボーナス種類ライブラリの一覧・追加・編集
@@ -102,9 +103,15 @@ struct PrizeSetEditSheet: View {
                 }
                 Section("数値") {
                     LabeledContent("出玉（玉）") {
-                        TextField("1500", text: $balls)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
+                        IntegerPadTextField(
+                            text: $balls,
+                            placeholder: "1500",
+                            maxDigits: 6,
+                            font: .preferredFont(forTextStyle: .body),
+                            textColor: UIColor.label,
+                            accentColor: UIColor.systemBlue
+                        )
+                        .multilineTextAlignment(.trailing)
                     }
                 }
             }
@@ -137,9 +144,15 @@ struct PrizeSetEditSheetExisting: View {
                 }
                 Section("数値") {
                     LabeledContent("出玉（玉）") {
-                        TextField("1500", text: $balls)
-                            .keyboardType(.numberPad)
-                            .multilineTextAlignment(.trailing)
+                        IntegerPadTextField(
+                            text: $balls,
+                            placeholder: "1500",
+                            maxDigits: 6,
+                            font: .preferredFont(forTextStyle: .body),
+                            textColor: UIColor.label,
+                            accentColor: UIColor.systemBlue
+                        )
+                        .multilineTextAlignment(.trailing)
                     }
                 }
             }

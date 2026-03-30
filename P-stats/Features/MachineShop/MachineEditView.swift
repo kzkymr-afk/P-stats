@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 import WebKit
 
 /// プリセット一覧の1件（サーバー取得 / CloudKitユーザー共有 / アプリ内）
@@ -463,14 +464,21 @@ struct MachineEditView: View, Equatable {
                     Text("1／")
                         .font(.subheadline)
                         .foregroundColor(.white.opacity(0.9))
-                    TextField("399.5", text: Binding(
-                        get: {
-                            guard let i = probability.firstIndex(of: "/") else { return probability }
-                            return String(probability[probability.index(after: i)...]).trimmingCharacters(in: .whitespaces)
-                        },
-                        set: { probability = $0.isEmpty ? "" : "1/\($0)" }
-                    ))
-                    .keyboardType(.decimalPad)
+                    DecimalPadTextField(
+                        text: Binding(
+                            get: {
+                                guard let i = probability.firstIndex(of: "/") else { return probability }
+                                return String(probability[probability.index(after: i)...]).trimmingCharacters(in: .whitespaces)
+                            },
+                            set: { probability = $0.isEmpty ? "" : "1/\($0)" }
+                        ),
+                        placeholder: "399.5",
+                        maxIntegerDigits: 6,
+                        maxFractionDigits: 3,
+                        font: .preferredFont(forTextStyle: .body),
+                        textColor: UIColor.white,
+                        accentColor: UIColor(accent)
+                    )
                     .multilineTextAlignment(.trailing)
                     .frame(width: 72)
                     .padding(.vertical, 8)
@@ -514,8 +522,15 @@ struct MachineEditView: View, Equatable {
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.9))
                 Spacer()
-                TextField("16.5", text: $border)
-                    .keyboardType(.decimalPad)
+                DecimalPadTextField(
+                    text: $border,
+                    placeholder: "16.5",
+                    maxIntegerDigits: 3,
+                    maxFractionDigits: 2,
+                    font: .preferredFont(forTextStyle: .body),
+                    textColor: UIColor.white,
+                    accentColor: UIColor(accent)
+                )
                     .multilineTextAlignment(.trailing)
                     .frame(width: 72)
                     .padding(.vertical, 8)

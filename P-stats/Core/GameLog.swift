@@ -31,6 +31,10 @@ final class GameLog {
     var isBigHitMode: Bool = false
     /// 大当たりモード中の連チャン回数（表示用。確定は「通常へ」で入力）
     var bigHitChainCount: Int = 0
+    /// 突入シートで確定した当選時点の通常回転（確定当たりレコードの横軸に使用）
+    var bigHitSessionNormalRotationsAtWin: Int? = nil
+    /// 突入シートで確定した当選時点の総回転（ランプ）
+    var bigHitSessionTotalRotationsAtWin: Int? = nil
 
     var winRecords: [WinRecord] = []
     var lendingRecords: [LendingRecord] = []
@@ -221,7 +225,7 @@ final class GameLog {
 
     // MARK: - 大当たりモード（時短・RUSH・ST とは別系統。連チャン回数のみ→「通常へ」で回数と総出玉を確定）
 
-    /// 通常画面から大当たりモードへ。回転・投資の蓄積は維持する。
+    /// 通常画面から大当たりモードへ。回転・投資は `applyBigHitEntryAtWin` で揃えた後に呼ぶ。
     func enterBigHitMode() {
         isBigHitMode = true
         bigHitChainCount = 1
@@ -231,6 +235,67 @@ final class GameLog {
         remainingSupportCount = 0
         supportPhaseInitialCount = 0
         isTimeShortMode = false
+    }
+
+    /// 大当たり突入時：当選時点の回転・投入を揃えてから大当たりモード開始。持ち玉は「投資玉数」と「残り玉数」のどちらか一方のみ指定。
+    func applyBigHitEntryAtWin(normalRotationsAtWin: Int, cashPt: Int, holdingsInvestedBalls: Int?, remainingHoldingsBalls: Int?) {
+        let cashUnits = max(0, cashPt / 500)
+        reconcileCashLendingCount(toUnits: cashUnits)
+        if let invested = holdingsInvestedBalls {
+            reconcileHoldingsInvestedTotal(to: max(0, invested))
+        } else if let rem = remainingHoldingsBalls {
+            applyInitialHoldingsForRemainingAtWin(max(0, rem))
+        }
+        let n = max(0, normalRotationsAtWin)
+        normalRotations = n
+        totalRotations = max(totalRotations, n)
+        bigHitSessionNormalRotationsAtWin = n
+        bigHitSessionTotalRotationsAtWin = totalRotations
+        enterBigHitMode()
+    }
+
+    private func reconcileCashLendingCount(toUnits target: Int) {
+        let current = lendingRecords.filter { $0.type == .cash }.count
+        if current > target {
+            var remove = current - target
+            for i in lendingRecords.indices.reversed() {
+                guard lendingRecords[i].type == .cash else { continue }
+                lendingRecords.remove(at: i)
+                remove -= 1
+                if remove == 0 { break }
+            }
+        } else if current < target {
+            for _ in 0..<(target - current) {
+                lendingRecords.append(LendingRecord(type: .cash, timestamp: Date()))
+            }
+        }
+    }
+
+    private func reconcileHoldingsInvestedTotal(to targetBalls: Int) {
+        let target = max(0, targetBalls)
+        let sum = holdingsInvestedBalls
+        if sum > target {
+            var needRemove = sum - target
+            for i in lendingRecords.indices.reversed() {
+                guard lendingRecords[i].type == .holdings else { continue }
+                let b = lendingRecords[i].balls ?? holdingsBallsPerTap
+                if b <= needRemove {
+                    needRemove -= b
+                    lendingRecords.remove(at: i)
+                } else {
+                    lendingRecords[i].balls = b - needRemove
+                    needRemove = 0
+                }
+                if needRemove == 0 { break }
+            }
+        } else if sum < target {
+            addHoldingsInvestment(balls: target - sum)
+        }
+    }
+
+    private func applyInitialHoldingsForRemainingAtWin(_ remaining: Int) {
+        let prizeSum = winRecords.reduce(0) { $0 + ($1.prize ?? 0) }
+        initialHoldings = max(0, remaining + holdingsInvestedBalls - prizeSum)
     }
 
     func incrementBigHitChain() {
@@ -245,7 +310,9 @@ final class GameLog {
     func winRecordsForChartDisplay() -> [WinRecord] {
         var r = winRecords
         if isBigHitMode, bigHitChainCount > 0 {
-            var w = WinRecord(type: .normal, prize: nil, rotationAtWin: totalRotations, normalRotationsAtWin: normalRotations)
+            let rotW = bigHitSessionTotalRotationsAtWin ?? totalRotations
+            let normW = bigHitSessionNormalRotationsAtWin ?? normalRotations
+            var w = WinRecord(type: .normal, prize: nil, rotationAtWin: rotW, normalRotationsAtWin: normW)
             w.id = Self.provisionalBigHitChartId
             w.bonusSessionHitCount = bigHitChainCount
             w.timestamp = Date()
@@ -269,13 +336,17 @@ final class GameLog {
         let h = max(1, hitCount)
         let prize = max(0, totalPrizeBalls)
         let support = max(0, electricSupportTurns)
-        var record = WinRecord(type: .normal, prize: prize, rotationAtWin: totalRotations, normalRotationsAtWin: normalRotations)
+        let rotW = bigHitSessionTotalRotationsAtWin ?? totalRotations
+        let normW = bigHitSessionNormalRotationsAtWin ?? normalRotations
+        var record = WinRecord(type: .normal, prize: prize, rotationAtWin: rotW, normalRotationsAtWin: normW)
         record.timestamp = Date()
         record.bonusSessionHitCount = h
         winRecords.append(record)
         pushUndo(.removeWin(id: record.id, before: beforeSnapshot))
         isBigHitMode = false
         bigHitChainCount = 0
+        bigHitSessionNormalRotationsAtWin = nil
+        bigHitSessionTotalRotationsAtWin = nil
         currentModeID = 0
         currentModeUiRole = 0
         isTimeShortMode = false
@@ -295,6 +366,8 @@ final class GameLog {
         guard isBigHitMode else { return }
         isBigHitMode = false
         bigHitChainCount = 0
+        bigHitSessionNormalRotationsAtWin = nil
+        bigHitSessionTotalRotationsAtWin = nil
     }
 
     /// カウントボタン表示用：前回大当たり以降のゲーム数（時短・ST抜けゲーム数含む）。
@@ -344,6 +417,33 @@ final class GameLog {
         let cashCost = Double(lendingRecords.filter { $0.type == .cash }.count * 500)
         let holdingsCost = Double(holdingsInvestedBalls) * selectedShop.payoutCoefficient
         return cashCost + holdingsCost
+    }
+
+    /// 初当たり（時系列で最初の当選）までの実質投入（pt）。当選が無いときは nil。
+    func realCostAtFirstWin() -> Double? {
+        guard !winRecords.isEmpty else { return nil }
+        let sorted = winRecords.enumerated().sorted { a, b in
+            let t0 = a.element.timestamp ?? .distantPast
+            let t1 = b.element.timestamp ?? .distantPast
+            if t0 != t1 { return t0 < t1 }
+            return a.offset < b.offset
+        }
+        guard let first = sorted.first?.element else { return nil }
+        let rate = selectedShop.payoutCoefficient
+        if let cutoff = first.timestamp {
+            var runningCashYen = 0
+            var runningHoldBalls = 0
+            for l in lendingRecords.sorted(by: { $0.timestamp < $1.timestamp }) {
+                if l.timestamp >= cutoff { break }
+                if l.type == .cash { runningCashYen += 500 }
+                else { runningHoldBalls += l.balls ?? holdingsBallsPerTap }
+            }
+            return Double(runningCashYen) + Double(runningHoldBalls) * rate
+        }
+        let n0 = Double(first.normalRotationsAtWin ?? first.rotationAtWin)
+        let nTot = Double(max(normalRotations, 1))
+        let ratio = min(1.0, max(0.0, n0 / nTot))
+        return totalRealCost * ratio
     }
 
     /// 収入（pt）。出玉×払出係数を500pt刻みで端数切り捨て
@@ -826,6 +926,8 @@ final class GameLog {
         adjustedNetPerRound = nil
         isBigHitMode = false
         bigHitChainCount = 0
+        bigHitSessionNormalRotationsAtWin = nil
+        bigHitSessionTotalRotationsAtWin = nil
         winRecords = []
         lendingRecords = []
     }
@@ -853,6 +955,8 @@ final class GameLog {
         lendingRecords = state.lendingRecords
         isBigHitMode = state.isBigHitMode ?? false
         bigHitChainCount = state.bigHitChainCount ?? 0
+        bigHitSessionNormalRotationsAtWin = state.bigHitSessionNormalRotationsAtWin
+        bigHitSessionTotalRotationsAtWin = state.bigHitSessionTotalRotationsAtWin
         restoreUndoStack(from: state.undoStackEntries)
     }
 

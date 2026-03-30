@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 // MARK: - 機種管理（スワイプで編集・削除、並べ替え、右下FABで新規登録）
 private let machineOrderKey = "machineDisplayOrder"
@@ -15,6 +16,11 @@ struct MachineManagementView: View {
     @State private var isReorderMode = false
 
     private var cyan: Color { AppGlassStyle.accent }
+    /// 親 `HomeView` の VStack で広告・ドックぶんは既に除外済み。ここでさらに `safeAreaInset` すると余白が二重になり FAB が上に逃げる。
+    private let fabVerticalPadding: CGFloat = 10
+    private let fabTrailingPadding: CGFloat = 20
+    /// スクロール末尾と FAB のかぶり防止
+    private var listBottomContentMargin: CGFloat { 76 }
 
     /// 実戦履歴ベース：新しい順（未使用の機種は後ろへ）
     private var recencyOrderedMachines: [Machine] {
@@ -56,14 +62,25 @@ struct MachineManagementView: View {
             StaticHomeBackgroundView()
             List {
                 ForEach(machinesForList) { m in
-                    HStack {
-                        Text(m.name)
-                            .foregroundColor(.white)
-                        Spacer()
+                    Button {
+                        guard !isReorderMode else { return }
+                        machineToEdit = m
+                    } label: {
+                        HStack(alignment: .center) {
+                            Text(m.name)
+                                .foregroundColor(.white)
+                            Spacer()
+                            if !isReorderMode {
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundColor(cyan.opacity(0.8))
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .padding(.vertical, 12)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                    .padding(.vertical, 12)
+                    .buttonStyle(.plain)
                     .listRowBackground(AppGlassStyle.rowBackground)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button {
@@ -88,7 +105,7 @@ struct MachineManagementView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .contentMargins(.bottom, 76, for: .scrollContent)
+            .contentMargins(.bottom, listBottomContentMargin, for: .scrollContent)
             .environment(\.editMode, .constant(isReorderMode ? .active : .inactive))
 
             Button {
@@ -102,8 +119,8 @@ struct MachineManagementView: View {
                     .background(cyan, in: Capsule())
             }
             .buttonStyle(.plain)
-            .padding(.trailing, 20)
-            .padding(.bottom, 12)
+            .padding(.trailing, fabTrailingPadding)
+            .padding(.bottom, fabVerticalPadding)
         }
         .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
@@ -122,7 +139,6 @@ struct MachineManagementView: View {
                 .foregroundColor(cyan)
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 84) }
         .sheet(isPresented: Binding(
             get: { machineToEdit != nil },
             set: { if !$0 { machineToEdit = nil } }
@@ -151,6 +167,9 @@ struct ShopManagementView: View {
     @State private var isReorderMode = false
 
     private var cyan: Color { AppGlassStyle.accent }
+    private let fabVerticalPadding: CGFloat = 10
+    private let fabTrailingPadding: CGFloat = 20
+    private var listBottomContentMargin: CGFloat { 76 }
     private var orderedShops: [Shop] {
         let order = shopOrderStr.split(separator: "|").map(String.init)
         return shops.sorted { s1, s2 in
@@ -174,15 +193,18 @@ struct ShopManagementView: View {
                         guard !isReorderMode else { return }
                         shopToEdit = s
                     } label: {
-                        HStack {
-                            Text(s.name)
-                                .foregroundColor(.white)
+                        HStack(alignment: .center) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(s.name)
+                                    .foregroundColor(.white)
+                                if s.supportsChodamaService || s.chodamaBalanceBalls > 0 {
+                                    Text("貯玉　\(s.chodamaBalanceBalls)玉")
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.68))
+                                }
+                            }
                             Spacer()
-                            if isReorderMode {
-                                Image(systemName: "line.3.horizontal")
-                                    .font(.subheadline)
-                                    .foregroundColor(cyan.opacity(0.8))
-                            } else {
+                            if !isReorderMode {
                                 Image(systemName: "chevron.right")
                                     .font(.caption)
                                     .foregroundColor(cyan.opacity(0.8))
@@ -216,7 +238,7 @@ struct ShopManagementView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
-            .contentMargins(.bottom, 76, for: .scrollContent)
+            .contentMargins(.bottom, listBottomContentMargin, for: .scrollContent)
             .environment(\.editMode, .constant(isReorderMode ? .active : .inactive))
 
             Button {
@@ -230,8 +252,8 @@ struct ShopManagementView: View {
                     .background(cyan, in: Capsule())
             }
             .buttonStyle(.plain)
-            .padding(.trailing, 20)
-            .padding(.bottom, 12)
+            .padding(.trailing, fabTrailingPadding)
+            .padding(.bottom, fabVerticalPadding)
         }
         .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
@@ -245,7 +267,6 @@ struct ShopManagementView: View {
                 .foregroundColor(cyan)
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 84) }
         .sheet(isPresented: Binding(
             get: { shopToEdit != nil },
             set: { if !$0 { shopToEdit = nil } }
@@ -386,7 +407,6 @@ struct ContinuePlaySelectionView: View {
 // --- 実戦ログ・期待値収支（日付でグループ化） — 表示・グループキーとも `JapaneseDateFormatters.yearMonthDay` を共有
 struct HistoryListView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
     @Query(sort: \GameSession.date, order: .reverse) var sessions: [GameSession]
     @State private var sessionToEdit: GameSession?
 
@@ -407,28 +427,33 @@ struct HistoryListView: View {
                                 .foregroundColor(.white.opacity(0.95))
                                 .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
                                 .padding(.horizontal, 4)
-                            ForEach(item.1) { session in
-                                NavigationLink(destination: SessionDetailView(session: session)) {
-                                    HistorySessionCard(session: session)
-                                }
-                                .buttonStyle(.plain)
-                                .contentShape(Rectangle())
-                                .contextMenu {
-                                    Button {
-                                        sessionToEdit = session
-                                    } label: { Label("編集", systemImage: "pencil") }
-                                    Button(role: .destructive) {
-                                        modelContext.delete(session)
-                                    } label: { Label("削除", systemImage: "trash") }
-                                }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) {
-                                        modelContext.delete(session)
-                                    } label: { Label("削除", systemImage: "trash") }
-                                    Button {
-                                        sessionToEdit = session
-                                    } label: { Label("編集", systemImage: "pencil") }
-                                        .tint(AppGlassStyle.accent)
+                            ForEach(NativeAdListInterleaving.rowsForSessionGroup(daySessions: item.1, placementPrefix: "hist-\(item.0)"), id: \.id) { row in
+                                switch row {
+                                case .session(let session):
+                                    NavigationLink(destination: SessionDetailView(session: session)) {
+                                        HistorySessionCard(session: session)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .contentShape(Rectangle())
+                                    .contextMenu {
+                                        Button {
+                                            sessionToEdit = session
+                                        } label: { Label("編集", systemImage: "pencil") }
+                                        Button(role: .destructive) {
+                                            modelContext.delete(session)
+                                        } label: { Label("削除", systemImage: "trash") }
+                                    }
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button(role: .destructive) {
+                                            modelContext.delete(session)
+                                        } label: { Label("削除", systemImage: "trash") }
+                                        Button {
+                                            sessionToEdit = session
+                                        } label: { Label("編集", systemImage: "pencil") }
+                                            .tint(AppGlassStyle.accent)
+                                    }
+                                case .native(let placementKey):
+                                    OptionalNativeAdCardSlot(placementID: placementKey)
                                 }
                             }
                         }
@@ -445,15 +470,6 @@ struct HistoryListView: View {
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    dismiss()
-                } label: {
-                    Label("戻る", systemImage: "chevron.left")
-                }
-            }
-        }
         .sheet(item: $sessionToEdit) { s in
             NavigationStack {
                 SessionEditView(session: s)
@@ -653,6 +669,7 @@ struct HistorySessionCard: View {
         return (Double(session.normalRotations) / session.totalRealCost) * 1000
     }
     private var rotationRateDisplay: String {
+        if session.excludesFromRotationExpectationAnalytics { return "—（帳簿）" }
         if rotationPer1k <= 0 { return "—" }
         var s = String(format: "%.1f 回/1k", rotationPer1k)
         if session.formulaBorderPer1k > 0 {
@@ -811,57 +828,128 @@ struct SessionEditView: View {
                 HStack {
                     Text("投入（pt）")
                     Spacer()
-                    TextField("0", value: $session.inputCash, format: .number)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
+                    IntegerPadTextField(
+                        text: Binding(
+                            get: { "\(session.inputCash)" },
+                            set: { session.inputCash = Int($0) ?? 0 }
+                        ),
+                        placeholder: "0",
+                        maxDigits: 9,
+                        font: .preferredFont(forTextStyle: .body),
+                        textColor: UIColor.white,
+                        accentColor: UIColor(AppGlassStyle.accent)
+                    )
+                    .frame(minWidth: 80, minHeight: 36)
+                    .multilineTextAlignment(.trailing)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
                     Text("回収玉数")
                     Spacer()
-                    TextField("0", value: $session.totalHoldings, format: .number)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
+                    IntegerPadTextField(
+                        text: Binding(
+                            get: { "\(session.totalHoldings)" },
+                            set: { session.totalHoldings = Int($0) ?? 0 }
+                        ),
+                        placeholder: "0",
+                        maxDigits: 8,
+                        font: .preferredFont(forTextStyle: .body),
+                        textColor: UIColor.white,
+                        accentColor: UIColor(AppGlassStyle.accent)
+                    )
+                    .frame(minWidth: 80, minHeight: 36)
+                    .multilineTextAlignment(.trailing)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
                     Text("総回転数")
                     Spacer()
-                    TextField("0", value: $session.normalRotations, format: .number)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
+                    IntegerPadTextField(
+                        text: Binding(
+                            get: { "\(session.normalRotations)" },
+                            set: { session.normalRotations = Int($0) ?? 0 }
+                        ),
+                        placeholder: "0",
+                        maxDigits: 7,
+                        font: .preferredFont(forTextStyle: .body),
+                        textColor: UIColor.white,
+                        accentColor: UIColor(AppGlassStyle.accent)
+                    )
+                    .frame(minWidth: 80, minHeight: 36)
+                    .multilineTextAlignment(.trailing)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
                     Text("RUSH当選回数")
                     Spacer()
-                    TextField("0", value: $session.rushWinCount, format: .number)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
+                    IntegerPadTextField(
+                        text: Binding(
+                            get: { "\(session.rushWinCount)" },
+                            set: { session.rushWinCount = Int($0) ?? 0 }
+                        ),
+                        placeholder: "0",
+                        maxDigits: 5,
+                        font: .preferredFont(forTextStyle: .body),
+                        textColor: UIColor.white,
+                        accentColor: UIColor(AppGlassStyle.accent)
+                    )
+                    .frame(minWidth: 80, minHeight: 36)
+                    .multilineTextAlignment(.trailing)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
                     Text("通常当選回数")
                     Spacer()
-                    TextField("0", value: $session.normalWinCount, format: .number)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
+                    IntegerPadTextField(
+                        text: Binding(
+                            get: { "\(session.normalWinCount)" },
+                            set: { session.normalWinCount = Int($0) ?? 0 }
+                        ),
+                        placeholder: "0",
+                        maxDigits: 5,
+                        font: .preferredFont(forTextStyle: .body),
+                        textColor: UIColor.white,
+                        accentColor: UIColor(AppGlassStyle.accent)
+                    )
+                    .frame(minWidth: 80, minHeight: 36)
+                    .multilineTextAlignment(.trailing)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
                     Text("LT当選回数")
                     Spacer()
-                    TextField("0", value: $session.ltWinCount, format: .number)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.trailing)
+                    IntegerPadTextField(
+                        text: Binding(
+                            get: { "\(session.ltWinCount)" },
+                            set: { session.ltWinCount = Int($0) ?? 0 }
+                        ),
+                        placeholder: "0",
+                        maxDigits: 5,
+                        font: .preferredFont(forTextStyle: .body),
+                        textColor: UIColor.white,
+                        accentColor: UIColor(AppGlassStyle.accent)
+                    )
+                    .frame(minWidth: 80, minHeight: 36)
+                    .multilineTextAlignment(.trailing)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
                     Text("払出係数（pt/玉）")
                     Spacer()
-                    TextField("4.0", value: $session.payoutCoefficient, format: .number)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
+                    DecimalPadTextField(
+                        text: Binding(
+                            get: { Self.decimalFieldString(session.payoutCoefficient) },
+                            set: { session.payoutCoefficient = Double($0) ?? 0 }
+                        ),
+                        placeholder: "4.0",
+                        maxIntegerDigits: 4,
+                        maxFractionDigits: 4,
+                        font: .preferredFont(forTextStyle: .body),
+                        textColor: UIColor.white,
+                        accentColor: UIColor(AppGlassStyle.accent)
+                    )
+                    .frame(minWidth: 80, minHeight: 36)
+                    .multilineTextAlignment(.trailing)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
             }
@@ -870,17 +958,39 @@ struct SessionEditView: View {
                 HStack {
                     Text("実質投入（pt）")
                     Spacer()
-                    TextField("0", value: $session.totalRealCost, format: .number)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
+                    DecimalPadTextField(
+                        text: Binding(
+                            get: { Self.decimalFieldString(session.totalRealCost) },
+                            set: { session.totalRealCost = Double($0) ?? 0 }
+                        ),
+                        placeholder: "0",
+                        maxIntegerDigits: 9,
+                        maxFractionDigits: 2,
+                        font: .preferredFont(forTextStyle: .body),
+                        textColor: UIColor.white,
+                        accentColor: UIColor(AppGlassStyle.accent)
+                    )
+                    .frame(minWidth: 80, minHeight: 36)
+                    .multilineTextAlignment(.trailing)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 HStack {
                     Text("基準値比（保存時）")
                     Spacer()
-                    TextField("1.0", value: $session.expectationRatioAtSave, format: .number)
-                        .keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
+                    DecimalPadTextField(
+                        text: Binding(
+                            get: { Self.decimalFieldString(session.expectationRatioAtSave) },
+                            set: { session.expectationRatioAtSave = Double($0) ?? 0 }
+                        ),
+                        placeholder: "1.0",
+                        maxIntegerDigits: 2,
+                        maxFractionDigits: 4,
+                        font: .preferredFont(forTextStyle: .body),
+                        textColor: UIColor.white,
+                        accentColor: UIColor(AppGlassStyle.accent)
+                    )
+                    .frame(minWidth: 80, minHeight: 36)
+                    .multilineTextAlignment(.trailing)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 if session.expectationRatioAtSave == 0 || session.totalRealCost == 0 {
@@ -920,5 +1030,10 @@ struct SessionEditView: View {
                 session.totalRealCost = Double(session.inputCash)
             }
         }
+    }
+
+    private static func decimalFieldString(_ v: Double) -> String {
+        if v == 0 { return "" }
+        return String(v)
     }
 }

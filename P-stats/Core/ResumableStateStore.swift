@@ -45,7 +45,9 @@ enum ResumableStateStore {
             currentModeUiRole: log.currentModeUiRole,
             undoStackEntries: log.persistedUndoStack(),
             isBigHitMode: log.isBigHitMode,
-            bigHitChainCount: log.bigHitChainCount
+            bigHitChainCount: log.bigHitChainCount,
+            bigHitSessionNormalRotationsAtWin: log.bigHitSessionNormalRotationsAtWin,
+            bigHitSessionTotalRotationsAtWin: log.bigHitSessionTotalRotationsAtWin
         )
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: fileURL)

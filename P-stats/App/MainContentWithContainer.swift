@@ -7,9 +7,14 @@ struct MainContentWithContainer: View {
     @State private var launchFinished = false
     @StateObject private var appLock = AppLockState.shared
     @Environment(\.scenePhase) private var scenePhase
+    @State private var appOpenColdStartTask: Task<Void, Never>?
 
     private var showLockScreen: Bool {
         launchFinished && appLock.lockEnabled && !appLock.isUnlocked
+    }
+
+    private var homeReadyForAppOpenAd: Bool {
+        launchFinished && (!appLock.lockEnabled || appLock.isUnlocked)
     }
 
     var body: some View {
@@ -36,10 +41,32 @@ struct MainContentWithContainer: View {
         }
         .environment(\.modelContext, container.mainContext)
         .animation(.easeInOut(duration: 0.25), value: showLockScreen)
-        .onChange(of: scenePhase) { _, newPhase in
+        .onChange(of: scenePhase) { oldPhase, newPhase in
             if newPhase == .background, appLock.lockEnabled {
                 appLock.lock()
             }
+            if oldPhase == .background, newPhase == .active {
+                AppOpenAdPresenter.tryPresentAfterResumeFromBackgroundIfNeeded()
+            }
+        }
+        .onChange(of: launchFinished) { _, _ in
+            scheduleAppOpenColdStartIfNeeded()
+        }
+        .onChange(of: appLock.isUnlocked) { _, _ in
+            scheduleAppOpenColdStartIfNeeded()
+        }
+        .onChange(of: appLock.lockEnabled) { _, _ in
+            scheduleAppOpenColdStartIfNeeded()
+        }
+    }
+
+    private func scheduleAppOpenColdStartIfNeeded() {
+        guard homeReadyForAppOpenAd else { return }
+        appOpenColdStartTask?.cancel()
+        appOpenColdStartTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 450_000_000)
+            guard !Task.isCancelled else { return }
+            AppOpenAdPresenter.requestColdStartIfNeeded()
         }
     }
 }

@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct GameSessionEditView: View {
     @Environment(\.modelContext) private var modelContext
@@ -28,6 +29,11 @@ struct GameSessionEditView: View {
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
 
+    @State private var simpleInvestPadTrigger = 0
+    @State private var simpleRecoveryPadTrigger = 0
+
+    private var cyan: Color { AppGlassStyle.accent }
+
     init(sessionToEdit: GameSession? = nil, isSimpleInput: Bool? = nil) {
         self.sessionToEdit = sessionToEdit
         // 既存履歴の編集は常に詳細（シンプルは新規のみ）
@@ -40,14 +46,16 @@ struct GameSessionEditView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            Group {
                 if isSimpleInput {
-                    simpleInputSections
+                    simpleInputRoot
                 } else {
-                    fullInputSections
+                    Form {
+                        fullInputSections
+                    }
+                    .environment(\.locale, Locale(identifier: "ja_JP"))
                 }
             }
-            .environment(\.locale, Locale(identifier: "ja_JP"))
             .navigationTitle(navigationTitleText)
             .navigationBarTitleDisplayMode(.inline)
             .keyboardDismissToolbar()
@@ -122,41 +130,181 @@ struct GameSessionEditView: View {
         return sessionToEdit == nil ? "過去データを入力" : "履歴を編集"
     }
 
-    @ViewBuilder
-    private var simpleInputSections: some View {
-        Section {
-            LabeledContent("実践日") {
-                Text(JapaneseDateFormatters.yearMonthDay.string(from: date))
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.trailing)
-            }
-            DatePicker("", selection: $date, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-        }
+    private var simpleInputRoot: some View {
+        ZStack {
+            StaticHomeBackgroundView()
+            ScrollViewReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 16) {
+                        simpleInputCardHeader(title: "実践日", systemImage: "calendar") {
+                            Text(JapaneseDateFormatters.yearMonthDay.string(from: date))
+                                .font(AppTypography.bodyRounded)
+                                .foregroundColor(.white.opacity(0.95))
+                            DatePicker("", selection: $date, displayedComponents: .date)
+                                .datePickerStyle(.graphical)
+                                .labelsHidden()
+                                .tint(cyan)
+                                .colorScheme(.dark)
+                        }
+                        .id("simpleDate")
 
-        Section {
-            Picker("機種", selection: $selectedMachine) {
-                Text("未選択").tag(Machine?(nil))
-                ForEach(machines) { m in
-                    Text(m.name).tag(Machine?(m))
+                        simpleInputCardHeader(title: "遊技設定", systemImage: "dice.fill") {
+                            VStack(alignment: .leading, spacing: 14) {
+                                HStack {
+                                    Text("機種")
+                                        .font(AppTypography.sectionSubheading)
+                                        .foregroundColor(.white.opacity(0.9))
+                                    Spacer(minLength: 8)
+                                    Picker("", selection: $selectedMachine) {
+                                        Text("未選択").tag(Machine?(nil))
+                                        ForEach(machines) { m in
+                                            Text(m.name).tag(Machine?(m))
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .tint(cyan)
+                                }
+                                HStack {
+                                    Text("店舗")
+                                        .font(AppTypography.sectionSubheading)
+                                        .foregroundColor(.white.opacity(0.9))
+                                    Spacer(minLength: 8)
+                                    Picker("", selection: $selectedShop) {
+                                        Text("未選択").tag(Shop?(nil))
+                                        ForEach(shops) { s in
+                                            Text(s.name).tag(Shop?(s))
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .tint(cyan)
+                                }
+                            }
+                        }
+
+                        simpleAmountInputPanel(
+                            scrollId: "simpleInvest",
+                            title: "投資額（pt）",
+                            caption: "現金で投入したポイント（貸玉換算の投入額）",
+                            text: $investmentCash,
+                            padTrigger: $simpleInvestPadTrigger,
+                            onPreviousField: nil,
+                            onNextField: { simpleRecoveryPadTrigger += 1 }
+                        )
+
+                        simpleAmountInputPanel(
+                            scrollId: "simpleRecovery",
+                            title: "回収額（pt）",
+                            caption: "精算・換金したポイント相当。店の払出係数で玉数に換算して保存",
+                            text: $recoveryAmountPt,
+                            padTrigger: $simpleRecoveryPadTrigger,
+                            onPreviousField: { simpleInvestPadTrigger += 1 },
+                            onNextField: nil
+                        )
+
+                        Text("回収額を保存するには、店舗に払出係数（pt/玉）が設定されている必要があります。")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.72))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 4)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 320)
+                }
+                .onChange(of: simpleInvestPadTrigger) { _, _ in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        withAnimation(.easeInOut(duration: 0.28)) {
+                            proxy.scrollTo("simpleInvest", anchor: .center)
+                        }
+                    }
+                }
+                .onChange(of: simpleRecoveryPadTrigger) { _, _ in
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        withAnimation(.easeInOut(duration: 0.28)) {
+                            proxy.scrollTo("simpleRecovery", anchor: .center)
+                        }
+                    }
                 }
             }
-            Picker("店舗", selection: $selectedShop) {
-                Text("未選択").tag(Shop?(nil))
-                ForEach(shops) { s in
-                    Text(s.name).tag(Shop?(s))
-                }
-            }
-            TextField("投資額（pt）", text: $investmentCash)
-                .keyboardType(.numberPad)
-            TextField("回収額（pt）", text: $recoveryAmountPt)
-                .keyboardType(.numberPad)
-        } header: {
-            Text("入力")
-        } footer: {
-            Text("回収額は pt で入力し、店舗の払出係数から回収玉数に換算して保存します。")
-                .font(.caption)
         }
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .preferredColorScheme(.dark)
+    }
+
+    private func simpleInputCardHeader<Content: View>(
+        title: String,
+        systemImage: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 14))
+                    .foregroundColor(cyan)
+                Text(title)
+                    .font(AppTypography.panelHeading)
+                    .foregroundColor(.white.opacity(0.95))
+            }
+            content()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(AppGlassStyle.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
+        )
+    }
+
+    private func simpleAmountInputPanel(
+        scrollId: String,
+        title: String,
+        caption: String,
+        text: Binding<String>,
+        padTrigger: Binding<Int>,
+        onPreviousField: (() -> Void)?,
+        onNextField: (() -> Void)?
+    ) -> some View {
+        HStack(alignment: .center, spacing: 14) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(AppTypography.sectionSubheading)
+                    .foregroundColor(.white.opacity(0.95))
+                Text(caption)
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.72))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(width: 168, alignment: .leading)
+
+            IntegerPadTextField(
+                text: text,
+                placeholder: "0",
+                maxDigits: 9,
+                font: .systemFont(ofSize: 22, weight: .semibold),
+                textColor: .white,
+                accentColor: UIColor(cyan),
+                focusTrigger: padTrigger.wrappedValue,
+                adjustsFontSizeToFitWidth: true,
+                minimumFontSize: 14,
+                onPreviousField: onPreviousField,
+                onNextField: onNextField
+            )
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .trailing)
+        }
+        .padding(16)
+        .background(AppGlassStyle.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 14))
+        .onTapGesture {
+            padTrigger.wrappedValue += 1
+        }
+        .id(scrollId)
     }
 
     @ViewBuilder
@@ -186,23 +334,82 @@ struct GameSessionEditView: View {
         }
 
         Section(header: Text("実践データ"), footer: Text("総回転数＝通常回転のみ（時短・電サポ除く）").font(.caption)) {
-            TextField("通常回転数", text: $normalRotations)
-                .keyboardType(.numberPad)
-            TextField("投入 (pt)", text: $investmentCash)
-                .keyboardType(.numberPad)
-            TextField("持ち玉投資 (玉)", text: $holdingsInvestedBalls)
-                .keyboardType(.numberPad)
-            TextField("回収出玉 (玉)", text: $totalHoldings)
-                .keyboardType(.numberPad)
+            IntegerPadTextField(
+                text: $normalRotations,
+                placeholder: "通常回転数",
+                maxDigits: 7,
+                font: .preferredFont(forTextStyle: .body),
+                textColor: UIColor.label,
+                accentColor: UIColor.systemBlue
+            )
+            IntegerPadTextField(
+                text: $investmentCash,
+                placeholder: "投入 (pt)",
+                maxDigits: 9,
+                font: .preferredFont(forTextStyle: .body),
+                textColor: UIColor.label,
+                accentColor: UIColor.systemBlue
+            )
+            IntegerPadTextField(
+                text: $holdingsInvestedBalls,
+                placeholder: "持ち玉投資 (玉)",
+                maxDigits: 7,
+                font: .preferredFont(forTextStyle: .body),
+                textColor: UIColor.label,
+                accentColor: UIColor.systemBlue
+            )
+            IntegerPadTextField(
+                text: $totalHoldings,
+                placeholder: "回収出玉 (玉)",
+                maxDigits: 8,
+                font: .preferredFont(forTextStyle: .body),
+                textColor: UIColor.label,
+                accentColor: UIColor.systemBlue
+            )
         }
 
         Section("当選回数") {
-            TextField("RUSH回数", text: $rushWinCount)
-                .keyboardType(.numberPad)
-            TextField("通常回数", text: $normalWinCount)
-                .keyboardType(.numberPad)
-            TextField("LT回数", text: $ltWinCount)
-                .keyboardType(.numberPad)
+            IntegerPadTextField(
+                text: $rushWinCount,
+                placeholder: "RUSH回数",
+                maxDigits: 5,
+                font: .preferredFont(forTextStyle: .body),
+                textColor: UIColor.label,
+                accentColor: UIColor.systemBlue
+            )
+            IntegerPadTextField(
+                text: $normalWinCount,
+                placeholder: "通常回数",
+                maxDigits: 5,
+                font: .preferredFont(forTextStyle: .body),
+                textColor: UIColor.label,
+                accentColor: UIColor.systemBlue
+            )
+            IntegerPadTextField(
+                text: $ltWinCount,
+                placeholder: "LT回数",
+                maxDigits: 5,
+                font: .preferredFont(forTextStyle: .body),
+                textColor: UIColor.label,
+                accentColor: UIColor.systemBlue
+            )
+        }
+
+        if let rec = sessionToEdit,
+           !rec.settlementModeRaw.isEmpty || rec.exchangeCashProceedsPt > 0 || rec.chodamaBalanceDeltaBalls > 0 {
+            Section("精算（記録）") {
+                if let m = SessionSettlementMode(rawValue: rec.settlementModeRaw) {
+                    LabeledContent("区分", value: m.displayName)
+                } else if !rec.settlementModeRaw.isEmpty {
+                    LabeledContent("区分", value: rec.settlementModeRaw)
+                }
+                if rec.exchangeCashProceedsPt > 0 {
+                    LabeledContent("換金（500pt刻み）", value: "\(rec.exchangeCashProceedsPt) pt")
+                }
+                if rec.chodamaBalanceDeltaBalls > 0 {
+                    LabeledContent("貯玉へ加算", value: "\(rec.chodamaBalanceDeltaBalls) 玉")
+                }
+            }
         }
     }
 
@@ -285,6 +492,7 @@ struct GameSessionEditView: View {
             s.normalWinCount = nWin
             s.ltWinCount = lWin
             s.formulaBorderPer1k = formula > 0 ? formula : 0
+            s.isCashflowOnlyRecord = false
         } else {
             // 新規
             let newSession = GameSession(
@@ -304,6 +512,7 @@ struct GameSessionEditView: View {
                 formulaBorderPer1k: formula > 0 ? formula : 0
             )
             newSession.date = date
+            newSession.isCashflowOnlyRecord = false
             modelContext.insert(newSession)
         }
         
@@ -343,6 +552,7 @@ struct GameSessionEditView: View {
             formulaBorderPer1k: formula > 0 ? formula : 0
         )
         newSession.date = date
+        newSession.isCashflowOnlyRecord = true
         modelContext.insert(newSession)
     }
 

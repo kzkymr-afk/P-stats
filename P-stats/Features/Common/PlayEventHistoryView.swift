@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 // MARK: - 大当たり・投資履歴（スワイプ削除・タップで編集）
 struct PlayEventHistoryView: View {
@@ -13,6 +14,9 @@ struct PlayEventHistoryView: View {
     @State private var editWinType: WinType = .normal
     @State private var editLendingType: LendingType = .cash
     @State private var editLendingBalls: String = ""
+    @State private var editWinRotationPadTrigger = 0
+    @State private var editWinPrizePadTrigger = 0
+    @State private var editLendingBallsPadTrigger = 0
 
     private let accent = AppGlassStyle.accent
 
@@ -148,12 +152,30 @@ struct PlayEventHistoryView: View {
                         .pickerStyle(.segmented)
                     }
                     Section("回転数") {
-                        TextField("回転数", text: rotBinding)
-                            .keyboardType(.numberPad)
+                        IntegerPadTextField(
+                            text: rotBinding,
+                            placeholder: "回転数",
+                            maxDigits: 7,
+                            font: .preferredFont(forTextStyle: .body),
+                            textColor: UIColor.label,
+                            accentColor: UIColor(accent),
+                            focusTrigger: editWinRotationPadTrigger,
+                            onPreviousField: { editWinPrizePadTrigger += 1 },
+                            onNextField: { editWinPrizePadTrigger += 1 }
+                        )
                     }
                     Section("出玉数（玉）") {
-                        TextField("出玉数", text: prizeBinding)
-                            .keyboardType(.numberPad)
+                        IntegerPadTextField(
+                            text: prizeBinding,
+                            placeholder: "出玉数",
+                            maxDigits: 7,
+                            font: .preferredFont(forTextStyle: .body),
+                            textColor: UIColor.label,
+                            accentColor: UIColor(accent),
+                            focusTrigger: editWinPrizePadTrigger,
+                            onPreviousField: { editWinRotationPadTrigger += 1 },
+                            onNextField: { editWinRotationPadTrigger += 1 }
+                        )
                     }
                 }
                 .navigationTitle("大当たりを編集")
@@ -179,6 +201,7 @@ struct PlayEventHistoryView: View {
                     editWinType = record.type
                     editRotation = "\(record.rotationAtWin)"
                     editPrize = "\(record.prize ?? 0)"
+                    editWinRotationPadTrigger += 1
                 }
             }
         }
@@ -198,8 +221,15 @@ struct PlayEventHistoryView: View {
                     }
                     if editLendingType == .holdings {
                         Section("玉数") {
-                            TextField("玉数", text: $editLendingBalls)
-                                .keyboardType(.numberPad)
+                            IntegerPadTextField(
+                                text: $editLendingBalls,
+                                placeholder: "玉数",
+                                maxDigits: 6,
+                                font: .preferredFont(forTextStyle: .body),
+                                textColor: UIColor.label,
+                                accentColor: UIColor(accent),
+                                focusTrigger: editLendingBallsPadTrigger
+                            )
                         }
                     }
                 }
@@ -222,6 +252,7 @@ struct PlayEventHistoryView: View {
                 .onAppear {
                     editLendingType = record.type
                     editLendingBalls = record.type == .holdings ? "\(record.balls ?? 125)" : ""
+                    editLendingBallsPadTrigger += 1
                 }
             }
         }

@@ -3,7 +3,7 @@ import SwiftData
 
 // MARK: - 特定日判定（Date の末尾数字・ゾロ目）
 
-/// 店舗ごとの特定日ルール（毎月N日・Nのつく日。追加順で最大4つ）
+/// 店舗ごとの特定日ルール（毎月N日・Nのつく日。追加順で最大6つ）
 struct SpecificDayRules {
     /// 毎月この日（例: [3, 15] → 毎月3日・毎月15日）
     var dayOfMonth: [Int] = []
@@ -33,7 +33,7 @@ struct SpecificDayRules {
         return SpecificDayRules(dayOfMonth: dayOfMonth, lastDigits: lastDigits)
     }
 
-    /// 店舗の specificDayRulesStorage から「追加順」ラベル列を取得（個別店舗分析の特定日表示用）。最大4つ
+    /// 店舗の specificDayRulesStorage から「追加順」ラベル列を取得（個別店舗分析の特定日表示用）。最大6つ
     static func orderedLabels(rulesStorage: String, dayOfMonthFallback: String, lastDigitsFallback: String) -> [String] {
         if !rulesStorage.isEmpty {
             return rulesStorage.split(separator: ",")
@@ -89,6 +89,69 @@ private func specificDayLabelSortOrder(_ label: String) -> Int {
     if label == "ゾロ目" { return 3000 }
     return 4000
 }
+
+/// クロス分析の並び替え（全般タブ）
+enum CrossAnalysisSortAxis: String, CaseIterable, Identifiable {
+    case sessionsDesc = "実戦件数"
+    case rotationDesc = "回転率"
+    case borderDiffDesc = "基準値差"
+    case profitAbsDesc = "実成績（変動）"
+    case profitDesc = "実成績（プラス优先）"
+
+    var id: String { rawValue }
+
+    /// メニュー用の短い説明
+    var menuLabel: String {
+        switch self {
+        case .sessionsDesc: return "実戦件数（多い順）"
+        case .rotationDesc: return "回転率（高い順）"
+        case .borderDiffDesc: return "基準値差（高い順・未設定は後ろ）"
+        case .profitAbsDesc: return "実成績（絶対値が大きい順）"
+        case .profitDesc: return "実成績（プラスが上）"
+        }
+    }
+}
+
+/// 店舗 × メーカー / 店舗 × 機種 の切り替え
+enum CrossAnalysisDimension: String, CaseIterable, Identifiable {
+    case manufacturer = "店×メーカー"
+    case machine = "店×機種"
+
+    var id: String { rawValue }
+}
+
+/// 店舗 × メーカー の組み合わせ別集計（クロス分析用）
+struct ShopManufacturerCrossRow: Identifiable {
+    let id: String
+    let shop: String
+    let manufacturer: String
+    let sessionCount: Int
+    /// 実践回転率（回/1k）のセッション平均
+    let avgRotationPer1k: Double
+    let totalProfit: Int
+    let avgDiffFromFormulaBorder: Double?
+}
+
+/// 店舗 × 機種 の組み合わせ別集計（クロス分析用）
+struct ShopMachineCrossRow: Identifiable {
+    let id: String
+    let shop: String
+    let machine: String
+    let sessionCount: Int
+    let avgRotationPer1k: Double
+    let totalProfit: Int
+    let avgDiffFromFormulaBorder: Double?
+}
+
+private protocol _CrossAnalysisSortFields {
+    var sessionCount: Int { get }
+    var avgRotationPer1k: Double { get }
+    var avgDiffFromFormulaBorder: Double? { get }
+    var totalProfit: Int { get }
+}
+
+extension ShopManufacturerCrossRow: _CrossAnalysisSortFields {}
+extension ShopMachineCrossRow: _CrossAnalysisSortFields {}
 
 /// 実戦データの多角的集計結果（1グループあたり）
 struct AnalyticsGroup: Identifiable {
@@ -158,6 +221,27 @@ enum AnalyticsEngine {
         f.dateFormat = "yyyy"
         return f
     }()
+    private static let weekStartIdFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = calendar.timeZone
+        return f
+    }()
+    private static let weekAxisLabelFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "M/d"
+        f.locale = Locale(identifier: "ja_JP")
+        f.timeZone = calendar.timeZone
+        return f
+    }()
+    private static let dayInMonthFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "M/d"
+        f.locale = Locale(identifier: "ja_JP")
+        f.timeZone = calendar.timeZone
+        return f
+    }()
     /// セッション一覧のフィルタ用：日付から月キー（yyyy/MM）を返す
     static func monthKey(from date: Date) -> String { monthFormatter.string(from: date) }
     /// セッション一覧のフィルタ用：日付から年ラベル（yyyy年）を返す
@@ -175,6 +259,21 @@ enum AnalyticsEngine {
             aggregate(label: key, sessions: list)
         }
         .sorted { $0.sortKey > $1.sortKey }
+    }
+
+    /// 日別集計（期間タブ・月別フィルタ内の日ごと）。`id` はその日 0:00 の `timeIntervalSince1970` 文字列
+    static func byCalendarDay(_ sessions: [GameSession]) -> [AnalyticsGroup] {
+        let grouped = Dictionary(grouping: sessions) { calendar.startOfDay(for: $0.date) }
+        return grouped.map { dayStart, list in
+            let label = dayInMonthFormatter.string(from: dayStart)
+            let id = String(dayStart.timeIntervalSince1970)
+            return aggregateGroup(id: id, label: label, sessions: list)
+        }
+        .sorted { a, b in
+            let ta = TimeInterval(a.id) ?? 0
+            let tb = TimeInterval(b.id) ?? 0
+            return ta > tb
+        }
     }
 
     /// 年別集計（yyyy）。新しい年が先
@@ -238,38 +337,146 @@ enum AnalyticsEngine {
         aggregate(label: "全体", sessions: sessions)
     }
 
+    /// 店舗とメーカーの組み合わせごとに集計（クロス分析）。`minimumSessions` 未満はノイズ削減のため除外。
+    static func shopManufacturerCrossRows(
+        _ sessions: [GameSession],
+        minimumSessions: Int = 2,
+        sortBy sortAxis: CrossAnalysisSortAxis = .sessionsDesc
+    ) -> [ShopManufacturerCrossRow] {
+        let sep = "\u{001F}"
+        let grouped = Dictionary(grouping: sessions) { s -> String in
+            let shop = s.shopName.isEmpty ? "未設定" : s.shopName
+            let mfr = s.manufacturerName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? "未設定"
+                : s.manufacturerName.trimmingCharacters(in: .whitespacesAndNewlines)
+            return shop + sep + mfr
+        }
+        let rows: [ShopManufacturerCrossRow] = grouped.compactMap { compoundKey, list -> ShopManufacturerCrossRow? in
+            guard list.count >= minimumSessions else { return nil }
+            let parts = compoundKey.split(separator: Character(UnicodeScalar(31)!), maxSplits: 1).map(String.init)
+            guard parts.count == 2 else { return nil }
+            let shop = parts[0]
+            let mfr = parts[1]
+            let g = aggregate(label: "\(shop) × \(mfr)", sessions: list)
+            return ShopManufacturerCrossRow(
+                id: compoundKey,
+                shop: shop,
+                manufacturer: mfr,
+                sessionCount: g.sessionCount,
+                avgRotationPer1k: g.avgRotationRate,
+                totalProfit: g.totalProfit,
+                avgDiffFromFormulaBorder: g.avgDiffFromFormulaBorder
+            )
+        }
+        return sortedCrossRows(rows, by: sortAxis)
+    }
+
+    /// 店舗と機種の組み合わせごとに集計（クロス分析）
+    static func shopMachineCrossRows(
+        _ sessions: [GameSession],
+        minimumSessions: Int = 2,
+        sortBy sortAxis: CrossAnalysisSortAxis = .sessionsDesc
+    ) -> [ShopMachineCrossRow] {
+        let sep = "\u{001F}"
+        let grouped = Dictionary(grouping: sessions) { s -> String in
+            let shop = s.shopName.isEmpty ? "未設定" : s.shopName
+            let machine = s.machineName.isEmpty ? "未設定" : s.machineName
+            return shop + sep + machine
+        }
+        let rows: [ShopMachineCrossRow] = grouped.compactMap { compoundKey, list -> ShopMachineCrossRow? in
+            guard list.count >= minimumSessions else { return nil }
+            let parts = compoundKey.split(separator: Character(UnicodeScalar(31)!), maxSplits: 1).map(String.init)
+            guard parts.count == 2 else { return nil }
+            let shop = parts[0]
+            let machine = parts[1]
+            let g = aggregate(label: "\(shop) × \(machine)", sessions: list)
+            return ShopMachineCrossRow(
+                id: compoundKey,
+                shop: shop,
+                machine: machine,
+                sessionCount: g.sessionCount,
+                avgRotationPer1k: g.avgRotationRate,
+                totalProfit: g.totalProfit,
+                avgDiffFromFormulaBorder: g.avgDiffFromFormulaBorder
+            )
+        }
+        return sortedCrossRows(rows, by: sortAxis)
+    }
+
+    private static func sortedCrossRows<T: _CrossAnalysisSortFields>(_ rows: [T], by axis: CrossAnalysisSortAxis) -> [T] {
+        rows.sorted { a, b in
+            switch axis {
+            case .sessionsDesc:
+                if a.sessionCount != b.sessionCount { return a.sessionCount > b.sessionCount }
+                return abs(a.totalProfit) > abs(b.totalProfit)
+            case .rotationDesc:
+                if abs(a.avgRotationPer1k - b.avgRotationPer1k) > 0.01 {
+                    return a.avgRotationPer1k > b.avgRotationPer1k
+                }
+                if a.sessionCount != b.sessionCount { return a.sessionCount > b.sessionCount }
+                return abs(a.totalProfit) > abs(b.totalProfit)
+            case .borderDiffDesc:
+                let an = a.avgDiffFromFormulaBorder != nil
+                let bn = b.avgDiffFromFormulaBorder != nil
+                if an != bn { return an && !bn }
+                let av = a.avgDiffFromFormulaBorder ?? 0
+                let bv = b.avgDiffFromFormulaBorder ?? 0
+                if abs(av - bv) > 0.01 { return av > bv }
+                if a.sessionCount != b.sessionCount { return a.sessionCount > b.sessionCount }
+                return abs(a.totalProfit) > abs(b.totalProfit)
+            case .profitAbsDesc:
+                if abs(a.totalProfit) != abs(b.totalProfit) { return abs(a.totalProfit) > abs(b.totalProfit) }
+                if a.sessionCount != b.sessionCount { return a.sessionCount > b.sessionCount }
+                return a.avgRotationPer1k > b.avgRotationPer1k
+            case .profitDesc:
+                if a.totalProfit != b.totalProfit { return a.totalProfit > b.totalProfit }
+                if a.sessionCount != b.sessionCount { return a.sessionCount > b.sessionCount }
+                return a.avgRotationPer1k > b.avgRotationPer1k
+            }
+        }
+    }
+
     private static func aggregate(label: String, sessions: [GameSession]) -> AnalyticsGroup {
+        aggregateGroup(id: label, label: label, sessions: sessions)
+    }
+
+    private static func aggregateGroup(id: String, label: String, sessions: [GameSession]) -> AnalyticsGroup {
         let count = sessions.count
         var sumRate: Double = 0
+        let rotationEligible = sessions.filter(\.participatesInRotationRateAnalytics)
+        var rotationRateSampleCount = 0
+        for s in rotationEligible {
+            let denom = s.rotationRateDenominatorPt
+            guard denom > 0 else { continue }
+            sumRate += (Double(s.normalRotations) / denom) * 1000.0
+            rotationRateSampleCount += 1
+        }
         var sumTheoretical: Int = 0
         var sumProfit: Int = 0
         var sumRatio: Double = 0
         var ratioCount = 0
         for s in sessions {
-            if s.totalRealCost > 0 {
-                sumRate += (Double(s.normalRotations) / s.totalRealCost) * 1000.0
-            }
             sumTheoretical += s.theoreticalValue
             sumProfit += s.performance
-            if s.expectationRatioAtSave > 0 {
+            if s.participatesInExpectationRatioAggregate {
                 sumRatio += s.expectationRatioAtSave
                 ratioCount += 1
             }
         }
-        let avgRate = count > 0 ? sumRate / Double(count) : 0
+        let avgRate = rotationRateSampleCount > 0 ? sumRate / Double(rotationRateSampleCount) : 0
         let avgRatio = ratioCount > 0 ? sumRatio / Double(ratioCount) : 0
         let totalDS = sessions.reduce(0) { $0 + $1.deficitSurplus }
         let totalInv = sessions.reduce(0) { $0 + Int(round($1.totalRealCost)) }
-        let borderList = sessions.filter { $0.formulaBorderPer1k > 0 }
+        let borderList = sessions.filter(\.participatesInFormulaBorderDiffAnalytics)
         let avgBorderDiff: Double? = borderList.isEmpty ? nil : {
             let sum = borderList.reduce(0.0) { acc, s in
-                let rate = s.totalRealCost > 0 ? (Double(s.normalRotations) / s.totalRealCost) * 1000.0 : 0
+                let rate = (Double(s.normalRotations) / s.totalRealCost) * 1000.0
                 return acc + (rate - s.formulaBorderPer1k)
             }
             return sum / Double(borderList.count)
         }()
         return AnalyticsGroup(
-            id: label,
+            id: id,
             label: label,
             sessionCount: count,
             avgRotationRate: avgRate,
@@ -294,6 +501,32 @@ enum AnalyticsEngine {
             cumTheoretical += list.reduce(0) { $0 + $1.theoreticalValue }
             return (month: key, cumulativeProfit: cumProfit, cumulativeTheoretical: cumTheoretical)
         }
+    }
+
+    /// 週の開始日（カレンダーの週単位。`Calendar.current` の週の並びに従う）
+    static func weekIntervalStart(for date: Date) -> Date {
+        calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? calendar.startOfDay(for: date)
+    }
+
+    /// 週別累計（収支トレンドの週表示用）。週開始日昇順で累計し、末尾から最大 `maxWeeks` 件だけ返す。横軸ラベルは週頭の「M/d〜」
+    static func weeklyCumulativeTrend(_ sessions: [GameSession], maxWeeks: Int = 12) -> [(weekId: String, weekLabel: String, cumulativeProfit: Int, cumulativeTheoretical: Int)] {
+        let byWeek = Dictionary(grouping: sessions) { weekIntervalStart(for: $0.date) }
+        let sortedStarts = byWeek.keys.sorted()
+        var cumProfit = 0
+        var cumTheoretical = 0
+        var rows: [(weekId: String, weekLabel: String, cumulativeProfit: Int, cumulativeTheoretical: Int)] = []
+        for start in sortedStarts {
+            let list = byWeek[start] ?? []
+            cumProfit += list.reduce(0) { $0 + $1.performance }
+            cumTheoretical += list.reduce(0) { $0 + $1.theoreticalValue }
+            let wid = weekStartIdFormatter.string(from: start)
+            let wlab = weekAxisLabelFormatter.string(from: start) + "〜"
+            rows.append((weekId: wid, weekLabel: wlab, cumulativeProfit: cumProfit, cumulativeTheoretical: cumTheoretical))
+        }
+        if rows.count > maxWeeks {
+            return Array(rows.suffix(maxWeeks))
+        }
+        return rows
     }
 
     /// 機種タイプ別集計（ST vs 確変）。machineTypeByMachineName: 機種名 → "st" or "kakugen"（Machine.machineTypeRaw）
