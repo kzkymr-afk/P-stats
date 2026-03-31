@@ -49,7 +49,6 @@ struct SharedMachineFromCloud: Identifiable {
             hesoAtari: nil,
             denchu_prizes: nil,
             introductionDateRaw: nil,
-            ltRaw: nil,
             machineId: nil
         )
     }

@@ -129,7 +129,7 @@ struct ShopManufacturerCrossRow: Identifiable {
     /// 実戦回転率（回/1k）のセッション平均
     let avgRotationPer1k: Double
     let totalProfit: Int
-    let avgDiffFromFormulaBorder: Double?
+    let avgBorderDiffPer1k: Double?
 }
 
 /// 店舗 × 機種 の組み合わせ別集計（クロス分析用）
@@ -140,13 +140,13 @@ struct ShopMachineCrossRow: Identifiable {
     let sessionCount: Int
     let avgRotationPer1k: Double
     let totalProfit: Int
-    let avgDiffFromFormulaBorder: Double?
+    let avgBorderDiffPer1k: Double?
 }
 
 private protocol _CrossAnalysisSortFields {
     var sessionCount: Int { get }
     var avgRotationPer1k: Double { get }
-    var avgDiffFromFormulaBorder: Double? { get }
+    var avgBorderDiffPer1k: Double? { get }
     var totalProfit: Int { get }
 }
 
@@ -171,14 +171,29 @@ struct AnalyticsGroup: Identifiable {
     }
     /// 平均ボーダー比（期待値仕事量の傾向）
     let avgExpectationRatio: Double
-    /// 公式ボーダーとの差の平均（回/千円）。実戦回転率 − 公式ボーダー。nil は対象セッションなし
-    let avgDiffFromFormulaBorder: Double?
+    /// ボーダーとの差（回/1k・グループ内を通常回転数で加重平均）。実質回転率 − 店補正後のボーダー（保存値があれば）。nil は対象セッションなし／重み0
+    let avgBorderDiffPer1k: Double?
     /// 並び順用（月別・年別は日付の新しい順）
     var sortKey: String { id }
 }
 
 /// 保存された実戦データから機種別・メーカー別・店舗別に集計するエンジン
 enum AnalyticsEngine {
+    /// ボーダーとの差（回/1k）を通常回転数で加重平均。同一機種でも店でボーダーが違うとき、回転の多い店・実戦ほど集約値に反映される。重み0のセッションは除く。
+    static func weightedAverageBorderDiffPer1k(sessions: [GameSession]) -> Double? {
+        var weightedSum = 0.0
+        var weightTotal = 0.0
+        for s in sessions where s.participatesInBorderDiffAnalytics {
+            guard let d = s.sessionBorderDiffPer1k else { continue }
+            let w = Double(s.normalRotations)
+            guard w > 0 else { continue }
+            weightedSum += d * w
+            weightTotal += w
+        }
+        guard weightTotal > 0 else { return nil }
+        return weightedSum / weightTotal
+    }
+
     /// 機種別集計
     static func byMachine(_ sessions: [GameSession]) -> [AnalyticsGroup] {
         let grouped = Dictionary(grouping: sessions) { $0.machineName }
@@ -365,7 +380,7 @@ enum AnalyticsEngine {
                 sessionCount: g.sessionCount,
                 avgRotationPer1k: g.avgRotationRate,
                 totalProfit: g.totalProfit,
-                avgDiffFromFormulaBorder: g.avgDiffFromFormulaBorder
+                avgBorderDiffPer1k: g.avgBorderDiffPer1k
             )
         }
         return sortedCrossRows(rows, by: sortAxis)
@@ -397,7 +412,7 @@ enum AnalyticsEngine {
                 sessionCount: g.sessionCount,
                 avgRotationPer1k: g.avgRotationRate,
                 totalProfit: g.totalProfit,
-                avgDiffFromFormulaBorder: g.avgDiffFromFormulaBorder
+                avgBorderDiffPer1k: g.avgBorderDiffPer1k
             )
         }
         return sortedCrossRows(rows, by: sortAxis)
@@ -416,11 +431,11 @@ enum AnalyticsEngine {
                 if a.sessionCount != b.sessionCount { return a.sessionCount > b.sessionCount }
                 return abs(a.totalProfit) > abs(b.totalProfit)
             case .borderDiffDesc:
-                let an = a.avgDiffFromFormulaBorder != nil
-                let bn = b.avgDiffFromFormulaBorder != nil
+                let an = a.avgBorderDiffPer1k != nil
+                let bn = b.avgBorderDiffPer1k != nil
                 if an != bn { return an && !bn }
-                let av = a.avgDiffFromFormulaBorder ?? 0
-                let bv = b.avgDiffFromFormulaBorder ?? 0
+                let av = a.avgBorderDiffPer1k ?? 0
+                let bv = b.avgBorderDiffPer1k ?? 0
                 if abs(av - bv) > 0.01 { return av > bv }
                 if a.sessionCount != b.sessionCount { return a.sessionCount > b.sessionCount }
                 return abs(a.totalProfit) > abs(b.totalProfit)
@@ -467,14 +482,7 @@ enum AnalyticsEngine {
         let avgRatio = ratioCount > 0 ? sumRatio / Double(ratioCount) : 0
         let totalDS = sessions.reduce(0) { $0 + $1.deficitSurplus }
         let totalInv = sessions.reduce(0) { $0 + Int(round($1.totalRealCost)) }
-        let borderList = sessions.filter(\.participatesInFormulaBorderDiffAnalytics)
-        let avgBorderDiff: Double? = borderList.isEmpty ? nil : {
-            let sum = borderList.reduce(0.0) { acc, s in
-                let rate = (Double(s.normalRotations) / s.totalRealCost) * 1000.0
-                return acc + (rate - s.formulaBorderPer1k)
-            }
-            return sum / Double(borderList.count)
-        }()
+        let avgBorderDiff = weightedAverageBorderDiffPer1k(sessions: sessions)
         return AnalyticsGroup(
             id: id,
             label: label,
@@ -485,22 +493,8 @@ enum AnalyticsEngine {
             totalDeficitSurplus: totalDS,
             totalInvestment: totalInv,
             avgExpectationRatio: avgRatio,
-            avgDiffFromFormulaBorder: avgBorderDiff
+            avgBorderDiffPer1k: avgBorderDiff
         )
-    }
-
-    /// 月別累計（収支トレンドグラフ用）。月キー昇順で、各月までの累計実収支・累計期待値を返す
-    static func monthlyCumulativeTrend(_ sessions: [GameSession]) -> [(month: String, cumulativeProfit: Int, cumulativeTheoretical: Int)] {
-        let byMonth = Dictionary(grouping: sessions) { monthKey(from: $0.date) }
-        let sortedKeys = byMonth.keys.sorted()
-        var cumProfit = 0
-        var cumTheoretical = 0
-        return sortedKeys.map { key in
-            let list = byMonth[key] ?? []
-            cumProfit += list.reduce(0) { $0 + $1.performance }
-            cumTheoretical += list.reduce(0) { $0 + $1.theoreticalValue }
-            return (month: key, cumulativeProfit: cumProfit, cumulativeTheoretical: cumTheoretical)
-        }
     }
 
     /// 週の開始日（カレンダーの週単位。`Calendar.current` の週の並びに従う）
@@ -508,25 +502,126 @@ enum AnalyticsEngine {
         calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? calendar.startOfDay(for: date)
     }
 
-    /// 週別累計（収支トレンドの週表示用）。週開始日昇順で累計し、末尾から最大 `maxWeeks` 件だけ返す。横軸ラベルは週頭の「M/d〜」
-    static func weeklyCumulativeTrend(_ sessions: [GameSession], maxWeeks: Int = 12) -> [(weekId: String, weekLabel: String, cumulativeProfit: Int, cumulativeTheoretical: Int)] {
-        let byWeek = Dictionary(grouping: sessions) { weekIntervalStart(for: $0.date) }
-        let sortedStarts = byWeek.keys.sorted()
-        var cumProfit = 0
-        var cumTheoretical = 0
-        var rows: [(weekId: String, weekLabel: String, cumulativeProfit: Int, cumulativeTheoretical: Int)] = []
-        for start in sortedStarts {
-            let list = byWeek[start] ?? []
-            cumProfit += list.reduce(0) { $0 + $1.performance }
-            cumTheoretical += list.reduce(0) { $0 + $1.theoreticalValue }
-            let wid = weekStartIdFormatter.string(from: start)
-            let wlab = weekAxisLabelFormatter.string(from: start) + "〜"
-            rows.append((weekId: wid, weekLabel: wlab, cumulativeProfit: cumProfit, cumulativeTheoretical: cumTheoretical))
+    /// 全般の収支トレンド：切替は 12ヶ月 / 12週 / 30日いずれも **同じ本数のバケットを常に生成**（実戦が無い期間は 0）
+    enum ProfitTrendDisplayMode: Int, CaseIterable {
+        case twelveMonths
+        case twelveWeeks
+        case thirtyDays
+
+        var panelTitle: String {
+            switch self {
+            case .twelveMonths: return "収支トレンド（直近12ヶ月）"
+            case .twelveWeeks: return "収支トレンド（直近12週）"
+            case .thirtyDays: return "収支トレンド（直近30日）"
+            }
         }
-        if rows.count > maxWeeks {
-            return Array(rows.suffix(maxWeeks))
+
+        var next: ProfitTrendDisplayMode {
+            switch self {
+            case .twelveMonths: return .twelveWeeks
+            case .twelveWeeks: return .thirtyDays
+            case .thirtyDays: return .twelveMonths
+            }
         }
-        return rows
+
+        var bucketCount: Int {
+            switch self {
+            case .twelveMonths, .twelveWeeks: return 12
+            case .thirtyDays: return 30
+            }
+        }
+    }
+
+    /// 1バケットあたりの期間内合計と、左から右へ走査した累計（折れ線用）
+    struct ProfitTrendPoint: Identifiable, Equatable {
+        let id: String
+        let xIndex: Int
+        let axisLabel: String
+        /// 当該バケット内の実成績合計
+        let periodProfit: Int
+        /// 当該バケット内の期待値合計（棒グラフ用）
+        let periodTheoretical: Int
+        let cumulativeProfit: Int
+        let cumulativeTheoretical: Int
+    }
+
+    private static func startOfMonth(for date: Date) -> Date {
+        let c = calendar.dateComponents([.year, .month], from: date)
+        return calendar.date(from: c) ?? calendar.startOfDay(for: date)
+    }
+
+    /// `referenceEnd` を含む期間を右端とし、指モードで固定本数のトレンド点を返す。
+    static func profitTrendSeries(
+        sessions: [GameSession],
+        mode: ProfitTrendDisplayMode,
+        referenceEnd: Date
+    ) -> [ProfitTrendPoint] {
+        let ref = calendar.startOfDay(for: referenceEnd)
+        var periodProfit: [Int] = []
+        var periodTheoretical: [Int] = []
+        var ids: [String] = []
+        var labels: [String] = []
+
+        switch mode {
+        case .twelveMonths:
+            let endMonth = startOfMonth(for: ref)
+            var monthStarts: [Date] = []
+            for i in 0..<12 {
+                guard let monthStart = calendar.date(byAdding: .month, value: -(11 - i), to: endMonth) else { continue }
+                monthStarts.append(monthStart)
+            }
+            let spansMultipleYears = Set(monthStarts.map { calendar.component(.year, from: $0) }).count > 1
+            for monthStart in monthStarts {
+                let y = calendar.component(.year, from: monthStart)
+                let m = calendar.component(.month, from: monthStart)
+                ids.append(monthFormatter.string(from: monthStart))
+                labels.append(spansMultipleYears ? "\(y)/\(m)" : "\(m)月")
+                let list = sessions.filter { calendar.isDate($0.date, equalTo: monthStart, toGranularity: .month) }
+                periodProfit.append(list.reduce(0) { $0 + $1.performance })
+                periodTheoretical.append(list.reduce(0) { $0 + $1.theoreticalValue })
+            }
+        case .twelveWeeks:
+            let anchor = weekIntervalStart(for: ref)
+            for i in 0..<12 {
+                guard let ws = calendar.date(byAdding: .weekOfYear, value: -(11 - i), to: anchor),
+                      let interval = calendar.dateInterval(of: .weekOfYear, for: ws)
+                else { continue }
+                ids.append(weekStartIdFormatter.string(from: interval.start))
+                labels.append(weekAxisLabelFormatter.string(from: interval.start) + "〜")
+                let list = sessions.filter { $0.date >= interval.start && $0.date < interval.end }
+                periodProfit.append(list.reduce(0) { $0 + $1.performance })
+                periodTheoretical.append(list.reduce(0) { $0 + $1.theoreticalValue })
+            }
+        case .thirtyDays:
+            for i in 0..<30 {
+                let dayStart = calendar.date(byAdding: .day, value: -(29 - i), to: ref)!
+                ids.append("day-\(weekStartIdFormatter.string(from: dayStart))")
+                labels.append(dayInMonthFormatter.string(from: dayStart))
+                let list = sessions.filter { calendar.isDate($0.date, inSameDayAs: dayStart) }
+                periodProfit.append(list.reduce(0) { $0 + $1.performance })
+                periodTheoretical.append(list.reduce(0) { $0 + $1.theoreticalValue })
+            }
+        }
+
+        var cumP = 0
+        var cumT = 0
+        var out: [ProfitTrendPoint] = []
+        for i in periodProfit.indices {
+            cumP += periodProfit[i]
+            cumT += periodTheoretical[i]
+            out.append(
+                ProfitTrendPoint(
+                    id: ids[i],
+                    xIndex: i,
+                    axisLabel: labels[i],
+                    periodProfit: periodProfit[i],
+                    periodTheoretical: periodTheoretical[i],
+                    cumulativeProfit: cumP,
+                    cumulativeTheoretical: cumT
+                )
+            )
+        }
+        return out
     }
 
     /// 機種タイプ別集計（ST vs 確変）。machineTypeByMachineName: 機種名 → "st" or "kakugen"（Machine.machineTypeRaw）
@@ -540,6 +635,29 @@ enum AnalyticsEngine {
             guard let list = grouped[raw], !list.isEmpty else { return nil }
             return aggregate(label: label, sessions: list)
         }
+    }
+}
+
+// MARK: - 機種分析：複数当選の実戦統計
+
+/// 機種サマリー用。記録された当選（通常・RUSH の合計）に基づき、スペックの突入率%とは別物。
+struct MachineMultiHitSummary: Equatable {
+    /// 当選が2回以上あった実戦 ÷ 対象の全実戦（%）
+    let multiHitSessionRatePercent: Double?
+    /// 上記の「2回以上」実戦に限る、1実戦あたりの平均当選回数
+    let avgWinCountAmongMultiHitSessions: Double?
+
+    static func compute(from sessions: [GameSession]) -> MachineMultiHitSummary {
+        let total = sessions.count
+        guard total > 0 else {
+            return MachineMultiHitSummary(multiHitSessionRatePercent: nil, avgWinCountAmongMultiHitSessions: nil)
+        }
+        let multi = sessions.filter { $0.totalRecordedWinCount >= 2 }
+        let rate = Double(multi.count) / Double(total) * 100.0
+        let avgAmong: Double? = multi.isEmpty
+            ? nil
+            : Double(multi.reduce(0) { $0 + $1.totalRecordedWinCount }) / Double(multi.count)
+        return MachineMultiHitSummary(multiHitSessionRatePercent: rate, avgWinCountAmongMultiHitSessions: avgAmong)
     }
 }
 
@@ -594,15 +712,7 @@ struct AnalyticsOverviewTotalSummary {
         let totalCost = rotList.reduce(0.0) { $0 + $1.rotationRateDenominatorPt }
         let avgRotationPer1k: Double? = totalCost > 0 ? Double(totalRotations) / (totalCost / 1000.0) : nil
 
-        let borderList = sessions.filter(\.participatesInFormulaBorderDiffAnalytics)
-        let avgBorderDiffPer1k: Double? = {
-            guard !borderList.isEmpty else { return nil }
-            let sum = borderList.reduce(0.0) { acc, s in
-                let rate = (Double(s.normalRotations) / s.totalRealCost) * 1000.0
-                return acc + (rate - s.formulaBorderPer1k)
-            }
-            return sum / Double(borderList.count)
-        }()
+        let avgBorderDiffPer1k = AnalyticsEngine.weightedAverageBorderDiffPer1k(sessions: sessions)
 
         let byDay = Dictionary(grouping: sessions) { cal.startOfDay(for: $0.date) }
         let maxDailyInput = byDay.values.map { $0.reduce(0) { $0 + $1.inputCash } }.max() ?? 0

@@ -24,18 +24,17 @@ enum AnalyticsBottomSegment: String, CaseIterable {
     case period = "期間"
 }
 
-/// 期間フィルタ（ドックの「期間」タップで下からシート選択）。年別・月別・日別はドック上のドラムで参照日を指定
+/// 期間フィルタ（ドックの「期間」タップで下からシート選択）。年別・月別はドック上のドラムで参照年月を指定
 enum AnalyticsPeriodFilter: String, CaseIterable {
     case all = "通算"
     case year = "年別"
     case month = "月別"
-    case day = "日別"
     case last30 = "直近30日"
     case last7 = "直近7日"
 
     var label: String { rawValue }
 
-    /// referenceDate: 年別・月別・日別で使う基準日（ドラムで選択）。それ以外は無視
+    /// referenceDate: 年別・月別で使う基準日（ドラムで選択）。それ以外は無視
     func filter(_ sessions: [GameSession], referenceDate: Date = Date()) -> [GameSession] {
         let cal = Calendar.current
         let now = Date()
@@ -43,7 +42,6 @@ enum AnalyticsPeriodFilter: String, CaseIterable {
         case .all: return sessions
         case .year: return sessions.filter { cal.isDate($0.date, equalTo: referenceDate, toGranularity: .year) }
         case .month: return sessions.filter { cal.isDate($0.date, equalTo: referenceDate, toGranularity: .month) }
-        case .day: return sessions.filter { cal.isDate($0.date, equalTo: referenceDate, toGranularity: .day) }
         case .last30:
             guard let from = cal.date(byAdding: .day, value: -30, to: now) else { return sessions }
             return sessions.filter { $0.date >= from }
@@ -53,9 +51,9 @@ enum AnalyticsPeriodFilter: String, CaseIterable {
         }
     }
 
-    /// ドック上に日付ドラムを表示するか（年別・月別・日別）
+    /// ドック上に年月ドラムを表示するか（年別・月別）
     var showsPeriodDrum: Bool {
-        self == .year || self == .month || self == .day
+        self == .year || self == .month
     }
 
     /// クロス分析パネル用：現在の期間フィルタの説明（下部ドックの設定と一致）
@@ -72,9 +70,39 @@ enum AnalyticsPeriodFilter: String, CaseIterable {
             let y = cal.component(.year, from: referenceDate)
             return "対象: \(y)年"
         case .month:
-            return "対象: \(JapaneseDateFormatters.yearMonth.string(from: referenceDate))"
-        case .day:
-            return "対象: \(JapaneseDateFormatters.yearMonthDay.string(from: referenceDate))"
+            return "対象: \(JapaneseDateFormatters.yearMonthDock.string(from: referenceDate))"
+        }
+    }
+
+    /// 全般タブ（および詳細のサマリーカード）の見出し
+    func summaryPanelTitle(referenceDate: Date) -> String {
+        let cal = Calendar.current
+        switch self {
+        case .all:
+            return "通算サマリー"
+        case .year:
+            let y = cal.component(.year, from: referenceDate)
+            return "年間サマリー（\(y)年）"
+        case .month:
+            let inner = JapaneseDateFormatters.yearMonth.string(from: referenceDate)
+            return "月間サマリー（\(inner)）"
+        case .last30:
+            return "指定期間サマリー（直近30日）"
+        case .last7:
+            return "指定期間サマリー（直近7日）"
+        }
+    }
+
+    /// ドック上ドラムの上に出す「いま選んでいる期間」1行（年別＝◯年のみ、月別＝◯年　◯月形式）
+    func dockDrumSelectionCaption(referenceDate: Date) -> String? {
+        let cal = Calendar.current
+        switch self {
+        case .year:
+            return "\(cal.component(.year, from: referenceDate))年"
+        case .month:
+            return JapaneseDateFormatters.yearMonthDock.string(from: referenceDate)
+        default:
+            return nil
         }
     }
 }
@@ -94,6 +122,69 @@ enum AnalyticsNavRoute: Hashable {
     case sessionDetail(id: UUID)
     /// 下部ドックはそのまま。全般内のクロス分析を専用画面へ（ドックにタブは増やさない）
     case crossAnalysis
+    /// クロス分析の店×機種から、同一店・同一機種に絞った詳細（曜日・当該店の特定日ルール・履歴）
+    case shopMachineCrossDetail(shop: String, machine: String)
+}
+
+// MARK: - 店舗・機種・メーカー分析一覧の並び替え
+enum AnalyticsShopListSort: String, CaseIterable, Identifiable, Hashable {
+    case profitDesc
+    case sessionCountDesc
+    case recentPlayedDesc
+    case chodamaDesc
+    case winRateDesc
+
+    var id: String { rawValue }
+
+    var menuLabel: String {
+        switch self {
+        case .profitDesc: return "実成績が高い順"
+        case .sessionCountDesc: return "実戦件数が多い順"
+        case .recentPlayedDesc: return "直近に遊んだ順"
+        case .chodamaDesc: return "貯玉残高が多い順"
+        case .winRateDesc: return "勝率が高い順"
+        }
+    }
+}
+
+enum AnalyticsMachineListSort: String, CaseIterable, Identifiable, Hashable {
+    case profitDesc
+    case sessionCountDesc
+    case recentPlayedDesc
+    case borderDiffDesc
+    case winRateDesc
+
+    var id: String { rawValue }
+
+    var menuLabel: String {
+        switch self {
+        case .profitDesc: return "実成績が高い順"
+        case .sessionCountDesc: return "実戦件数が多い順"
+        case .recentPlayedDesc: return "直近に遊んだ順"
+        case .borderDiffDesc: return "ボーダー差（プラス優先）"
+        case .winRateDesc: return "勝率が高い順"
+        }
+    }
+}
+
+enum AnalyticsManufacturerListSort: String, CaseIterable, Identifiable, Hashable {
+    case profitDesc
+    case sessionCountDesc
+    case recentPlayedDesc
+    case deficitSurplusDesc
+    case winRateDesc
+
+    var id: String { rawValue }
+
+    var menuLabel: String {
+        switch self {
+        case .profitDesc: return "実成績が高い順"
+        case .sessionCountDesc: return "実戦件数が多い順"
+        case .recentPlayedDesc: return "直近に遊んだ順"
+        case .deficitSurplusDesc: return "期待値より上振れが大きい順"
+        case .winRateDesc: return "勝率が高い順"
+        }
+    }
 }
 
 /// 分析ドック・内部ナビ・一覧キャッシュをホームの下部インセットと画面本体で共有する
@@ -110,6 +201,10 @@ final class AnalyticsDashboardSharedModel: ObservableObject {
     @Published var crossAnalysisDimension: CrossAnalysisDimension = .manufacturer
     /// 全般タブのクロス分析の並び順
     @Published var crossAnalysisSortAxis: CrossAnalysisSortAxis = .sessionsDesc
+    /// 店舗・機種・メーカー分析タブの一覧並び
+    @Published var shopListSort: AnalyticsShopListSort = .recentPlayedDesc
+    @Published var machineListSort: AnalyticsMachineListSort = .profitDesc
+    @Published var manufacturerListSort: AnalyticsManufacturerListSort = .profitDesc
     @Published private(set) var cachedFilteredSessions: [GameSession] = []
     @Published private(set) var cachedAllGroups: [AnalyticsGroup] = []
 
@@ -127,8 +222,6 @@ final class AnalyticsDashboardSharedModel: ObservableObject {
                 cachedAllGroups = AnalyticsEngine.byMonth(f)
             case .month:
                 cachedAllGroups = AnalyticsEngine.byCalendarDay(f)
-            case .day:
-                cachedAllGroups = f.isEmpty ? [] : [AnalyticsEngine.overviewGroup(f)]
             }
         }
     }
@@ -150,32 +243,69 @@ private extension View {
     }
 }
 
-/// 左端から右へスワイプして戻る（`analyticsNavPath` が空ならホームへ閉じる／単体表示なら `dismiss`）。ドックの「戻る」と同じ動き。
+private enum AnalyticsSwipeBackContainerWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat { 0 }
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        let next = nextValue()
+        if next > 0 { value = next }
+    }
+}
+
+/// 画面左半分あたりから始めた右方向スワイプで戻る（`analyticsNavPath` が空ならホームへ閉じる／単体表示なら `dismiss`）。ドックの「戻る」と同じ動き。開始位置が狭すぎず、ドラッグ距離も一定以上にして誤戻りを抑える。
 private struct AnalyticsInteractiveEdgeSwipeBack: ViewModifier {
     @ObservedObject var model: AnalyticsDashboardSharedModel
     var onDismissEmbeddedToHome: (() -> Void)?
-    @Environment(\.dismiss) private var dismiss
 
     func body(content: Content) -> some View {
-        content.simultaneousGesture(
-            DragGesture(minimumDistance: 24, coordinateSpace: .local)
-                .onEnded { value in
-                    let edgeWidth: CGFloat = 26
-                    guard value.startLocation.x <= edgeWidth else { return }
-                    guard value.translation.width >= 72 else { return }
-                    guard value.translation.width > abs(value.translation.height) * 1.08 else { return }
-                    HapticUtil.impact(.light)
-                    if model.analyticsNavPath.isEmpty {
-                        if let onDismissEmbeddedToHome {
-                            onDismissEmbeddedToHome()
-                        } else {
-                            dismiss()
-                        }
-                    } else {
-                        model.analyticsNavPath.removeLast()
-                    }
-                }
+        AnalyticsSwipeBackMeasuredHost(
+            model: model,
+            onDismissEmbeddedToHome: onDismissEmbeddedToHome,
+            content: content
         )
+    }
+}
+
+private struct AnalyticsSwipeBackMeasuredHost<Content: View>: View {
+    @ObservedObject var model: AnalyticsDashboardSharedModel
+    var onDismissEmbeddedToHome: (() -> Void)?
+    var content: Content
+    @Environment(\.dismiss) private var dismiss
+    @State private var measuredWidth: CGFloat = 0
+
+    /// ジェスチャーはローカル座標。幅は `GeometryReader` で計測（`UIScreen.main` は iOS 26 で非推奨のため使わない）。
+    private var leftHalfBoundaryX: CGFloat {
+        let w = measuredWidth > 1 ? measuredWidth : 390
+        return w * 0.5
+    }
+
+    var body: some View {
+        content
+            .background(
+                GeometryReader { geo in
+                    Color.clear.preference(key: AnalyticsSwipeBackContainerWidthKey.self, value: geo.size.width)
+                }
+            )
+            .onPreferenceChange(AnalyticsSwipeBackContainerWidthKey.self) { w in
+                if w > 0 { measuredWidth = w }
+            }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 40, coordinateSpace: .local)
+                    .onEnded { value in
+                        guard value.startLocation.x < leftHalfBoundaryX else { return }
+                        guard value.translation.width >= 118 else { return }
+                        guard value.translation.width > abs(value.translation.height) * 1.12 else { return }
+                        HapticUtil.impact(.light)
+                        if model.analyticsNavPath.isEmpty {
+                            if let onDismissEmbeddedToHome {
+                                onDismissEmbeddedToHome()
+                            } else {
+                                dismiss()
+                            }
+                        } else {
+                            model.analyticsNavPath.removeLast()
+                        }
+                    }
+            )
     }
 }
 
@@ -348,11 +478,89 @@ private struct AnalyticsBottomBarView: View {
     }
 }
 
+/// 年別は「2026年」形式、月別は「2026年　3月」形式のホイール（高さを抑え、中央付近に選択＋上下1段が見える程度）
+private struct AnalyticsPeriodReferencePicker: View {
+    @Binding var selectedDate: Date
+    var filter: AnalyticsPeriodFilter
+
+    private var calendar: Calendar { Calendar.current }
+
+    private var yearValues: [Int] {
+        let y = calendar.component(.year, from: Date())
+        return Array((y - 25)...y)
+    }
+
+    private var monthFirstDays: [Date] {
+        Self.buildMonthFirstDays(calendar: calendar, through: Date())
+    }
+
+    private static func buildMonthFirstDays(calendar: Calendar, through end: Date) -> [Date] {
+        let endY = calendar.component(.year, from: end)
+        let endM = calendar.component(.month, from: end)
+        let startY = endY - 25
+        var dates: [Date] = []
+        for y in startY...endY {
+            let lastM = (y == endY) ? endM : 12
+            for m in 1...lastM {
+                if let d = calendar.date(from: DateComponents(year: y, month: m, day: 1)) {
+                    dates.append(d)
+                }
+            }
+        }
+        return dates
+    }
+
+    var body: some View {
+        Group {
+            switch filter {
+            case .year:
+                Picker("", selection: Binding(
+                    get: { calendar.component(.year, from: selectedDate) },
+                    set: { newY in
+                        let m = max(1, min(12, calendar.component(.month, from: selectedDate)))
+                        if let d = calendar.date(from: DateComponents(year: newY, month: m, day: 1)) {
+                            selectedDate = d
+                        }
+                    }
+                )) {
+                    ForEach(yearValues, id: \.self) { y in
+                        Text("\(y)年").tag(y)
+                    }
+                }
+                .pickerStyle(.wheel)
+            case .month:
+                Picker("", selection: Binding(
+                    get: {
+                        let y = calendar.component(.year, from: selectedDate)
+                        let m = calendar.component(.month, from: selectedDate)
+                        let key = calendar.date(from: DateComponents(year: y, month: m, day: 1))!
+                        if let hit = monthFirstDays.first(where: { calendar.isDate($0, equalTo: key, toGranularity: .month) }) {
+                            return hit
+                        }
+                        return monthFirstDays.last ?? key
+                    },
+                    set: { selectedDate = $0 }
+                )) {
+                    ForEach(monthFirstDays, id: \.timeIntervalSince1970) { d in
+                        Text(JapaneseDateFormatters.yearMonthDock.string(from: d)).tag(d)
+                    }
+                }
+                .pickerStyle(.wheel)
+            default:
+                EmptyView()
+            }
+        }
+    }
+}
+
 // MARK: - 分析ドック一式（`AnalyticsDashboardView` 内の `NavigationStack` と同一階層の `safeAreaInset` に載せる）
 struct AnalyticsDashboardBottomChrome: View {
     @ObservedObject var model: AnalyticsDashboardSharedModel
     @ObservedObject private var adVisibility = AdVisibilityManager.shared
     var onDismissToHome: () -> Void
+
+    /// ドック上ドラム：`UIPicker` 風ホイールの見かけ高さを抑える（約3行相当）
+    private let periodDrumVisibleHeight: CGFloat = 88
 
     var body: some View {
         VStack(spacing: 0) {
@@ -362,19 +570,27 @@ struct AnalyticsDashboardBottomChrome: View {
                     .background(Color.black)
             }
             if model.periodFilter.showsPeriodDrum {
-                DatePicker(selection: $model.selectedPeriodDate, displayedComponents: .date) {
-                    Text(model.periodFilter.label)
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
+                VStack(spacing: 4) {
+                    if let cap = model.periodFilter.dockDrumSelectionCaption(referenceDate: model.selectedPeriodDate) {
+                        Text(cap)
+                            .font(.caption.weight(.semibold))
+                            .foregroundColor(.white.opacity(0.88))
+                    }
+                    AnalyticsPeriodReferencePicker(selectedDate: $model.selectedPeriodDate, filter: model.periodFilter)
+                        .labelsHidden()
+                        .frame(height: periodDrumVisibleHeight)
+                        .clipped()
                 }
-                .datePickerStyle(.wheel)
-                .labelsHidden()
-                .colorScheme(.dark)
-                .frame(height: 140)
                 .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(TranslucentBlurView(style: .systemUltraThinMaterialDark, alpha: 0.95))
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .padding(.vertical, 6)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(Color(red: 0.14, green: 0.14, blue: 0.15))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
             }
@@ -450,11 +666,160 @@ struct AnalyticsDashboardView: View {
         }
     }
 
-    private var allGroups: [AnalyticsGroup] { model.cachedAllGroups }
+    private var sortedSegmentGroups: [AnalyticsGroup] {
+        sortAnalyticsGroups(model.cachedAllGroups)
+    }
 
     private var groups: [AnalyticsGroup] {
-        guard let label = model.selectedFilterLabel else { return allGroups }
-        return allGroups.filter { $0.label == label }
+        guard let label = model.selectedFilterLabel else { return sortedSegmentGroups }
+        return sortedSegmentGroups.filter { $0.label == label }
+    }
+
+    private func sortAnalyticsGroups(_ groups: [AnalyticsGroup]) -> [AnalyticsGroup] {
+        switch model.bottomSegment {
+        case .shop: return sortShopGroups(groups)
+        case .machine: return sortMachineGroups(groups)
+        case .manufacturer: return sortManufacturerGroups(groups)
+        default: return groups
+        }
+    }
+
+    private func sortShopGroups(_ groups: [AnalyticsGroup]) -> [AnalyticsGroup] {
+        groups.sorted { a, b in
+            switch model.shopListSort {
+            case .profitDesc:
+                if a.totalProfit != b.totalProfit { return a.totalProfit > b.totalProfit }
+            case .sessionCountDesc:
+                if a.sessionCount != b.sessionCount { return a.sessionCount > b.sessionCount }
+            case .recentPlayedDesc:
+                let da = lastPlayedDateShop(a.label)
+                let db = lastPlayedDateShop(b.label)
+                if da != db { return da > db }
+            case .chodamaDesc:
+                let ca = chodamaBalls(shopName: a.label)
+                let cb = chodamaBalls(shopName: b.label)
+                if ca != cb { return ca > cb }
+            case .winRateDesc:
+                switch (winRateShop(a.label), winRateShop(b.label)) {
+                case let (wa?, wb?) where abs(wa - wb) > 0.01:
+                    return wa > wb
+                case (_?, nil):
+                    return true
+                case (nil, _?):
+                    return false
+                default:
+                    break
+                }
+            }
+            return a.label < b.label
+        }
+    }
+
+    private func sortMachineGroups(_ groups: [AnalyticsGroup]) -> [AnalyticsGroup] {
+        groups.sorted { a, b in
+            switch model.machineListSort {
+            case .profitDesc:
+                if a.totalProfit != b.totalProfit { return a.totalProfit > b.totalProfit }
+            case .sessionCountDesc:
+                if a.sessionCount != b.sessionCount { return a.sessionCount > b.sessionCount }
+            case .recentPlayedDesc:
+                let da = lastPlayedDateMachine(a.label)
+                let db = lastPlayedDateMachine(b.label)
+                if da != db { return da > db }
+            case .borderDiffDesc:
+                let an = a.avgBorderDiffPer1k != nil
+                let bn = b.avgBorderDiffPer1k != nil
+                if an != bn { return an && !bn }
+                let av = a.avgBorderDiffPer1k ?? 0
+                let bv = b.avgBorderDiffPer1k ?? 0
+                if abs(av - bv) > 0.01 { return av > bv }
+            case .winRateDesc:
+                switch (winRateMachine(a.label), winRateMachine(b.label)) {
+                case let (wa?, wb?) where abs(wa - wb) > 0.01:
+                    return wa > wb
+                case (_?, nil):
+                    return true
+                case (nil, _?):
+                    return false
+                default:
+                    break
+                }
+            }
+            return a.label < b.label
+        }
+    }
+
+    private func sortManufacturerGroups(_ groups: [AnalyticsGroup]) -> [AnalyticsGroup] {
+        groups.sorted { a, b in
+            switch model.manufacturerListSort {
+            case .profitDesc:
+                if a.totalProfit != b.totalProfit { return a.totalProfit > b.totalProfit }
+            case .sessionCountDesc:
+                if a.sessionCount != b.sessionCount { return a.sessionCount > b.sessionCount }
+            case .recentPlayedDesc:
+                let da = lastPlayedDateManufacturer(a.label)
+                let db = lastPlayedDateManufacturer(b.label)
+                if da != db { return da > db }
+            case .deficitSurplusDesc:
+                if a.totalDeficitSurplus != b.totalDeficitSurplus {
+                    return a.totalDeficitSurplus > b.totalDeficitSurplus
+                }
+            case .winRateDesc:
+                switch (winRateManufacturer(a.label), winRateManufacturer(b.label)) {
+                case let (wa?, wb?) where abs(wa - wb) > 0.01:
+                    return wa > wb
+                case (_?, nil):
+                    return true
+                case (nil, _?):
+                    return false
+                default:
+                    break
+                }
+            }
+            return a.label < b.label
+        }
+    }
+
+    private func lastPlayedDateShop(_ label: String) -> Date {
+        filteredSessions.filter { ($0.shopName.isEmpty ? "未設定" : $0.shopName) == label }.map(\.date).max() ?? .distantPast
+    }
+
+    private func lastPlayedDateMachine(_ label: String) -> Date {
+        filteredSessions.filter { ($0.machineName.isEmpty ? "未設定" : $0.machineName) == label }.map(\.date).max() ?? .distantPast
+    }
+
+    private func lastPlayedDateManufacturer(_ label: String) -> Date {
+        let card = label.trimmingCharacters(in: .whitespaces).isEmpty ? "未設定" : label
+        return filteredSessions.filter {
+            let row = $0.manufacturerName.trimmingCharacters(in: .whitespaces).isEmpty ? "未設定" : $0.manufacturerName
+            return row == card
+        }.map(\.date).max() ?? .distantPast
+    }
+
+    private func chodamaBalls(shopName: String) -> Int {
+        shops.first(where: { $0.name == shopName })?.chodamaBalanceBalls ?? 0
+    }
+
+    private func winRate(from sessions: [GameSession]) -> Double? {
+        guard !sessions.isEmpty else { return nil }
+        let w = sessions.filter { $0.performance > 0 }.count
+        return Double(w) / Double(sessions.count) * 100
+    }
+
+    private func winRateShop(_ label: String) -> Double? {
+        winRate(from: filteredSessions.filter { ($0.shopName.isEmpty ? "未設定" : $0.shopName) == label })
+    }
+
+    private func winRateMachine(_ label: String) -> Double? {
+        winRate(from: filteredSessions.filter { ($0.machineName.isEmpty ? "未設定" : $0.machineName) == label })
+    }
+
+    private func winRateManufacturer(_ label: String) -> Double? {
+        let card = label.trimmingCharacters(in: .whitespaces).isEmpty ? "未設定" : label
+        return winRate(from: filteredSessions.filter {
+            let row = $0.manufacturerName.trimmingCharacters(in: .whitespaces).isEmpty ? "未設定" : $0.manufacturerName
+            return row == card
+        })
     }
 
     private func updateCaches() {
@@ -568,9 +933,6 @@ struct AnalyticsDashboardView: View {
     /// 期間タブ一覧からの遷移（フィルタに応じて日詳細または月キー単位のセッション一覧）
     private func openPeriodAnalyticsGroup(_ g: AnalyticsGroup) {
         switch model.periodFilter {
-        case .day:
-            let t = Calendar.current.startOfDay(for: model.selectedPeriodDate).timeIntervalSince1970
-            appendAnalyticsRoute(.dayDetail(dayStart: t))
         case .month:
             if let t = TimeInterval(g.id) {
                 appendAnalyticsRoute(.dayDetail(dayStart: t))
@@ -617,6 +979,7 @@ struct AnalyticsDashboardView: View {
                 machinesByName: machinesByName,
                 rulesByShopName: rulesByShopName,
                 orderedSpecificDayLabels: shops.first(where: { $0.name == name }).map { SpecificDayRules.orderedLabels(rulesStorage: $0.specificDayRulesStorage, dayOfMonthFallback: $0.specificDayOfMonthStorage, lastDigitsFallback: $0.specificLastDigitsStorage) } ?? [],
+                selectedPeriodDate: model.selectedPeriodDate,
                 bottomSegment: $model.bottomSegment,
                 selectedFilterLabel: $model.selectedFilterLabel,
                 periodFilter: $model.periodFilter,
@@ -628,7 +991,7 @@ struct AnalyticsDashboardView: View {
                 machineName: name,
                 sessions: filteredSessions,
                 machinesByName: machinesByName,
-                rulesByShopName: rulesByShopName,
+                selectedPeriodDate: model.selectedPeriodDate,
                 bottomSegment: $model.bottomSegment,
                 selectedFilterLabel: $model.selectedFilterLabel,
                 periodFilter: $model.periodFilter,
@@ -641,6 +1004,7 @@ struct AnalyticsDashboardView: View {
                 sessions: filteredSessions,
                 machinesByName: machinesByName,
                 rulesByShopName: rulesByShopName,
+                selectedPeriodDate: model.selectedPeriodDate,
                 bottomSegment: $model.bottomSegment,
                 selectedFilterLabel: $model.selectedFilterLabel,
                 periodFilter: $model.periodFilter,
@@ -665,7 +1029,32 @@ struct AnalyticsDashboardView: View {
                 selectedPeriodDate: model.selectedPeriodDate,
                 dimension: $model.crossAnalysisDimension,
                 sortAxis: $model.crossAnalysisSortAxis,
-                cyan: cyan
+                cyan: cyan,
+                onShopMachineRowSelected: { row in
+                    appendAnalyticsRoute(.shopMachineCrossDetail(shop: row.shop, machine: row.machine))
+                }
+            )
+        case .shopMachineCrossDetail(let shop, let machine):
+            let orderedLabels = shops.first(where: { $0.name == shop }).map {
+                SpecificDayRules.orderedLabels(
+                    rulesStorage: $0.specificDayRulesStorage,
+                    dayOfMonthFallback: $0.specificDayOfMonthStorage,
+                    lastDigitsFallback: $0.specificLastDigitsStorage
+                )
+            } ?? []
+            AnalyticsShopMachineCrossDetailView(
+                shopName: shop,
+                machineName: machine,
+                sessions: filteredSessions,
+                machinesByName: machinesByName,
+                rulesByShopName: rulesByShopName,
+                orderedSpecificDayLabels: orderedLabels,
+                selectedPeriodDate: model.selectedPeriodDate,
+                bottomSegment: $model.bottomSegment,
+                selectedFilterLabel: $model.selectedFilterLabel,
+                periodFilter: $model.periodFilter,
+                showPeriodSheet: $model.showPeriodSheet,
+                onSessionTap: { appendAnalyticsRoute(.sessionDetail(id: $0)) }
             )
         }
     }
@@ -696,13 +1085,17 @@ struct AnalyticsDashboardView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// 全般・店舗・機種・メーカー一覧では曜日・特定日傾向は出さない。個別店舗/機種/メーカー詳細に入ったときだけ表示する。
+    /// 全般・店舗・機種・メーカー一覧では曜日・特定日傾向は出さない。個別店舗・メーカー詳細、および店×機種クロス詳細では曜日＋特定日を表示。個別機種詳細は店跨ぎのため曜日のみ。
     private var listContent: some View {
         ScrollView(showsIndicators: false) {
             LazyVStack(spacing: 12) {
                 if model.bottomSegment == .overview && !filteredSessions.isEmpty {
-                    OverviewTotalSummaryPanel(metrics: overviewTotalSummary, accent: cyan)
-                    CumulativeProfitTrendSection(sessions: filteredSessions, cyan: cyan)
+                    OverviewTotalSummaryPanel(
+                        metrics: overviewTotalSummary,
+                        accent: cyan,
+                        panelTitle: model.periodFilter.summaryPanelTitle(referenceDate: model.selectedPeriodDate)
+                    )
+                    CumulativeProfitTrendSection(sessions: filteredSessions, referenceEnd: model.selectedPeriodDate, cyan: cyan)
                     CalendarHeatmapSection(sessions: filteredSessions, cyan: cyan, selectedDay: $model.heatmapSelectedDay, bottomSegment: $model.bottomSegment, selectedFilterLabel: $model.selectedFilterLabel, periodFilter: $model.periodFilter, showPeriodSheet: $model.showPeriodSheet)
                     if entitlements.analyticsUnlocked {
                         CrossAnalysisOverviewSection(
@@ -712,7 +1105,10 @@ struct AnalyticsDashboardView: View {
                             dimension: $model.crossAnalysisDimension,
                             sortAxis: $model.crossAnalysisSortAxis,
                             cyan: cyan,
-                            onRequestFullScreen: { appendAnalyticsRoute(.crossAnalysis) }
+                            onRequestFullScreen: { appendAnalyticsRoute(.crossAnalysis) },
+                            onShopMachineRowSelected: { row in
+                                appendAnalyticsRoute(.shopMachineCrossDetail(shop: row.shop, machine: row.machine))
+                            }
                         )
                     }
                     Button {
@@ -732,6 +1128,9 @@ struct AnalyticsDashboardView: View {
                             )
                     }
                     .buttonStyle(.plain)
+                }
+                if model.bottomSegment != .overview && model.bottomSegment != .period {
+                    analyticsListSortBar
                 }
                 if model.bottomSegment != .overview {
                     ForEach(groups) { g in
@@ -791,14 +1190,73 @@ struct AnalyticsDashboardView: View {
         }
     }
 
+    @ViewBuilder
+    private var analyticsListSortBar: some View {
+        Group {
+            if model.bottomSegment == .shop {
+                Menu {
+                    Picker("並び替え", selection: $model.shopListSort) {
+                        ForEach(AnalyticsShopListSort.allCases) { s in
+                            Text(s.menuLabel).tag(s)
+                        }
+                    }
+                } label: {
+                    analyticsSortMenuLabel(current: model.shopListSort.menuLabel)
+                }
+            } else if model.bottomSegment == .machine {
+                Menu {
+                    Picker("並び替え", selection: $model.machineListSort) {
+                        ForEach(AnalyticsMachineListSort.allCases) { s in
+                            Text(s.menuLabel).tag(s)
+                        }
+                    }
+                } label: {
+                    analyticsSortMenuLabel(current: model.machineListSort.menuLabel)
+                }
+            } else if model.bottomSegment == .manufacturer {
+                Menu {
+                    Picker("並び替え", selection: $model.manufacturerListSort) {
+                        ForEach(AnalyticsManufacturerListSort.allCases) { s in
+                            Text(s.menuLabel).tag(s)
+                        }
+                    }
+                } label: {
+                    analyticsSortMenuLabel(current: model.manufacturerListSort.menuLabel)
+                }
+            }
+        }
+    }
+
+    private func analyticsSortMenuLabel(current: String) -> some View {
+        HStack {
+            Text("並び替え: \(current)")
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.white.opacity(0.92))
+            Spacer()
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.caption.weight(.semibold))
+                .foregroundColor(cyan.opacity(0.9))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(AnalyticsPanelStyle.rowBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
+    }
+
 }
 
-/// 全般タブ最上段：タップで遷移しない「通算サマリー」
+/// 全般タブ最上段：タップで遷移しないサマリーカード（見出しは期間フィルタに連動）
 private struct OverviewTotalSummaryPanel: View {
     let metrics: AnalyticsOverviewTotalSummary
     let accent: Color
-    /// 店舗詳細などで同じブロックを使うときの見出し（デフォルトは通算サマリー）
+    /// 呼び出し側で `periodFilter.summaryPanelTitle(referenceDate:)` を渡す。省略時は通算扱いの文言。
     var panelTitle: String = "通算サマリー"
+    /// 個別機種分析のみ。`勝率` 行の直下に横並びで追加。
+    var machineMultiHitSummary: MachineMultiHitSummary? = nil
 
     private var lossColor: Color { Color.orange }
     private var neutral: Color { Color.white.opacity(0.92) }
@@ -808,7 +1266,7 @@ private struct OverviewTotalSummaryPanel: View {
             Text(panelTitle)
                 .font(AppTypography.panelHeading)
                 .foregroundColor(.white)
-                .padding(.bottom, 10)
+                .padding(.bottom, 6)
 
             summaryPairRow(
                 "通算成績", signedPt(metrics.totalPerformance), metrics.totalPerformance >= 0 ? accent : lossColor,
@@ -827,22 +1285,28 @@ private struct OverviewTotalSummaryPanel: View {
             summaryDivider()
             summaryPairRow(
                 "勝率", metrics.winRatePercent.map { String(format: "%.1f%%", $0) } ?? "—", neutral,
-                "平均初当たり確率", metrics.avgFirstHitProbabilityText ?? "—", neutral
-            )
-            summaryDivider()
-            summaryPairRow(
-                "通算期待値", signedPt(metrics.totalTheoretical), metrics.totalTheoretical >= 0 ? accent : lossColor,
-                "期待値との差", signedPt(metrics.totalExpectationDiff), metrics.totalExpectationDiff >= 0 ? accent : lossColor
-            )
-            summaryDivider()
-            summaryPairRow(
-                "平均回転率", metrics.avgRotationPer1k.map { String(format: "%.1f 回/1k", $0) } ?? "—", neutral,
-                "公式ボーダーとの差",
+                "ボーダーとの差（回転加重）",
                 metrics.avgBorderDiffPer1k.map { String(format: "%+.1f 回/1k", $0) } ?? "—",
                 {
                     guard let d = metrics.avgBorderDiffPer1k else { return neutral }
                     return d >= 0 ? accent : lossColor
                 }()
+            )
+            if let hit = machineMultiHitSummary {
+                summaryDivider()
+                summaryPairRow(
+                    "RUSH突入率",
+                    hit.multiHitSessionRatePercent.map { String(format: "%.1f%%", $0) } ?? "—",
+                    neutral,
+                    "平均連チャン回数",
+                    hit.avgWinCountAmongMultiHitSessions.map { String(format: "%.2f回", $0) } ?? "—",
+                    neutral
+                )
+            }
+            summaryDivider()
+            summaryPairRow(
+                "通算期待値", signedPt(metrics.totalTheoretical), metrics.totalTheoretical >= 0 ? accent : lossColor,
+                "期待値との差", signedPt(metrics.totalExpectationDiff), metrics.totalExpectationDiff >= 0 ? accent : lossColor
             )
             summaryDivider()
             summaryPairRow(
@@ -876,7 +1340,7 @@ private struct OverviewTotalSummaryPanel: View {
         Rectangle()
             .fill(Color.white.opacity(0.12))
             .frame(height: 1)
-            .padding(.vertical, 8)
+            .padding(.vertical, 5)
     }
 
     private func summaryPairRow(
@@ -986,6 +1450,7 @@ private struct CrossAnalysisPanelCore: View {
     @Binding var sortAxis: CrossAnalysisSortAxis
     let cyan: Color
     var onRequestFullScreen: (() -> Void)? = nil
+    var onShopMachineRowSelected: ((ShopMachineCrossRow) -> Void)? = nil
 
     private var periodCaption: String {
         periodFilter.crossAnalysisPeriodCaption(referenceDate: selectedPeriodDate)
@@ -1006,7 +1471,7 @@ private struct CrossAnalysisPanelCore: View {
                     .font(AppTypography.panelHeading)
                     .foregroundColor(.white)
                 InfoIconView(
-                    explanation: "店舗とメーカー、または店舗と機種の組み合わせごとに集計します。同一組み合わせの実戦が2件以上あるときだけ表示します。下部ドックの「期間」（通算・直近・年月日）に連動します。並び替えで回りやすさ・収支の振れを見つけやすくできます。",
+                    explanation: "店舗とメーカー、または店舗と機種の組み合わせごとに集計します。同一組み合わせの実戦が2件以上あるときだけ表示します。下部ドックの「期間」（通算・直近・年・月）に連動します。並び替えで回りやすさ・収支の振れを見つけやすくできます。",
                     tint: .white.opacity(0.6)
                 )
             }
@@ -1087,7 +1552,7 @@ private struct CrossAnalysisPanelCore: View {
                                     sessionCount: row.sessionCount,
                                     avgRotationPer1k: row.avgRotationPer1k,
                                     totalProfit: row.totalProfit,
-                                    avgDiffFromFormulaBorder: row.avgDiffFromFormulaBorder,
+                                    avgBorderDiffPer1k: row.avgBorderDiffPer1k,
                                     cyan: cyan
                                 )
                             }
@@ -1099,15 +1564,36 @@ private struct CrossAnalysisPanelCore: View {
                     } else {
                         VStack(spacing: 10) {
                             ForEach(machineRows) { row in
-                                CrossAnalysisPairRowCard(
-                                    shop: row.shop,
-                                    counterpart: row.machine,
-                                    sessionCount: row.sessionCount,
-                                    avgRotationPer1k: row.avgRotationPer1k,
-                                    totalProfit: row.totalProfit,
-                                    avgDiffFromFormulaBorder: row.avgDiffFromFormulaBorder,
-                                    cyan: cyan
-                                )
+                                if let onShop = onShopMachineRowSelected {
+                                    Button {
+                                        HapticUtil.impact(.light)
+                                        onShop(row)
+                                    } label: {
+                                        CrossAnalysisPairRowCard(
+                                            shop: row.shop,
+                                            counterpart: row.machine,
+                                            sessionCount: row.sessionCount,
+                                            avgRotationPer1k: row.avgRotationPer1k,
+                                            totalProfit: row.totalProfit,
+                                            avgBorderDiffPer1k: row.avgBorderDiffPer1k,
+                                            cyan: cyan,
+                                            showsDrillDownAffordance: true
+                                        )
+                                    }
+                                    .buttonStyle(CrossAnalysisRowTapButtonStyle())
+                                    .accessibilityHint("店と機種の詳細を表示")
+                                } else {
+                                    CrossAnalysisPairRowCard(
+                                        shop: row.shop,
+                                        counterpart: row.machine,
+                                        sessionCount: row.sessionCount,
+                                        avgRotationPer1k: row.avgRotationPer1k,
+                                        totalProfit: row.totalProfit,
+                                        avgBorderDiffPer1k: row.avgBorderDiffPer1k,
+                                        cyan: cyan,
+                                        showsDrillDownAffordance: false
+                                    )
+                                }
                             }
                         }
                     }
@@ -1136,6 +1622,7 @@ private struct CrossAnalysisOverviewSection: View {
     @Binding var sortAxis: CrossAnalysisSortAxis
     let cyan: Color
     var onRequestFullScreen: (() -> Void)?
+    var onShopMachineRowSelected: ((ShopMachineCrossRow) -> Void)?
 
     var body: some View {
         CrossAnalysisPanelCore(
@@ -1145,7 +1632,8 @@ private struct CrossAnalysisOverviewSection: View {
             dimension: $dimension,
             sortAxis: $sortAxis,
             cyan: cyan,
-            onRequestFullScreen: onRequestFullScreen
+            onRequestFullScreen: onRequestFullScreen,
+            onShopMachineRowSelected: onShopMachineRowSelected
         )
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1166,6 +1654,7 @@ private struct CrossAnalysisFullScreenView: View {
     @Binding var dimension: CrossAnalysisDimension
     @Binding var sortAxis: CrossAnalysisSortAxis
     let cyan: Color
+    var onShopMachineRowSelected: ((ShopMachineCrossRow) -> Void)?
 
     var body: some View {
         ZStack {
@@ -1178,7 +1667,8 @@ private struct CrossAnalysisFullScreenView: View {
                     dimension: $dimension,
                     sortAxis: $sortAxis,
                     cyan: cyan,
-                    onRequestFullScreen: nil
+                    onRequestFullScreen: nil,
+                    onShopMachineRowSelected: onShopMachineRowSelected
                 )
                 .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1200,14 +1690,24 @@ private struct CrossAnalysisFullScreenView: View {
     }
 }
 
+/// 店×機種行の軽いタップ反応（`.plain` より視認しやすい）
+private struct CrossAnalysisRowTapButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .scaleEffect(configuration.isPressed ? 0.99 : 1)
+    }
+}
+
 private struct CrossAnalysisPairRowCard: View {
     let shop: String
     let counterpart: String
     let sessionCount: Int
     let avgRotationPer1k: Double
     let totalProfit: Int
-    let avgDiffFromFormulaBorder: Double?
+    let avgBorderDiffPer1k: Double?
     let cyan: Color
+    var showsDrillDownAffordance: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -1223,7 +1723,15 @@ private struct CrossAnalysisPairRowCard: View {
                     .foregroundColor(cyan.opacity(0.95))
                     .lineLimit(2)
                     .minimumScaleFactor(0.85)
-                Spacer()
+                Spacer(minLength: 6)
+                if showsDrillDownAffordance {
+                    Text("詳細")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(cyan.opacity(0.85))
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(cyan.opacity(0.75))
+                }
                 Text("実戦 \(sessionCount)件")
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.55))
@@ -1231,9 +1739,9 @@ private struct CrossAnalysisPairRowCard: View {
             HStack(spacing: 14) {
                 crossAnalysisMetric(title: "回転率", value: avgRotationPer1k > 0 ? String(format: "%.1f/1k", avgRotationPer1k) : "—")
                 crossAnalysisMetric(
-                    title: "ボーダー差",
-                    value: avgDiffFromFormulaBorder.map { String(format: "%+.1f", $0) } ?? "—",
-                    valueColor: (avgDiffFromFormulaBorder ?? 0) >= 0 ? cyan : Color.orange
+                    title: "ボーダーとの差",
+                    value: avgBorderDiffPer1k.map { String(format: "%+.1f", $0) } ?? "—",
+                    valueColor: (avgBorderDiffPer1k ?? 0) >= 0 ? cyan : Color.orange
                 )
                 crossAnalysisMetric(
                     title: "実成績",
@@ -1283,10 +1791,13 @@ private func compactIntegerLabel(_ n: Int) -> String {
     return "\(sign)\(abs(n).formattedPtWithUnit)"
 }
 
-// MARK: - 曜日傾向（SwiftCharts: ゼロ中央・回転率0〜max、自動スケール・アニメーション）
+// MARK: - 曜日傾向（SwiftCharts: ゼロライン・細めの棒幅）
 private struct WeekdayTendencySection: View {
     let groups: [AnalyticsGroup]
     let accent: Color
+
+    /// 従来 `width: .ratio(0.8)` の 70% ≈ 0.56
+    private var barWidth: MarkDimension { .ratio(0.56) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -1302,7 +1813,7 @@ private struct WeekdayTendencySection: View {
                             BarMark(
                                 x: .value("曜日", g.label),
                                 y: .value("pt", g.totalProfit),
-                                width: .ratio(0.8)
+                                width: barWidth
                             )
                             .foregroundStyle(g.totalProfit >= 0 ? Color.green : Color.orange)
                         }
@@ -1320,14 +1831,19 @@ private struct WeekdayTendencySection: View {
                         }
                     }
                 }
-                chartRow(title: "回転率（回/1k）") {
-                    Chart(groups) { g in
-                        BarMark(
-                            x: .value("曜日", g.label),
-                            y: .value("回/1k", g.avgRotationRate),
-                            width: .ratio(0.8)
-                        )
-                        .foregroundStyle(accent)
+                chartRow(title: "ボーダーとの差（回/1k）") {
+                    Chart {
+                        RuleMark(y: .value("ゼロ", 0))
+                            .foregroundStyle(Color.white.opacity(0.4))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                        ForEach(groups) { g in
+                            BarMark(
+                                x: .value("曜日", g.label),
+                                y: .value("差", g.avgBorderDiffPer1k ?? 0),
+                                width: barWidth
+                            )
+                            .foregroundStyle((g.avgBorderDiffPer1k ?? 0) >= 0 ? accent : Color.orange)
+                        }
                     }
                     .chartYAxis {
                         AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
@@ -1350,7 +1866,7 @@ private struct WeekdayTendencySection: View {
                             BarMark(
                                 x: .value("曜日", g.label),
                                 y: .value("pt", g.totalDeficitSurplus),
-                                width: .ratio(0.8)
+                                width: barWidth
                             )
                             .foregroundStyle(g.totalDeficitSurplus >= 0 ? Color.cyan : Color.orange)
                         }
@@ -1379,8 +1895,8 @@ private struct WeekdayTendencySection: View {
     private func chartRow<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.7))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.white)
             content()
                 .frame(height: 120)
                 .chartLegend(.hidden)
@@ -1388,11 +1904,15 @@ private struct WeekdayTendencySection: View {
     }
 }
 
-// MARK: - 特定日傾向（SwiftCharts: ゼロ中央・回転率0〜max。_pad は値0で表示し軸のみ維持）
+// MARK: - 特定日傾向（SwiftCharts。_pad は値0で表示し軸のみ維持）
 private struct SpecificDayBarChartSection: View {
     let groups: [AnalyticsGroup]
     let accent: Color
     var fixedSegmentCount: Int? = nil
+    /// 見出し横に「i」説明を出すときのみ設定
+    var titleInfoIconExplanation: String? = nil
+
+    private var barWidth: MarkDimension { .ratio(0.56) }
 
     private var displayGroups: [AnalyticsGroup] {
         guard let n = fixedSegmentCount, groups.count < n else { return groups }
@@ -1401,9 +1921,15 @@ private struct SpecificDayBarChartSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("特定日傾向")
-                .font(AppTypography.panelHeading)
-                .foregroundColor(.white)
+            HStack(alignment: .center, spacing: 6) {
+                Text("特定日傾向")
+                    .font(AppTypography.panelHeading)
+                    .foregroundColor(.white)
+                if let tip = titleInfoIconExplanation {
+                    InfoIconView(explanation: tip, tint: .white.opacity(0.6))
+                }
+                Spacer(minLength: 0)
+            }
             chartRow(title: "実成績") {
                     Chart {
                         RuleMark(y: .value("ゼロ", 0))
@@ -1413,7 +1939,7 @@ private struct SpecificDayBarChartSection: View {
                             BarMark(
                                 x: .value("区分", g.label),
                                 y: .value("pt", g.label.hasPrefix("_pad") ? 0 : g.totalProfit),
-                                width: .ratio(0.8)
+                                width: barWidth
                             )
                             .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : (g.totalProfit >= 0 ? Color.green : Color.orange))
                         }
@@ -1426,14 +1952,24 @@ private struct SpecificDayBarChartSection: View {
                         AxisValueLabel { if let s = value.as(String.self), !s.hasPrefix("_pad") { Text(s).foregroundStyle(Color.white.opacity(0.8)) } }
                     } }
                 }
-                chartRow(title: "回転率（回/1k）") {
-                    Chart(displayGroups) { g in
-                        BarMark(
-                            x: .value("区分", g.label),
-                            y: .value("回/1k", g.label.hasPrefix("_pad") ? 0 : g.avgRotationRate),
-                            width: .ratio(0.8)
-                        )
-                        .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : accent)
+                chartRow(title: "ボーダーとの差（回/1k）") {
+                    Chart {
+                        RuleMark(y: .value("ゼロ", 0))
+                            .foregroundStyle(Color.white.opacity(0.4))
+                            .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                        ForEach(displayGroups) { g in
+                            let yVal = g.label.hasPrefix("_pad") ? 0.0 : (g.avgBorderDiffPer1k ?? 0)
+                            BarMark(
+                                x: .value("区分", g.label),
+                                y: .value("差", yVal),
+                                width: barWidth
+                            )
+                            .foregroundStyle(
+                                g.label.hasPrefix("_pad")
+                                    ? Color.clear
+                                    : ((g.avgBorderDiffPer1k ?? 0) >= 0 ? accent : Color.orange)
+                            )
+                        }
                     }
                     .chartYAxis { AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
                         AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.2))
@@ -1452,7 +1988,7 @@ private struct SpecificDayBarChartSection: View {
                             BarMark(
                                 x: .value("区分", g.label),
                                 y: .value("pt", g.label.hasPrefix("_pad") ? 0 : g.totalDeficitSurplus),
-                                width: .ratio(0.8)
+                                width: barWidth
                             )
                             .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : (g.totalDeficitSurplus >= 0 ? Color.cyan : Color.orange))
                         }
@@ -1475,265 +2011,321 @@ private struct SpecificDayBarChartSection: View {
 
     private func chartRow<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.caption).foregroundColor(.white.opacity(0.7))
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.white)
             content().frame(height: 72).chartLegend(.hidden)
         }
     }
 }
 
-// MARK: - 月間／週間 収支トレンド（累計実成績・累計期待値＋差の棒。タップで切替）
+// MARK: - 収支トレンド（直近12ヶ月／12週／30日・タップ切替。折れ線は累計、棒は期間ごとの期待値）
 private struct CumulativeProfitTrendSection: View {
     let sessions: [GameSession]
+    let referenceEnd: Date
     let cyan: Color
 
-    @State private var showsWeekly = false
+    @State private var displayMode: AnalyticsEngine.ProfitTrendDisplayMode = .twelveMonths
 
-    private var underperformRed: Color {
+    private var theoreticalLineColor: Color { Color.orange.opacity(0.92) }
+
+    private var barTheoreticalColor: Color { Color.orange.opacity(0.78) }
+
+    private var surplusBandColor: Color { cyan.opacity(0.2) }
+
+    private var deficitBandColor: Color {
         Color(
             red: DesignTokens.Color.edgeGlowRedR,
             green: DesignTokens.Color.edgeGlowRedG,
             blue: DesignTokens.Color.edgeGlowRedB
+        ).opacity(0.22)
+    }
+
+    private var points: [AnalyticsEngine.ProfitTrendPoint] {
+        AnalyticsEngine.profitTrendSeries(sessions: sessions, mode: displayMode, referenceEnd: referenceEnd)
+    }
+
+    /// 2線の間を塗る台形（交差があれば分割）
+    private struct TrendFillStrip: Identifiable {
+        let id: String
+        let x0: Double
+        let x1: Double
+        let lo0: Int
+        let hi0: Int
+        let lo1: Int
+        let hi1: Int
+        /// true: 累計実質収支が累計期待値より上（余剰寄り＝青系）
+        let isSurplus: Bool
+    }
+
+    private var trendFillStrips: [TrendFillStrip] {
+        guard points.count >= 2 else { return [] }
+        var strips: [TrendFillStrip] = []
+        var seq = 0
+        for i in 0..<(points.count - 1) {
+            let a = points[i]
+            let b = points[i + 1]
+            let x0 = Double(a.xIndex)
+            let x1 = Double(b.xIndex)
+            let p0 = a.cumulativeProfit
+            let p1 = b.cumulativeProfit
+            let t0 = a.cumulativeTheoretical
+            let t1 = b.cumulativeTheoretical
+            if let u = trendCrossingFraction(p0: p0, p1: p1, t0: t0, t1: t1) {
+                let xc = x0 + u * (x1 - x0)
+                let yCross = Int(round(Double(p0) + u * Double(p1 - p0)))
+                appendTrendStrip(&strips, seq: &seq, x0: x0, x1: xc, p0: p0, p1: yCross, t0: t0, t1: yCross)
+                appendTrendStrip(&strips, seq: &seq, x0: xc, x1: x1, p0: yCross, p1: p1, t0: yCross, t1: t1)
+            } else {
+                appendTrendStrip(&strips, seq: &seq, x0: x0, x1: x1, p0: p0, p1: p1, t0: t0, t1: t1)
+            }
+        }
+        return strips
+    }
+
+    private func trendCrossingFraction(p0: Int, p1: Int, t0: Int, t1: Int) -> Double? {
+        let dp = p1 - p0
+        let dt = t1 - t0
+        let den = dp - dt
+        guard den != 0 else { return nil }
+        let u = Double(t0 - p0) / Double(den)
+        if u > 0.0001 && u < 0.9999 { return u }
+        return nil
+    }
+
+    private func appendTrendStrip(
+        _ out: inout [TrendFillStrip],
+        seq: inout Int,
+        x0: Double,
+        x1: Double,
+        p0: Int,
+        p1: Int,
+        t0: Int,
+        t1: Int
+    ) {
+        let lo0 = min(p0, t0)
+        let hi0 = max(p0, t0)
+        let lo1 = min(p1, t1)
+        let hi1 = max(p1, t1)
+        if lo0 == hi0 && lo1 == hi1 { return }
+        seq += 1
+        let isSurplus = (p0 + p1) >= (t0 + t1)
+        out.append(
+            TrendFillStrip(
+                id: "strip-\(seq)",
+                x0: x0,
+                x1: x1,
+                lo0: lo0,
+                hi0: hi0,
+                lo1: lo1,
+                hi1: hi1,
+                isSurplus: isSurplus
+            )
         )
     }
 
-    private var monthlyRows: [(periodKey: String, axisLabel: String, cumulativeProfit: Int, cumulativeTheoretical: Int)] {
-        AnalyticsEngine.monthlyCumulativeTrend(sessions).map { m in
-            (periodKey: m.month, axisLabel: "", cumulativeProfit: m.cumulativeProfit, cumulativeTheoretical: m.cumulativeTheoretical)
+    private static let chartExplanation =
+        "右端は基準日を含む月・週・日です。折れ線は左から順に足し上げた累計（実質収支＝実成績、期待値）。2線の間は、実質が期待より上なら青系・下なら赤系の帯で示します。棒は各バケットの期待値合計です。実戦が無い期間も 0 として並びます。"
+
+    /// 下段のラベル付き目盛（30日は間引き）。上段は全点で縦線を引く。
+    private var xAxisLabelIndices: [Int] {
+        let n = points.count
+        guard n > 0 else { return [] }
+        switch displayMode {
+        case .thirtyDays:
+            let step = 5
+            var vals = Array(stride(from: 0, to: n, by: step))
+            if vals.last != n - 1 { vals.append(n - 1) }
+            return vals
+        case .twelveMonths, .twelveWeeks:
+            return Array(0..<n)
         }
     }
 
-    private var weeklyRows: [(periodKey: String, axisLabel: String, cumulativeProfit: Int, cumulativeTheoretical: Int)] {
-        AnalyticsEngine.weeklyCumulativeTrend(sessions, maxWeeks: 12).map { w in
-            (periodKey: w.weekId, axisLabel: w.weekLabel, cumulativeProfit: w.cumulativeProfit, cumulativeTheoretical: w.cumulativeTheoretical)
-        }
-    }
-
-    private var trendData: [(periodKey: String, axisLabel: String, cumulativeProfit: Int, cumulativeTheoretical: Int)] {
-        showsWeekly ? weeklyRows : monthlyRows
-    }
-
-    private struct TrendDiffBar: Identifiable {
-        let id: String
-        let diff: Int
-    }
-
-    private var trendDiffBars: [TrendDiffBar] {
-        trendData.map {
-            TrendDiffBar(id: $0.periodKey, diff: $0.cumulativeProfit - $0.cumulativeTheoretical)
-        }
-    }
-
-    private static let chartExplanationMonthly =
-        "上段の折れ線は、各月末時点の累計実成績（実線・●）と累計期待値（破線・□）です。下段の棒は同じ時点での「累計実成績 − 累計期待値」。棒がゼロより上ならその時点では期待値より上振れ、下なら下振れです。"
-
-    private static let chartExplanationWeekly =
-        "上段は、各週の週頭日までの累計実成績と累計期待値（週の並びはカレンダー週・直近12週）。下段の棒は累計の差（実−期待値）。横軸の週は「M/d〜」表記です。"
-
-    private var chartExplanation: String {
-        showsWeekly ? Self.chartExplanationWeekly : Self.chartExplanationMonthly
-    }
-
-    /// 目盛用：データが複数年にまたがるときだけ年を付ける（月間のみ）
-    private var chartYears: Set<String> {
-        Set(monthlyRows.compactMap { key in
-            key.periodKey.split(separator: "/").first.map(String.init)
-        })
-    }
-
-    private func monthAxisLabel(for yyyyMm: String) -> String {
-        let p = yyyyMm.split(separator: "/").map(String.init)
-        guard p.count == 2, let y = Int(p[0]), let m = Int(p[1]) else { return yyyyMm }
-        if chartYears.count <= 1 { return "\(m)月" }
-        return "\(y)年\(m)月"
-    }
-
-    private func axisLabel(for periodKey: String) -> String {
-        if showsWeekly {
-            return trendData.first(where: { $0.periodKey == periodKey })?.axisLabel ?? periodKey
-        }
-        return monthAxisLabel(for: periodKey)
-    }
-
-    /// 横に詰まりすぎるとき間引く（目盛キーのみ）
-    private var xAxisPeriodKeys: [String] {
-        let keys = trendData.map(\.periodKey)
-        if showsWeekly {
-            guard keys.count > 8 else { return keys }
-            let step = max(1, (keys.count + 7) / 8)
-            return Swift.stride(from: 0, to: keys.count, by: step).map { keys[$0] }
-        }
-        guard keys.count > 14 else { return keys }
-        let step = max(1, (keys.count + 11) / 12)
-        return Swift.stride(from: 0, to: keys.count, by: step).map { keys[$0] }
+    private var xAxisAllIndices: [Int] {
+        let n = points.count
+        guard n > 0 else { return [] }
+        return Array(0..<n)
     }
 
     var body: some View {
-        Group {
-            if trendData.isEmpty {
-                EmptyView()
-            } else {
-                VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .center, spacing: 6) {
-                    Button {
-                        showsWeekly.toggle()
-                    } label: {
-                        HStack(spacing: 6) {
-                            Text(showsWeekly ? "週間収支トレンド" : "月間収支トレンド")
-                                .font(AppTypography.panelHeading)
-                                .foregroundColor(.white)
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.white.opacity(0.55))
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("タップで月間と週間を切り替え")
-                    InfoIconView(explanation: chartExplanation, tint: .white.opacity(0.6))
-                }
-                Text("折れ線は累計の推移。棒はその時点の累計「実成績−期待値」。")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundColor(.white.opacity(0.58))
-                    .fixedSize(horizontal: false, vertical: true)
-                VStack(alignment: .leading, spacing: 10) {
-                    cumulativeTrendLinesChart
-                    cumulativeDiffBarsChart
-                }
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 14) {
-                        legendDot(cyan, label: "累計実成績", symbolCircle: true)
-                        legendDot(Color.white.opacity(0.88), label: "累計期待値", dashed: true, symbolSquare: true)
-                    }
-                    HStack(spacing: 14) {
-                        legendDot(cyan, label: "差＋（上振れ）", bar: true)
-                        legendDot(underperformRed, label: "差−（下振れ）", bar: true)
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .center, spacing: 6) {
+                Button {
+                    displayMode = displayMode.next
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(displayMode.panelTitle)
+                            .font(AppTypography.panelHeading)
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.leading)
+                        Image(systemName: "arrow.triangle.2.circlepath")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.white.opacity(0.55))
                     }
                 }
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.8))
+                .buttonStyle(.plain)
+                .accessibilityHint("タップで直近12ヶ月・直近12週・直近30日を切り替え")
+                InfoIconView(explanation: Self.chartExplanation, tint: .white.opacity(0.6))
             }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(AnalyticsPanelStyle.panelBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+            Text("折れ線＝累計（実質・期待）。帯＝その間（余剰＝青／欠損＝赤）。棒＝期間別の期待値合計。")
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundColor(.white.opacity(0.58))
+                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 10) {
+                cumulativeLinesChart
+                theoreticalBarsChart
             }
+            HStack(spacing: 14) {
+                legendLineSwatch(cyan, dashed: false, label: "累計・実質収支")
+                legendLineSwatch(theoreticalLineColor, dashed: true, label: "累計・期待値")
+            }
+            .font(.caption)
+            HStack(spacing: 14) {
+                legendBandSwatch(surplusBandColor, label: "帯・余剰側")
+                legendBandSwatch(deficitBandColor, label: "帯・欠損側")
+            }
+            .font(.caption)
+            HStack(spacing: 14) {
+                legendBarSwatch(barTheoreticalColor, label: "期待値（期間別）")
+            }
+            .font(.caption)
+            .foregroundColor(.white.opacity(0.8))
         }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AnalyticsPanelStyle.panelBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
     }
 
-    private var cumulativeTrendLinesChart: some View {
+    private var cumulativeLinesChart: some View {
         Chart {
-            ForEach(trendData, id: \.periodKey) { d in
-                LineMark(
-                    x: .value("期間", d.periodKey),
-                    y: .value("pt", d.cumulativeProfit)
+            ForEach(trendFillStrips) { s in
+                AreaMark(
+                    x: .value("x", s.x0),
+                    yStart: .value("lo", s.lo0),
+                    yEnd: .value("hi", s.hi0),
+                    series: .value("band", s.id)
                 )
-                .interpolationMethod(.monotone)
+                .foregroundStyle(s.isSurplus ? surplusBandColor : deficitBandColor)
+                .interpolationMethod(.linear)
+                AreaMark(
+                    x: .value("x", s.x1),
+                    yStart: .value("lo", s.lo1),
+                    yEnd: .value("hi", s.hi1),
+                    series: .value("band", s.id)
+                )
+                .foregroundStyle(s.isSurplus ? surplusBandColor : deficitBandColor)
+                .interpolationMethod(.linear)
+            }
+            ForEach(points) { p in
+                LineMark(
+                    x: .value("期間", p.xIndex),
+                    y: .value("pt", p.cumulativeProfit),
+                    series: .value("種別", "実質収支")
+                )
+                .interpolationMethod(.linear)
                 .foregroundStyle(cyan)
                 .lineStyle(StrokeStyle(lineWidth: 2.25))
-                .symbol(.circle)
-                .symbolSize(36)
             }
-            ForEach(trendData, id: \.periodKey) { d in
+            ForEach(points) { p in
                 LineMark(
-                    x: .value("期間", d.periodKey),
-                    y: .value("pt", d.cumulativeTheoretical)
+                    x: .value("期間", p.xIndex),
+                    y: .value("pt", p.cumulativeTheoretical),
+                    series: .value("種別", "期待値")
                 )
-                .interpolationMethod(.monotone)
-                .foregroundStyle(Color.white.opacity(0.88))
-                .lineStyle(StrokeStyle(lineWidth: 1.6, dash: [6, 4]))
-                .symbol(.square)
-                .symbolSize(28)
+                .interpolationMethod(.linear)
+                .foregroundStyle(theoreticalLineColor)
+                .lineStyle(StrokeStyle(lineWidth: 2.25, dash: [6, 5]))
             }
         }
+        .chartLegend(.hidden)
         .chartYAxis {
             AxisMarks(position: .leading, values: .automatic(desiredCount: 6)) { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.2))
                 AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(Color.white.opacity(0.7))
             }
         }
-        .chartXAxis { trendXAxisMarks(showLabels: false) }
+        .chartXAxis { trendXAxis(showLabels: false, markIndices: xAxisAllIndices) }
         .frame(height: 168)
-        .chartLegend(.hidden)
     }
 
-    private var cumulativeDiffBarsChart: some View {
+    private var theoreticalBarsChart: some View {
         Chart {
-            RuleMark(y: .value("同点", 0))
-                .foregroundStyle(Color.white.opacity(0.38))
+            RuleMark(y: .value("ゼロ", 0))
+                .foregroundStyle(Color.white.opacity(0.35))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
-            ForEach(trendDiffBars) { row in
+            ForEach(points) { p in
                 BarMark(
-                    x: .value("期間", row.id),
-                    y: .value("差", row.diff),
-                    width: .ratio(0.62)
+                    x: .value("期間", p.xIndex),
+                    y: .value("期待値", p.periodTheoretical),
+                    width: .ratio(displayMode == .thirtyDays ? 0.28 : 0.5)
                 )
-                .foregroundStyle(row.diff >= 0 ? cyan : underperformRed)
+                .foregroundStyle(barTheoreticalColor)
             }
         }
+        .chartLegend(.hidden)
         .chartYAxis {
             AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
                 AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.15))
                 AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(Color.white.opacity(0.65))
             }
         }
-        .chartXAxis { trendXAxisMarks(showLabels: true) }
-        .frame(height: 96)
-        .chartLegend(.hidden)
+        .chartXAxis { trendXAxis(showLabels: true, markIndices: xAxisLabelIndices) }
+        .frame(height: 100)
     }
 
     @AxisContentBuilder
-    private func trendXAxisMarks(showLabels: Bool) -> some AxisContent {
-        AxisMarks(values: xAxisPeriodKeys) { value in
+    private func trendXAxis(showLabels: Bool, markIndices: [Int]) -> some AxisContent {
+        AxisMarks(values: markIndices) { value in
             AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(showLabels ? 0.12 : 0.07))
-            if showLabels {
+            if showLabels, let i = value.as(Int.self), i < points.count {
                 AxisTick(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.35))
                 AxisValueLabel(centered: true) {
-                    if let s = value.as(String.self) {
-                        Text(axisLabel(for: s))
-                            .font(.system(size: 9, weight: .medium, design: .rounded))
-                            .foregroundStyle(Color.white.opacity(0.78))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                    }
+                    Text(points[i].axisLabel)
+                        .font(.system(size: 9, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color.white.opacity(0.78))
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.7)
                 }
             }
         }
     }
 
-    private func legendDot(
-        _ color: Color,
-        label: String,
-        dashed: Bool = false,
-        symbolCircle: Bool = false,
-        symbolSquare: Bool = false,
-        bar: Bool = false
-    ) -> some View {
+    private func legendLineSwatch(_ color: Color, dashed: Bool, label: String) -> some View {
         HStack(spacing: 6) {
-            if bar {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(color)
-                    .frame(width: 14, height: 8)
-            } else if dashed {
-                HStack(spacing: 2) {
-                    Image(systemName: "square.fill")
-                        .font(.system(size: 6))
-                        .foregroundStyle(color.opacity(0.9))
-                    Rectangle()
-                        .stroke(color, style: StrokeStyle(lineWidth: 2, dash: [4, 3]))
-                        .frame(width: 14, height: 2)
-                }
-            } else if symbolCircle {
-                Image(systemName: "circle.fill")
-                    .font(.system(size: 7))
-                    .foregroundStyle(color)
-            } else if symbolSquare {
-                Image(systemName: "square.fill")
-                    .font(.system(size: 7))
-                    .foregroundStyle(color)
+            if dashed {
+                Rectangle()
+                    .stroke(color, style: StrokeStyle(lineWidth: 2.5, dash: [5, 4]))
+                    .frame(width: 18, height: 2)
             } else {
-                Circle().fill(color).frame(width: 8, height: 8)
+                RoundedRectangle(cornerRadius: 1)
+                    .fill(color)
+                    .frame(width: 18, height: 3)
             }
             Text(label)
+                .foregroundColor(.white.opacity(0.8))
+        }
+    }
+
+    private func legendBarSwatch(_ color: Color, label: String) -> some View {
+        HStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 2)
+                .fill(color)
+                .frame(width: 14, height: 8)
+            Text(label)
+                .foregroundColor(.white.opacity(0.8))
+        }
+    }
+
+    private func legendBandSwatch(_ color: Color, label: String) -> some View {
+        HStack(spacing: 6) {
+            RoundedRectangle(cornerRadius: 3)
+                .fill(color)
+                .frame(width: 18, height: 10)
+            Text(label)
+                .foregroundColor(.white.opacity(0.8))
         }
     }
 }
@@ -1953,13 +2545,13 @@ private struct AnalyticsSessionCardView: View {
         guard session.totalRealCost > 0 else { return 0 }
         return (Double(session.normalRotations) / session.totalRealCost) * 1000
     }
-    /// 実戦回転率の表示文字列（公式ボーダーとの差を括弧内に表示）
+    /// 実戦回転率の表示文字列（ボーダーとの差を括弧内に表示）
     private var rotationRateDisplay: String {
         if session.excludesFromRotationExpectationAnalytics { return "—（帳簿）" }
-        if rotationPer1k <= 0 { return "—" }
-        var s = String(format: "%.1f 回/1k", rotationPer1k)
-        if session.formulaBorderPer1k > 0 {
-            let diff = rotationPer1k - session.formulaBorderPer1k
+        let displayRate = session.realRotationRateAtSave > 0 ? session.realRotationRateAtSave : rotationPer1k
+        if displayRate <= 0 { return "—" }
+        var s = String(format: "%.1f 回/1k", displayRate)
+        if let diff = session.sessionBorderDiffPer1k {
             s += " (\(diff >= 0 ? "+" : "")\(String(format: "%.1f", diff)))"
         }
         return s
@@ -1979,7 +2571,7 @@ private struct AnalyticsSessionCardView: View {
                 Text("実成績 \(session.performance >= 0 ? "+" : "")\(session.performance.formattedPtWithUnit)")
                     .font(.subheadline.monospacedDigit().weight(.medium))
                     .foregroundColor(session.performance >= 0 ? .green : .red)
-                Text("当選 RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount) LT:\(session.ltWinCount)")
+                Text("当選 RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount)")
                     .font(.subheadline.monospacedDigit())
                     .foregroundColor(.white.opacity(0.85))
             }
@@ -2074,7 +2666,7 @@ private struct AnalyticsSessionDetailView: View {
                     sessionDetailPanel(title: "数値サマリ") {
                         sessionDetailLabeledRow("総回転数", "\(session.normalRotations)")
                         sessionDetailDivider()
-                        sessionDetailLabeledRow("当選", "RUSH: \(session.rushWinCount) / 通常: \(session.normalWinCount) / LT: \(session.ltWinCount)")
+                        sessionDetailLabeledRow("当選", "RUSH: \(session.rushWinCount) / 通常: \(session.normalWinCount)")
                         sessionDetailDivider()
                         sessionDetailLabeledRow("総投入額（現金）", session.inputCash.formattedPtWithUnit)
                         sessionDetailDivider()
@@ -2310,6 +2902,7 @@ private struct AnalyticsShopDetailView: View {
     let rulesByShopName: [String: SpecificDayRules]
     /// この店舗で設定した特定日ラベル（追加順、最大4つ）。例: ["毎月13日", "5のつく日"]
     let orderedSpecificDayLabels: [String]
+    let selectedPeriodDate: Date
     @Binding var bottomSegment: AnalyticsBottomSegment
     @Binding var selectedFilterLabel: String?
     @Binding var periodFilter: AnalyticsPeriodFilter
@@ -2347,7 +2940,11 @@ private struct AnalyticsShopDetailView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
                     if !shopSessions.isEmpty {
-                        OverviewTotalSummaryPanel(metrics: shopScopeOverview, accent: cyan)
+                        OverviewTotalSummaryPanel(
+                            metrics: shopScopeOverview,
+                            accent: cyan,
+                            panelTitle: periodFilter.summaryPanelTitle(referenceDate: selectedPeriodDate)
+                        )
                             .padding(.horizontal, 16)
                         VStack(alignment: .leading, spacing: 20) {
                             WeekdayTendencySection(groups: weekdayGroups, accent: cyan)
@@ -2401,12 +2998,127 @@ private struct AnalyticsShopDetailView: View {
     }
 }
 
-/// 機種別分析ページ（店舗詳細と同様に曜日・特定日傾向＋履歴）
-private struct AnalyticsMachineDetailView: View {
+/// クロス分析の店×機種ドリルダウン（1店・1機種に絞り、当該店の特定日ルールで分類）
+private struct AnalyticsShopMachineCrossDetailView: View {
+    let shopName: String
     let machineName: String
     let sessions: [GameSession]
     let machinesByName: [String: Machine]
     let rulesByShopName: [String: SpecificDayRules]
+    let orderedSpecificDayLabels: [String]
+    let selectedPeriodDate: Date
+    @Binding var bottomSegment: AnalyticsBottomSegment
+    @Binding var selectedFilterLabel: String?
+    @Binding var periodFilter: AnalyticsPeriodFilter
+    @Binding var showPeriodSheet: Bool
+    let onSessionTap: (UUID) -> Void
+
+    private var pairSessions: [GameSession] {
+        sessions.filter {
+            ($0.shopName.isEmpty ? "未設定" : $0.shopName) == shopName
+                && ($0.machineName.isEmpty ? "未設定" : $0.machineName) == machineName
+        }
+        .sorted { $0.date > $1.date }
+    }
+
+    private var scopeOverview: AnalyticsOverviewTotalSummary {
+        AnalyticsOverviewTotalSummary.compute(sessions: pairSessions, machinesByName: machinesByName)
+    }
+
+    private var weekdayGroups: [AnalyticsGroup] {
+        let byWeekday = AnalyticsEngine.byWeekday(pairSessions)
+        let order = ["日曜", "月曜", "火曜", "水曜", "木曜", "金曜", "土曜"]
+        return order.map { day in byWeekday.first(where: { $0.label == day }) ?? AnalyticsEngine.emptyGroup(label: day) }
+    }
+
+    private var specificDayGroups: [AnalyticsGroup] {
+        let fromAttr = AnalyticsEngine.bySpecificDayAttribute(pairSessions, rulesByShopName: rulesByShopName)
+        let byLabel = Dictionary(uniqueKeysWithValues: fromAttr.map { ($0.label, $0) })
+        let labels = ["通常日"] + orderedSpecificDayLabels.prefix(4) + ["ゾロ目"]
+        return labels.map { byLabel[$0] ?? AnalyticsEngine.emptyGroup(label: $0) }
+    }
+
+    private var cyan: Color { AppGlassStyle.accent }
+
+    private var navigationTitleText: String {
+        let pair = "\(shopName) × \(machineName)"
+        return pair.count > 26 ? "クロス分析（店×機種）" : pair
+    }
+
+    var body: some View {
+        ZStack {
+            StaticHomeBackgroundView()
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 12) {
+                    if !pairSessions.isEmpty {
+                        OverviewTotalSummaryPanel(
+                            metrics: scopeOverview,
+                            accent: cyan,
+                            panelTitle: periodFilter.summaryPanelTitle(referenceDate: selectedPeriodDate),
+                            machineMultiHitSummary: MachineMultiHitSummary.compute(from: pairSessions)
+                        )
+                        .padding(.horizontal, 16)
+                        VStack(alignment: .leading, spacing: 20) {
+                            WeekdayTendencySection(groups: weekdayGroups, accent: cyan)
+                            SpecificDayBarChartSection(
+                                groups: specificDayGroups,
+                                accent: cyan,
+                                fixedSegmentCount: 7,
+                                titleInfoIconExplanation: "特定日はこの店舗に設定したルールに基づき分類しています。"
+                            )
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 4)
+                        .padding(.bottom, 8)
+                    }
+                    Text("この組み合わせの履歴")
+                        .font(AppTypography.panelHeading)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 8)
+                    LazyVStack(spacing: 12) {
+                        ForEach(sessionsGroupedByDay(pairSessions), id: \.day.timeIntervalSince1970) { group in
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(NativeAdListInterleaving.rowsForSessionGroup(daySessions: group.sessions, placementPrefix: "xcross-\(shopName)-\(machineName)-\(group.day.timeIntervalSince1970)"), id: \.id) { row in
+                                    switch row {
+                                    case .session(let session):
+                                        VStack(spacing: 0) {
+                                            Button {
+                                                onSessionTap(session.id)
+                                            } label: {
+                                                AnalyticsSessionCardView(session: session)
+                                            }
+                                            .buttonStyle(.plain)
+                                            Rectangle()
+                                                .fill(Color.white.opacity(0.12))
+                                                .frame(height: 1)
+                                        }
+                                    case .native(let placementKey):
+                                        OptionalNativeAdCardSlot(placementID: placementKey)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 120)
+                }
+                .padding(.top, 8)
+            }
+        }
+        .navigationTitle(navigationTitleText)
+        .navigationBarTitleDisplayMode(.inline)
+        .preferredColorScheme(.dark)
+    }
+}
+
+/// 機種別分析ページ（曜日傾向＋履歴。特定日は店を跨ぐ集約のため非表示）
+private struct AnalyticsMachineDetailView: View {
+    let machineName: String
+    let sessions: [GameSession]
+    let machinesByName: [String: Machine]
+    let selectedPeriodDate: Date
     @Binding var bottomSegment: AnalyticsBottomSegment
     @Binding var selectedFilterLabel: String?
     @Binding var periodFilter: AnalyticsPeriodFilter
@@ -2428,12 +3140,6 @@ private struct AnalyticsMachineDetailView: View {
         return order.map { day in byWeekday.first(where: { $0.label == day }) ?? AnalyticsEngine.emptyGroup(label: day) }
     }
 
-    /// 機種全体では通常日・7のつく日・ゾロ目の3つのみ、7分割
-    private var specificDayGroups: [AnalyticsGroup] {
-        let fromAttr = AnalyticsEngine.bySpecificDayAttribute(machineSessions, rulesByShopName: rulesByShopName)
-        let byLabel = Dictionary(uniqueKeysWithValues: fromAttr.map { ($0.label, $0) })
-        return AnalyticsFixedSpecificDayLabels.list.map { byLabel[$0] ?? AnalyticsEngine.emptyGroup(label: $0) }
-    }
     private var cyan: Color { AppGlassStyle.accent }
 
     var body: some View {
@@ -2442,11 +3148,15 @@ private struct AnalyticsMachineDetailView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
                     if !machineSessions.isEmpty {
-                        OverviewTotalSummaryPanel(metrics: machineScopeOverview, accent: cyan)
+                        OverviewTotalSummaryPanel(
+                            metrics: machineScopeOverview,
+                            accent: cyan,
+                            panelTitle: periodFilter.summaryPanelTitle(referenceDate: selectedPeriodDate),
+                            machineMultiHitSummary: MachineMultiHitSummary.compute(from: machineSessions)
+                        )
                             .padding(.horizontal, 16)
                         VStack(alignment: .leading, spacing: 20) {
                             WeekdayTendencySection(groups: weekdayGroups, accent: cyan)
-                            SpecificDayBarChartSection(groups: specificDayGroups, accent: cyan, fixedSegmentCount: 7)
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 4)
@@ -2500,6 +3210,7 @@ private struct AnalyticsManufacturerDetailView: View {
     let sessions: [GameSession]
     let machinesByName: [String: Machine]
     let rulesByShopName: [String: SpecificDayRules]
+    let selectedPeriodDate: Date
     @Binding var bottomSegment: AnalyticsBottomSegment
     @Binding var selectedFilterLabel: String?
     @Binding var periodFilter: AnalyticsPeriodFilter
@@ -2536,7 +3247,11 @@ private struct AnalyticsManufacturerDetailView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
                     if !manufacturerSessions.isEmpty {
-                        OverviewTotalSummaryPanel(metrics: manufacturerScopeOverview, accent: cyan)
+                        OverviewTotalSummaryPanel(
+                            metrics: manufacturerScopeOverview,
+                            accent: cyan,
+                            panelTitle: periodFilter.summaryPanelTitle(referenceDate: selectedPeriodDate)
+                        )
                             .padding(.horizontal, 16)
                         VStack(alignment: .leading, spacing: 20) {
                             WeekdayTendencySection(groups: weekdayGroups, accent: cyan)
@@ -2605,11 +3320,11 @@ struct AnalyticsGroupCard: View {
 
     private var useCompactLayout: Bool { compactListSessions != nil }
 
-    /// 二行目：実戦回転率・回数・公式ボーダーとの差（あれば）
+    /// 二行目：実戦回転率・回数・ボーダーとの差（あれば）
     private var secondLineText: String {
         var s = "実戦回転率 \(String(format: "%.1f", group.avgRotationRate))/1kpt · \(group.sessionCount)回"
-        if let diff = group.avgDiffFromFormulaBorder {
-            s += " （公式ボーダーとの差: \(String(format: "%+.1f 回/1k", diff))"
+        if let diff = group.avgBorderDiffPer1k {
+            s += " （ボーダーとの差: \(String(format: "%+.1f 回/1k", diff))）"
         }
         return s
     }
@@ -2630,6 +3345,8 @@ struct AnalyticsGroupCard: View {
             Text(title)
                 .font(AppTypography.bodyRounded)
                 .foregroundStyle(Color.white.opacity(0.55))
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
             Text(value)
                 .font(AppTypography.bodyMonoSemibold)
                 .monospacedDigit()
@@ -2640,45 +3357,40 @@ struct AnalyticsGroupCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    /// 店舗・機種・メーカー一覧カード：1行目 通算成績／通算遊技回数、2行目 勝率／ボーダーとの差。行間は通算サマリーと同じ薄い区切り線。
     private var compactListBody: some View {
         let m = compactScopeMetrics
+        let borderColor: Color = {
+            guard let d = m.avgBorderDiffPer1k else { return neutralLabel }
+            return d >= 0 ? accent : lossColor
+        }()
         return VStack(alignment: .leading, spacing: 0) {
             Text(group.label)
                 .font(AppTypography.panelHeading)
                 .foregroundColor(.white)
-                .padding(.bottom, 10)
-            compactRowDivider()
+                .padding(.bottom, 6)
             HStack(alignment: .top, spacing: 12) {
                 shopMetricColumn(title: "通算成績", value: signedPt(m.totalPerformance), valueColor: m.totalPerformance >= 0 ? accent : lossColor)
                 shopMetricColumn(title: "通算遊技回数", value: "\(m.sessionCount)回", valueColor: neutralLabel)
             }
-            .padding(.vertical, 8)
             compactRowDivider()
             HStack(alignment: .top, spacing: 12) {
                 shopMetricColumn(title: "勝率", value: m.winRatePercent.map { String(format: "%.1f%%", $0) } ?? "—", valueColor: neutralLabel)
-                shopMetricColumn(title: "平均初当たり確率", value: m.avgFirstHitProbabilityText ?? "—", valueColor: neutralLabel)
-            }
-            .padding(.vertical, 8)
-            compactRowDivider()
-            HStack(alignment: .top, spacing: 12) {
-                shopMetricColumn(title: "平均回転率", value: m.avgRotationPer1k.map { String(format: "%.1f 回/1k", $0) } ?? "—", valueColor: neutralLabel)
                 shopMetricColumn(
-                    title: "公式ボーダーとの差",
+                    title: "ボーダーとの差（回転加重）",
                     value: m.avgBorderDiffPer1k.map { String(format: "%+.1f 回/1k", $0) } ?? "—",
-                    valueColor: {
-                        guard let d = m.avgBorderDiffPer1k else { return neutralLabel }
-                        return d >= 0 ? accent : lossColor
-                    }()
+                    valueColor: borderColor
                 )
             }
-            .padding(.vertical, 8)
         }
     }
 
+    /// `OverviewTotalSummaryPanel.summaryDivider` と同じ（1px・白12%・縦余白5）
     private func compactRowDivider() -> some View {
         Rectangle()
             .fill(Color.white.opacity(0.12))
             .frame(height: 1)
+            .padding(.vertical, 5)
     }
 
     private var defaultListBody: some View {

@@ -29,6 +29,7 @@ struct P_statsApp: App {
     var body: some Scene {
         WindowGroup {
             AppBootstrapView()
+                .environment(\.locale, Locale(identifier: "ja_JP"))
         }
     }
 }

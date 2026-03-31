@@ -70,19 +70,11 @@ struct MachineEditView: View, Equatable {
 
     /// ヘソ当たり1〜5（出玉/RUSH(0or1)/時短）。マスタ書式。
     @State private var draftHesoAtari: [HesoAtariItem] = []
-    /// 電チュー（RUSH時）の大当たり種類。hasLT のときは draftRushPrizes / draftLtPrizes を使う
+    /// 電チュー（RUSH時）の大当たり種類
     @State private var draftDenchuPrizes: [DraftPrize] = []
-    /// LTあり機種のとき true。RUSH と LT パネルを分けて表示する
-    @State private var hasLT = false
-    /// hasLT のときの RUSH 用
-    @State private var draftRushPrizes: [DraftPrize] = []
-    /// hasLT のときの LT 用
-    @State private var draftLtPrizes: [DraftPrize] = []
 
     /// この機種データをCloudKitでみんなとシェアする（保存時のみ送信）
     @State private var shareWithEveryone = false
-    /// 通常時（ヘソ）からいきなりLTに突入できる機種か
-    @State private var ltFromNormal = false
 
     @State private var presetSearchText: String = ""
     /// true のとき「新台から探す」で最新20件を表示するモード
@@ -127,7 +119,7 @@ struct MachineEditView: View, Equatable {
                         VStack(spacing: 16) {
                             presetPanel
                             editPanel(title: "機種概要") { machineOverviewPanel }
-                            editPanel(title: "公式ボーダー（等価ベース）") { borderPanelWithDmmLink }
+                            editPanel(title: "ボーダー（等価ベース）") { borderPanelWithDmmLink }
                             editPanel(title: "データの共有") {
                                 Toggle("この機種データをみんなとシェアする", isOn: $shareWithEveryone)
                                     .tint(accent)
@@ -513,12 +505,12 @@ struct MachineEditView: View, Equatable {
         }
     }
 
-    /// 公式ボーダー入力の直下に DMM ぱちタウンへの導線を置く（アプリ内ブラウザは既存の `InAppWebView`＋下部バーで戻る）
+    /// ボーダー入力の直下に DMM ぱちタウンへの導線を置く（アプリ内ブラウザは既存の `InAppWebView`＋下部バーで戻る）
     @ViewBuilder
     private var borderPanelWithDmmLink: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("回転/1000pt")
+                Text("回転/1000pt（必須）")
                     .font(.subheadline)
                     .foregroundColor(.white.opacity(0.9))
                 Spacer()
@@ -538,9 +530,10 @@ struct MachineEditView: View, Equatable {
                     .background(Color.white.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
-            Text("店舗設定に基づいて自動的に調整されます。")
+            Text("分析のボーダー比・期待値の集計に使います。手入力で登録する場合は必ず入れてください。店舗の補正後ボーダーは店舗設定に基づき別途計算されます。")
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(.white.opacity(0.72))
+                .fixedSize(horizontal: false, vertical: true)
 
             if dmmMachineURL != nil {
                 Button {
@@ -593,15 +586,6 @@ struct MachineEditView: View, Equatable {
             } else {
                 draftDenchuPrizes = []
             }
-            hasLT = (s.ltRaw?.contains("あり") == true || s.ltRaw?.contains("有") == true) && !draftDenchuPrizes.isEmpty
-            if hasLT {
-                draftRushPrizes = draftDenchuPrizes.filter { !$0.label.contains("天国") && !$0.label.contains("LT") }
-                draftLtPrizes = draftDenchuPrizes.filter { $0.label.contains("天国") || $0.label.contains("LT") }
-                draftDenchuPrizes = []
-            } else {
-                draftRushPrizes = []
-                draftLtPrizes = []
-            }
         case .cloudShared(let c):
             let s = c.asPresetFromServer
             machineName = s.name
@@ -619,15 +603,6 @@ struct MachineEditView: View, Equatable {
             } else {
                 draftDenchuPrizes = []
             }
-            hasLT = (s.ltRaw?.contains("あり") == true || s.ltRaw?.contains("有") == true) && !draftDenchuPrizes.isEmpty
-            if hasLT {
-                draftRushPrizes = draftDenchuPrizes.filter { !$0.label.contains("天国") && !$0.label.contains("LT") }
-                draftLtPrizes = draftDenchuPrizes.filter { $0.label.contains("天国") || $0.label.contains("LT") }
-                draftDenchuPrizes = []
-            } else {
-                draftRushPrizes = []
-                draftLtPrizes = []
-            }
             countPerRoundStr = "10"
         case .local(let preset):
             preset.lastUsedAt = Date()
@@ -642,9 +617,6 @@ struct MachineEditView: View, Equatable {
             border = preset.border
             draftHesoAtari = [] // ローカルプリセットには hesoAtari なし
             draftDenchuPrizes = []
-            hasLT = false
-            draftRushPrizes = []
-            draftLtPrizes = []
             countPerRoundStr = "10"
         }
     }
@@ -666,16 +638,12 @@ struct MachineEditView: View, Equatable {
         manufacturerStr = machine.manufacturer
         countPerRoundStr = "\(machine.countPerRound)"
         dmmMachineID = machine.masterID ?? ""
-        ltFromNormal = machine.ltFromNormal
         draftHesoAtari = machine.hesoAtari
         if !machine.denchu_prizes.isEmpty {
             draftDenchuPrizes = PrizeStringParser.parseDenchuPrizes(machine.denchu_prizes).map { draftPrizeFromDenchu($0) }
         } else {
             draftDenchuPrizes = []
         }
-        hasLT = false
-        draftRushPrizes = []
-        draftLtPrizes = []
     }
 
     private func saveMachine() {
@@ -685,11 +653,22 @@ struct MachineEditView: View, Equatable {
             showErrorAlert = true
             return
         }
+        let borderTrimmed = border.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !borderTrimmed.isEmpty else {
+            errorMessage = "等価ボーダー（回転/1000pt）を入力してください。分析のボーダー比・期待値の集計に必要です。"
+            showErrorAlert = true
+            return
+        }
+        let borderVal = parseBorderValue(border)
+        guard borderVal > 0 else {
+            errorMessage = "等価ボーダーは 0 より大きい数値を入力してください。"
+            showErrorAlert = true
+            return
+        }
         let sup = Int(supportLimit) ?? 160
         let timeShort = Int(timeShortRotations) ?? 0
         let prize = Int(defaultPrize) ?? 1500
         let probDenom = parseProbabilityDenominator(probability)
-        let borderVal = parseBorderValue(border)
         let cPerRound = Int(countPerRoundStr) ?? 10
 
         // バリデーションチェック
@@ -703,15 +682,9 @@ struct MachineEditView: View, Equatable {
             showErrorAlert = true
             return
         }
-        if !border.trimmingCharacters(in: .whitespaces).isEmpty && borderVal < 0 {
-            errorMessage = "ボーダーに負の数は設定できません"
-            showErrorAlert = true
-            return
-        }
 
-        let denchuPrizesForSave = hasLT ? (draftRushPrizes + draftLtPrizes) : draftDenchuPrizes
-        let denchuStr = denchuPrizesForSave.map { "(\($0.balls)個)" }.joined(separator: ",")
-        let allPrizes = denchuPrizesForSave  // ヘソは hesoAtari で保存するため prizeEntries には電チューのみ
+        let denchuStr = draftDenchuPrizes.map { "(\($0.balls)個)" }.joined(separator: ",")
+        let allPrizes = draftDenchuPrizes  // ヘソは hesoAtari で保存するため prizeEntries には電チューのみ
 
         let hesoAtariStorageValue: String = {
             guard !draftHesoAtari.isEmpty else { return "" }
@@ -733,7 +706,6 @@ struct MachineEditView: View, Equatable {
             existing.countPerRound = cPerRound
             existing.manufacturer = manufacturerStr.trimmingCharacters(in: .whitespaces)
             existing.masterID = dmmMachineID.trimmingCharacters(in: .whitespaces)
-            existing.ltFromNormal = ltFromNormal
             existing.hesoAtariStorage = hesoAtariStorageValue
             existing.denchu_prizes = denchuStr
             for p in existing.prizeEntries {
@@ -752,7 +724,6 @@ struct MachineEditView: View, Equatable {
             machine.border = border
             machine.countPerRound = cPerRound
             machine.manufacturer = manufacturerStr.trimmingCharacters(in: .whitespaces)
-            machine.ltFromNormal = ltFromNormal
             machine.hesoAtariStorage = hesoAtariStorageValue
             machine.denchu_prizes = denchuStr
             modelContext.insert(machine)

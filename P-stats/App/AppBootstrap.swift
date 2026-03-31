@@ -105,7 +105,7 @@ struct AppBootstrapView: View {
                 await Task.yield()
             } catch {
                 await MainActor.run {
-                    bootstrapError = error.localizedDescription
+                    bootstrapError = "データストアを開けませんでした。アプリを終了して再度お試しください。改善しない場合は再インストールで初期化できます。"
                 }
             }
         }

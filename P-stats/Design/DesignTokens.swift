@@ -15,9 +15,6 @@ enum DesignTokens {
         static let rushHex = "FF0000"
         /// 通常系ボタン・ラベル用。純青は暗背景でコントラスト不足のため高明度スカイブルー
         static let normalHex = "78B0FF"
-        static let ltR: Double = 0.95
-        static let ltG: Double = 0.75
-        static let ltB: Double = 0.2
         /// エッジ発光（青系・+1.5超）— 暗背景で区別しやすい明るめの青
         static let edgeGlowBlueR: Double = 0.45
         static let edgeGlowBlueG: Double = 0.65
@@ -39,13 +36,10 @@ enum DesignTokens {
         static let cardBackground: Double = 0.90
         static let rushBackground: Double = 0.12
         static let normalBackground: Double = 0.12
-        static let ltBackground: Double = 0.12
         static let rushStroke: Double = 0.4
         static let normalStroke: Double = 0.4
-        static let ltStroke: Double = 0.4
         static let rushTitle: Double = 0.95
         static let normalTitle: Double = 0.95
-        static let ltTitle: Double = 0.95
         /// ストロークグラデーション（上〜下）
         static let strokeGradientTop: Double = 0.45
         static let strokeGradientMid: Double = 0.18

@@ -21,6 +21,8 @@ struct PlayView: View {
     @State private var showFinalHoldingsInput = false
     @State private var finalHoldingsInput: String = ""
     @State private var finalHoldingsPadTrigger = 0
+    @State private var finalNormalRotationsInput: String = ""
+    @State private var finalNormalRotationsPadTrigger = 0
     /// 回収玉確認後、換金／貯玉の選択
     @State private var showSettlementSheet = false
     /// 保存結果。"ok"＝成功（アラート表示後にdismiss）、"error: ..."＝失敗
@@ -36,7 +38,7 @@ struct PlayView: View {
     @State private var showBigHitAccessibilityConfirm = false
     @State private var bigHitExitHitsField = ""
     @State private var bigHitExitPrizeField = ""
-    @State private var bigHitExitElectricField = "0"
+    @State private var bigHitExitElectricField = ""
     @State private var showBigHitEntrySheet = false
     @State private var bigHitEntryNormalRotations = ""
     @State private var bigHitEntryCashPt = ""
@@ -95,7 +97,6 @@ struct PlayView: View {
     @AppStorage("playViewBackgroundImagePath") private var playViewBackgroundImagePath = ""
     @AppStorage("homeBackgroundStyle") private var homeBackgroundStyle = HomeBackgroundStore.defaultStyle
     @AppStorage("homeBackgroundImagePath") private var homeBackgroundImagePath = ""
-    @AppStorage("bigHitSlideRailStyle") private var bigHitSlideRailStyleRaw = BigHitSlideRailStyle.defaultStorageValue
     @AppStorage("bigHitHoldingsEntryDefault") private var bigHitHoldingsEntryDefaultRaw = BigHitHoldingsEntryKind.appStorageDefaultRawValue
     @State private var loadedPlayBackgroundImage: UIImage?
     @State private var showHistoryFromPlay = false
@@ -121,16 +122,28 @@ struct PlayView: View {
         HapticUtil.impact(.soft)
     }
 
+    /// 遊技終了シート：回収出玉・終了時通常回転の両方が有効な整数で埋まっているか
+    private var finalSessionEndFormValid: Bool {
+        let hTrim = finalHoldingsInput.trimmingCharacters(in: .whitespaces)
+        let rTrim = finalNormalRotationsInput.trimmingCharacters(in: .whitespaces)
+        guard !hTrim.isEmpty, let h = Int(hTrim), h >= 0 else { return false }
+        guard !rTrim.isEmpty, let r = Int(rTrim), r >= 0 else { return false }
+        return true
+    }
+
     private func confirmFinalHoldingsFlow() {
-        if let finalBalls = Int(finalHoldingsInput) {
-            if finalBalls < 0 {
-                errorMessage = "負の数は入力できません"
-                showErrorAlert = true
-                return
-            } else {
-                log.syncHoldings(actualHoldings: finalBalls)
-            }
+        guard finalSessionEndFormValid else { return }
+        let hTrim = finalHoldingsInput.trimmingCharacters(in: .whitespaces)
+        let rTrim = finalNormalRotationsInput.trimmingCharacters(in: .whitespaces)
+        guard let finalBalls = Int(hTrim), finalBalls >= 0,
+              let finalNorm = Int(rTrim), finalNorm >= 0
+        else {
+            errorMessage = "流した球・通常回転数は 0 以上の整数で入力してください。"
+            showErrorAlert = true
+            return
         }
+        log.applySessionEndNormalRotations(finalNorm)
+        log.syncHoldings(actualHoldings: finalBalls)
         showFinalHoldingsInput = false
         if log.totalHoldings > 0 {
             showSettlementSheet = true
@@ -179,12 +192,11 @@ struct PlayView: View {
         }
     }
 
-    /// トップと同様のグラスモーフィズム（ダークネイビー・水色）
-    private var focusBg: Color { AppGlassStyle.background }
+    /// トップと同様のグラスモーフィズム（ダークネイビー・水色）／ライト時は明るいベース
+    private var focusBg: Color { theme.playScreenBase }
     private var focusAccent: Color { AppGlassStyle.accent }
     /// 表示のみのパネル（タップ不可）— 背景を濃くしてカスタム壁紙上でも文字を読みやすくする
-    private var playPanelBackground: Color { Color.black.opacity(playPanelBackgroundOpacity) }
-    private let playPanelBackgroundOpacity: Double = 0.93
+    private var playPanelBackground: Color { theme.playPanelBackground }
     private let playPanelTintOverlayOpacity: Double = 0.06
     private let playPanelStrokeLineWidth: CGFloat = 1
     /// 画面上端〜ダイナミックアイランド下端の高さ（キーウィンドウの safeAreaInsets.top）。fullScreenCover 等で geo の値がずれる場合に備える
@@ -248,7 +260,7 @@ struct PlayView: View {
         }
     }
 
-    /// ゲージ・波紋で使うボーダー。針は補正ボーダー（実戦ボーダー）と実戦回転率の比較にする。表示用に未補正時は公式を使用
+    /// ゲージ・波紋で使うボーダー。針は店補正後のボーダーと実戦回転率の比較にする。表示用に未補正時は機種マスタのボーダーを使用
     private var borderForGauge: Double {
         let dynamic = log.dynamicBorder
         if dynamic > 0 { return dynamic }
@@ -261,7 +273,7 @@ struct PlayView: View {
         return (Double(num) ?? 0)
     }
 
-    /// 波紋の色：公式ボーダー基準の5段階（AppGlassStyle.edgeGlowColor と同一ロジック）
+    /// 波紋の色：機種マスタのボーダー（等価）基準の5段階（AppGlassStyle.edgeGlowColor と同一ロジック）
     private var expectationBorderColor: Color {
         guard borderForGauge > 0, log.effectiveUnitsForBorder > 0 else { return .white }
         return AppGlassStyle.edgeGlowColor(border: borderForGauge, realRate: log.realRate)
@@ -316,7 +328,7 @@ struct PlayView: View {
                     // ヘッダー領域: 上マージン＝画面上端〜ダイナミックアイランド下端（同色）。ヘッダー本体はその直下から
                     let headerTopMargin = max(headerTopInset, 20)
                     ZStack(alignment: .bottom) {
-                        Color.black
+                        theme.playHeaderBackground
                         headerRow(firstRowHeight: hHeaderOne)
                     }
                     .frame(minHeight: headerTopMargin + h2)
@@ -425,7 +437,7 @@ struct PlayView: View {
                 // インサイトパネル（ドラッグ1:1追従ドロワー）。左手=右から、右手=左から
                 if drawerOffset > 0 {
                     ZStack(alignment: rightHandMode ? .leading : .trailing) {
-                        Color.black.opacity(0.35)
+                        theme.playDrawerScrim
                             .ignoresSafeArea()
                             .onTapGesture {
                                 haptic(.light)
@@ -578,9 +590,9 @@ struct PlayView: View {
         }
         .sheet(isPresented: $showWinCountCorrectSheet) {
             WinCountCorrectView(rushCount: $tempRushWinCount, normalCount: $tempNormalWinCount) {
-                if let r = Int(tempRushWinCount), let n = Int(tempNormalWinCount) {
-                    log.setWinCounts(rush: r, normal: n)
-                }
+                let r = Int(tempRushWinCount.trimmingCharacters(in: .whitespaces)) ?? 0
+                let n = Int(tempNormalWinCount.trimmingCharacters(in: .whitespaces)) ?? 0
+                log.setWinCounts(rush: r, normal: n)
                 showWinCountCorrectSheet = false
             }
         }
@@ -709,7 +721,10 @@ struct PlayView: View {
         let swipeBarHeight: CGFloat = 60
         let swipeBarCornerRadius: CGFloat = 4
         let swipeBarHorizontalMargin: CGFloat = 16
-        let stainlessBase = Color(red: 0.22, green: 0.23, blue: 0.25)
+        let isLight = theme == .light
+        let stainlessBase = isLight
+            ? Color(red: 0.9, green: 0.91, blue: 0.93)
+            : Color(red: 0.22, green: 0.23, blue: 0.25)
         let cyanNeon = Color(hex: "00FFFF")
         let magentaNeon = Color(hex: "FF00FF")
         let bgGradient = LinearGradient(
@@ -745,24 +760,24 @@ struct PlayView: View {
             HStack(spacing: 8) {
                 Image(systemName: "chevron.left.2")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.white.opacity(0.5))
+                    .foregroundColor(isLight ? Color.black.opacity(0.38) : Color.white.opacity(0.5))
                 Spacer()
-                Text("SWIPE for Information")
+                Text("スワイプで情報")
                     .font(.caption2)
                     .fontWeight(.bold)
-                    .foregroundColor(.white.opacity(0.7))
+                    .foregroundColor(isLight ? Color.black.opacity(0.52) : Color.white.opacity(0.7))
                 Spacer()
                 Color.clear.frame(width: 24, height: 1)
             }
             .padding(.horizontal, 12)
         }
         .overlay(alignment: .top) {
-            Rectangle().fill(cyanNeon).frame(height: 0.5)
-                .shadow(color: cyanNeon.opacity(0.7), radius: 4)
+            Rectangle().fill(cyanNeon.opacity(isLight ? 0.35 : 1)).frame(height: 0.5)
+                .shadow(color: cyanNeon.opacity(isLight ? 0.2 : 0.7), radius: 4)
         }
         .overlay(alignment: .bottom) {
-            Rectangle().fill(magentaNeon).frame(height: 0.5)
-                .shadow(color: magentaNeon.opacity(0.7), radius: 4)
+            Rectangle().fill(magentaNeon.opacity(isLight ? 0.3 : 1)).frame(height: 0.5)
+                .shadow(color: magentaNeon.opacity(isLight ? 0.18 : 0.7), radius: 4)
         }
         .clipShape(RoundedRectangle(cornerRadius: swipeBarCornerRadius))
         .frame(height: swipeBarHeight)
@@ -823,7 +838,7 @@ struct PlayView: View {
                         .modifier(BigHitThemedForeground(isRainbow: rainbow, solid: c))
                     Text("連チャン")
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundColor(.white.opacity(0.75))
+                        .foregroundColor(theme.playLabelSecondary)
                     Text("\(n)")
                         .font(.system(size: 22, weight: .heavy, design: .monospaced))
                         .modifier(BigHitThemedForeground(isRainbow: rainbow, solid: c))
@@ -844,11 +859,11 @@ struct PlayView: View {
             HStack(alignment: .center, spacing: 8) {
                 Text(log.selectedMachine.name)
                     .font(AppTypography.sectionSubheading)
-                    .foregroundColor(.white)
+                    .foregroundColor(theme.playLabelPrimary)
                     .lineLimit(1)
                 Text(log.selectedShop.name)
                     .font(AppTypography.bodyRounded)
-                    .foregroundColor(.white.opacity(0.9))
+                    .foregroundColor(theme.playLabelPrimary.opacity(0.9))
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
@@ -863,7 +878,7 @@ struct PlayView: View {
         }) {
             Image(systemName: "arrow.uturn.backward.circle.fill")
                 .font(.system(size: 30))
-                .foregroundColor(log.undoCount > 0 ? .white : .white.opacity(0.35))
+                .foregroundColor(log.undoCount > 0 ? theme.playLabelPrimary : theme.playMutedIcon)
         }
         .disabled(log.undoCount == 0)
         .padding(2)
@@ -916,6 +931,8 @@ struct PlayView: View {
         let a = accent ?? focusAccent
         // ゲージ本体の縦内容が枠からはみ出さないよう、高さに応じて幅（半径）を抑える
         let meterR = min(maxMeterRadius, height * 0.42)
+        /// 左ゲージを約10％広げ、右の情報群が自動的に狭くなる
+        let gaugeWidth = meterR * 2 * 1.1
         let statGap: CGFloat = 2
         let statRows = 5
         let statRowH = max(0, (height - statGap * CGFloat(statRows - 1)) / CGFloat(statRows))
@@ -924,14 +941,22 @@ struct PlayView: View {
                 borderForGauge: borderForGauge,
                 realRate: log.realRate,
                 rotationPer1000Yen: log.rotationPer1000Yen,
+                totalRealCost: log.totalRealCost,
                 effectiveUnitsForBorder: log.effectiveUnitsForBorder,
                 normalRotations: log.normalRotations,
                 formulaBorderRaw: log.formulaBorderValue,
                 formulaBorderLabel: log.dynamicBorder > 0 ? String(format: "%.1f", log.dynamicBorder) : "—",
-                accent: a
+                accent: a,
+                gaugeExplanation: {
+                    BorderGaugeHelp.explanation
+                        + "\n\n"
+                        + log.borderGaugeAdjustmentSummary()
+                        + "\n\n"
+                        + log.borderGaugeFormulaExplanation()
+                }
             )
             .id("\(log.normalRotations)-\(log.totalInput)-\(log.holdingsInvestedBalls)-\(gaugeRefreshId)")
-            .frame(width: meterR * 2, height: height)
+            .frame(width: gaugeWidth, height: height)
             .clipped()
             .background(playPanelBackground)
             .clipShape(RoundedRectangle(cornerRadius: infoPanelCornerRadius))
@@ -961,7 +986,7 @@ struct PlayView: View {
                             Text("期待値")
                                 .font(AppTypography.sectionSubheading)
                                 .foregroundColor(a.opacity(0.85))
-                            InfoIconView(explanation: "実質回転率÷実戦ボーダー。1.0で基準、1.0超で期待値プラス。", tint: a.opacity(0.6))
+                            InfoIconView(explanation: "実質回転率÷店補正後のボーダー。1.0で基準、1.0超で期待値プラス。", tint: a.opacity(0.6))
                         }
                         Spacer()
                         Text(log.dynamicBorder > 0 && log.effectiveUnitsForBorder > 0 ? String(format: "%.2f%%", log.expectationRatio * 100) : "—")
@@ -1035,16 +1060,29 @@ struct PlayView: View {
 
     /// トップページ風：半透明＋角丸＋角度で変わる枠線（パネル用・読みやすさ優先）
     private func glassStroke(tint: Color) -> LinearGradient {
-        let o: Double = 0.93
-        return LinearGradient(
-            colors: [
-                Color.white.opacity(o * 0.5),
-                tint.opacity(o * 0.35),
-                Color.white.opacity(o * 0.1)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        switch theme {
+        case .dark:
+            let o: Double = 0.93
+            return LinearGradient(
+                colors: [
+                    Color.white.opacity(o * 0.5),
+                    tint.opacity(o * 0.35),
+                    Color.white.opacity(o * 0.1)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .light:
+            return LinearGradient(
+                colors: [
+                    Color.black.opacity(0.14),
+                    tint.opacity(0.4),
+                    Color.black.opacity(0.07)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
     }
 
     /// タップ可能なボタン用：グラデーション＋影でパネルより少し立体的に見せる
@@ -1090,8 +1128,8 @@ struct PlayView: View {
     /// 投資ボタン見出し（赤系・視認性優先）
     private let investmentTextColor = Color(red: 1.0, green: 0.35, blue: 0.32)
     private let investmentSubTextColor = Color(red: 1.0, green: 0.48, blue: 0.44)
-    /// 下部「大当たり」ボタン文言（青系・真っ青より読みやすい）
-    private let bigHitBarTitleColor = Color(red: 0.55, green: 0.78, blue: 0.98)
+    /// 下部「大当たり」スライドのアクセント（テーマに合わせる）
+    private var bigHitBarTitleColor: Color { theme.accentColor }
     /// 中央・下部ボタン・大当たり履歴の左右余白を統一（端を揃える）
     private let contentHorizontalPadding: CGFloat = 12
     /// 情報群・大当たり履歴・スワイプバー・ボタン群の間隔（すべて統一）
@@ -1186,17 +1224,17 @@ struct PlayView: View {
             triggerRipple()
         } label: {
             ZStack {
-                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius)
+                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius, appTheme: theme)
                 VStack(spacing: 4) {
                     Text("\(log.gamesSinceLastWin)")
                         .font(.system(size: min(geo.size.width * 0.14, height * 0.32), weight: .black, design: .monospaced))
-                        .foregroundColor(AppGlassStyle.normalColor)
+                        .foregroundColor(theme == .light ? theme.playLabelPrimary : AppGlassStyle.normalColor)
                     Text(log.currentState == .normal ? "タップ+1" : (log.isTimeShortMode ? "時短中" : "電サポ中"))
                         .font(.system(size: 13, weight: .medium, design: .monospaced))
-                        .foregroundColor(AppGlassStyle.normalColor.opacity(0.9))
+                        .foregroundColor(theme == .light ? theme.playLabelSecondary : AppGlassStyle.normalColor.opacity(0.9))
                     Text("長押しで回転数入力")
                         .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundColor(AppGlassStyle.normalColor.opacity(0.72))
+                        .foregroundColor(theme == .light ? theme.playLabelSecondary : AppGlassStyle.normalColor.opacity(0.72))
                 }
             }
             .frame(maxWidth: .infinity)
@@ -1234,7 +1272,7 @@ struct PlayView: View {
             if !disabled { onTap() }
         } label: {
             ZStack {
-                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius)
+                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius, appTheme: theme)
                 content()
             }
             .frame(maxWidth: .infinity).frame(maxHeight: .infinity)
@@ -1276,11 +1314,10 @@ struct PlayView: View {
                 let isEmpty = log.normalRotations == 0 && log.totalInput == 0
                 if isEmpty {
                     showEmptySaveConfirm = true
-                } else if log.totalHoldings > 0 {
-                    finalHoldingsInput = "\(log.totalHoldings)"
-                    showFinalHoldingsInput = true
                 } else {
-                    saveCurrentSession(settlementMode: nil)
+                    finalHoldingsInput = "\(log.totalHoldings)"
+                    finalNormalRotationsInput = "\(log.normalRotations)"
+                    showFinalHoldingsInput = true
                 }
             }
             Button("保存しないで終了", role: .destructive) { dismiss() }
@@ -1291,12 +1328,9 @@ struct PlayView: View {
         .confirmationDialog("記録がありません", isPresented: $showEmptySaveConfirm, titleVisibility: .visible) {
             Button("保存する") {
                 showEmptySaveConfirm = false
-                if log.totalHoldings > 0 {
-                    finalHoldingsInput = "\(log.totalHoldings)"
-                    showFinalHoldingsInput = true
-                } else {
-                    saveCurrentSession(settlementMode: nil)
-                }
+                finalHoldingsInput = "\(log.totalHoldings)"
+                finalNormalRotationsInput = "\(log.normalRotations)"
+                showFinalHoldingsInput = true
             }
             Button("キャンセル", role: .cancel) { showEmptySaveConfirm = false }
         } message: {
@@ -1305,24 +1339,46 @@ struct PlayView: View {
         .sheet(isPresented: $showFinalHoldingsInput) {
             NavigationStack {
                 VStack(alignment: .leading, spacing: 18) {
-                    Text("実際の回収出玉（流した玉数）を入力してください。\nアプリ上の持ち玉（\(log.totalHoldings)玉）との差分を自動調整します。")
+                    Text("実際に流した玉数（回収出玉）と、やめた時点の通常回転数（時短・電サポ除く）を入力してください。どちらも必須です（0 なら 0 と入力）。流した玉はアプリ上の持ち玉（\(log.totalHoldings)玉）との差分を自動調整します。")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    IntegerPadTextField(
-                        text: $finalHoldingsInput,
-                        placeholder: "回収出玉",
-                        maxDigits: 8,
-                        font: .systemFont(ofSize: 24, weight: .semibold),
-                        textColor: .label,
-                        accentColor: UIColor(focusAccent),
-                        focusTrigger: finalHoldingsPadTrigger
-                    )
-                    .frame(maxWidth: .infinity, minHeight: 48)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("流した球（回収出玉）")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        IntegerPadTextField(
+                            text: $finalHoldingsInput,
+                            placeholder: "必須",
+                            maxDigits: 8,
+                            font: .systemFont(ofSize: 24, weight: .semibold),
+                            textColor: .label,
+                            accentColor: UIColor(focusAccent),
+                            focusTrigger: finalHoldingsPadTrigger,
+                            onNextField: { finalNormalRotationsPadTrigger += 1 }
+                        )
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("辞めた時点の通常回転数")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        IntegerPadTextField(
+                            text: $finalNormalRotationsInput,
+                            placeholder: "必須",
+                            maxDigits: 7,
+                            font: .systemFont(ofSize: 24, weight: .semibold),
+                            textColor: .label,
+                            accentColor: UIColor(focusAccent),
+                            focusTrigger: finalNormalRotationsPadTrigger,
+                            onPreviousField: { finalHoldingsPadTrigger += 1 }
+                        )
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                    }
                     Spacer()
                 }
                 .padding()
-                .navigationTitle("回収出玉の確認")
+                .navigationTitle("遊技終了の確認")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -1330,14 +1386,17 @@ struct PlayView: View {
                     }
                     ToolbarItem(placement: .confirmationAction) {
                         Button("完了") { confirmFinalHoldingsFlow() }
+                            .disabled(!finalSessionEndFormValid)
                     }
                 }
-                .onAppear { finalHoldingsPadTrigger += 1 }
+                .onAppear {
+                    finalHoldingsPadTrigger += 1
+                }
             }
-            .presentationDetents([.medium])
+            .presentationDetents([.medium, .large])
         }
         .alert("入力エラー", isPresented: $showErrorAlert) {
-            Button("OK", role: .cancel) { }
+            Button("閉じる", role: .cancel) { }
         } message: {
             Text(errorMessage)
         }
@@ -1345,7 +1404,7 @@ struct PlayView: View {
             get: { saveResult == "ok" },
             set: { if !$0 { saveResult = nil } }
         )) {
-            Button("OK") {
+            Button("閉じる") {
                 dismissPlayAfterSaveFlow()
             }
         } message: {
@@ -1355,7 +1414,7 @@ struct PlayView: View {
             get: { saveResult.map { $0.hasPrefix("error:") } ?? false },
             set: { if !$0 { saveResult = nil } }
         )) {
-            Button("OK") { saveResult = nil }
+            Button("閉じる") { saveResult = nil }
         } message: {
             if let r = saveResult, r.hasPrefix("error:") {
                 Text(String(r.dropFirst(7)))
@@ -1429,7 +1488,7 @@ struct PlayView: View {
                 height: safeH,
                 cornerRadius: r,
                 accent: bigHitBarTitleColor,
-                style: BigHitSlideRailStyle(rawValue: bigHitSlideRailStyleRaw) ?? .minimalGlass,
+                chrome: theme.bigHitRailChrome,
                 onConfirmed: {
                     haptic(.medium)
                     bigHitEntryNormalRotations = "\(log.normalRotations)"
@@ -1447,10 +1506,10 @@ struct PlayView: View {
                 haptic(.medium)
             } label: {
                 ZStack {
-                    HomeStylePlayCardBackground(cornerRadius: r)
+                    HomeStylePlayCardBackground(cornerRadius: r, appTheme: theme)
                     Text("遊技終了")
                         .font(.system(size: 17, weight: .bold, design: .monospaced))
-                        .foregroundColor(.white.opacity(0.95))
+                        .foregroundColor(theme.playLabelPrimary.opacity(0.96))
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -1467,26 +1526,48 @@ struct PlayView: View {
         EmptyView()
     }
 
+    /// `GameLog.selectedShop` が環境の `modelContext` に登録された `Shop` と同一インスタンスでない場合、貯玉の加算が保存されないことがあるため、保存直前に必ず解決する。
+    private func resolvePersistedShop(matching reference: Shop) -> Shop? {
+        if let resolved = modelContext.model(for: reference.persistentModelID) as? Shop {
+            return resolved
+        }
+        let searchName = reference.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !searchName.isEmpty, searchName != "未選択" else { return nil }
+        let name = searchName
+        let predicate = #Predicate<Shop> { shop in shop.name == name }
+        var descriptor = FetchDescriptor<Shop>(predicate: predicate)
+        descriptor.fetchLimit = 32
+        guard let matches = try? modelContext.fetch(descriptor), !matches.isEmpty else { return nil }
+        if matches.count == 1 { return matches[0] }
+        let coef = reference.payoutCoefficient
+        let ballsPer = reference.ballsPerCashUnit
+        let chodamaOn = reference.supportsChodamaService
+        return matches.first(where: {
+            $0.payoutCoefficient == coef && $0.ballsPerCashUnit == ballsPer && $0.supportsChodamaService == chodamaOn
+        }) ?? matches.first
+    }
+
     /// - Parameter settlementMode: 回収玉が 1 玉以上のとき実戦フローで選択。`nil` は未精算（旧挙動・回収 0）
     private func saveCurrentSession(settlementMode: SessionSettlementMode?) {
-        let shop = log.selectedShop
+        let refShop = log.selectedShop
+        let persistedShop = resolvePersistedShop(matching: refShop)
         var settlementRaw = ""
         var exchangePt = 0
         var chodamaDelta = 0
         if let mode = settlementMode {
             settlementRaw = mode.rawValue
             let balls = log.totalHoldings
-            let rate = shop.payoutCoefficient
+            let rate = refShop.payoutCoefficient
             switch mode {
             case .chodama:
-                if shop.supportsChodamaService {
+                if let shop = persistedShop, shop.supportsChodamaService {
                     chodamaDelta = balls
                     shop.chodamaBalanceBalls += balls
                 }
             case .exchange:
                 let bd = ChodamaSettlement.exchangeBreakdown(balls: balls, yenPerBall: rate)
                 exchangePt = bd.cashProceedsPt
-                if shop.supportsChodamaService {
+                if let shop = persistedShop, shop.supportsChodamaService {
                     chodamaDelta = bd.remainderBalls
                     shop.chodamaBalanceBalls += bd.remainderBalls
                 }
@@ -1511,10 +1592,11 @@ struct PlayView: View {
             expectationRatioAtSave: ratio,
             rushWinCount: log.rushWinCount,
             normalWinCount: log.normalWinCount,
-            ltWinCount: log.ltWinCount,
             formulaBorderPer1k: formulaBorder > 0 ? formulaBorder : 0
         )
         session.firstHitRealCostPt = log.realCostAtFirstWin()
+        session.effectiveBorderPer1kAtSave = log.dynamicBorder
+        session.realRotationRateAtSave = log.realRate
         session.settlementModeRaw = settlementRaw
         session.exchangeCashProceedsPt = exchangePt
         session.chodamaBalanceDeltaBalls = chodamaDelta
@@ -1525,7 +1607,7 @@ struct PlayView: View {
             try modelContext.save()
             saveResult = "ok"
         } catch {
-            saveResult = "error: \(error.localizedDescription)"
+            saveResult = "error: 保存に失敗しました。もう一度お試しください。"
         }
     }
 
@@ -1638,14 +1720,14 @@ struct PlayView: View {
         }
     }
 
-    /// 大当たり終了シート：必須3項目をそれぞれ独立パネルで入力
+    /// 大当たり終了シート：大当たり数・獲得出玉・電サポ回数はいずれも必須（0 は明示入力）
     private var bigHitExitFormValid: Bool {
         let hTrim = bigHitExitHitsField.trimmingCharacters(in: .whitespaces)
-        let pTrim = bigHitExitPrizeField.trimmingCharacters(in: .whitespaces)
-        let eTrim = bigHitExitElectricField.trimmingCharacters(in: .whitespaces)
         guard let h = Int(hTrim), h >= 1 else { return false }
-        guard let p = Int(pTrim), p >= 0 else { return false }
-        guard let e = Int(eTrim), e >= 0 else { return false }
+        let pTrim = bigHitExitPrizeField.trimmingCharacters(in: .whitespaces)
+        guard !pTrim.isEmpty, let p = Int(pTrim), p >= 0 else { return false }
+        let eTrim = bigHitExitElectricField.trimmingCharacters(in: .whitespaces)
+        guard !eTrim.isEmpty, let e = Int(eTrim), e >= 0 else { return false }
         return true
     }
 
@@ -1656,7 +1738,7 @@ struct PlayView: View {
                 Color.black.opacity(0.97).ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("当たり区間を記録して戻る場合は、以下3項目をすべて入力し、「確定して通常へ戻る」を押します。テンキー左上の「前へ」「次へ」で入力欄を切り替えられます。")
+                        Text("大当たり数・総獲得出玉数・電サポ回数はすべて必須です。出玉や電サポがない場合は 0 と入力してください。テンキー付属バーの矢印で欄を移動できます。")
                             .font(.subheadline)
                             .foregroundColor(.white.opacity(0.88))
                             .fixedSize(horizontal: false, vertical: true)
@@ -1666,15 +1748,24 @@ struct PlayView: View {
                             title: "大当たり数（初当たり含む）",
                             footnote: "「初当たりのあと連チャンでさらに1回当たった」なら累計は2回。入力欄にはその合計回数（初当たりを1として数えた回数）を入れます。画面上の連チャン数と同じ値が目安です。",
                             text: $bigHitExitHitsField,
-                            maxDigits: 4
+                            maxDigits: 4,
+                            placeholder: ""
                         )
-                        bigHitExitInputPanel(fieldIndex: 1, title: "総獲得出玉数", footnote: nil, text: $bigHitExitPrizeField, maxDigits: 7)
+                        bigHitExitInputPanel(
+                            fieldIndex: 1,
+                            title: "総獲得出玉数",
+                            footnote: "必須。獲得出玉がない場合は 0 を入力してください。",
+                            text: $bigHitExitPrizeField,
+                            maxDigits: 7,
+                            placeholder: ""
+                        )
                         bigHitExitInputPanel(
                             fieldIndex: 2,
                             title: "電サポ回数",
-                            footnote: "この当たり後に残っている電サポの回数です。0ならすぐ通常回転のカウント。電サポ中はタップで消化し、終了した瞬間にその回数分がランプ累積（回数）へまとめて反映され、実機と揃います。",
+                            footnote: "必須。大当たり確定の時点ですでに消化した電サポのゲーム数（ない場合は 0）。カウントの「当選からのゲーム数」に反映され、通常へ戻った直後からその続きとして +1 できます。",
                             text: $bigHitExitElectricField,
-                            maxDigits: 5
+                            maxDigits: 5,
+                            placeholder: ""
                         )
 
                         Button {
@@ -1760,7 +1851,14 @@ struct PlayView: View {
         }
     }
 
-    private func bigHitExitInputPanel(fieldIndex: Int, title: String, footnote: String?, text: Binding<String>, maxDigits: Int) -> some View {
+    private func bigHitExitInputPanel(
+        fieldIndex: Int,
+        title: String,
+        footnote: String?,
+        text: Binding<String>,
+        maxDigits: Int,
+        placeholder: String = ""
+    ) -> some View {
         let accentUi = UIColor(focusAccent)
         let padNav: ((Int) -> Void) = { delta in
             let n = bigHitExitPadFocusTriggers.count
@@ -1778,7 +1876,7 @@ struct PlayView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 IntegerPadTextField(
                     text: text,
-                    placeholder: "0",
+                    placeholder: placeholder,
                     maxDigits: maxDigits,
                     font: .monospacedSystemFont(ofSize: 20, weight: .bold),
                     textColor: UIColor(focusAccent),
@@ -1809,14 +1907,19 @@ struct PlayView: View {
     private var bigHitEntryFormValid: Bool {
         guard let nRot = Int(bigHitEntryNormalRotations.trimmingCharacters(in: .whitespaces)), nRot >= 0 else { return false }
         guard let cash = Int(bigHitEntryCashPt.trimmingCharacters(in: .whitespaces)), cash >= 0 else { return false }
+        let needsHoldings = log.holdingsInvestedBalls > 0
         let hTrim = bigHitEntryHoldingsValue.trimmingCharacters(in: .whitespaces)
-        if !hTrim.isEmpty, Int(hTrim) == nil { return false }
-        if let v = Int(hTrim), v < 0 { return false }
+        if needsHoldings {
+            guard let hv = Int(hTrim), hv >= 0 else { return false }
+        } else {
+            if !hTrim.isEmpty, Int(hTrim) == nil { return false }
+            if let v = Int(hTrim), v < 0 { return false }
+        }
         return true
     }
 
-    /// 持ち玉：セグメントで「投資」／「残り」を切り替え、入力欄は1つだけ
-    private func bigHitEntryHoldingsPanel(fieldIndex: Int) -> some View {
+    /// 持ち玉：セグメントで「投資」／「残り」を切り替え、入力欄は1つだけ。実戦で持ち玉投資が無い場合はグレーアウト。
+    private func bigHitEntryHoldingsPanel(fieldIndex: Int, requiresHoldings: Bool) -> some View {
         let accentUi = UIColor(focusAccent)
         let padNav: ((Int) -> Void) = { delta in
             let n = bigHitEntryPadFocusTriggers.count
@@ -1827,9 +1930,9 @@ struct PlayView: View {
             bigHitEntryPadFocusTriggers[idx] += 1
         }
         return VStack(alignment: .leading, spacing: 10) {
-            Text("持ち玉（省略可）")
+            Text(requiresHoldings ? "持ち玉（必須）" : "持ち玉（この実戦で持ち玉投資なし）")
                 .font(AppTypography.sectionSubheading)
-                .foregroundColor(.white.opacity(0.92))
+                .foregroundColor(.white.opacity(requiresHoldings ? 0.92 : 0.55))
             Picker("入力の種類", selection: $bigHitEntryHoldingsKind) {
                 ForEach(BigHitHoldingsEntryKind.allCases) { k in
                     Text(k.sheetSegmentLabel).tag(k)
@@ -1838,14 +1941,20 @@ struct PlayView: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .accessibilityLabel("持ち玉の入力の種類")
-            .onChange(of: bigHitEntryHoldingsKind) { _, _ in
-                bigHitEntryHoldingsValue = ""
+            .disabled(!requiresHoldings)
+            .opacity(requiresHoldings ? 1 : 0.55)
+            .onChange(of: bigHitEntryHoldingsKind) { _, newKind in
+                guard requiresHoldings else {
+                    bigHitEntryHoldingsValue = ""
+                    return
+                }
+                bigHitEntryHoldingsValue = newKind == .investedAtWin ? "\(log.holdingsInvestedBalls)" : "\(log.totalHoldings)"
             }
 
             HStack(alignment: .center, spacing: 12) {
                 Text(bigHitEntryHoldingsKind.sheetFieldTitle)
                     .font(AppTypography.sectionSubheading)
-                    .foregroundColor(.white.opacity(0.92))
+                    .foregroundColor(.white.opacity(requiresHoldings ? 0.92 : 0.55))
                     .frame(maxWidth: .infinity, alignment: .leading)
                 IntegerPadTextField(
                     text: $bigHitEntryHoldingsValue,
@@ -1856,7 +1965,8 @@ struct PlayView: View {
                     accentColor: accentUi,
                     focusTrigger: bigHitEntryPadFocusTriggers[fieldIndex],
                     onPreviousField: { padNav(-1) },
-                    onNextField: { padNav(1) }
+                    onNextField: { padNav(1) },
+                    isEnabled: requiresHoldings
                 )
                 .frame(width: 100, height: 44, alignment: .trailing)
                 .background(Color.black.opacity(0.35))
@@ -1864,7 +1974,7 @@ struct PlayView: View {
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.18), lineWidth: 1))
             }
 
-            Text(bigHitEntryHoldingsKind.sheetFootnote)
+            Text(requiresHoldings ? bigHitEntryHoldingsKind.sheetFootnote : "このセッションで一度も持ち玉投資していないため入力できません。アプリが把握している値を自動で反映する必要はありません。")
                 .font(.caption2)
                 .foregroundColor(.white.opacity(0.58))
                 .fixedSize(horizontal: false, vertical: true)
@@ -1874,6 +1984,9 @@ struct PlayView: View {
         .background(playPanelBackground)
         .clipShape(RoundedRectangle(cornerRadius: infoPanelCornerRadius))
         .overlay(RoundedRectangle(cornerRadius: infoPanelCornerRadius).stroke(glassStroke(tint: focusAccent), lineWidth: playPanelStrokeLineWidth))
+        .opacity(requiresHoldings ? 1 : 0.72)
+        .accessibilityElement(children: .contain)
+        .accessibilityHint(requiresHoldings ? "持ち玉投資があるため、この欄の入力が必要です。" : "持ち玉投資がないため、この欄は使えません。")
     }
 
     @ViewBuilder
@@ -1883,7 +1996,7 @@ struct PlayView: View {
                 Color.black.opacity(0.97).ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("当選時点の通常回転・投入を入力して大当たり記録を開始します。持ち玉は下の切替で入力内容を選び、1つの欄に入力します（省略可）。初期の切替は設定から変更できます。")
+                        Text("当選時点の通常回転・投入を入力して大当たり記録を開始します。この実戦ですでに持ち玉投資している場合は、下の持ち玉欄も必須です（切替と値はアプリが把握している数で初期表示されます）。持ち玉投資が一度もない場合はその欄は使えません。初期の切替は設定から変更できます。")
                             .font(.subheadline)
                             .foregroundColor(.white.opacity(0.88))
                             .fixedSize(horizontal: false, vertical: true)
@@ -1902,17 +2015,18 @@ struct PlayView: View {
                             text: $bigHitEntryCashPt,
                             maxDigits: 8
                         )
-                        bigHitEntryHoldingsPanel(fieldIndex: 2)
+                        bigHitEntryHoldingsPanel(fieldIndex: 2, requiresHoldings: log.holdingsInvestedBalls > 0)
 
                         Button {
                             guard let nRot = Int(bigHitEntryNormalRotations.trimmingCharacters(in: .whitespaces)),
                                   let cash = Int(bigHitEntryCashPt.trimmingCharacters(in: .whitespaces)),
                                   bigHitEntryFormValid
                             else { return }
+                            let needsHoldings = log.holdingsInvestedBalls > 0
                             let hTrim = bigHitEntryHoldingsValue.trimmingCharacters(in: .whitespaces)
-                            let hVal = hTrim.isEmpty ? nil : Int(hTrim)
-                            let inv = bigHitEntryHoldingsKind == .investedAtWin ? hVal : nil
-                            let rem = bigHitEntryHoldingsKind == .remainingAtWin ? hVal : nil
+                            let hVal: Int? = needsHoldings ? Int(hTrim) : nil
+                            let inv = needsHoldings && bigHitEntryHoldingsKind == .investedAtWin ? hVal : nil
+                            let rem = needsHoldings && bigHitEntryHoldingsKind == .remainingAtWin ? hVal : nil
                             log.applyBigHitEntryAtWin(
                                 normalRotationsAtWin: nRot,
                                 cashPt: cash,
@@ -1952,7 +2066,13 @@ struct PlayView: View {
             }
             .onAppear {
                 bigHitEntryHoldingsKind = BigHitHoldingsEntryKind(rawValue: bigHitHoldingsEntryDefaultRaw) ?? .investedAtWin
-                bigHitEntryHoldingsValue = ""
+                if log.holdingsInvestedBalls > 0 {
+                    bigHitEntryHoldingsValue = bigHitEntryHoldingsKind == .investedAtWin
+                        ? "\(log.holdingsInvestedBalls)"
+                        : "\(log.totalHoldings)"
+                } else {
+                    bigHitEntryHoldingsValue = ""
+                }
                 bigHitEntryPadFocusTriggers = [0, 0, 0]
                 bigHitEntryPadFocusTriggers[0] += 1
             }
@@ -2010,19 +2130,23 @@ struct PlayView: View {
         let n = log.bigHitChainCount
         let c = bigHitChainPrimaryColor(n)
         let rainbow = bigHitChainUsesRainbow(n)
+        let titleSize = min(geo.size.width * 0.092, height * 0.26)
+        let subtitleSize = max(12, min(16, height * 0.09))
         return Button {
             log.incrementBigHitChain()
-            haptic(.light)
+            HapticUtil.bigHitChainIncrement()
         } label: {
             ZStack {
-                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius)
-                VStack(spacing: 6) {
-                    Text("＋1")
-                        .font(.system(size: min(geo.size.width * 0.14, height * 0.32), weight: .black, design: .monospaced))
+                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius, appTheme: theme)
+                VStack(spacing: 8) {
+                    Text("連チャン数 \(n)回")
+                        .font(.system(size: titleSize, weight: .black, design: .rounded))
+                        .minimumScaleFactor(0.65)
+                        .lineLimit(1)
                         .modifier(BigHitThemedForeground(isRainbow: rainbow, solid: c))
-                    Text("連チャン追加")
-                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                        .foregroundColor(rainbow ? .white.opacity(0.9) : c.opacity(0.88))
+                    Text("タップで＋1")
+                        .font(.system(size: subtitleSize, weight: .semibold, design: .rounded))
+                        .foregroundColor(rainbow ? .white.opacity(0.82) : c.opacity(0.85))
                 }
             }
         }
@@ -2032,6 +2156,8 @@ struct PlayView: View {
         .frame(height: height)
         .padding(.horizontal, contentHorizontalPadding)
         .animation(.easeInOut(duration: 0.28), value: n)
+        .accessibilityLabel("連チャン数\(n)回")
+        .accessibilityHint("タップで連チャンを1回追加します")
     }
 
     /// 下部：確定シートへ（ホームと同じカード）
@@ -2045,12 +2171,12 @@ struct PlayView: View {
             Button {
                 haptic(.medium)
                 bigHitExitHitsField = "\(log.bigHitChainCount)"
-                bigHitExitPrizeField = "0"
-                bigHitExitElectricField = "0"
+                bigHitExitPrizeField = ""
+                bigHitExitElectricField = ""
                 showBigHitExitSheet = true
             } label: {
                 ZStack {
-                    HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius)
+                    HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius, appTheme: theme)
                     Text("通常へ")
                         .font(.system(size: 18, weight: .bold, design: .monospaced))
                         .modifier(BigHitThemedForeground(isRainbow: rainbow, solid: c))
@@ -2107,18 +2233,51 @@ private struct DownTriangle: Shape {
     }
 }
 
-// MARK: - ボーダーメーター（横バー偏差表示。基準は実質ボーダー。公式・実質を横並び表示）
+// MARK: - ボーダーゲージ用ヘルプ（ゲージ端の ⓘ から表示）
+private enum BorderGaugeHelp {
+    static let explanation = """
+📊 数値の見方ガイド（ポップアップ用）
+このゲージは、お店のルール（貸玉料金や交換率）をすべて計算に入れ、「その台が本当に勝てる台か」をリアルタイムで判定しています。
+
+1. 等価ボーダー
+1,000pt（250玉）あたり何回まわればトントンかという、機種ごとの基準値で、全ての計算の土台となります。
+
+2. 実質ボーダー
+等価ボーダーに「お店の手数料（貸玉料金）」と「交換の差損」を加味した、その店専用の目標値です。
+
+手数料が高い店ほど、この数字は上がります。「この店で勝つには最低これだけ回さなければならない」という本当の目標値です。
+
+3. 実質回転率
+現金投資で打った玉も、持ち玉で打った玉も、すべて「250玉（等価の1,000円分）」単位に換算して算出した回転数です。
+
+お店のルールに左右されない「台の本当の回りやすさ」を表します。これが「実質ボーダー」を超えていれば期待値がプラスになります。
+
+4. 表面回転率
+単純に「使った現金 ÷ 1,000」で計算した回転数です。
+
+注意: 貸玉手数料がある店では、1,000円で250玉借りられないため、実質回転率とは数字がズレます。
+"""
+}
+
+// MARK: - ボーダーメーター（縦5行：等価→実質ボーダー→ゲージ→実質回転率→表面回転率）
 struct BorderMeterView: View {
     let borderForGauge: Double
     let realRate: Double
+    /// 表面回転率（千円実費あたり）。分母は `totalRealCost`
     let rotationPer1000Yen: Double
+    let totalRealCost: Double
     let effectiveUnitsForBorder: Double
     let normalRotations: Int
-    /// 公式ボーダー（等価・回/千円）。表示用
+    /// 機種マスタのボーダー（等価・回/千円）。表示用
     let formulaBorderRaw: Double
-    /// 実質ボーダー（店の交換率考慮・回/千円）。ゲージ基準
+    /// 店補正後のボーダー（回/千円）。ゲージ基準
     let formulaBorderLabel: String
     let accent: Color
+    /// タップまたは ⓘ で evaluated される全文（静的説明＋補正倍率＋`GameLog.borderGaugeFormulaExplanation()`）
+    let gaugeExplanation: () -> String
+
+    @State private var showGaugeSheet = false
+    @State private var gaugeSheetExplanation = ""
 
     private var gaugeEnabled: Bool { effectiveUnitsForBorder > 0 && borderForGauge > 0 }
 
@@ -2144,8 +2303,14 @@ struct BorderMeterView: View {
         }
     }
 
-    /// 実質回転率と同じフォントサイズ（上部公式ボーダーと揃える）
     private let valueFontSize: CGFloat = 14
+    private let compactLabelFontSize: CGFloat = 12
+
+    /// 表面回転率の表示用（投入実費が無いときは —）
+    private var surfaceRateDisplay: String {
+        guard totalRealCost > 0, rotationPer1000Yen > 0 else { return "—" }
+        return String(format: "%.1f", rotationPer1000Yen)
+    }
 
     var body: some View {
         GeometryReader { g in
@@ -2154,34 +2319,42 @@ struct BorderMeterView: View {
             let pad: CGFloat = 14
             let barHeight: CGFloat = 20
             let tickHeight: CGFloat = 8
-
-            VStack(spacing: 0) {
-                // 横バーの上：公式ボーダーと実質ボーダーを横並び（ゲージ基準は実質）
-                HStack(spacing: 12) {
-                    VStack(spacing: 2) {
-                        Text("公式")
-                            .font(.system(size: 9, weight: .medium, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.8))
+            ZStack(alignment: .topTrailing) {
+                VStack(spacing: 0) {
+                    // 1行目：等価ボーダー（中央・ラベル・数値とも太字にしない）
+                    HStack(spacing: 6) {
+                        Spacer(minLength: 0)
+                        Text("等価ボーダー")
+                            .font(.system(size: compactLabelFontSize, weight: .regular))
+                            .foregroundColor(.white.opacity(0.92))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.65)
                         Text(formulaBorderRaw > 0 ? String(format: "%.1f", formulaBorderRaw) : "—")
-                            .font(.system(size: valueFontSize, weight: .bold, design: .monospaced))
-                            .foregroundColor(.white)
+                            .font(.system(size: valueFontSize, weight: .regular, design: .monospaced))
+                            .foregroundColor(markerColor)
+                        Spacer(minLength: 0)
                     }
+                    .padding(.top, 6)
                     .frame(maxWidth: .infinity)
-                    VStack(spacing: 2) {
-                        Text("実質")
-                            .font(.system(size: 9, weight: .medium, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.8))
+
+                    // 2行目：実質ボーダー（中央）
+                    HStack(spacing: 6) {
+                        Spacer(minLength: 0)
+                        Text("実質ボーダー")
+                            .font(AppTypography.sectionSubheading)
+                            .foregroundColor(.white.opacity(0.92))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.65)
                         Text(formulaBorderLabel)
                             .font(.system(size: valueFontSize, weight: .bold, design: .monospaced))
-                            .foregroundColor(accent)
+                            .foregroundColor(markerColor)
+                        Spacer(minLength: 0)
                     }
+                    .padding(.top, 4)
                     .frame(maxWidth: .infinity)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 6)
 
-                // 横バー（幅は barW で固定し pad で中央寄せ。上下中央に配置）
-                GeometryReader { barGeo in
+                    // 3行目：ゲージ（残り高さを優先使用）
+                    GeometryReader { barGeo in
                     let rawBarOuterW = barGeo.size.width
                     let safeBarOuterW = rawBarOuterW.isFinite ? max(0, rawBarOuterW) : 0
                     let rawBarOuterH = barGeo.size.height
@@ -2255,30 +2428,61 @@ struct BorderMeterView: View {
                 .frame(minHeight: 58)
                 .frame(maxHeight: .infinity)
 
-                // 横バーの下：実質回転率・表面回転率の2種（表面はやや控えめ）
-                // ゲージは上半円プレート内。見出しを本文より一段大きく（装飾目盛 -5/±0/+5 はサイズ優先のため据え置き）
-                VStack(spacing: 4) {
+                    // 4行目：実質回転率（中央）
                     HStack(spacing: 6) {
+                        Spacer(minLength: 0)
                         Text("実質回転率")
                             .font(AppTypography.sectionSubheading)
                             .foregroundColor(.white.opacity(0.92))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.65)
                         Text(gaugeEnabled ? String(format: "%.1f", realRate) : "\(normalRotations)")
                             .font(.system(size: valueFontSize, weight: .bold, design: .monospaced))
                             .foregroundColor(markerColor)
+                        Spacer(minLength: 0)
                     }
+                    .padding(.top, 6)
+                    .frame(maxWidth: .infinity)
+
+                    // 5行目：表面回転率（中央・太字にしない）
                     HStack(spacing: 6) {
+                        Spacer(minLength: 0)
                         Text("表面回転率")
-                            .font(AppTypography.bodyRounded)
-                            .foregroundColor(.white.opacity(0.72))
-                        Text(gaugeEnabled && rotationPer1000Yen > 0 ? String(format: "%.1f", rotationPer1000Yen) : "—")
-                            .font(.system(size: 12, weight: .regular, design: .monospaced))
-                            .foregroundColor(.white.opacity(0.65))
+                            .font(.system(size: compactLabelFontSize, weight: .regular))
+                            .foregroundColor(.white.opacity(0.92))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.65)
+                        Text(surfaceRateDisplay)
+                            .font(.system(size: valueFontSize, weight: .regular, design: .monospaced))
+                            .foregroundColor(markerColor)
+                        Spacer(minLength: 0)
                     }
+                    .padding(.top, 4)
+                    .padding(.bottom, 6)
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 6)
+                .frame(width: W, height: H)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    gaugeSheetExplanation = gaugeExplanation()
+                    showGaugeSheet = true
+                }
+
+                Button {
+                    gaugeSheetExplanation = gaugeExplanation()
+                    showGaugeSheet = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.72))
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 4)
+                .padding(.trailing, 2)
             }
-            .frame(width: W, height: H)
+        }
+        .sheet(isPresented: $showGaugeSheet) {
+            InfoExplanationSheet(explanation: gaugeSheetExplanation)
         }
         .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
     }
@@ -2574,7 +2778,7 @@ struct WinCountCorrectView: View {
                     .foregroundColor(.secondary)
                 IntegerPadTextField(
                     text: $rushCount,
-                    placeholder: "0",
+                    placeholder: "",
                     maxDigits: 5,
                     font: .monospacedSystemFont(ofSize: 22, weight: .medium),
                     textColor: .label,
@@ -2594,7 +2798,7 @@ struct WinCountCorrectView: View {
                     .foregroundColor(.secondary)
                 IntegerPadTextField(
                     text: $normalCount,
-                    placeholder: "0",
+                    placeholder: "",
                     maxDigits: 5,
                     font: .monospacedSystemFont(ofSize: 22, weight: .medium),
                     textColor: .label,
@@ -2610,11 +2814,9 @@ struct WinCountCorrectView: View {
             }
             Button("確定") {
                 UIApplication.dismissKeyboard()
-                if let r = Int(rushCount), r < 0 {
-                    showErrorAlert = true
-                    return
-                }
-                if let n = Int(normalCount), n < 0 {
+                let r = Int(rushCount.trimmingCharacters(in: .whitespaces)) ?? 0
+                let n = Int(normalCount.trimmingCharacters(in: .whitespaces)) ?? 0
+                if r < 0 || n < 0 {
                     showErrorAlert = true
                     return
                 }

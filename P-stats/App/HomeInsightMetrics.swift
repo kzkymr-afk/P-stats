@@ -36,7 +36,7 @@ enum HomeInsightMetrics {
     /// 初当たりまでの平均実質投入（pt）。記録があるセッションのみ平均。
     static func averageFirstHitInvestment(in period: EarningsPeriod, sessions: [GameSession]) -> Double? {
         let list = Self.sessions(in: period, from: sessions).filter {
-            $0.rushWinCount + $0.normalWinCount + $0.ltWinCount > 0
+            $0.rushWinCount + $0.normalWinCount > 0
         }
         let costs = list.compactMap(\.firstHitRealCostPt)
         guard !costs.isEmpty else { return nil }
@@ -107,8 +107,8 @@ enum HomeInsightMetrics {
         let name: String
         /// 実戦回転率（回/1k）
         let avgRotationPer1k: Double
-        /// 公式ボーダーとの差の平均（回/1k）。nil は比較不可
-        let avgDiffFromFormula: Double?
+        /// ボーダーとの差（回/1k・通常回転数加重平均）。nil は比較不可
+        let avgBorderDiffPer1k: Double?
     }
 
     /// 回転数（合計）が多い機種上位3。表示は平均回転率とボーダー差。
@@ -119,19 +119,12 @@ enum HomeInsightMetrics {
             let rots = rotList.reduce(0) { $0 + $1.normalRotations }
             let cost = rotList.reduce(0.0) { $0 + $1.rotationRateDenominatorPt }
             let rate = cost > 0 ? Double(rots) / cost * 1000 : 0
-            let borderList = list.filter(\.participatesInFormulaBorderDiffAnalytics)
-            let avgDiff: Double? = borderList.isEmpty ? nil : {
-                let sum = borderList.reduce(0.0) { acc, s in
-                    let r = (Double(s.normalRotations) / s.totalRealCost) * 1000
-                    return acc + (r - s.formulaBorderPer1k)
-                }
-                return sum / Double(borderList.count)
-            }()
+            let avgDiff = AnalyticsEngine.weightedAverageBorderDiffPer1k(sessions: list)
             return (name, rots, rate, avgDiff)
         }
         .sorted { $0.1 > $1.1 }
         return Array(scored.prefix(3).map {
-            RotationLeader(id: $0.0, name: $0.0, avgRotationPer1k: $0.2, avgDiffFromFormula: $0.3)
+            RotationLeader(id: $0.0, name: $0.0, avgRotationPer1k: $0.2, avgBorderDiffPer1k: $0.3)
         })
     }
 }

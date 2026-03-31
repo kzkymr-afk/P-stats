@@ -3,7 +3,7 @@ import UIKit
 
 /// `numberPad` / `decimalPad` 用のキーボード付属ツールバー（左：前へ・次へ、右：入力完了）。
 enum NumericPadInputAccessory {
-    /// 下矢印＝前の入力欄、上矢印＝次の入力欄、チェック＝キーボードを閉じる
+    /// 左矢印＝前の入力欄、右矢印＝次の入力欄、チェック＝キーボードを閉じる
     static func makeToolbar(
         accentColor: UIColor,
         target: AnyObject,
@@ -16,12 +16,12 @@ enum NumericPadInputAccessory {
         bar.tintColor = accentColor
         var items: [UIBarButtonItem] = []
         if let sel = previousSelector {
-            let b = UIBarButtonItem(image: UIImage(systemName: "chevron.down"), style: .plain, target: target, action: sel)
+            let b = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain, target: target, action: sel)
             b.accessibilityLabel = "前の入力欄へ"
             items.append(b)
         }
         if let sel = nextSelector {
-            let b = UIBarButtonItem(image: UIImage(systemName: "chevron.up"), style: .plain, target: target, action: sel)
+            let b = UIBarButtonItem(image: UIImage(systemName: "chevron.right"), style: .plain, target: target, action: sel)
             b.accessibilityLabel = "次の入力欄へ"
             items.append(b)
         }
@@ -56,6 +56,8 @@ struct IntegerPadTextField: UIViewRepresentable {
     var doneTitle: String = "完了"
     var previousFieldTitle: String = "前へ"
     var nextFieldTitle: String = "次へ"
+    /// フォームで無効化したいとき（灰色・入力不可）
+    var isEnabled: Bool = true
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, maxDigits: maxDigits)
@@ -71,6 +73,7 @@ struct IntegerPadTextField: UIViewRepresentable {
         tf.addTarget(context.coordinator, action: #selector(Coordinator.textChanged(_:)), for: .editingChanged)
         tf.autocorrectionType = .no
         tf.spellCheckingType = .no
+        tf.isEnabled = isEnabled
         tf.text = text
         tf.adjustsFontSizeToFitWidth = adjustsFontSizeToFitWidth
         if adjustsFontSizeToFitWidth { tf.minimumFontSize = minimumFontSize }
@@ -93,11 +96,13 @@ struct IntegerPadTextField: UIViewRepresentable {
         if focusTrigger != context.coordinator.lastFocusTrigger {
             context.coordinator.lastFocusTrigger = focusTrigger
             DispatchQueue.main.async {
-                uiView.becomeFirstResponder()
+                if isEnabled { uiView.becomeFirstResponder() }
             }
         }
         uiView.adjustsFontSizeToFitWidth = adjustsFontSizeToFitWidth
         if adjustsFontSizeToFitWidth { uiView.minimumFontSize = minimumFontSize }
+        uiView.isEnabled = isEnabled
+        uiView.alpha = isEnabled ? 1.0 : 0.48
     }
 
     private func accessoryToolbar(coordinator: Coordinator) -> UIToolbar {

@@ -28,7 +28,6 @@ struct SettingsTabView: View {
     @AppStorage("defaultMachineName") private var defaultMachineName = ""
     @AppStorage("defaultShopName") private var defaultShopName = ""
     @AppStorage("alwaysShowBothInvestmentButtons") private var alwaysShowBothInvestmentButtons = true
-    @AppStorage("bigHitSlideRailStyle") private var bigHitSlideRailStyleRaw = BigHitSlideRailStyle.defaultStorageValue
     @AppStorage("bigHitHoldingsEntryDefault") private var bigHitHoldingsEntryDefaultRaw = BigHitHoldingsEntryKind.appStorageDefaultRawValue
     @AppStorage("homeInfoPanelOrder") private var homeInfoPanelOrderRaw = HomeInfoPanelSettings.defaultOrderCSV
     @AppStorage("homeInfoPanelHidden") private var homeInfoPanelHiddenRaw = ""
@@ -208,19 +207,8 @@ struct SettingsTabView: View {
                         .tint(cyan)
                     }
 
-                    settingsCard(title: "大当たり開始スライド", icon: "arrow.left.circle") {
+                    settingsCard(title: "大当たり開始（スライド）", icon: "arrow.left.circle") {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("実戦画面（通常モード）下部の「スライドで大当たり」のデザインを選べます。")
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.7))
-                            Picker("デザイン", selection: $bigHitSlideRailStyleRaw) {
-                                ForEach(BigHitSlideRailStyle.allCases) { s in
-                                    Text(s.displayName).tag(s.rawValue)
-                                }
-                            }
-                            .tint(cyan)
-                            .labelsHidden()
-
                             Text("大当たり突入シートの「持ち玉」は入力欄1つです。最初にどちらの意味で入力するかのデフォルトです（シート内の切替でいつでも変更できます）。")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.68))
@@ -234,15 +222,19 @@ struct SettingsTabView: View {
                         }
                     }
 
-                    // 7. テーマ
-                    settingsCard(title: "テーマ", icon: "paintbrush.fill") {
-                        Picker("", selection: $theme) {
-                            ForEach(AppTheme.allCases, id: \.self) { t in
-                                Text(t.rawValue).tag(t)
+                    // 7. 配色（実戦画面の明るさ）
+                    settingsCard(title: "配色", icon: "circle.lefthalf.filled") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("実戦（プレイ）画面の下地の明るさです。OSのダークモードや外観設定とは独立して選べます。")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                            Picker("配色", selection: $theme) {
+                                ForEach(AppTheme.allCases, id: \.self) { t in
+                                    Text(t.settingsDisplayName).tag(t)
+                                }
                             }
+                            .pickerStyle(.segmented)
                         }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
                     }
 
                     settingsCard(title: "ホームの情報パネル", icon: "rectangle.on.rectangle.angled") {

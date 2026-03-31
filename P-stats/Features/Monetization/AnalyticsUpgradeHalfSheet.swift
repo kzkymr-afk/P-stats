@@ -124,6 +124,6 @@ struct AnalyticsUpgradeHalfSheet: View {
     private func formatted(date: Date) -> String {
         JapaneseDateFormatters.yearMonthDay.string(from: date)
             + " "
-            + DateFormatter.localizedString(from: date, dateStyle: .none, timeStyle: .short)
+            + JapaneseDateFormatters.timeShort.string(from: date)
     }
 }

@@ -212,9 +212,10 @@
 				};
 			};
 			buildConfigurationList = F5A96E722F420C60005AC1EF /* Build configuration list for PBXProject "P-stats" */;
-			developmentRegion = en;
+			developmentRegion = ja;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				ja,
 				en,
 				Base,
 			);

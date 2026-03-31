@@ -60,7 +60,14 @@ struct HomeView: View {
     @AppStorage("homeBackgroundImagePath") private var homeBackgroundImagePath = ""
 
     @State private var log = GameLog()
-    @State private var theme = AppTheme.cyber
+    @AppStorage("appTheme") private var appThemeRaw: String = AppTheme.dark.rawValue
+
+    private var themeBinding: Binding<AppTheme> {
+        Binding(
+            get: { AppTheme(migratingRawValue: appThemeRaw) },
+            set: { appThemeRaw = $0.rawValue }
+        )
+    }
     @State private var isPlaying = false
     @State private var showMachineShopGate = false
     @State private var showContinueSelection = false
@@ -267,7 +274,7 @@ struct HomeView: View {
 
                 // 設定
                 NavigationStack {
-                    SettingsTabView(theme: $theme)
+                    SettingsTabView(theme: themeBinding)
                         .navigationTitle(HomeTab.settings.rawValue)
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbarColorScheme(.dark, for: .navigationBar)
@@ -342,7 +349,7 @@ struct HomeView: View {
             }
         }
         .fullScreenCover(isPresented: $isPlaying) {
-            PlayView(log: log, theme: $theme, onOpenSettingsTab: {
+            PlayView(log: log, theme: themeBinding, onOpenSettingsTab: {
                 showReturnToPlayFromSettings = true
                 isPlaying = false
                 selectedTab = .settings

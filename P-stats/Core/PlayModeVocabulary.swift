@@ -7,7 +7,6 @@ import Foundation
 enum PlayRuntimeModeVocabulary {
     static let fallbackNormal = "通常"
     static let fallbackRush = "RUSH"
-    static let fallbackLt = "LT"
     static let fallbackTimeShort = "時短"
     static let fallbackDenSapo = "電サポ"
 
@@ -22,8 +21,7 @@ enum PlayRuntimeModeVocabulary {
             if !name.isEmpty { return name }
         }
         switch modeId {
-        case 2: return fallbackLt
-        case 1: return fallbackRush
+        case 1, 2: return fallbackRush
         default:
             if currentState == .support {
                 return isTimeShort ? fallbackTimeShort : fallbackDenSapo

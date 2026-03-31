@@ -30,15 +30,13 @@ struct PresetFromServer: Codable {
     var denchu_prizes: String?
     /// 導入日（表示・ソート用）。CSVの「導入日」列。"2024-03-01" 形式など。新しい順で並べるときに使用。
     var introductionDateRaw: String?
-    /// LT有無。CSVの「LT有無」列。"あり" のとき RUSH/LT パネルを分けて表示する。
-    var ltRaw: String?
     /// DMMぱちタウン用機種ID。p-town.dmm.com/machines/{machineId} の {machineId} に使用。CSVの「機種ID」「machine_id」等。
     var machineId: String?
 
     enum CodingKeys: String, CodingKey {
         case name, machineTypeRaw, supportLimit, timeShortRotations, defaultPrize, probability, border
         case prizeEntries, entryRate, continuationRate, countPerRound, netPerRoundBase, manufacturer
-        case hesoAtari, denchu_prizes, introductionDateRaw, ltRaw
+        case hesoAtari, denchu_prizes, introductionDateRaw
         case machineId = "machineId"
         case machineIdSnake = "machine_id"
         case machineID = "machineID"
@@ -63,7 +61,6 @@ struct PresetFromServer: Codable {
         hesoAtari = try c.decodeIfPresent([HesoAtariItem].self, forKey: .hesoAtari)
         denchu_prizes = try c.decodeIfPresent(String.self, forKey: .denchu_prizes)
         introductionDateRaw = try c.decodeIfPresent(String.self, forKey: .introductionDateRaw)
-        ltRaw = try c.decodeIfPresent(String.self, forKey: .ltRaw)
         func decodeMachineId(_ key: CodingKeys) -> String? {
             (try? c.decodeIfPresent(String.self, forKey: key))
                 ?? (try? c.decodeIfPresent(Int.self, forKey: key)).map { String($0) }
@@ -92,12 +89,11 @@ struct PresetFromServer: Codable {
         try c.encodeIfPresent(hesoAtari, forKey: .hesoAtari)
         try c.encodeIfPresent(denchu_prizes, forKey: .denchu_prizes)
         try c.encodeIfPresent(introductionDateRaw, forKey: .introductionDateRaw)
-        try c.encodeIfPresent(ltRaw, forKey: .ltRaw)
         try c.encodeIfPresent(machineId, forKey: .machineId)
     }
 
     /// CSVパース等で手動構築する用（CodingKeys 使用時は自動の memberwise init がなくなるため）。Task.detached から呼ぶため nonisolated。
-    nonisolated init(name: String, machineTypeRaw: String?, supportLimit: Int?, timeShortRotations: Int?, defaultPrize: Int?, probability: String?, border: String?, prizeEntries: [PrizeEntryFromServer]?, entryRate: Double?, continuationRate: Double?, countPerRound: Int?, netPerRoundBase: Double?, manufacturer: String?, hesoAtari: [HesoAtariItem]?, denchu_prizes: String?, introductionDateRaw: String?, ltRaw: String?, machineId: String?) {
+    nonisolated init(name: String, machineTypeRaw: String?, supportLimit: Int?, timeShortRotations: Int?, defaultPrize: Int?, probability: String?, border: String?, prizeEntries: [PrizeEntryFromServer]?, entryRate: Double?, continuationRate: Double?, countPerRound: Int?, netPerRoundBase: Double?, manufacturer: String?, hesoAtari: [HesoAtariItem]?, denchu_prizes: String?, introductionDateRaw: String?, machineId: String?) {
         self.name = name
         self.machineTypeRaw = machineTypeRaw
         self.supportLimit = supportLimit
@@ -114,7 +110,6 @@ struct PresetFromServer: Codable {
         self.hesoAtari = hesoAtari
         self.denchu_prizes = denchu_prizes
         self.introductionDateRaw = introductionDateRaw
-        self.ltRaw = ltRaw
         self.machineId = machineId
     }
 
@@ -144,7 +139,6 @@ struct PresetFromServer: Codable {
             hesoAtari: nil,
             denchu_prizes: nil,
             introductionDateRaw: e.introStart,
-            ltRaw: nil,
             machineId: e.machineId
         )
     }
@@ -270,7 +264,6 @@ enum PresetService {
             let defaultPrizeStr = v("デフォルト出玉", "defaultPrize")
             let defaultPrize = Int(defaultPrizeStr) ?? 1500
             let introDate = v("導入日", "introductionDate", "導入日付")
-            let ltYn = v("LT有無", "LT")
             let machineIdStr = v("機種ID", "machine_id", "machineId", "DMM機種ID", "dmm_id")
             list.append(PresetFromServer(
                 name: name,
@@ -289,7 +282,6 @@ enum PresetService {
                 hesoAtari: hesoAtari.isEmpty ? nil : hesoAtari,
                 denchu_prizes: denchu.isEmpty ? nil : denchu,
                 introductionDateRaw: introDate.isEmpty ? nil : introDate,
-                ltRaw: ltYn.isEmpty ? nil : ltYn,
                 machineId: machineIdStr.isEmpty ? nil : machineIdStr
             ))
         }

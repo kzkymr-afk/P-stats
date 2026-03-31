@@ -208,7 +208,7 @@ struct MasterMachineSearchView: View {
                 }
             }
             .alert("マイ機種に追加しました", isPresented: $showAddedFeedback) {
-                Button("OK") {
+                Button("閉じる") {
                     showAddedFeedback = false
                     dismiss()
                 }

@@ -596,7 +596,6 @@ struct SessionDetailView: View {
                             detailRow(label: "実質回転率", value: String(format: "%.1f 回/1k", rotationPer1k))
                             detailRow(label: "RUSH当選", value: "\(session.rushWinCount) 回")
                             detailRow(label: "通常当選", value: "\(session.normalWinCount) 回")
-                            detailRow(label: "LT当選", value: "\(session.ltWinCount) 回")
                         }
                     }
                 }
@@ -670,10 +669,10 @@ struct HistorySessionCard: View {
     }
     private var rotationRateDisplay: String {
         if session.excludesFromRotationExpectationAnalytics { return "—（帳簿）" }
-        if rotationPer1k <= 0 { return "—" }
-        var s = String(format: "%.1f 回/1k", rotationPer1k)
-        if session.formulaBorderPer1k > 0 {
-            let diff = rotationPer1k - session.formulaBorderPer1k
+        let displayRate = session.realRotationRateAtSave > 0 ? session.realRotationRateAtSave : rotationPer1k
+        if displayRate <= 0 { return "—" }
+        var s = String(format: "%.1f 回/1k", displayRate)
+        if let diff = session.sessionBorderDiffPer1k {
             s += " (\(diff >= 0 ? "+" : "")\(String(format: "%.1f", diff)))"
         }
         return s
@@ -694,7 +693,7 @@ struct HistorySessionCard: View {
                 Text("実成績 \(session.performance >= 0 ? "+" : "")\(session.performance.formattedPtWithUnit)")
                     .font(.subheadline.monospacedDigit().weight(.medium))
                     .foregroundColor(session.performance >= 0 ? .green : .red)
-                Text("当選 RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount) LT:\(session.ltWinCount)")
+                Text("当選 RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount)")
                     .font(.subheadline.monospacedDigit())
                     .foregroundColor(.white.opacity(0.85))
             }
@@ -904,24 +903,6 @@ struct SessionEditView: View {
                         text: Binding(
                             get: { "\(session.normalWinCount)" },
                             set: { session.normalWinCount = Int($0) ?? 0 }
-                        ),
-                        placeholder: "0",
-                        maxDigits: 5,
-                        font: .preferredFont(forTextStyle: .body),
-                        textColor: UIColor.white,
-                        accentColor: UIColor(AppGlassStyle.accent)
-                    )
-                    .frame(minWidth: 80, minHeight: 36)
-                    .multilineTextAlignment(.trailing)
-                }
-                .listRowBackground(AppGlassStyle.rowBackground)
-                HStack {
-                    Text("LT当選回数")
-                    Spacer()
-                    IntegerPadTextField(
-                        text: Binding(
-                            get: { "\(session.ltWinCount)" },
-                            set: { session.ltWinCount = Int($0) ?? 0 }
                         ),
                         placeholder: "0",
                         maxDigits: 5,

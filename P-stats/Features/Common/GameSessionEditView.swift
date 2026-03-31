@@ -38,7 +38,6 @@ struct GameSessionEditView: View {
     @State private var totalRotationsOverride: String = ""
     @State private var phases: [PhaseDraft] = [PhaseDraft.empty()]
     @State private var normalWinCount: String = ""
-    @State private var ltWinCount: String = ""
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
 
@@ -105,7 +104,7 @@ struct GameSessionEditView: View {
                                 showErrorAlert = true
                                 return
                             }
-                            if (Int(totalHoldings) ?? 0) < 0 || (Int(normalWinCount) ?? 0) < 0 || (Int(ltWinCount) ?? 0) < 0 {
+                            if (Int(totalHoldings) ?? 0) < 0 || (Int(normalWinCount) ?? 0) < 0 {
                                 errorMessage = "負の数は入力できません"
                                 showErrorAlert = true
                                 return
@@ -134,7 +133,6 @@ struct GameSessionEditView: View {
                     selectedShop = shops.first(where: { $0.name == s.shopName })
                     totalHoldings = "\(s.totalHoldings)"
                     normalWinCount = "\(s.normalWinCount)"
-                    ltWinCount = "\(s.ltWinCount)"
                     totalRotationsOverride = ""
                     if !s.editSessionPhasesJSON.isEmpty {
                         let decoded = GameSessionEditPhasesStorage.decode(s.editSessionPhasesJSON)
@@ -169,7 +167,6 @@ struct GameSessionEditView: View {
                     totalRotationsOverride = ""
                     totalHoldings = ""
                     normalWinCount = ""
-                    ltWinCount = ""
                 }
             }
         }
@@ -438,7 +435,6 @@ struct GameSessionEditView: View {
 
                     editDetailCard(title: "その他の当選", systemImage: "star.fill") {
                         editDetailNumberRow(label: "通常当選回数", placeholder: "0", text: $normalWinCount, maxDigits: 5)
-                        editDetailNumberRow(label: "LT 当選回数", placeholder: "0", text: $ltWinCount, maxDigits: 5)
                     }
 
                     if let rec = sessionToEdit,
@@ -644,7 +640,6 @@ struct GameSessionEditView: View {
 
         let tHoldings = Int(totalHoldings) ?? 0
         let nWin = Int(normalWinCount) ?? 0
-        let lWin = Int(ltWinCount) ?? 0
         let sumR = GameSessionEditPhasesStorage.sumRotations(parsedPhases)
         let torStr = totalRotationsOverride.trimmingCharacters(in: .whitespaces)
         let nRotations = torStr.isEmpty ? sumR : (Int(torStr) ?? sumR)
@@ -659,8 +654,8 @@ struct GameSessionEditView: View {
         let holdBalls = Int(round(Double(sumHold) * scale))
         let realCost = GameSessionEditPhasesStorage.rawTotalRealCost(phases: parsedPhases, payoutPerBall: rate) * scale
         let ballsPer1000 = Double(shop.ballsPerCashUnit * 2)
-        let cashUnits = ballsPer1000 > 0 ? Double(invCash) * ballsPer1000 / 250000.0 : Double(invCash) / 1000.0
-        let effectiveUnitsForBorder = cashUnits + (ballsPer1000 > 0 ? Double(holdBalls) / ballsPer1000 : Double(holdBalls) / 250.0)
+        let cashToBalls = Double(invCash) / 500.0 * Double(shop.ballsPerCashUnit)
+        let effectiveUnitsForBorder = (cashToBalls + Double(holdBalls)) / 250.0
         let realRate = effectiveUnitsForBorder > 0 ? Double(nRotations) / effectiveUnitsForBorder : 0.0
         
         // dynamicBorder の計算（GameLog.dynamicBorder と同一の貸玉・交換補正）
@@ -682,7 +677,7 @@ struct GameSessionEditView: View {
         
         let expectationRatio = (dynamicBorder > 0 && effectiveUnitsForBorder > 0) ? (realRate / dynamicBorder) : 1.0
         
-        let cashBalls = Int(Double(invCash) / 1000.0 * ballsPer1000)
+        let cashBalls = Int((Double(invCash) / 500.0 * Double(shop.ballsPerCashUnit)).rounded())
         let totalUsedBalls = cashBalls + holdBalls
 
         if let s = sessionToEdit {
@@ -701,8 +696,9 @@ struct GameSessionEditView: View {
             s.theoreticalValue = Int(round(realCost * (expectationRatio - 1)))
             s.rushWinCount = rWin
             s.normalWinCount = nWin
-            s.ltWinCount = lWin
             s.formulaBorderPer1k = formula > 0 ? formula : 0
+            s.effectiveBorderPer1kAtSave = dynamicBorder
+            s.realRotationRateAtSave = realRate
             s.isCashflowOnlyRecord = false
             s.editSessionPhasesJSON = GameSessionEditPhasesStorage.encode(parsedPhases)
         } else {
@@ -720,11 +716,12 @@ struct GameSessionEditView: View {
                 expectationRatioAtSave: expectationRatio,
                 rushWinCount: rWin,
                 normalWinCount: nWin,
-                ltWinCount: lWin,
                 formulaBorderPer1k: formula > 0 ? formula : 0
             )
             newSession.date = date
             newSession.isCashflowOnlyRecord = false
+            newSession.effectiveBorderPer1kAtSave = dynamicBorder
+            newSession.realRotationRateAtSave = realRate
             newSession.editSessionPhasesJSON = GameSessionEditPhasesStorage.encode(parsedPhases)
             modelContext.insert(newSession)
         }
@@ -761,7 +758,6 @@ struct GameSessionEditView: View {
             expectationRatioAtSave: 1.0,
             rushWinCount: 0,
             normalWinCount: 0,
-            ltWinCount: 0,
             formulaBorderPer1k: formula > 0 ? formula : 0
         )
         newSession.date = date

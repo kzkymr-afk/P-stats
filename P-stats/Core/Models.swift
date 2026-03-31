@@ -60,7 +60,7 @@ struct HesoAtariItem: Codable, Identifiable, Equatable {
 }
 
 /// ユーザーのマイリスト用機種。実質ボーダー計算に必要な項目を保持する。
-/// 項目: 台名(name), 確変/ST(machineTypeRaw), 公式ボーダー(border), ボーナス種類(prizeEntries / hesoAtari・denchu_prizes),
+/// 項目: 台名(name), 確変/ST(machineTypeRaw), ボーダー(border), ボーナス種類(prizeEntries / hesoAtari・denchu_prizes),
 /// 出球(defaultPrize), 賞球数(countPerRound), 電サポゲーム数(supportLimit)。
 @Model
 final class Machine {
@@ -102,8 +102,6 @@ final class Machine {
     }
     /// P-Sync/GAS用：RUSH時の特図2内訳。カンマ区切り（例: "10R(1500個)-RUSH,300個-RUSH,10R(1500個)-天国"）。空なら prizeEntries を利用。
     var denchu_prizes: String = ""
-    /// 通常時（ヘソ）からいきなりLTに突入できる機種か。false のときは RUSH からのみ LT へ。
-    var ltFromNormal: Bool = false
 
     /// 従来のボーナス種類。heso_prizes/denchu_prizes が空のときのフォールバック。GAS連携時は非推奨。
     @Relationship(deleteRule: .cascade, inverse: \MachinePrize.machine)
@@ -122,12 +120,6 @@ final class Machine {
 
     /// STタイプなら true（電サポ回数カウントダウンで自動復帰）
     var isST: Bool { machineType == .st }
-
-    /// RUSH時にLT（上位RUSH・天国）がある機種か。denchu_prizes に「天国」「LT」を含むかで判定
-    var hasLT: Bool {
-        let d = denchu_prizes.trimmingCharacters(in: .whitespaces)
-        return !d.isEmpty && (d.contains("天国") || d.contains("LT"))
-    }
 
     /// 払い出しから1R打ち出しを引いた純増（R数は使わない。1当たり = 払い出し - countPerRound）
     func netBallsForPrize(payoutBalls: Int) -> Int {
@@ -268,16 +260,51 @@ final class MyMachinePreset {
 }
 
 // --- 2. 記録用構造体・列挙型 ---
-enum WinType: String, Codable, CaseIterable {
+enum WinType: String, CaseIterable {
     case rush = "確変/RUSH"
     case normal = "通常"
-    case lt = "LT"
 }
 
-enum PlayState: String, Codable {
+extension WinType: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        let raw = try c.decode(String.self)
+        switch raw {
+        case Self.rush.rawValue: self = .rush
+        case Self.normal.rawValue: self = .normal
+        case "LT": self = .rush
+        default: self = .normal
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+    }
+}
+
+enum PlayState: String, CaseIterable {
     case normal = "通常"
     case support = "電サポ"
-    case lt = "LT"
+}
+
+extension PlayState: Codable {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        let raw = try c.decode(String.self)
+        if let v = PlayState(rawValue: raw) {
+            self = v
+        } else if raw == "LT" {
+            self = .normal
+        } else {
+            self = .normal
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(rawValue)
+    }
 }
 
 enum LendingType: String, Codable {
@@ -294,7 +321,7 @@ struct WinRecord: Identifiable, Codable {
     var timestamp: Date? = nil
     /// 当選時点の総回転数（電サポ・時短を除く通常ゲーム累積）。収支グラフ横軸用。既存データは nil のとき rotationAtWin で代替
     var normalRotationsAtWin: Int? = nil
-    /// フェーズ3: 当たり発生時の mode_id（0=通常, 1=RUSH, 2=LT）。既存データは nil
+    /// フェーズ3: 当たり発生時の mode_id（マスタ由来。0=通常系、非0はRUSH系等）
     var modeIdAtWin: Int? = nil
     /// フェーズ3: この当たり後の遷移先 mode_id。既存データは nil
     var nextModeId: Int? = nil
@@ -351,9 +378,9 @@ struct ResumableState: Codable {
     var adjustedNetPerRound: Double?
     var winRecords: [WinRecord]
     var lendingRecords: [LendingRecord]
-    /// フェーズ3: 現在の滞在モードID（0=通常, 1=RUSH, 2=LT）。既存保存データは nil のとき currentState から復元
+    /// フェーズ3: 現在の滞在モードID（マスタ由来。0=通常）
     var currentModeID: Int? = nil
-    /// 現在のモードの UI ロール（0/1/2）。nil のときは currentModeID から推定
+    /// 現在のモードの UI ロール（0=通常系, 1=RUSH系）。nil のときは currentModeID から推定
     var currentModeUiRole: Int? = nil
     /// Undo スタック（最大3件）。旧データは nil
     var undoStackEntries: [PersistedUndoEntry]? = nil
@@ -383,19 +410,107 @@ enum LaunchAppearance {
 }
 
 enum AppTheme: String, CaseIterable, Codable {
-    case cyber = "プロ（サイバー）"
-    case simple = "シンプル（ステルス）"
-    
+    /// 保存キー（表示名変更に強い）
+    case dark = "dark"
+    case light = "light"
+
+    /// 設定画面などの表示用（システムのダークモードとは別：アプリ内配色）
+    var settingsDisplayName: String {
+        switch self {
+        case .dark: return "ダーク（黒ベース）"
+        case .light: return "ライト（白ベース）"
+        }
+    }
+
+    /// 旧 `@AppStorage` / バックアップの生文字列から復元
+    init(migratingRawValue: String) {
+        if let v = AppTheme(rawValue: migratingRawValue) {
+            self = v
+            return
+        }
+        switch migratingRawValue {
+        case "プロ（サイバー）", "cyber", "Cyber":
+            self = .dark
+        case "シンプル（ステルス）", "simple", "Simple":
+            self = .light
+        default:
+            self = .dark
+        }
+    }
+
     var backgroundColor: Color {
-        self == .cyber ? Color(red: 0.02, green: 0.02, blue: 0.05) : Color(white: 0.98)
+        switch self {
+        case .dark: return Color(red: 0.02, green: 0.02, blue: 0.05)
+        case .light: return Color(red: 0.96, green: 0.97, blue: 0.99)
+        }
     }
-    
+
     var accentColor: Color {
-        self == .cyber ? .cyan : .blue
+        switch self {
+        case .dark: return .cyan
+        case .light:
+            return Color(red: 0.12, green: 0.45, blue: 0.85)
+        }
     }
-    
+
     var textColor: Color {
-        self == .cyber ? .white : .black
+        switch self {
+        case .dark: return .white
+        case .light: return Color(red: 0.1, green: 0.1, blue: 0.12)
+        }
+    }
+
+    // MARK: - 実戦画面（PlayView）のベース色
+
+    var playScreenBase: Color {
+        switch self {
+        case .dark: return Color(hex: DesignTokens.Color.backgroundHex)
+        case .light: return Color(red: 0.93, green: 0.94, blue: 0.96)
+        }
+    }
+
+    var playHeaderBackground: Color {
+        switch self {
+        case .dark: return .black
+        case .light: return Color(red: 0.98, green: 0.98, blue: 0.99)
+        }
+    }
+
+    var playPanelBackground: Color {
+        switch self {
+        case .dark: return Color.black.opacity(0.93)
+        case .light: return Color.white.opacity(0.92)
+        }
+    }
+
+    /// ドロワー背後のスクリーム
+    var playDrawerScrim: Color {
+        switch self {
+        case .dark: return Color.black.opacity(0.35)
+        case .light: return Color.black.opacity(0.22)
+        }
+    }
+
+    /// 実戦ヘッダー・パネル上の主テキスト
+    var playLabelPrimary: Color {
+        switch self {
+        case .dark: return .white
+        case .light: return Color(red: 0.12, green: 0.12, blue: 0.14)
+        }
+    }
+
+    var playLabelSecondary: Color {
+        switch self {
+        case .dark: return .white.opacity(0.75)
+        case .light: return Color(red: 0.12, green: 0.12, blue: 0.14).opacity(0.62)
+        }
+    }
+
+    var playMutedIcon: Color {
+        switch self {
+        case .dark: return .white.opacity(0.35)
+        case .light: return Color.black.opacity(0.28)
+        }
     }
 }
 
@@ -416,9 +531,12 @@ final class GameSession {
     var theoreticalValue: Int = 0      // 期待値（pt）
     var rushWinCount: Int = 0          // 実戦で入力したRUSH当選回数
     var normalWinCount: Int = 0        // 実戦で入力した通常当選回数
-    var ltWinCount: Int = 0            // 実戦で入力したLT（上位RUSH）当選回数
-    /// 保存時の公式ボーダー（回/1k・等価）。実戦回転率との差表示用
+    /// 保存時の機種ボーダー（回/1k・等価・補正前）。`border` を数値化したもの（SwiftData フィールド名は互換のため `formulaBorderPer1k` のまま）
     var formulaBorderPer1k: Double = 0
+    /// 保存時点の店補正後ボーダー（回/1k）。貸玉・払出係数を反映（`GameLog.dynamicBorder` と同定義）
+    var effectiveBorderPer1kAtSave: Double = 0
+    /// 保存時点の実質回転率（回/単位）。`normalRotations ÷ effectiveUnitsForBorder`（`GameLog.realRate` と同定義）
+    var realRotationRateAtSave: Double = 0
     /// 初当たり時点までの実質投入（pt）。実戦からの保存時のみ埋まる。手入力・旧データは nil
     var firstHitRealCostPt: Double? = nil
     /// 実戦終了時の精算区分。空＝未記録（アップデート前データ）
@@ -432,7 +550,7 @@ final class GameSession {
     /// 詳細編集の「初当たりブロック」JSON（空＝未使用・旧フォーム相当）
     var editSessionPhasesJSON: String = ""
 
-    init(machineName: String, shopName: String, manufacturerName: String = "", inputCash: Int, totalHoldings: Int, normalRotations: Int, totalUsedBalls: Int, payoutCoefficient: Double, totalRealCost: Double = 0, expectationRatioAtSave: Double = 0, rushWinCount: Int = 0, normalWinCount: Int = 0, ltWinCount: Int = 0, formulaBorderPer1k: Double = 0) {
+    init(machineName: String, shopName: String, manufacturerName: String = "", inputCash: Int, totalHoldings: Int, normalRotations: Int, totalUsedBalls: Int, payoutCoefficient: Double, totalRealCost: Double = 0, expectationRatioAtSave: Double = 0, rushWinCount: Int = 0, normalWinCount: Int = 0, formulaBorderPer1k: Double = 0) {
         self.machineName = machineName
         self.shopName = shopName
         self.manufacturerName = manufacturerName
@@ -446,7 +564,6 @@ final class GameSession {
         self.theoreticalValue = Int(round(totalRealCost * (expectationRatioAtSave - 1)))
         self.rushWinCount = rushWinCount
         self.normalWinCount = normalWinCount
-        self.ltWinCount = ltWinCount
         self.formulaBorderPer1k = formulaBorderPer1k
     }
 
@@ -468,18 +585,29 @@ extension GameSession {
         if isCashflowOnlyRecord { return true }
         return normalRotations == 0
             && expectationRatioAtSave == 1.0
-            && rushWinCount == 0 && normalWinCount == 0 && ltWinCount == 0
+            && rushWinCount == 0 && normalWinCount == 0
     }
+
+    /// 実戦で記録した当選回数の合計（通常・RUSH）
+    var totalRecordedWinCount: Int { rushWinCount + normalWinCount }
 
     /// 加重回転率・グループ平均回転率に含める
     var participatesInRotationRateAnalytics: Bool { !excludesFromRotationExpectationAnalytics }
 
-    /// 平均ボーダー差に含める（回転実績ありのみ）
-    var participatesInFormulaBorderDiffAnalytics: Bool {
-        !excludesFromRotationExpectationAnalytics
-            && formulaBorderPer1k > 0
-            && totalRealCost > 0
-            && normalRotations > 0
+    /// ボーダーとの差（分析では通常回転数加重平均の重みに含める）に含める。新規は店補正ボーダー＋realRate、旧データは等価ベースのボーダー＋totalRealCost 基準で比較可能なとき
+    var participatesInBorderDiffAnalytics: Bool {
+        sessionBorderDiffPer1k != nil
+    }
+
+    /// ボーダーとの差（回/1k、実質回転率 − 店補正後ボーダー）。新規は保存済みの2値の差。旧データは `totalRealCost` 基準の回転率 − 等価ベースのボーダー（近似）
+    var sessionBorderDiffPer1k: Double? {
+        if excludesFromRotationExpectationAnalytics { return nil }
+        if effectiveBorderPer1kAtSave > 0, realRotationRateAtSave > 0 {
+            return realRotationRateAtSave - effectiveBorderPer1kAtSave
+        }
+        guard formulaBorderPer1k > 0, totalRealCost > 0, normalRotations > 0 else { return nil }
+        let rate = (Double(normalRotations) / totalRealCost) * 1000.0
+        return rate - formulaBorderPer1k
     }
 
     /// 保存時ボーダー比の平均に含める

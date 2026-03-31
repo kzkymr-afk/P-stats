@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Google スプレッドシートの CSV を取得し、アプリ用 machines.json を生成する。
-列: 機種名, メーカー, 大当り確率, LT有無, 等価ボーダー, 導入日
+列: 機種名, メーカー, 大当り確率, 等価ボーダー, 導入日
 環境変数 SPREADSHEET_CSV_URL で URL を指定。未設定時は DEFAULT_CSV_URL を使用。
 制限付き共有時は GOOGLE_SERVICE_ACCOUNT_JSON（サービスアカウント JSON）と google-auth が必要。
 """
@@ -165,8 +165,6 @@ def fetch_and_parse_csv(url: str) -> List[Dict]:
             row["hesoAtari"] = heso_atari
         if intro_date:
             row["introductionDateRaw"] = intro_date
-        if lt_yn:
-            row["ltRaw"] = lt_yn
         if machine_id:
             row["machineId"] = machine_id.strip()
         result.append(row)

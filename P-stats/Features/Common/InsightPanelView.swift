@@ -45,9 +45,9 @@ struct InsightPanelView: View {
         VStack(spacing: 0) {
             // ヘッダー: 閉じる（左スワイプでも閉じる）
             HStack {
-                Text("INSIGHT")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .tracking(2)
+                Text("インサイト")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .tracking(0.5)
                     .foregroundColor(cyan.opacity(0.9))
                 Spacer()
                 Button(action: { onClose() }) {
@@ -239,7 +239,7 @@ struct InsightPanelView: View {
                         HStack {
                             HStack(spacing: 4) {
                                 labelText("推定消費玉（T）")
-                                InfoIconView(explanation: "通常回転と実戦ボーダーから推定した撃ち込み玉数。時短・電サポ・右打ち中の回転は含みません。", tint: cyan.opacity(0.7))
+                                InfoIconView(explanation: "通常回転と店補正後のボーダーから推定した撃ち込み玉数。時短・電サポ・右打ち中の回転は含みません。", tint: cyan.opacity(0.7))
                             }
                             Spacer()
                             Text("\(log.tapDerivedBallsConsumed) 玉")
@@ -296,7 +296,7 @@ struct InsightPanelView: View {
                     HStack {
                         HStack(spacing: 4) {
                             labelText("換算単位")
-                            InfoIconView(explanation: "回転率の分母。1単位＝現金1000pt相当＋持ち玉250玉。店の貸玉料金で換算。", tint: cyan.opacity(0.7))
+                            InfoIconView(explanation: "回転率の分母。1単位＝等価250玉。現金は500ptごとの貸玉で玉に換算し持ち玉投資を足して250で割ります。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
                         Text(String(format: "%.2f 単位", log.effectiveUnitsForBorder))
@@ -305,7 +305,7 @@ struct InsightPanelView: View {
                     }
                     HStack {
                         HStack(spacing: 4) {
-                            labelText("公式ボーダー")
+                            labelText("ボーダー")
                             InfoIconView(explanation: "メーカー公表の等価ボーダー（回/1000pt）。通常回転のみ。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
@@ -326,7 +326,7 @@ struct InsightPanelView: View {
                     HStack {
                         HStack(spacing: 4) {
                             labelText("期待値比")
-                            InfoIconView(explanation: "実質回転率÷実戦ボーダー。1.0で基準。", tint: cyan.opacity(0.7))
+                            InfoIconView(explanation: "実質回転率÷店補正後のボーダー。1.0で基準。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
                         Text(String(format: "%.2f%%", log.expectationRatio * 100))

@@ -98,7 +98,7 @@ final class EntitlementsStore: ObservableObject {
             }
         } catch {
             await MainActor.run {
-                self.purchasesErrorMessage = error.localizedDescription
+                self.purchasesErrorMessage = Self.japanesePurchaseErrorMessage(error)
             }
         }
     }
@@ -157,7 +157,7 @@ final class EntitlementsStore: ObservableObject {
             }
         } catch {
             await MainActor.run {
-                self.purchasesErrorMessage = error.localizedDescription
+                self.purchasesErrorMessage = Self.japanesePurchaseErrorMessage(error)
             }
         }
     }
@@ -174,7 +174,7 @@ final class EntitlementsStore: ObservableObject {
             await refreshEntitlements()
         } catch {
             await MainActor.run {
-                self.purchasesErrorMessage = error.localizedDescription
+                self.purchasesErrorMessage = Self.japanesePurchaseErrorMessage(error)
             }
         }
     }
@@ -186,6 +186,31 @@ final class EntitlementsStore: ObservableObject {
     func notifyAnalyticsAccessChanged() {
         objectWillChange.send()
         AdVisibilityManager.shared.syncFromEntitlements()
+    }
+
+    /// 課金・リストアのエラーを日本語で表示（`localizedDescription` の英語を避ける）
+    private nonisolated static func japanesePurchaseErrorMessage(_ error: Error) -> String {
+        let ns = error as NSError
+        if ns.domain == SKError.errorDomain, let code = SKError.Code(rawValue: ns.code) {
+            switch code {
+            case .paymentCancelled:
+                return "購入はキャンセルされました。"
+            case .paymentNotAllowed:
+                return "このデバイスまたはアカウントでは購入できません。"
+            case .clientInvalid, .paymentInvalid:
+                return "購入を完了できませんでした。しばらくしてからお試しください。"
+            case .storeProductNotAvailable:
+                return "この商品は現在利用できません。"
+            case .cloudServiceNetworkConnectionFailed, .cloudServicePermissionDenied:
+                return "通信に失敗しました。ネットワークを確認してください。"
+            default:
+                break
+            }
+        }
+        if ns.domain == NSURLErrorDomain {
+            return "通信に失敗しました。ネットワークを確認してください。"
+        }
+        return "処理に失敗しました。しばらくしてからお試しください。"
     }
 
     func openManageSubscriptions() {

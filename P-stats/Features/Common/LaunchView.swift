@@ -24,9 +24,9 @@ struct LaunchView: View {
                     .foregroundStyle(cyan)
                     .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
                     .shadow(color: cyan.opacity(0.5), radius: 6)
-                Text("ADVANCED DATA MANAGER")
+                Text("実戦データを記録・分析")
                     .font(.system(size: 9, weight: .light, design: .default))
-                    .tracking(2.5)
+                    .tracking(0.5)
                     .foregroundColor(.white.opacity(0.9))
                     .shadow(color: .black.opacity(0.4), radius: 1)
             }

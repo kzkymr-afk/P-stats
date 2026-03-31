@@ -47,7 +47,7 @@ enum PrizeStringParser {
         guard !segment.isEmpty else { return nil }
         let winType: WinType
         if segment.contains("LT") || segment.contains("天国") {
-            winType = .lt
+            winType = .rush
         } else if segment.contains("RUSH") {
             winType = .rush
         } else {

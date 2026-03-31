@@ -328,7 +328,7 @@ struct HomeIntegratedInfoPanel: View {
                         Text(String(format: "%.1f 回/k", row.avgRotationPer1k))
                             .font(.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit())
                             .foregroundColor(.white.opacity(0.9))
-                        if let d = row.avgDiffFromFormula {
+                        if let d = row.avgBorderDiffPer1k {
                             Text(String(format: "(%+.1f)", d))
                                 .font(.system(size: 10, weight: .semibold, design: .rounded).monospacedDigit())
                                 .foregroundColor(d >= 0 ? cyan : lossPink)
@@ -336,7 +336,7 @@ struct HomeIntegratedInfoPanel: View {
                     }
                 }
             }
-            Text("並び：通常回転数の合計が多い機種順。括弧は公式ボーダーとの差（回/1k）の平均。")
+            Text("並び：通常回転数の合計が多い機種順。括弧はボーダーとの差（回/1k・各実戦の通常回転数で加重）。")
                 .font(.system(size: 9, weight: .regular, design: .rounded))
                 .foregroundColor(.white.opacity(0.48))
         }

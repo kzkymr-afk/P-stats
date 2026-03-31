@@ -439,7 +439,7 @@ struct MachineShopSelectionView: View {
         .frame(maxWidth: .infinity)
         .frame(height: height)
         .alert(isPresented: $showErrorAlert) {
-            Alert(title: Text("エラー"), message: Text(errorMessage), dismissButton: .default(Text("OK")))
+            Alert(title: Text("エラー"), message: Text(errorMessage), dismissButton: .default(Text("閉じる")))
         }
     }
 
@@ -932,7 +932,7 @@ private enum ExchangeRatePreset: String, CaseIterable {
     }
 }
 
-// MARK: - 店舗の新規登録・編集（レートを実戦ボーダー算出に利用）
+// MARK: - 店舗の新規登録・編集（レートを店補正後のボーダー算出に利用）
 struct ShopEditView: View {
     /// 編集時は既存の店舗を渡す。nil のときは新規登録。
     let shop: Shop?
@@ -1044,7 +1044,7 @@ struct ShopEditView: View {
     private func shopEditPanel<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.subheadline.weight(.semibold))
+                .font(AppTypography.panelHeading)
                 .foregroundColor(.white.opacity(0.95))
             content()
         }
@@ -1059,7 +1059,7 @@ struct ShopEditView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .center) {
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.panelHeading)
                     .foregroundColor(.white.opacity(0.95))
                 Spacer(minLength: 8)
                 trailing()
@@ -1079,7 +1079,7 @@ struct ShopEditView: View {
                 AppGlassStyle.background.ignoresSafeArea()
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
-                        shopEditPanel(title: "店舗", trailing: { InfoIconView(explanation: "店名・チェーン名で検索するか、「現在地周辺から探す」で近くのホールを表示します。候補をタップすると店舗名と住所が自動で入ります。", tint: .white.opacity(0.7)) }) {
+                        shopEditPanel(title: "店舗選択", trailing: { InfoIconView(explanation: "店名・チェーン名で検索するか、「現在地周辺から探す」で近くのホールを表示します。候補をタップすると店舗名と住所が自動で入ります。", tint: .white.opacity(0.7)) }) {
                             TextField("店名・チェーン名で検索", text: $name)
                                 .textContentType(.none)
                                 .foregroundColor(.white)
@@ -1171,7 +1171,7 @@ struct ShopEditView: View {
                                 .disabled(placeSearchService.isLoadingMore)
                             }
                         }
-                        shopEditPanel(title: "レート（実戦のボーダー計算に使用）", trailing: { InfoIconView(explanation: "貸玉数は 500pt あたりの玉数。交換率は 1 玉あたりの換金（pt）。メニューでよくある組み合わせを選ぶか「その他」で自由入力。玉/100pt と pt/玉は連動します。", tint: .white.opacity(0.7)) }) {
+                        shopEditPanel(title: "レート設定", trailing: { InfoIconView(explanation: "貸玉数は 500pt あたりの玉数。交換率は 1 玉あたりの換金（pt）。メニューでよくある組み合わせを選ぶか「その他」で自由入力。玉/100pt と pt/玉は連動します。", tint: .white.opacity(0.7)) }) {
                             HStack {
                                 Text("貸玉数（500ptあたり）")
                                     .foregroundColor(.white.opacity(0.9))
@@ -1187,19 +1187,28 @@ struct ShopEditView: View {
                                 )
                                     .multilineTextAlignment(.trailing)
                             }
-                            HStack(alignment: .center, spacing: 10) {
-                                Text("交換率")
-                                    .foregroundColor(.white.opacity(0.9))
-                                    .lineLimit(1)
-                                Spacer(minLength: 8)
-                                Picker("交換率", selection: $exchangeRatePreset) {
-                                    ForEach(ExchangeRatePreset.allCases, id: \.self) { preset in
-                                        Text(preset.rawValue).tag(preset)
+                            VStack(alignment: .leading, spacing: 8) {
+                                HStack(alignment: .center, spacing: 10) {
+                                    Text("交換率")
+                                        .foregroundColor(.white.opacity(0.9))
+                                        .lineLimit(1)
+                                    Spacer(minLength: 8)
+                                    Picker("交換率", selection: $exchangeRatePreset) {
+                                        ForEach(ExchangeRatePreset.allCases, id: \.self) { preset in
+                                            Text(preset.rawValue)
+                                                .tag(preset)
+                                        }
                                     }
+                                    .labelsHidden()
+                                    .pickerStyle(.menu)
+                                    .tint(accent)
                                 }
-                                .labelsHidden()
-                                .pickerStyle(.menu)
-                                .tint(accent)
+                                Text(exchangeRatePreset == .other ? "その他（下の欄で入力）" : exchangeRatePreset.rawValue)
+                                    .font(.caption.weight(.medium))
+                                    .foregroundColor(.white.opacity(0.72))
+                                    .multilineTextAlignment(.leading)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .accessibilityElement(children: .combine)
                             .accessibilityLabel("交換率")
@@ -1391,7 +1400,7 @@ struct ShopEditView: View {
                 }
             }
             .alert("入力エラー", isPresented: $showErrorAlert) {
-                Button("OK", role: .cancel) { }
+                Button("閉じる", role: .cancel) { }
             } message: {
                 Text(errorMessage)
             }

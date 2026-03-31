@@ -17,4 +17,22 @@ enum JapaneseDateFormatters {
         f.dateFormat = "yyyy年M月"
         return f
     }()
+
+    /// 例: 2026年　3月（分析ドックの月ドラム。年と月の間は全角スペース）
+    static let yearMonthDock: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ja_JP")
+        f.calendar = Calendar(identifier: .gregorian)
+        f.dateFormat = "yyyy年\u{3000}M月"
+        return f
+    }()
+
+    /// 時刻のみ（日本語ロケール・例: 21:30）
+    static let timeShort: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ja_JP")
+        f.dateStyle = .none
+        f.timeStyle = .short
+        return f
+    }()
 }

@@ -24,14 +24,30 @@ struct HomeStyleGridButtonPressStyle: ButtonStyle {
 /// ホーム `HomeGridButtonLabelSplit` と同系のカード面（実戦の現金・持ち玉・カウント・下部バー用）
 struct HomeStylePlayCardBackground: View {
     var cornerRadius: CGFloat
+    /// 実戦のライト配色時は明るいカード面に切り替え
+    var appTheme: AppTheme = .dark
 
     var body: some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(AppGlassStyle.cardBackground)
-            .overlay(
+        Group {
+            switch appTheme {
+            case .dark:
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
-            )
-            .compositingGroup()
+                    .fill(AppGlassStyle.cardBackground)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                    )
+                    .compositingGroup()
+            case .light:
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(Color.white.opacity(0.94))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(Color.black.opacity(0.1), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.06), radius: 4, x: 0, y: 2)
+                    .compositingGroup()
+            }
+        }
     }
 }

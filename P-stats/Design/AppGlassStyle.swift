@@ -12,29 +12,20 @@ enum AppGlassStyle {
         blue: DesignTokens.Color.accentB
     )
 
-    /// RUSH／通常／LTボタン用（背景・枠・文字の統一）
+    /// RUSH／通常ボタン用（背景・枠・文字の統一）
     static let rushColor = Color(hex: DesignTokens.Color.rushHex)
     static let normalColor = Color(hex: DesignTokens.Color.normalHex)
-    static let ltColor = Color(
-        red: DesignTokens.Color.ltR,
-        green: DesignTokens.Color.ltG,
-        blue: DesignTokens.Color.ltB
-    )
     static let rushBackgroundOpacity: Double = DesignTokens.Opacity.rushBackground
     static let rushStrokeOpacity: Double = DesignTokens.Opacity.rushStroke
     static let normalBackgroundOpacity: Double = DesignTokens.Opacity.normalBackground
     static let normalStrokeOpacity: Double = DesignTokens.Opacity.normalStroke
-    static let ltBackgroundOpacity: Double = DesignTokens.Opacity.ltBackground
-    static let ltStrokeOpacity: Double = DesignTokens.Opacity.ltStroke
     static let rushTitleOpacity: Double = DesignTokens.Opacity.rushTitle
     static let normalTitleOpacity: Double = DesignTokens.Opacity.normalTitle
-    static let ltTitleOpacity: Double = DesignTokens.Opacity.ltTitle
 
     /// フェーズ4: mode_id のみからの従来色（マスタ未取得時のフォールバック）。
     static func modeColor(modeId: Int) -> Color {
         switch modeId {
-        case 1: return rushColor
-        case 2: return ltColor
+        case 1, 2: return rushColor
         default: return normalColor
         }
     }
@@ -53,7 +44,7 @@ enum AppGlassStyle {
         if mm.isTimeShort { return normalColor }
         switch mm.uiRole {
         case 0: return normalColor
-        case 2: return ltColor
+        case 2: return rushColor
         default: return rushColor
         }
     }

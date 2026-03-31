@@ -14,9 +14,9 @@ final class GameLog {
     /// 新規開始時に設定した台表示数（表示合わせのみ・あとから修正用）
     var initialDisplayRotation: Int = 0
     var currentState: PlayState = .normal
-    /// フェーズ3: 現在の滞在モードID（0=通常, 1=RUSH, 2=LT）。データ駆動の遷移の真実のソース。
+    /// フェーズ3: 現在の滞在モードID（マスタ由来。0=通常）
     var currentModeID: Int = 0
-    /// 現在滞在モードの UI ロール（0=通常系, 1=RUSH系, 2=LT）。`mode_id` が 1〜8 でも履歴の WinType・表示と整合させる。
+    /// 現在滞在モードの UI ロール（0=通常系, 1=RUSH系）。`mode_id` が 1〜8 でも表示と整合させる。
     var currentModeUiRole: Int = 0
     /// 電サポまたは時短の残り回数（0で自動通常復帰）。ST電サポ・通常後の時短の両方で使用
     var remainingSupportCount: Int = 0
@@ -139,7 +139,7 @@ final class GameLog {
                 totalRotations += 1
                 normalRotations += 1
                 remaining -= 1
-            } else if (currentState == .support || currentState == .lt), remainingSupportCount > 0 {
+            } else if currentState == .support, remainingSupportCount > 0 {
                 remainingSupportCount -= 1
                 remaining -= 1
                 if remainingSupportCount <= 0 {
@@ -217,9 +217,8 @@ final class GameLog {
     private static func inferredUiRole(fromModeId modeId: Int) -> Int {
         switch modeId {
         case 0: return 0
-        case 1: return 1
-        case 2: return 2
-        default: return 2
+        case 1, 2: return 1
+        default: return 1
         }
     }
 
@@ -330,7 +329,7 @@ final class GameLog {
     }
 
     /// 大当たりモード終了。1区間の当たりとして `winRecords` に1件追加する。
-    /// - Parameter electricSupportTurns: 確定後に消化する電サポ残り回数。0 なら即通常。電サポは `addRotations` で減算し、0 になった瞬間にそのフェーズ分が `totalRotations` にまとめて反映され、実機ランプ累積と揃う。
+    /// - Parameter electricSupportTurns: 大当たり確定の時点で **すでに消化した** 電サポのゲーム数。ランプ・「当選からのゲーム数」はこの分だけ進んだ扱いにし、通常へ即復帰する（残りカウントダウンにはしない）。
     func commitBigHitSessionToNormal(hitCount: Int, totalPrizeBalls: Int, electricSupportTurns: Int) {
         let beforeSnapshot = captureRotationModeSnapshot()
         let h = max(1, hitCount)
@@ -351,14 +350,11 @@ final class GameLog {
         currentModeUiRole = 0
         isTimeShortMode = false
         if support > 0 {
-            currentState = .support
-            remainingSupportCount = support
-            supportPhaseInitialCount = support
-        } else {
-            currentState = .normal
-            remainingSupportCount = 0
-            supportPhaseInitialCount = 0
+            totalRotations += support
         }
+        currentState = .normal
+        remainingSupportCount = 0
+        supportPhaseInitialCount = 0
     }
 
     /// 大当たりモードのみ終了し、`winRecords` には追加しない（誤タップで入った場合など）。回転・投入の累積はそのまま。
@@ -372,14 +368,14 @@ final class GameLog {
 
     /// カウントボタン表示用：前回大当たり以降のゲーム数（時短・ST抜けゲーム数含む）。
     /// 通常時は totalRotations - lastRot（電サポ終了時に total にフェーズ分をまとめて反映したあと整合）。
-    /// 電サポ/LT 消化中は total がまだ進んでいないため、残りカウントダウン分を加算。
+    /// 電サポ消化中は total がまだ進んでいないため、残りカウントダウン分を加算。
     var gamesSinceLastWin: Int {
         let lastRot = winRecords.last?.rotationAtWin ?? 0
         if winRecords.isEmpty {
             return totalRotations
         }
         let normalSinceWin = totalRotations - lastRot
-        if currentState == .support || currentState == .lt {
+        if currentState == .support {
             return normalSinceWin + (supportPhaseInitialCount - remainingSupportCount)
         }
         return normalSinceWin
@@ -391,14 +387,12 @@ final class GameLog {
     var rushWinCount: Int { winRecords.filter { $0.type == .rush }.count }
     /// 通常当選回数
     var normalWinCount: Int { winRecords.filter { $0.type == .normal }.count }
-    /// LT（上位RUSH）当選回数
-    var ltWinCount: Int { winRecords.filter { $0.type == .lt }.count }
 
-    /// 現在の RUSH 連チャン回数（直近から遡って連続する .rush と .lt の件数）。.normal で終わっていれば 0。
+    /// 現在の RUSH 連チャン回数（直近から遡って連続する .rush の件数）。.normal で終わっていれば 0。
     var currentRushChainCount: Int {
         var count = 0
         for r in winRecords.reversed() {
-            if r.type == .rush || r.type == .lt { count += 1 }
+            if r.type == .rush { count += 1 }
             else { break }
         }
         return count
@@ -408,7 +402,7 @@ final class GameLog {
         let holdingsBalls = lendingRecords.filter { $0.type == .holdings }.reduce(0) { $0 + ($1.balls ?? holdingsBallsPerTap) }
         return cashBalls + holdingsBalls
     }
-    /// 持ち玉で投資した玉数（実戦ボーダー・チャート損益の算出に使用）
+    /// 持ち玉で投資した玉数（店補正後のボーダー・チャート損益の算出に使用）
     var holdingsInvestedBalls: Int {
         lendingRecords.filter { $0.type == .holdings }.reduce(0) { $0 + ($1.balls ?? holdingsBallsPerTap) }
     }
@@ -556,7 +550,7 @@ final class GameLog {
         adjustedNetPerRound ?? selectedMachine.averageNetPerRound
     }
 
-    /// 公式ボーダー（等価時）が数値で入力されていればその値。未入力・非数値なら 0
+    /// 機種マスタのボーダー（等価時）が数値で入力されていればその値。未入力・非数値なら 0
     private var formulaBorderAsNumber: Double {
         let s = selectedMachine.border.trimmingCharacters(in: .whitespaces)
         if let v = Double(s), v > 0 { return v }
@@ -565,13 +559,13 @@ final class GameLog {
         return 0
     }
 
-    /// 公式ボーダー（等価時）の数値。UI表示用
+    /// ボーダー（等価時）の数値。UI表示用
     var formulaBorderValue: Double { formulaBorderAsNumber }
 
-    /// 公式ボーダー（回転/1000pt）。メーカー公表値（機種マスターまたはユーザー入力の border）に、
+    /// ボーダー（回転/1000pt）。メーカー公表値（機種マスターまたはユーザー入力の border）に、
     /// 店舗の貸玉料金（1000ptあたり玉数）と払出係数（pt/玉）を考慮して算出。
-    /// 公式＝等価(4pt/玉・250玉/1000pt)基準。
-    /// 実戦＝公式 × (250÷貸玉1000円玉数) × (4÷払出係数)。1000円あたり玉が少ないほど分母が小さくボーダーは上がる（厳しくなる）。
+    /// マスタ上のボーダー＝等価(4pt/玉・250玉/1000pt)基準。
+    /// 店補正後＝そのボーダー × (250÷貸玉1000円玉数) × (4÷払出係数)。1000円あたり玉が少ないほど分母が小さくボーダーは上がる（厳しくなる）。
     /// 払出係数が等価4より大きい（換金が良い）ほど (4/係数) でボーダーは下がる。
     /// ※通常回転のみ（時短・電サポは含めない）。実質回転率と比較可能。
     var dynamicBorder: Double {
@@ -594,15 +588,16 @@ final class GameLog {
         return 1000.0 / (effective1RNetPerRound * rate)
     }
 
-    /// 実戦ボーダー用：店舗の貸玉料金を考慮した「単位」数。1単位＝等価1000pt（＝貸玉×2）。投入ptを貸玉料金で換算
+    /// 店補正後ボーダー用の「単位」数。1単位＝**等価250玉**に固定。現金は500ptごとの貸玉数で玉に換算し、持ち玉投資玉を加えて 250 で割る（貸玉が少ない店でも持ち玉は250玉＝1単位）。
     var effectiveUnitsForBorder: Double {
-        let ballsPer1000 = Double(max(1, selectedShop.ballsPerCashUnit * 2))
-        let cashUnits = ballsPer1000 > 0 ? Double(totalInput) * ballsPer1000 / 250000.0 : Double(totalInput) / 1000.0
-        return cashUnits + Double(holdingsInvestedBalls) / ballsPer1000
+        let standardBallsPerUnit = 250.0
+        let cashToBalls = Double(totalInput / 500) * Double(selectedShop.ballsPerCashUnit)
+        let totalBalls = cashToBalls + Double(holdingsInvestedBalls)
+        return totalBalls / standardBallsPerUnit
     }
 
     // MARK: - 撃ち玉（T / C / H）・持ち玉比率
-    /// **T**：通常回転のタップから推定した消費玉数（時短・電サポ・右打ち中の回転は含めない。`normalRotations` のみ）。実戦ボーダーで 250 玉/回換算。
+    /// **T**：通常回転のタップから推定した消費玉数（時短・電サポ・右打ち中の回転は含めない。`normalRotations` のみ）。店補正後のボーダーで 250 玉/回換算。
     var tapDerivedBallsConsumed: Int {
         guard dynamicBorder > 0, normalRotations > 0 else { return 0 }
         return Int((Double(normalRotations) * 250.0 / dynamicBorder).rounded())
@@ -625,7 +620,7 @@ final class GameLog {
         return Double(holdingsOriginBallsFromIdentity) / Double(t)
     }
 
-    /// 期待値（実戦ボーダー比）。実質回転率（1000pt・250玉単位）÷ 実戦ボーダー。1.0で基準、>1で上回り
+    /// 期待値（ボーダー比）。実質回転率（1000pt・250玉単位）÷ 店補正後のボーダー。1.0で基準、>1で上回り
     var expectationRatio: Double {
         if let cached = _cachedExpectationRatio, _lastExpectationStateHash == expectationStateHash {
             return cached
@@ -657,8 +652,8 @@ final class GameLog {
         return hasher.finalize()
     }
 
-    /// 実質回転率（回転/単位）。1単位＝現金1000pt または 持ち玉250玉。店舗の貸玉料金・払出係数は実戦ボーダー側で参照
-    /// 分子は normalRotations（通常回転のみ・時短・電サポ除く）。公式ボーダーと同定義。
+    /// 実質回転率（回転/単位）。分母は等価250玉＝1単位（現金は貸玉で玉換算＋持ち玉投資）。払出係数は店補正後ボーダー側のみ。
+    /// 分子は normalRotations（通常回転のみ・時短・電サポ除く）。
     var realRate: Double {
         effectiveUnitsForBorder > 0 ? Double(normalRotations) / effectiveUnitsForBorder : 0.0
     }
@@ -668,6 +663,76 @@ final class GameLog {
         let realCostThousands = totalRealCost / 1000.0
         guard realCostThousands > 0 else { return 0 }
         return Double(normalRotations) / realCostThousands
+    }
+
+    /// ボーダーゲージ説明用：現在の店設定から貸玉・交換が実質ボーダーへ与える倍率（タップ時点の値）。
+    func borderGaugeAdjustmentSummary() -> String {
+        let ballsPer1000 = Double(max(1, selectedShop.ballsPerCashUnit * 2))
+        let loanC = 250.0 / ballsPer1000
+        let payout = selectedShop.payoutCoefficient
+        var lines: [String] = []
+        lines.append("【いまの店の補正（実質ボーダーが等価ボーダーからずれる主な要因）】")
+        lines.append("貸玉補正：×\(String(format: "%.2f", loanC))倍（等価は1,000ptで250玉＝基準。この店は約\(Int(ballsPer1000))玉/1,000pt）")
+        if payout > 0 {
+            let exchC = 4.0 / payout
+            lines.append("交換補正：×\(String(format: "%.2f", exchC))倍（払出係数 \(String(format: "%.4g", payout))pt/玉。等価4pt/玉との比率がボーダーに反映されます）")
+        } else {
+            lines.append("交換補正：—（払出係数が未設定のため倍率を出せません）")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    /// ボーダーゲージの ⓘ に載せる「タップした瞬間」の式・値（短文）
+    func borderGaugeFormulaExplanation() -> String {
+        let shopName = selectedShop.name
+        let machineName = selectedMachine.name
+        let ballsPer500 = selectedShop.ballsPerCashUnit
+        let ballsPer1000 = Double(max(1, selectedShop.ballsPerCashUnit * 2))
+        let payout = selectedShop.payoutCoefficient
+        let loanC = 250.0 / ballsPer1000
+        let exchC = payout > 0 ? 4.0 / payout : 0.0 // 等価から算出するときの係数（表示用）
+        let formula = formulaBorderAsNumber
+        let oneR = effective1RNetPerRound
+        let probDenom = selectedMachine.probabilityDenominator
+        let cashPt = totalInput
+        let holdBalls = holdingsInvestedBalls
+        let nRot = normalRotations
+        let db = dynamicBorder
+        let units = effectiveUnitsForBorder
+        let trc = totalRealCost
+
+        var lines: [String] = []
+        lines.append("―― いまの値（この説明を開いたとき）――")
+        lines.append("店：\(shopName) ／ 機：\(machineName)")
+        lines.append("貸玉 \(ballsPer500)玉/500pt → B＝\(Int(ballsPer1000))玉/1kpt ／ 払出 \(String(format: "%.4g", payout))pt/玉")
+        lines.append("現金 \(cashPt)pt ／ 持ち玉投資 \(holdBalls)玉 ／ 通常回転 \(nRot)")
+        lines.append("")
+        lines.append("実質ボーダー ≒ \(String(format: "%.2f", db)) 回/単位")
+        if payout <= 0 {
+            lines.append("（払出0のため参考になりません）")
+        } else if formula > 0 {
+            lines.append("＝ 等価\(String(format: "%.3g", formula)) × 250/B(\(String(format: "%.4g", loanC))) × 4/払出(\(String(format: "%.4g", exchC)))")
+        } else if oneR > 0, probDenom > 0 {
+            lines.append("＝ 確率分母\(String(format: "%.4g", probDenom))×250÷1R\(String(format: "%.4g", oneR)) × 貸玉・交換補正（同上）")
+        } else if oneR > 0, payout > 0 {
+            lines.append("＝ 1000÷(1R\(String(format: "%.4g", oneR))×払出) など")
+        }
+        lines.append("")
+        let cashBalls = Double(cashPt / 500) * Double(ballsPer500)
+        lines.append("コスト単位 ＝ (現金換算 \(String(format: "%.4g", cashBalls))玉 + 持ち玉 \(holdBalls)玉) ÷ 250 ＝ \(String(format: "%.4g", units))")
+        if units > 0 {
+            lines.append("実質回転率（針の元）＝ \(nRot)÷単位 ＝ \(String(format: "%.2f", realRate))")
+        } else {
+            lines.append("実質回転率＝算出なし（単位0）")
+        }
+        lines.append("実費 ＝ \(cashPt) + \(holdBalls)×\(String(format: "%.4g", payout)) ＝ \(String(format: "%.1f", trc))pt")
+        if trc > 0 {
+            lines.append("表面回転率 ＝ \(nRot)÷(実費÷1000) ＝ \(String(format: "%.2f", rotationPer1000Yen))")
+        } else {
+            lines.append("表面回転率＝算出なし")
+        }
+        lines.append("針 ≒ 実質回転率 − 実質ボーダー を目盛にしたもの")
+        return lines.joined(separator: "\n")
     }
 
     /// 手動で通常へ復帰（確変の「通常落ち」やST・時短の手動切り上げ）
@@ -695,23 +760,6 @@ final class GameLog {
         currentState = .normal
         remainingSupportCount = 0
         isTimeShortMode = false
-    }
-
-    /// フォーカスモードで「LT終了」押下時。通常へ復帰
-    func endLtAndReturnToNormal() {
-        currentModeID = 0
-        currentModeUiRole = 0
-        currentState = .normal
-        remainingSupportCount = 0
-        isTimeShortMode = false
-    }
-
-    /// RUSHモードからLTモードへ切り替え（機種がRUSH→LT可のとき）
-    func switchToLtMode() {
-        currentModeID = 2
-        currentModeUiRole = 2
-        currentState = .lt
-        // remainingSupportCount / supportPhaseInitialCount はそのまま
     }
 
     /// 手動で電サポ中に切り替え（STのときは残り回数をセットしてカウントダウン開始）
@@ -896,6 +944,14 @@ final class GameLog {
 
     /// 実際の持ち玉数で同期（終了時や確変終了後など）。
     /// アプリ上の持ち玉(totalHoldings)との差分を計算し、差分を持ち玉投資として追加・相殺する。
+    /// 遊技終了確認で入力した「終了時点の通常回転数」へ揃える。`totalRotations` は同じ差分だけ追随し、`total` が `normal` 未満にならないよう抑える。
+    func applySessionEndNormalRotations(_ endNormal: Int) {
+        let n = max(0, endNormal)
+        let d = n - normalRotations
+        normalRotations = n
+        totalRotations = max(n, totalRotations + d)
+    }
+
     func syncHoldings(actualHoldings: Int) {
         let currentHoldings = totalHoldings
         let diff = currentHoldings - actualHoldings
@@ -932,9 +988,6 @@ final class GameLog {
         lendingRecords = []
     }
 
-    /// 現在LTモード（上位RUSH）中か
-    var isLtMode: Bool { currentState == .lt }
-
     /// 続きから：永続化した状態をログに反映する。機種・店舗は呼び出し元で解決済みのものを渡す
     func applyResumableState(_ state: ResumableState, machine: Machine, shop: Shop) {
         selectedMachine = machine
@@ -963,7 +1016,6 @@ final class GameLog {
     /// 保存データに currentModeID が無いとき、currentState から復元する
     private static func resolvedModeID(from currentState: PlayState, isTimeShortMode: Bool) -> Int {
         switch currentState {
-        case .lt: return 2
         case .support: return isTimeShortMode ? 0 : 1
         case .normal: return 0
         }
