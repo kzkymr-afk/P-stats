@@ -1,11 +1,8 @@
-import SwiftData
 import SwiftUI
 
-// 省エネ：フレームレート制限と簡略表示による節電は実機・状況差が大きく、効果を数値保証しにくい。ドロワーからは外し、必要なら設定から利用する想定。
-
-// MARK: - 省エネモード（ジェスチャー＋タップ・周辺発光・ミニマルUI）
+// MARK: - プロモード（旧：省エネモードを全面改修）
 /// 上半分＝現金投資、下半分＝持ち玉投資。スワイプは左→右に統一。下部に大当たりボタン。ゲームカウントはタップで+1。
-struct PowerSavingModeView: View {
+struct ProModeView: View {
     @Bindable var log: GameLog
     /// true＝右手操作、false＝左手操作（スワイプは左手モードでも左→右に統一）
     var rightHandMode: Bool = false
@@ -35,6 +32,14 @@ struct PowerSavingModeView: View {
 
     private let headerFixedHeight: CGFloat = 100
     private let bottomBarFixedHeight: CGFloat = 72
+    private var currentHourlyWagePt: Double? {
+        guard let started = log.sessionStartedAt else { return nil }
+        let sec = Date().timeIntervalSince(started)
+        guard sec.isFinite, sec > 30 else { return nil }
+        let hours = sec / 3600.0
+        guard hours > 0 else { return nil }
+        return log.chartProfitPt / hours
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -93,7 +98,7 @@ struct PowerSavingModeView: View {
 
     private func headerView(geo: GeometryProxy, headerHeight: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("省エネモード · \(log.stayModeDisplayName(machineMaster: machineMaster))")
+            Text("プロモード · \(log.stayModeDisplayName(machineMaster: machineMaster))")
                 .font(.caption.weight(.semibold))
                 .foregroundColor(AppGlassStyle.modeAccentColor(master: machineMaster, modeId: log.currentModeID))
                 .lineLimit(2)
@@ -119,13 +124,20 @@ struct PowerSavingModeView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     row(label: "現在の回転数", value: "\(log.gamesSinceLastWin)回")
                     Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
-                    row(label: "総投入", value: log.totalInput.formattedPtWithUnit)
+                    let rr = log.realRate
+                    let bd = log.dynamicBorder
+                    let diff = rr - bd
+                    row(label: "実質回転率", value: "\(String(format: "%.1f", rr))回/1k")
                     Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
-                    row(label: "総持ち玉投資", value: "\(log.holdingsInvestedBalls)玉")
+                    row(label: "ボーダー差", value: "\(diff >= 0 ? "+" : "")\(String(format: "%.1f", diff))")
                     Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
-                    row(label: "現在の持ち玉数", value: "\(log.totalHoldings)玉")
+                    row(label: "現在損益", value: "\(log.chartProfitPt >= 0 ? "+" : "")\(Int(log.chartProfitPt.rounded()).formattedPtWithUnit)")
                     Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
-                    row(label: "大当たり（記録）", value: "\(log.normalWinCount)回")
+                    if let hw = currentHourlyWagePt {
+                        row(label: "時給", value: "\(hw >= 0 ? "+" : "")\(Int(hw.rounded()).formattedPtWithUnit)/h")
+                    } else {
+                        row(label: "時給", value: "—")
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 10)

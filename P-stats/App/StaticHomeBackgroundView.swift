@@ -21,7 +21,7 @@ struct StaticHomeBackgroundView: View {
                         .frame(width: geo.size.width, height: geo.size.height)
                         .clipped()
                 } else {
-                    AppGlassStyle.background
+                    AppDesignSystem.Background.base
                     orbViewStatic(color: cyan, x: 0.2, y: 0.15, geo: geo)
                     orbViewStatic(color: purple, x: 0.75, y: 0.3, geo: geo)
                     orbViewStatic(color: magenta, x: 0.5, y: 0.75, geo: geo)

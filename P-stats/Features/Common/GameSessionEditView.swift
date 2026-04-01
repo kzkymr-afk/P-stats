@@ -100,7 +100,7 @@ struct GameSessionEditView: View {
                             }
                         } else {
                             if parsePhasesForSave() == nil {
-                                errorMessage = "セッション内訳の数値を確認してください（負の数・未入力は 0 として扱いますが、ブロックは1つ以上必要です）"
+                                errorMessage = "区間ごとの内訳の数値を確認してください（負の数・未入力は 0 として扱いますが、ブロックは1つ以上必要です）"
                                 showErrorAlert = true
                                 return
                             }
@@ -186,12 +186,11 @@ struct GameSessionEditView: View {
                         simpleInputCardHeader(title: "実戦日", systemImage: "calendar") {
                             Text(JapaneseDateFormatters.yearMonthDay.string(from: date))
                                 .font(AppTypography.bodyRounded)
-                                .foregroundColor(.white.opacity(0.95))
+                                .foregroundColor(AppGlassStyle.textPrimary)
                             DatePicker("", selection: $date, displayedComponents: .date)
                                 .datePickerStyle(.graphical)
                                 .labelsHidden()
                                 .tint(cyan)
-                                .colorScheme(.dark)
                         }
                         .id("simpleDate")
 
@@ -200,7 +199,7 @@ struct GameSessionEditView: View {
                                 HStack {
                                     Text("機種")
                                         .font(AppTypography.sectionSubheading)
-                                        .foregroundColor(.white.opacity(0.9))
+                                        .foregroundColor(AppGlassStyle.textPrimary)
                                     Spacer(minLength: 8)
                                     Picker("", selection: $selectedMachine) {
                                         Text("未選択").tag(Machine?(nil))
@@ -214,7 +213,7 @@ struct GameSessionEditView: View {
                                 HStack {
                                     Text("店舗")
                                         .font(AppTypography.sectionSubheading)
-                                        .foregroundColor(.white.opacity(0.9))
+                                        .foregroundColor(AppGlassStyle.textPrimary)
                                     Spacer(minLength: 8)
                                     Picker("", selection: $selectedShop) {
                                         Text("未選択").tag(Shop?(nil))
@@ -231,7 +230,7 @@ struct GameSessionEditView: View {
                         simpleAmountInputPanel(
                             scrollId: "simpleInvest",
                             title: "投資額（pt）",
-                            caption: "現金で投入したポイント（貸玉換算の投入額）",
+                            caption: "現金で投資したポイント（貸玉換算の投資額）",
                             text: $investmentCash,
                             padTrigger: $simpleInvestPadTrigger,
                             onPreviousField: nil,
@@ -250,7 +249,7 @@ struct GameSessionEditView: View {
 
                         Text("回収額を保存するには、店舗に払出係数（pt/玉）が設定されている必要があります。")
                             .font(.caption)
-                            .foregroundColor(.white.opacity(0.72))
+                            .foregroundColor(AppGlassStyle.textSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 4)
                     }
@@ -275,7 +274,6 @@ struct GameSessionEditView: View {
             }
         }
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .preferredColorScheme(.dark)
     }
 
     private func simpleInputCardHeader<Content: View>(
@@ -290,7 +288,7 @@ struct GameSessionEditView: View {
                     .foregroundColor(cyan)
                 Text(title)
                     .font(AppTypography.panelHeading)
-                    .foregroundColor(.white.opacity(0.95))
+                    .foregroundColor(AppGlassStyle.textPrimary)
             }
             content()
         }
@@ -317,10 +315,10 @@ struct GameSessionEditView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(AppTypography.sectionSubheading)
-                    .foregroundColor(.white.opacity(0.95))
+                    .foregroundColor(AppGlassStyle.textPrimary)
                 Text(caption)
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.72))
+                    .foregroundColor(AppGlassStyle.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(width: 168, alignment: .leading)
@@ -362,12 +360,11 @@ struct GameSessionEditView: View {
                     editDetailCard(title: "実戦日", systemImage: "calendar") {
                         Text(JapaneseDateFormatters.yearMonthDay.string(from: date))
                             .font(AppTypography.bodyRounded)
-                            .foregroundColor(.white.opacity(0.95))
+                            .foregroundColor(AppGlassStyle.textPrimary)
                         DatePicker("", selection: $date, displayedComponents: .date)
                             .datePickerStyle(.graphical)
                             .labelsHidden()
                             .tint(cyan)
-                            .colorScheme(.dark)
                     }
 
                     editDetailCard(title: "基本情報", systemImage: "dice.fill") {
@@ -393,10 +390,10 @@ struct GameSessionEditView: View {
                         }
                     }
 
-                    editDetailCard(title: "セッション内訳", systemImage: "square.stack.3d.up.fill") {
+                    editDetailCard(title: "区間ごとの内訳", systemImage: "square.stack.3d.up.fill") {
                         Text("各区間＝その初当たりまで。RUSH 当選回数は各区間の「大当たり」を合算して保存します。")
                             .font(.caption)
-                            .foregroundColor(.white.opacity(0.72))
+                            .foregroundColor(AppGlassStyle.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                         ForEach($phases) { $phase in
                             phaseEditorCard(
@@ -418,17 +415,17 @@ struct GameSessionEditView: View {
                     }
 
                     editDetailCard(title: "総回転数（保存）", systemImage: "arrow.triangle.2.circlepath") {
-                        Text("空欄なら各区間の回転の合計。保存する総回転と合計が異なるとき、投資（pt・持ち玉）と実質投入は回転比でスケールして誤差を吸収します。")
+                        Text("空欄なら各区間の回転の合計。保存する総回転と合計が異なるとき、投資（pt・持ち玉）と実質投資は回転比でスケールして誤差を吸収します。")
                             .font(.caption)
-                            .foregroundColor(.white.opacity(0.72))
+                            .foregroundColor(AppGlassStyle.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                         editDetailNumberRow(label: "総回転数（通常）", placeholder: "空欄＝区間合計", text: $totalRotationsOverride, maxDigits: 7)
                     }
 
                     editDetailCard(title: "最終の総回収出玉", systemImage: "circle.grid.cross.fill") {
-                        Text("セッション全体の回収出玉の確定値を入力します（区間ごとの回収とは別に扱います）。")
+                        Text("この実戦記録全体の回収出玉の確定値を入力します（区間ごとの回収とは別に扱います）。")
                             .font(.caption)
-                            .foregroundColor(.white.opacity(0.72))
+                            .foregroundColor(AppGlassStyle.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
                         editDetailNumberRow(label: "総回収出玉（玉）", placeholder: "0", text: $totalHoldings, maxDigits: 9)
                     }
@@ -450,7 +447,6 @@ struct GameSessionEditView: View {
             }
         }
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .preferredColorScheme(.dark)
         .environment(\.locale, Locale(identifier: "ja_JP"))
     }
 
@@ -466,7 +462,7 @@ struct GameSessionEditView: View {
                     .foregroundColor(cyan)
                 Text(title)
                     .font(AppTypography.panelHeading)
-                    .foregroundColor(.white.opacity(0.95))
+                    .foregroundColor(AppGlassStyle.textPrimary)
             }
             content()
         }
@@ -633,7 +629,7 @@ struct GameSessionEditView: View {
         }
 
         guard let parsedPhases = parsePhasesForSave() else {
-            errorMessage = "セッション内訳を確認してください"
+            errorMessage = "区間ごとの内訳を確認してください"
             showErrorAlert = true
             return
         }
@@ -645,7 +641,7 @@ struct GameSessionEditView: View {
         let nRotations = torStr.isEmpty ? sumR : (Int(torStr) ?? sumR)
         let rWin = parsedPhases.reduce(0) { $0 + $1.bigHitCount }
 
-        // 計算ロジック（区間合計を基準に、保存する総回転との差を回転比でスケールして実質投入へ反映）
+        // 計算ロジック（区間合計を基準に、保存する総回転との差を回転比でスケールして実質投資へ反映）
         let rate = shop.payoutCoefficient
         let scale: Double = sumR > 0 ? Double(nRotations) / Double(sumR) : 1.0
         let sumCash = parsedPhases.reduce(0) { $0 + $1.investmentCashPt }

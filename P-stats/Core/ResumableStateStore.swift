@@ -30,6 +30,7 @@ enum ResumableStateStore {
         let state = ResumableState(
             machineName: log.selectedMachine.name,
             shopName: log.selectedShop.name,
+            sessionStartedAt: log.sessionStartedAt,
             initialHoldings: log.initialHoldings,
             totalRotations: log.totalRotations,
             normalRotations: log.normalRotations,
@@ -49,14 +50,29 @@ enum ResumableStateStore {
             bigHitSessionNormalRotationsAtWin: log.bigHitSessionNormalRotationsAtWin,
             bigHitSessionTotalRotationsAtWin: log.bigHitSessionTotalRotationsAtWin
         )
-        guard let data = try? JSONEncoder().encode(state) else { return }
-        try? data.write(to: fileURL)
+        do {
+            let data = try JSONEncoder().encode(state)
+            // 破損リスク低減（途中終了でも既存ファイルが壊れにくい）
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            // 続きからは必須機能ではないため、保存失敗は黙殺（ただし既存ファイルは .atomic で保全される）
+            return
+        }
     }
 
     /// 永続化した状態を読み込む。無いか壊れていれば nil
     static func load() -> ResumableState? {
         guard let data = try? Data(contentsOf: fileURL) else { return nil }
-        return try? JSONDecoder().decode(ResumableState.self, from: data)
+        do {
+            return try JSONDecoder().decode(ResumableState.self, from: data)
+        } catch {
+            // 壊れている可能性が高いので隔離（次回以降の読み込み失敗ループを避ける）
+            let stamp = Int(Date().timeIntervalSince1970)
+            let quarantined = fileURL.deletingLastPathComponent()
+                .appendingPathComponent("resumable_session.corrupt.\(stamp).json")
+            try? FileManager.default.moveItem(at: fileURL, to: quarantined)
+            return nil
+        }
     }
 
     /// 永続化データを削除（新規スタート時）

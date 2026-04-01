@@ -2,10 +2,10 @@ import SwiftUI
 import SwiftData
 import UIKit
 
-/// 遊戯開始ゲート用：店舗・機種が未選択のときは遊戯開始できない
+/// 遊技開始ゲート用：店舗・機種が未選択のときは遊技開始できない
 struct MachineShopSelectionView: View {
     @Bindable var log: GameLog
-    /// true のとき「遊戯開始」「キャンセル」を表示し、決定時は onGateStart / onGateCancel を呼ぶ
+    /// true のとき「遊技開始」「キャンセル」を表示し、決定時は onGateStart / onGateCancel を呼ぶ
     var gateMode: Bool = false
     var onGateStart: (() -> Void)? = nil
     var onGateCancel: (() -> Void)? = nil
@@ -83,7 +83,11 @@ struct MachineShopSelectionView: View {
                 if let s = $0 {
                     log.selectedShop = s
                 } else {
-                    log.selectedShop = Shop(name: "未選択", ballsPerCashUnit: 125, payoutCoefficient: 4.0)
+                    log.selectedShop = Shop(
+                        name: "未選択",
+                        ballsPerCashUnit: PersistedDataSemantics.defaultBallsPer500Pt,
+                        payoutCoefficient: PersistedDataSemantics.defaultPayoutCoefficientPtPerBall
+                    )
                 }
             }
         )
@@ -161,7 +165,7 @@ struct MachineShopSelectionView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - ゲートモード（新規遊技）：機種 → 店舗 → 回転数 → 持ち玉 → 遊戯開始（外側はスクロールなし・高さは比率配分）
+    // MARK: - ゲートモード（新規遊技）：機種 → 店舗 → 回転数 → 持ち玉 → 遊技開始（外側はスクロールなし・高さは比率配分）
     private var gateModeContent: some View {
         GeometryReader { outerGeo in
             let h = outerGeo.size.height
@@ -352,7 +356,7 @@ struct MachineShopSelectionView: View {
             )
             .frame(width: rotationFieldWidth, alignment: .trailing)
             .layoutPriority(2)
-            InfoIconView(explanation: "遊戯開始時点のデータランプに表示された回転数を入力してください。見出し・余白をタップしてもテンキーを開けます。", tint: accent.opacity(0.6))
+            InfoIconView(explanation: "遊技開始時点のデータランプに表示された回転数を入力してください。見出し・余白をタップしてもテンキーを開けます。", tint: accent.opacity(0.6))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -409,7 +413,7 @@ struct MachineShopSelectionView: View {
             log.initialHoldings = max(0, holdings)
             onGateStart?()
         } label: {
-            Text("遊戯開始")
+            Text("遊技開始")
                 .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

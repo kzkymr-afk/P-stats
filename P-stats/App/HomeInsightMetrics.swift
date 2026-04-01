@@ -33,7 +33,7 @@ enum HomeInsightMetrics {
         Self.sessions(in: period, from: sessions).reduce(0) { $0 + $1.theoreticalValue }
     }
 
-    /// 初当たりまでの平均実質投入（pt）。記録があるセッションのみ平均。
+    /// 初当たりまでの平均実質投資（pt）。記録があるセッションのみ平均。
     static func averageFirstHitInvestment(in period: EarningsPeriod, sessions: [GameSession]) -> Double? {
         let list = Self.sessions(in: period, from: sessions).filter {
             $0.rushWinCount + $0.normalWinCount > 0

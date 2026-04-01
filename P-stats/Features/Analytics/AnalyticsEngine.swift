@@ -681,6 +681,8 @@ struct AnalyticsOverviewTotalSummary {
     let maxDailyRecovery: Int
     let maxDailyPerformance: Int
     let avgPerformancePerSession: Double?
+    let totalPlayMinutes: Int?
+    let hourlyWagePt: Double?
 
     static func compute(sessions: [GameSession], machinesByName: [String: Machine]) -> AnalyticsOverviewTotalSummary {
         let cal = Calendar.current
@@ -722,6 +724,19 @@ struct AnalyticsOverviewTotalSummary {
         let maxDailyPerformance = byDay.values.map { $0.reduce(0) { $0 + $1.performance } }.max() ?? 0
         let avgPerformancePerSession: Double? = sessionCount > 0 ? Double(totalPerformance) / Double(sessionCount) : nil
 
+        // 時給：開始/終了があるセッションのみ合算（旧データは除外）
+        var totalSeconds = 0.0
+        for s in sessions {
+            if let sec = s.playDurationSeconds { totalSeconds += sec }
+        }
+        let totalPlayMinutes: Int? = totalSeconds > 0 ? Int((totalSeconds / 60).rounded()) : nil
+        let hourlyWagePt: Double? = {
+            let hours = totalSeconds / 3600.0
+            guard hours > 0 else { return nil }
+            let v = Double(totalPerformance) / hours
+            return v.isFinite ? v : nil
+        }()
+
         return AnalyticsOverviewTotalSummary(
             sessionCount: sessionCount,
             totalPerformance: totalPerformance,
@@ -738,7 +753,9 @@ struct AnalyticsOverviewTotalSummary {
             maxDailyInput: maxDailyInput,
             maxDailyRecovery: maxDailyRecovery,
             maxDailyPerformance: maxDailyPerformance,
-            avgPerformancePerSession: avgPerformancePerSession
+            avgPerformancePerSession: avgPerformancePerSession,
+            totalPlayMinutes: totalPlayMinutes,
+            hourlyWagePt: hourlyWagePt
         )
     }
 }

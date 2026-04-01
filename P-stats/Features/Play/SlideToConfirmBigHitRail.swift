@@ -3,10 +3,7 @@ import UIKit
 
 extension AppTheme {
     var bigHitRailChrome: BigHitRailChrome {
-        switch self {
-        case .dark: return .dark
-        case .light: return .light
-        }
+        .dark
     }
 }
 
@@ -14,8 +11,6 @@ extension AppTheme {
 enum BigHitRailChrome: Equatable {
     /// 従来の黒・ガラス基調
     case dark
-    /// 白・ライトグレー基調
-    case light
 }
 
 /// 右端配置想定：つまみを左へスライドし、`thresholdFraction`（可動距離の約3/5）以上で `onConfirmed`
@@ -185,23 +180,6 @@ struct SlideToConfirmBigHitRail: View {
                             )
                         )
                 )
-        case .light:
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.94),
-                            Color(white: 0.92),
-                            Color.white.opacity(0.9)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius)
-                        .stroke(Color.black.opacity(0.06), lineWidth: 0.5)
-                )
         }
     }
 
@@ -229,19 +207,6 @@ struct SlideToConfirmBigHitRail: View {
                     )
                 )
                 .mask(mask)
-        case .light:
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            accent.opacity(0.18 + Double(p) * 0.42),
-                            accent.opacity(0.1 + Double(p) * 0.28)
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .mask(mask)
         }
     }
 
@@ -254,17 +219,6 @@ struct SlideToConfirmBigHitRail: View {
                     colors: [
                         Color.white.opacity(0.45 + p * 0.25),
                         accent.opacity(0.25 + p * 0.2)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-        case .light:
-            return AnyShapeStyle(
-                LinearGradient(
-                    colors: [
-                        Color.black.opacity(0.14 + p * 0.1),
-                        accent.opacity(0.35 + p * 0.2)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -322,27 +276,12 @@ struct SlideToConfirmBigHitRail: View {
             }
             .frame(width: w, height: h)
             .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 4)
-        case .light:
-            ZStack {
-                RoundedRectangle(cornerRadius: r)
-                    .fill(Color.white)
-                    .shadow(color: .black.opacity(0.08), radius: 2, x: 0, y: 1)
-                RoundedRectangle(cornerRadius: r)
-                    .stroke(
-                        LinearGradient(colors: [accent.opacity(0.5), Color.black.opacity(0.12)], startPoint: .topLeading, endPoint: .bottomTrailing),
-                        lineWidth: 1.1
-                    )
-                Image(systemName: "arrow.left")
-                    .font(.system(size: icon, weight: .bold, design: .rounded))
-                    .foregroundStyle(accent.opacity(0.9))
-            }
-            .frame(width: w, height: h)
         }
     }
 
     private func completionFlash(width W: CGFloat, height H: CGFloat) -> some View {
         RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(accent.opacity(chrome == .dark ? 0.35 : 0.22))
+            .fill(accent.opacity(0.35))
             .frame(width: W, height: H)
     }
 

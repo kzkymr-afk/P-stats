@@ -5,7 +5,7 @@ extension Int {
     /// 表示用：数値をカンマ区切りで返す（例: 12345 → "12,345"）
     var formattedPt: String { formatted(.number) }
     /// 表示用：数値 + " pt" 単位（例: 12345 → "12,345 pt"）
-    var formattedPtWithUnit: String { formatted(.number) + " pt" }
+    var formattedPtWithUnit: String { formatted(.number) + UnitDisplaySettings.currentSuffix() }
 
     /// コンパクト表示（ホーム星取り下など）。例: +3k, -30k, +1.2k
     var formattedPtCompactK: String {

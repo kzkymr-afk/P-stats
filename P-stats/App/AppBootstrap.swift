@@ -30,9 +30,11 @@ private actor AppModelContainerLoader {
         }
         let task = Task(priority: .userInitiated) {
             try await MainActor.run {
-                try ModelContainer(
-                    for: Machine.self, Shop.self, GameSession.self, PrizeSet.self,
-                    MachinePrize.self, PresetMachine.self, PresetMachinePrize.self, MyMachinePreset.self
+                let schema = Schema(versionedSchema: PStatsSchemaV1.self)
+                return try ModelContainer(
+                    for: schema,
+                    migrationPlan: PStatsMigrationPlan.self,
+                    configurations: ModelConfiguration()
                 )
             }
         }

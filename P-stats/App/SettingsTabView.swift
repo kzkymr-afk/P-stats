@@ -13,17 +13,24 @@ struct SettingsTabView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Machine.name) private var machines: [Machine]
     @Query(sort: \Shop.name) private var shops: [Shop]
+    @Query(sort: \GameSession.date, order: .reverse) private var allSessions: [GameSession]
+    @Query(sort: \MyMachinePreset.name) private var myMachinePresets: [MyMachinePreset]
+    @Query(sort: \PrizeSet.displayOrder) private var prizeSets: [PrizeSet]
 
     @AppStorage("homeBackgroundStyle") private var homeBackgroundStyle = HomeBackgroundStore.defaultStyle
     @AppStorage("homeBackgroundImagePath") private var homeBackgroundImagePath = ""
     @AppStorage("playViewBackgroundStyle") private var playViewBackgroundStyle = "sameAsHome"
     @AppStorage("playViewBackgroundImagePath") private var playViewBackgroundImagePath = ""
-    @AppStorage("playViewStartWithPowerSaving") private var playViewStartWithPowerSaving = false
+    // 旧キー（true ならプロモード相当として移行）
+    @AppStorage("playViewStartWithPowerSaving") private var playViewStartWithPowerSavingLegacy = false
+    /// "normal" / "pro"
+    @AppStorage("playStartMode") private var playStartModeRaw: String = "normal"
     /// 実戦画面表示中は自動スリープ（画面オフ）を無効化
     @AppStorage("playDisableIdleTimerDuringPlay") private var playDisableIdleTimerDuringPlay = true
     @AppStorage("startWithZeroHoldings") private var startWithZeroHoldings = false
     @AppStorage("hapticEnabled") private var hapticEnabled = true
     @AppStorage("defaultExchangeRate") private var defaultExchangeRateStr = "4.0"  // 払出係数（pt/玉）文字列
+    @AppStorage(UnitDisplaySettings.unitSuffixKey) private var unitDisplaySuffix: String = "pt"
     @AppStorage("defaultBallsPerCash") private var defaultBallsPerCashStr = "125"
     @AppStorage("defaultMachineName") private var defaultMachineName = ""
     @AppStorage("defaultShopName") private var defaultShopName = ""
@@ -39,8 +46,26 @@ struct SettingsTabView: View {
     @State private var isSavingPlayPhoto = false
     @State private var showAnalyticsUpgradeSheet = false
     @State private var rewardedBusy = false
+    @State private var csvExportPackage: CsvExportSheetPackage?
+    @State private var csvPendingCleanupURLs: [URL]?
+    @State private var csvExportErrorMessage: String?
+    @State private var showCsvImportSheet = false
 
     private var cyan: Color { AppGlassStyle.accent }
+
+    @ViewBuilder
+    private func sectionHeader(_ title: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundColor(AppGlassStyle.textPrimary.opacity(0.92))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.black.opacity(0.28), in: Capsule())
+            Spacer()
+        }
+        .padding(.top, 6)
+    }
 
     private func analyticsTrialEndLabel(_ date: Date) -> String {
         let d = JapaneseDateFormatters.yearMonthDay.string(from: date)
@@ -50,11 +75,16 @@ struct SettingsTabView: View {
     private var defaultExchangeRate: Double { Double(defaultExchangeRateStr) ?? 4.0 }
     private var defaultBallsPerCash: Int { Int(defaultBallsPerCashStr) ?? 125 }
 
+    /// CSV バックアップは課金済みプレミアムのみ（試用・リワード試用は対象外）
+    private var canExportCsvBackup: Bool { entitlements.hasPurchasedPremium }
+    private var canImportCsvSessions: Bool { entitlements.hasPurchasedPremium }
+
     var body: some View {
         ZStack {
             StaticHomeBackgroundView()
             ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
+                    sectionHeader("基本操作")
                     // 1. アプリロック
                     settingsCard(title: "アプリロック", icon: "lock.fill") {
                         VStack(alignment: .leading, spacing: 14) {
@@ -115,29 +145,30 @@ struct SettingsTabView: View {
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.7))
                             Toggle(isOn: $alwaysShowBothInvestmentButtons) {
-                                Text("常に現金投入・持ち玉投入両方を表示")
+                                Text("常に現金投資・持ち玉投資両方を表示")
                                     .foregroundColor(.white.opacity(0.9))
                             }
                             .tint(cyan)
-                            Text("オフの場合、持ち玉0のときは現金投入のみ、持ち玉があるときは持ち玉投入のみを表示します（ボタンは2つ分の大きさ）。")
+                            Text("オフの場合、持ち玉0のときは現金投資のみ、持ち玉があるときは持ち玉投資のみを表示します（ボタンは2つ分の大きさ）。")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.7))
                         }
                     }
 
-                    // 3. 遊技開始時の初期画面
-                    settingsCard(title: "遊戯開始時の初期画面", icon: "leaf.fill") {
+                    sectionHeader("遊技中設定")
+                    // 3. 遊技開始時の初期画面（通常／プロ）
+                    settingsCard(title: "遊技開始時の初期画面", icon: "speedometer") {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("遊戯開始後、最初に表示する画面を選べます。")
+                            Text("遊技開始後、最初に表示する画面を選べます。")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.7))
-                            Picker("", selection: $playViewStartWithPowerSaving) {
-                                Text("通常モード").tag(false)
-                                Text("省エネモード").tag(true)
+                            Picker("", selection: $playStartModeRaw) {
+                                Text("通常モード").tag("normal")
+                                Text("プロモード").tag("pro")
                             }
                             .pickerStyle(.segmented)
                             .labelsHidden()
-                            Text("省エネは演出・情報の表示を抑え、画面の更新を減らします。バッテリー効果は端末・状況により限定的です。アプリを閉じる・画面を落とす方が効果が大きい場合があります。")
+                            Text("プロモードは「期待値と時給だけ見たい」「片手で最短入力したい」人向けのミニマルUIです。")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.65))
                             Toggle(isOn: $playDisableIdleTimerDuringPlay) {
@@ -148,6 +179,16 @@ struct SettingsTabView: View {
                             Text("オンにすると実戦画面を表示しているあいだ、端末の自動ロックまでの時間が経っても画面が暗くなりにくくなります。ホームや他タブに戻ると通常どおりスリープします。")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.65))
+                        }
+                        .onAppear {
+                            // 初回/旧キーからの移行：未設定や不正値は旧キーを優先
+                            if playStartModeRaw != "normal" && playStartModeRaw != "pro" {
+                                playStartModeRaw = playViewStartWithPowerSavingLegacy ? "pro" : "normal"
+                            }
+                        }
+                        .onChange(of: playStartModeRaw) { _, newValue in
+                            // 旧キーも合わせて更新しておく（互換用）
+                            playViewStartWithPowerSavingLegacy = (newValue == "pro")
                         }
                     }
 
@@ -222,18 +263,36 @@ struct SettingsTabView: View {
                         }
                     }
 
-                    // 7. 配色（実戦画面の明るさ）
+                    sectionHeader("表示・デザイン")
+                    // 7. 配色（ライト撤去）
                     settingsCard(title: "配色", icon: "circle.lefthalf.filled") {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("実戦（プレイ）画面の下地の明るさです。OSのダークモードや外観設定とは独立して選べます。")
+                            Text("配色（ライトモード）は一旦廃止し、ダーク固定にしています。")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.7))
-                            Picker("配色", selection: $theme) {
-                                ForEach(AppTheme.allCases, id: \.self) { t in
-                                    Text(t.settingsDisplayName).tag(t)
-                                }
+                        }
+                    }
+
+                    settingsCard(title: "単位の設定", icon: "textformat.123") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("アプリ内の表示上の「pt」の単位ラベルを変更できます（内部の計算・保存値は変わりません）。")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.68))
+                            HStack(spacing: 10) {
+                                Text("単位ラベル")
+                                    .font(AppTypography.sectionSubheading)
+                                    .foregroundColor(.white.opacity(0.9))
+                                Spacer()
+                                TextField("pt", text: $unitDisplaySuffix)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                                    .multilineTextAlignment(.trailing)
+                                    .foregroundColor(.white.opacity(0.95))
+                                    .frame(width: 160)
                             }
-                            .pickerStyle(.segmented)
+                            Text("例: pt / ポイント / p / 単位（空欄で単位なし）")
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.62))
                         }
                     }
 
@@ -402,6 +461,7 @@ struct SettingsTabView: View {
                         }
                     }
 
+                    sectionHeader("プレミアム")
                     settingsCard(title: "プレミアム", icon: "cart.fill") {
                         VStack(alignment: .leading, spacing: 14) {
                             Text("月額サブスクリプションで、広告の非表示と分析機能のフル利用の両方が有効になります。解約・確認は「サブスクリプションの管理」から App Store で行えます。")
@@ -526,9 +586,103 @@ struct SettingsTabView: View {
                         }
                     }
 
+                    sectionHeader("データ")
+                    // 8b. データのバックアップ（プレミアム）
+                    settingsCard(title: "データのバックアップ", icon: "doc.plaintext") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("実戦履歴・登録機種・店舗・マイ機種プリセット・ボーナス種ライブラリを UTF-8（BOM 付き）の CSV に分割して書き出します。Numbers や Excel で開けます。")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.72))
+                            if canExportCsvBackup {
+                                Text("実戦 \(allSessions.count) 件 ／ 機種 \(machines.count) 件 ／ 店舗 \(shops.count) 件")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.6))
+                                Button {
+                                    do {
+                                        let urls = try CsvBackupExportService.makeExportFileURLs(
+                                            sessions: allSessions,
+                                            machines: machines,
+                                            shops: shops,
+                                            myPresets: myMachinePresets,
+                                            prizeSets: prizeSets
+                                        )
+                                        csvPendingCleanupURLs = urls
+                                        csvExportPackage = CsvExportSheetPackage(urls: urls)
+                                    } catch {
+                                        csvExportErrorMessage = error.localizedDescription
+                                    }
+                                } label: {
+                                    Label("CSV を書き出す（共有）", systemImage: "square.and.arrow.up")
+                                        .fontWeight(.semibold)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .foregroundColor(.black)
+                                        .background(cyan)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                Text("この機能はプレミアム（有料登録）のみ利用できます。試用中・動画試用では書き出しできません。")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.68))
+                                Button {
+                                    showAnalyticsUpgradeSheet = true
+                                } label: {
+                                    Text("プレミアムについて見る")
+                                        .fontWeight(.semibold)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .foregroundColor(.white)
+                                        .background(Color.white.opacity(0.14))
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            Divider().background(Color.white.opacity(0.15))
+                            Text("書き出した「sessions」CSV や、指定の列だけ揃えた表から実戦履歴を追加できます。機種・店舗名は表記が違っても、取り込み画面で登録済みの機種・店舗に紐づけられます。列が足りない行は帳簿向け（回転・期待値の集計から外れる保存）になります。")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.68))
+                            if canImportCsvSessions {
+                                Button {
+                                    showCsvImportSheet = true
+                                } label: {
+                                    Label("CSV から実戦を取り込む", systemImage: "square.and.arrow.down")
+                                        .fontWeight(.semibold)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 12)
+                                        .foregroundColor(.black)
+                                        .background(cyan.opacity(0.92))
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                Text("取り込みもプレミアム（有料登録）のみです。")
+                                    .font(.caption2)
+                                    .foregroundColor(.white.opacity(0.55))
+                            }
+                        }
+                    }
+
+                    sectionHeader("その他")
                     // 9. このアプリの情報
                     settingsCard(title: "このアプリの情報", icon: "info.circle.fill") {
                         VStack(alignment: .leading, spacing: 12) {
+                            NavigationLink {
+                                HelpManualView()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "questionmark.circle.fill")
+                                        .foregroundColor(cyan)
+                                    Text("マニュアル")
+                                        .foregroundColor(cyan)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundColor(cyan.opacity(0.8))
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                            }
                             HStack {
                                 Text("バージョン")
                                     .font(AppTypography.sectionSubheading)
@@ -569,6 +723,30 @@ struct SettingsTabView: View {
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showAnalyticsUpgradeSheet) {
             AnalyticsUpgradeSheet()
+        }
+        .sheet(isPresented: $showCsvImportSheet) {
+            NavigationStack {
+                CsvSessionImportSheetView()
+            }
+        }
+        .sheet(item: $csvExportPackage, onDismiss: {
+            if let u = csvPendingCleanupURLs {
+                CsvBackupExportService.removeTemporaryFiles(at: u)
+                csvPendingCleanupURLs = nil
+            }
+        }) { pkg in
+            CsvBackupShareView(fileURLs: pkg.urls) {
+                csvPendingCleanupURLs = nil
+                csvExportPackage = nil
+            }
+        }
+        .alert("CSV の書き出しに失敗しました", isPresented: Binding(
+            get: { csvExportErrorMessage != nil },
+            set: { if !$0 { csvExportErrorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { csvExportErrorMessage = nil }
+        } message: {
+            Text(csvExportErrorMessage ?? "")
         }
         .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 84) }
     }
@@ -649,3 +827,7 @@ struct SettingsTabView: View {
     }
 }
 
+private struct CsvExportSheetPackage: Identifiable {
+    let id = UUID()
+    let urls: [URL]
+}

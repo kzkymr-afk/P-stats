@@ -5,7 +5,7 @@ struct GameSessionEditPhaseStored: Codable, Equatable, Identifiable {
     var id: UUID
     /// N 度目の「その初当たりまで」の通常回転数
     var rotationsUntilFirstHit: Int
-    /// 現金投入（pt）その区間
+    /// 現金投資（pt）その区間
     var investmentCashPt: Int
     /// 持ち玉投資（玉）
     var investmentHoldingsBalls: Int

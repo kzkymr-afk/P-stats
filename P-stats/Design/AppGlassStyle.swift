@@ -3,14 +3,19 @@ import SwiftUI
 // MARK: - グラスモーフィズム共通（やや不透明で統一）
 /// SwiftUI 用の Color / Gradient。DesignTokens の値を参照して組み立てる。
 enum AppGlassStyle {
-    static let background = Color(hex: DesignTokens.Color.backgroundHex)
+    // MARK: - Dark only (ライトモードは一旦撤去)
+
+    static let background = AppDesignSystem.Palette.background
+    /// リスト行・ドロワーの面（壁紙上でも読みやすく）
     static let rowBackground = Color.black.opacity(DesignTokens.Opacity.rowBackground)
+    /// カード・パネル全般
     static let cardBackground = Color.black.opacity(DesignTokens.Opacity.cardBackground)
-    static let accent = Color(
-        red: DesignTokens.Color.accentR,
-        green: DesignTokens.Color.accentG,
-        blue: DesignTokens.Color.accentB
-    )
+    static let accent = AppDesignSystem.Palette.accent
+
+    /// ダーク固定のテキスト色
+    static let textPrimary = AppDesignSystem.Palette.textPrimary
+    static let textSecondary = AppDesignSystem.Palette.textSecondary
+    static let textTertiary = AppDesignSystem.Palette.textTertiary
 
     /// RUSH／通常ボタン用（背景・枠・文字の統一）
     static let rushColor = Color(hex: DesignTokens.Color.rushHex)
@@ -87,6 +92,13 @@ enum AppGlassStyle {
             endPoint: .bottomTrailing
         )
     }
+
+    /// 区切り線（ダーク固定）
+    static let divider = AppDesignSystem.Palette.divider
+    /// ゲージ・チャートの線色（ダーク固定）
+    static let gaugeLine = AppDesignSystem.Palette.gaugeLine
+    /// チャートのグリッド（ダーク固定）
+    static let chartGrid = AppDesignSystem.Palette.chartGrid
 
     /// ホーム下部タブバーとデータ分析ドックで共通の寸法・タイポ（参考: Prime Video 系下部ナビ）
     enum MainTabDock {

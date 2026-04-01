@@ -19,8 +19,7 @@ P-stats/
 ├── P_statsApp.swift                    # @main・WindowGroup のみ（Bootstrap は App/AppBootstrap.swift）
 ├── App/                                # アプリ全体で1つだけのもの
 │   ├── HomeBackgroundStore.swift
-│   ├── PlayBackgroundStore.swift
-│   └── TranslucentBlurView.swift
+│   └── PlayBackgroundStore.swift
 ├── Design/                             # デザイン関連（Android で同じ値を使いやすいように）
 │   ├── DesignTokens.swift              # 色・余白・フォントサイズの「値だけ」
 │   ├── AppGlassStyle.swift             # SwiftUI 用の Color / Gradient（DesignTokens を参照）
@@ -55,10 +54,9 @@ P-stats/
 │       ├── InsightPanelView.swift
 │       ├── InfoPopoverView.swift
 │       ├── LaunchView.swift
-│       ├── PowerSavingModeView.swift
+│       ├── PowerSavingModeView.swift        # ProModeView（旧：省エネモード）
 │       ├── PlayEventHistoryView.swift
-│       ├── GameSessionEditView.swift
-│       └── PrizeSetListView.swift
+│       └── GameSessionEditView.swift
 ├── Utilities/                          # 汎用ヘルパー
 │   └── PlaceSearchFilter.swift
 └── Resources/
@@ -100,7 +98,7 @@ P-stats/
 ## 5. 実施状況
 
 - [x] Design の分離（DesignTokens, Color+Hex, AppGlassStyle, MetalStyle）
-- [x] App/ への Store・TranslucentBlurView 移動
+- [x] App/ への Store 移動（未使用だったブラー用ラッパーは削除済み）
 - [x] Core / Services / Features / Utilities のフォルダ作成とファイル移動
 - [ ] 設定画面を Features/Settings/ に分離（任意）
 - [ ] Int.formattedYen を Utilities/Extensions 等にまとめる（任意）

@@ -498,17 +498,15 @@ struct HomeView: View {
             )
 
             VStack(spacing: m.verticalSpacing) {
-                ScrollView(showsIndicators: false) {
-                    HomeIntegratedInfoPanel(
-                        sessions: allSessions,
-                        statsPeriod: $statsPeriod,
-                        orderedSectionIDs: homeInfoPanelOrderParsed,
-                        hiddenSectionIDs: homeInfoPanelHiddenParsed,
-                        lookbackDays: homeLookbackClamped,
-                        freeTierWithAds: hasBanner,
-                        cardPadding: m.cardPad
-                    )
-                }
+                HomeIntegratedInfoPanel(
+                    sessions: allSessions,
+                    statsPeriod: $statsPeriod,
+                    orderedSectionIDs: homeInfoPanelOrderParsed,
+                    hiddenSectionIDs: homeInfoPanelHiddenParsed,
+                    lookbackDays: homeLookbackClamped,
+                    freeTierWithAds: hasBanner,
+                    cardPadding: m.cardPad
+                )
                 .frame(height: m.panelSlotH, alignment: .top)
 
                 mainActionsGridContent(

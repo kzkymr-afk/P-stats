@@ -61,7 +61,7 @@ struct HesoAtariItem: Codable, Identifiable, Equatable {
 
 /// ユーザーのマイリスト用機種。実質ボーダー計算に必要な項目を保持する。
 /// 項目: 台名(name), 確変/ST(machineTypeRaw), ボーダー(border), ボーナス種類(prizeEntries / hesoAtari・denchu_prizes),
-/// 出球(defaultPrize), 賞球数(countPerRound), 電サポゲーム数(supportLimit)。
+/// 出玉(defaultPrize), 賞球数(countPerRound), 電サポゲーム数(supportLimit)。
 @Model
 final class Machine {
     var name: String = ""
@@ -209,9 +209,10 @@ final class PresetMachine {
 @Model
 final class Shop {
     var name: String = ""
-    var ballsPerCashUnit: Int = 125
-    /// 払出係数（1玉あたりのpt換算）。統計シミュレーション用
-    var payoutCoefficient: Double = 4.0
+    /// 貸玉（500pt あたり玉数）。未設定の解釈は `interpretedBallsPer500Pt`（`PersistedDataSemantics`）。
+    var ballsPerCashUnit: Int = PersistedDataSemantics.defaultBallsPer500Pt
+    /// 払出係数（1玉あたりのpt換算）。統計シミュレーション用。未設定の解釈は `interpretedPayoutCoefficientPtPerBall`。
+    var payoutCoefficient: Double = PersistedDataSemantics.defaultPayoutCoefficientPtPerBall
     /// 店が貯玉（カウンター預かり）に対応しているか。実戦終了時の「貯玉」精算や端数の貯玉反映に使用。
     var supportsChodamaService: Bool = false
     /// その店の貯玉残高（玉数）。精算のたびに増加、店舗編集で手修正可能。
@@ -367,6 +368,8 @@ struct PersistedUndoEntry: Codable, Equatable {
 struct ResumableState: Codable {
     var machineName: String
     var shopName: String
+    /// 実戦開始時刻（「続きから」復元用）。旧データは nil
+    var sessionStartedAt: Date? = nil
     var initialHoldings: Int
     var totalRotations: Int
     var normalRotations: Int
@@ -412,14 +415,10 @@ enum LaunchAppearance {
 enum AppTheme: String, CaseIterable, Codable {
     /// 保存キー（表示名変更に強い）
     case dark = "dark"
-    case light = "light"
 
     /// 設定画面などの表示用（システムのダークモードとは別：アプリ内配色）
     var settingsDisplayName: String {
-        switch self {
-        case .dark: return "ダーク（黒ベース）"
-        case .light: return "ライト（白ベース）"
-        }
+        "ダーク（黒ベース）"
     }
 
     /// 旧 `@AppStorage` / バックアップの生文字列から復元
@@ -431,86 +430,53 @@ enum AppTheme: String, CaseIterable, Codable {
         switch migratingRawValue {
         case "プロ（サイバー）", "cyber", "Cyber":
             self = .dark
-        case "シンプル（ステルス）", "simple", "Simple":
-            self = .light
         default:
             self = .dark
         }
     }
 
     var backgroundColor: Color {
-        switch self {
-        case .dark: return Color(red: 0.02, green: 0.02, blue: 0.05)
-        case .light: return Color(red: 0.96, green: 0.97, blue: 0.99)
-        }
+        Color(red: 0.02, green: 0.02, blue: 0.05)
     }
 
     var accentColor: Color {
-        switch self {
-        case .dark: return .cyan
-        case .light:
-            return Color(red: 0.12, green: 0.45, blue: 0.85)
-        }
+        .cyan
     }
 
     var textColor: Color {
-        switch self {
-        case .dark: return .white
-        case .light: return Color(red: 0.1, green: 0.1, blue: 0.12)
-        }
+        .white
     }
 
     // MARK: - 実戦画面（PlayView）のベース色
 
     var playScreenBase: Color {
-        switch self {
-        case .dark: return Color(hex: DesignTokens.Color.backgroundHex)
-        case .light: return Color(red: 0.93, green: 0.94, blue: 0.96)
-        }
+        Color(hex: DesignTokens.Color.backgroundHex)
     }
 
     var playHeaderBackground: Color {
-        switch self {
-        case .dark: return .black
-        case .light: return Color(red: 0.98, green: 0.98, blue: 0.99)
-        }
+        .black
     }
 
     var playPanelBackground: Color {
-        switch self {
-        case .dark: return Color.black.opacity(0.93)
-        case .light: return Color.white.opacity(0.92)
-        }
+        Color.black.opacity(0.93)
     }
 
     /// ドロワー背後のスクリーム
     var playDrawerScrim: Color {
-        switch self {
-        case .dark: return Color.black.opacity(0.35)
-        case .light: return Color.black.opacity(0.22)
-        }
+        Color.black.opacity(0.35)
     }
 
     /// 実戦ヘッダー・パネル上の主テキスト
     var playLabelPrimary: Color {
-        switch self {
-        case .dark: return .white
-        case .light: return Color(red: 0.12, green: 0.12, blue: 0.14)
-        }
+        .white
     }
 
     var playLabelSecondary: Color {
-        switch self {
-        case .dark: return .white.opacity(0.75)
-        case .light: return Color(red: 0.12, green: 0.12, blue: 0.14).opacity(0.62)
-        }
+        .white.opacity(0.75)
     }
 
     var playMutedIcon: Color {
-        switch self {
-        case .dark: return .white.opacity(0.35)
-        case .light: return Color.black.opacity(0.28)
-        }
+        .white.opacity(0.35)
     }
 }
 
@@ -518,15 +484,19 @@ enum AppTheme: String, CaseIterable, Codable {
 final class GameSession {
     var id: UUID = UUID()
     var date: Date = Date()
+    /// 実戦開始時刻（実戦フロー）。旧データは nil
+    var startedAt: Date? = nil
+    /// 実戦終了時刻（保存時刻）。旧データは nil
+    var endedAt: Date? = nil
     var machineName: String = ""
     var shopName: String = ""
     var manufacturerName: String = ""  // 保存時メーカー（分析用）
-    var inputCash: Int = 0             // 投入（現金）
+    var inputCash: Int = 0             // 投資（現金）
     var totalHoldings: Int = 0         // 回収玉数
     var normalRotations: Int = 0       // 総回転数（通常）
     var totalUsedBalls: Int = 0        // 総消費玉数
     var payoutCoefficient: Double = 0.0 // 払出係数（統計シミュレーション用）
-    var totalRealCost: Double = 0      // 実質投入（pt換算）
+    var totalRealCost: Double = 0      // 実質投資（pt換算）
     var expectationRatioAtSave: Double = 0  // 保存時ボーダー比
     var theoreticalValue: Int = 0      // 期待値（pt）
     var rushWinCount: Int = 0          // 実戦で入力したRUSH当選回数
@@ -537,7 +507,7 @@ final class GameSession {
     var effectiveBorderPer1kAtSave: Double = 0
     /// 保存時点の実質回転率（回/単位）。`normalRotations ÷ effectiveUnitsForBorder`（`GameLog.realRate` と同定義）
     var realRotationRateAtSave: Double = 0
-    /// 初当たり時点までの実質投入（pt）。実戦からの保存時のみ埋まる。手入力・旧データは nil
+    /// 初当たり時点までの実質投資（pt）。実戦からの保存時のみ埋まる。手入力・旧データは nil
     var firstHitRealCostPt: Double? = nil
     /// 実戦終了時の精算区分。空＝未記録（アップデート前データ）
     var settlementModeRaw: String = ""
@@ -545,7 +515,7 @@ final class GameSession {
     var exchangeCashProceedsPt: Int = 0
     /// この実戦の保存で店舗の貯玉残高に加算した玉数（貯玉精算＝全玉、換金＝端数玉）。
     var chodamaBalanceDeltaBalls: Int = 0
-    /// シンプル入力など「投入・回収のみ」の行。分析では回転率・ボーダー差・ボーダー比の平均から除外（実成績・期待値の合計は従来どおり）。
+    /// シンプル入力など「投資・回収のみ」の行。分析では回転率・ボーダー差・ボーダー比の平均から除外（実成績・期待値の合計は従来どおり）。
     var isCashflowOnlyRecord: Bool = false
     /// 詳細編集の「初当たりブロック」JSON（空＝未使用・旧フォーム相当）
     var editSessionPhasesJSON: String = ""
@@ -567,7 +537,7 @@ final class GameSession {
         self.formulaBorderPer1k = formulaBorderPer1k
     }
 
-    /// 成績（回収 − 投入・pt）
+    /// 成績（回収 − 投資・pt）
     var performance: Int {
         let recovery = Int(Double(totalHoldings) * payoutCoefficient)
         return recovery - inputCash
@@ -580,6 +550,42 @@ final class GameSession {
 // MARK: - 分析での母集団（帳簿のみ行の扱い）
 
 extension GameSession {
+    /// 実戦時間（秒）。開始/終了が無い、または不正な場合は nil。
+    var playDurationSeconds: TimeInterval? {
+        guard let s = startedAt, let e = endedAt else { return nil }
+        let d = e.timeIntervalSince(s)
+        guard d.isFinite, d > 0 else { return nil }
+        return d
+    }
+
+    /// 時給（pt/h）。実戦時間が取れない場合は nil。
+    var hourlyWagePt: Double? {
+        guard let sec = playDurationSeconds else { return nil }
+        let hours = sec / 3600.0
+        guard hours > 0 else { return nil }
+        let v = Double(performance) / hours
+        return v.isFinite ? v : nil
+    }
+
+    /// 保存値が欠けている/旧データのときの表示用フォールバック（再計算で“黙って0”にしない）。
+    /// - `realRotationRateAtSave` が無い場合は `totalRealCost` から近似（\(normalRotations * 1000 / totalRealCost\)）。
+    var displayRealRotationRatePer1k: Double? {
+        if realRotationRateAtSave > 0 { return realRotationRateAtSave }
+        guard totalRealCost > 0, normalRotations > 0 else { return nil }
+        let v = (Double(normalRotations) * 1000.0) / totalRealCost
+        return v.isFinite && v > 0 ? v : nil
+    }
+
+    /// 保存時の店補正ボーダー。保存値が 0 のときは nil（黙って 0 回/1k とみなさない）。
+    var displayEffectiveBorderPer1kAtSave: Double? {
+        effectiveBorderPer1kAtSave > 0 ? effectiveBorderPer1kAtSave : nil
+    }
+
+    /// 保存時期待値比。0 は「未保存/旧」扱いとして nil。
+    var displayExpectationRatioAtSave: Double? {
+        expectationRatioAtSave > 0 ? expectationRatioAtSave : nil
+    }
+
     /// 分析の「回転・期待値系」から外す行（フラグ付き、または旧DBでシンプル入力と同型の行）
     var excludesFromRotationExpectationAnalytics: Bool {
         if isCashflowOnlyRecord { return true }

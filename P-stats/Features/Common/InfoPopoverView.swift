@@ -21,29 +21,6 @@ struct InfoIconView: View {
     }
 }
 
-/// ⓘ タップした瞬間に `explanationBuilder()` を実行し、その結果をシートに表示する（遊技中の最新の式・値向け）
-struct DynamicInfoIconView: View {
-    let explanationBuilder: () -> String
-    var tint: Color = .white.opacity(0.7)
-    @State private var showExplanation = false
-    @State private var sheetExplanation = ""
-
-    var body: some View {
-        Button {
-            sheetExplanation = explanationBuilder()
-            showExplanation = true
-        } label: {
-            Image(systemName: "info.circle")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(tint)
-        }
-        .buttonStyle(.plain)
-        .sheet(isPresented: $showExplanation) {
-            InfoExplanationSheet(explanation: sheetExplanation)
-        }
-    }
-}
-
 // MARK: - 説明シート（初期表示は画面の一部のみ。必要ならドラッグで中・大まで広げられる）
 struct InfoExplanationSheet: View {
     let explanation: String

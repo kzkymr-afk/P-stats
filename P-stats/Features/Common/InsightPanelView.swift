@@ -6,6 +6,7 @@ import SwiftData
 struct InsightPanelView: View {
     @Bindable var log: GameLog
     let onClose: () -> Void
+    var onShareSNS: (() -> Void)? = nil
     var onCorrectInitialRotation: (() -> Void)? = nil
     var onCorrectCash: (() -> Void)? = nil
     var onCorrectHoldings: (() -> Void)? = nil
@@ -88,7 +89,32 @@ struct InsightPanelView: View {
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(cyan.opacity(0.2), lineWidth: 1))
                 }
 
-                // 閲覧：履歴・分析・大当たり・投資履歴（遊戯中でも開ける）
+                if let onShareSNS = onShareSNS {
+                    Button(action: onShareSNS) {
+                        HStack(alignment: .center) {
+                            Image(systemName: "square.and.arrow.up")
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("SNSで共有")
+                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                Text("今の戦果を画像にして共有（途中でもOK）")
+                                    .font(.system(size: 10, weight: .regular))
+                                    .foregroundColor(cyan.opacity(0.6))
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption2)
+                                .foregroundColor(cyan.opacity(0.6))
+                        }
+                        .foregroundColor(cyan)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                    }
+                    .buttonStyle(.plain)
+                    .background(AppGlassStyle.rowBackground)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(cyan.opacity(0.2), lineWidth: 1))
+                }
+
+                // 閲覧：履歴・分析・大当たり・投資履歴（遊技中でも開ける）
                 if onOpenHistory != nil || onOpenEventHistory != nil || onOpenAnalytics != nil {
                     VStack(alignment: .leading, spacing: 4) {
                         panelTitle("閲覧")
@@ -119,9 +145,9 @@ struct InsightPanelView: View {
                                 HStack(alignment: .center) {
                                     Image(systemName: "list.bullet")
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("当選・投入履歴")
+                                        Text("当選・投資履歴")
                                             .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                        Text("今回の当選・投入の時系列")
+                                        Text("今回の当選・投資の時系列")
                                             .font(.system(size: 10, weight: .regular))
                                             .foregroundColor(cyan.opacity(0.6))
                                     }
@@ -176,7 +202,7 @@ struct InsightPanelView: View {
                         Text(log.balancePt >= 0 ? "+\(log.balancePt.formattedPtWithUnit)" : "\(log.balancePt.formattedPtWithUnit)")
                             .font(.system(size: 20, weight: .bold, design: .monospaced))
                             .foregroundColor(log.balancePt >= 0 ? cyan : Color.orange.opacity(0.95))
-                        Text("収入−投入（収入＝出玉×払出係数・500pt刻み端数切捨て）")
+                        Text("回収−投入（回収＝出玉×払出係数・500pt刻み端数切捨て）")
                             .font(.system(size: 9, weight: .regular, design: .rounded))
                             .foregroundColor(cyan.opacity(0.5))
                     }
@@ -219,7 +245,7 @@ struct InsightPanelView: View {
                             .foregroundColor(cyan.opacity(0.95))
                     }
                     HStack {
-                        labelText("投入額")
+                        labelText("投資額")
                         Spacer()
                         Text(log.totalInput.formattedPtWithUnit)
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
@@ -249,7 +275,7 @@ struct InsightPanelView: View {
                         HStack {
                             HStack(spacing: 4) {
                                 labelText("現金由来（C）")
-                                InfoIconView(explanation: "現金投入を店の貸玉料金で換算した玉数。", tint: cyan.opacity(0.7))
+                                InfoIconView(explanation: "現金投資を店の貸玉料金で換算した玉数。", tint: cyan.opacity(0.7))
                             }
                             Spacer()
                             Text("\(log.cashOriginBallsConsumed) 玉")

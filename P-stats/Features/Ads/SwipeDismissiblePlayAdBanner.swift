@@ -3,7 +3,7 @@ import SwiftUI
 /// 実戦画面用：ヘッダー直下にハンドル＋バナーをオーバーレイ表示。**上方向**にスワイプで退避。背面の遊技 UI は操作可能。
 struct SwipeDismissiblePlayAdBanner: View {
     let adUnitID: String
-    /// 遊技終了ダイアログ中は false（常にバナーを出し、閉じられない）
+    /// 実戦終了ダイアログ中は false（常にバナーを出し、閉じられない）
     var allowDismiss: Bool
     @Binding var userDismissed: Bool
 

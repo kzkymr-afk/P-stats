@@ -41,7 +41,7 @@ enum PresetItem: Identifiable {
     }
 }
 
-/// 機種の新規登録または編集。確率は数値ボタン+自由入力、ボーナス種類はライブラリから選択可能。
+/// 機種の新規登録または編集。確率は数値ボタン＋自由入力。
 struct MachineEditView: View, Equatable {
     /// 編集時は既存の機種を渡す。nil のときは新規登録。
     var editing: Machine? = nil
@@ -1047,85 +1047,6 @@ struct MachineMasterPickerSheet: View {
             }
         }
         .keyboardDismissToolbar()
-    }
-}
-
-// MARK: - ライブラリからボーナス種類を選ぶシート（複数選択可）
-struct PrizePickerSheet: View {
-    let prizeSets: [PrizeSet]
-    let onSelectMultiple: ([PrizeSet]) -> Void
-    let onDismiss: () -> Void
-
-    @State private var selectedIDs: Set<PersistentIdentifier> = []
-
-    private func toggle(_ id: PersistentIdentifier) {
-        if selectedIDs.contains(id) {
-            selectedIDs.remove(id)
-        } else {
-            selectedIDs.insert(id)
-        }
-    }
-
-    private var selectedItems: [PrizeSet] {
-        prizeSets.filter { selectedIDs.contains($0.persistentModelID) }
-    }
-
-    var body: some View {
-        NavigationStack {
-            List(prizeSets, id: \.persistentModelID) { ps in
-                Button {
-                    toggle(ps.persistentModelID)
-                } label: {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(ps.name.isEmpty ? "\(ps.balls)玉" : ps.name)
-                                .font(.subheadline)
-                            Text("1Rあたり \(String(format: "%.0f", ps.netPerRound)) 玉")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        if selectedIDs.contains(ps.persistentModelID) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                        }
-                    }
-                }
-                .buttonStyle(.plain)
-            }
-            .navigationTitle("ボーナス種類を選択")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") { onDismiss() }
-                        .buttonStyle(.plain)
-                }
-                ToolbarItem(placement: .secondaryAction) {
-                    NavigationLink {
-                        PrizeSetListView()
-                    } label: {
-                        Text("ライブラリ管理")
-                    }
-                    .buttonStyle(.plain)
-                }
-                ToolbarItem(placement: .primaryAction) {
-                    Button("追加（\(selectedItems.count)件）") {
-                        onSelectMultiple(selectedItems)
-                    }
-                    .disabled(selectedItems.isEmpty)
-                    .buttonStyle(.borderedProminent)
-                }
-            }
-            .overlay {
-                if prizeSets.isEmpty {
-                    ContentUnavailableView(
-                        "ライブラリが空です",
-                        systemImage: "tray",
-                        description: Text("「ライブラリ管理」で先に登録してください")
-                    )
-                }
-            }
-        }
     }
 }
 

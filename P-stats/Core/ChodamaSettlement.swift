@@ -26,7 +26,7 @@ struct ChodamaExchangeBreakdown: Equatable {
 }
 
 enum ChodamaSettlement {
-    static let cashIncrementPt: Int = 500
+    static let cashIncrementPt: Int = PersistedDataSemantics.cashInvestmentStepPt
 
     static func exchangeBreakdown(balls: Int, yenPerBall: Double) -> ChodamaExchangeBreakdown {
         let b = max(0, balls)

@@ -5,7 +5,11 @@ import Observation
 final class GameLog {
     // 初期値としての仮データ（SelectionViewで上書きされます）
     var selectedMachine: Machine = Machine(name: "未選択", supportLimit: 100, defaultPrize: 1500)
-    var selectedShop: Shop = Shop(name: "未選択", ballsPerCashUnit: 125, payoutCoefficient: 4.0)
+    var selectedShop: Shop = Shop(
+        name: "未選択",
+        ballsPerCashUnit: PersistedDataSemantics.defaultBallsPer500Pt,
+        payoutCoefficient: PersistedDataSemantics.defaultPayoutCoefficientPtPerBall
+    )
     
     /// 初期持ち玉（syncHoldings/syncToSnapshot で調整され、totalHoldings 計算のベースになる）
     var initialHoldings: Int = 0
@@ -38,6 +42,9 @@ final class GameLog {
 
     var winRecords: [WinRecord] = []
     var lendingRecords: [LendingRecord] = []
+
+    /// 実戦開始時刻（「続きから」復元・時給算出用）
+    var sessionStartedAt: Date? = nil
 
     /// Undo：最後に追加した Record の削除（最大3件）。当たりは記録直前の回転・mode_id 状態も復元する。
     private enum UndoAction {
@@ -111,7 +118,7 @@ final class GameLog {
     }
 
     /// 持ち玉投資は 1タップ＝店の貸玉数（500ptと同単位の玉数）。残りが少ないときは全額
-    private var holdingsBallsPerTap: Int { max(1, selectedShop.ballsPerCashUnit) }
+    private var holdingsBallsPerTap: Int { max(1, selectedShop.interpretedBallsPer500Pt) }
 
     init() {}
 
@@ -176,7 +183,7 @@ final class GameLog {
         }
     }
 
-    /// クイック投入：指定pt（500pt単位）を一括で現金投入として追加。例: addCashInput(5000) で 5k
+    /// クイック投資：指定pt（500pt単位）を一括で現金投資として追加。例: addCashInput(5000) で 5k
     func addCashInput(pt: Int) {
         let units = max(0, pt / 500)
         guard units > 0 else { return }
@@ -236,7 +243,7 @@ final class GameLog {
         isTimeShortMode = false
     }
 
-    /// 大当たり突入時：当選時点の回転・投入を揃えてから大当たりモード開始。持ち玉は「投資玉数」と「残り玉数」のどちらか一方のみ指定。
+    /// 大当たり突入時：当選時点の回転・投資を揃えてから大当たりモード開始。持ち玉は「投資玉数」と「残り玉数」のどちらか一方のみ指定。
     func applyBigHitEntryAtWin(normalRotationsAtWin: Int, cashPt: Int, holdingsInvestedBalls: Int?, remainingHoldingsBalls: Int?) {
         let cashUnits = max(0, cashPt / 500)
         reconcileCashLendingCount(toUnits: cashUnits)
@@ -357,7 +364,7 @@ final class GameLog {
         supportPhaseInitialCount = 0
     }
 
-    /// 大当たりモードのみ終了し、`winRecords` には追加しない（誤タップで入った場合など）。回転・投入の累積はそのまま。
+    /// 大当たりモードのみ終了し、`winRecords` には追加しない（誤タップで入った場合など）。回転・投資の累積はそのまま。
     func abandonBigHitSessionWithoutRecording() {
         guard isBigHitMode else { return }
         isBigHitMode = false
@@ -398,7 +405,7 @@ final class GameLog {
         return count
     }
     var totalUsedBalls: Int {
-        let cashBalls = lendingRecords.filter { $0.type == .cash }.count * selectedShop.ballsPerCashUnit
+        let cashBalls = lendingRecords.filter { $0.type == .cash }.count * selectedShop.interpretedBallsPer500Pt
         let holdingsBalls = lendingRecords.filter { $0.type == .holdings }.reduce(0) { $0 + ($1.balls ?? holdingsBallsPerTap) }
         return cashBalls + holdingsBalls
     }
@@ -409,11 +416,11 @@ final class GameLog {
 
     var totalRealCost: Double {
         let cashCost = Double(lendingRecords.filter { $0.type == .cash }.count * 500)
-        let holdingsCost = Double(holdingsInvestedBalls) * selectedShop.payoutCoefficient
+        let holdingsCost = Double(holdingsInvestedBalls) * selectedShop.interpretedPayoutCoefficientPtPerBall
         return cashCost + holdingsCost
     }
 
-    /// 初当たり（時系列で最初の当選）までの実質投入（pt）。当選が無いときは nil。
+    /// 初当たり（時系列で最初の当選）までの実質投資（pt）。当選が無いときは nil。
     func realCostAtFirstWin() -> Double? {
         guard !winRecords.isEmpty else { return nil }
         let sorted = winRecords.enumerated().sorted { a, b in
@@ -423,7 +430,7 @@ final class GameLog {
             return a.offset < b.offset
         }
         guard let first = sorted.first?.element else { return nil }
-        let rate = selectedShop.payoutCoefficient
+        let rate = selectedShop.interpretedPayoutCoefficientPtPerBall
         if let cutoff = first.timestamp {
             var runningCashYen = 0
             var runningHoldBalls = 0
@@ -440,18 +447,18 @@ final class GameLog {
         return totalRealCost * ratio
     }
 
-    /// 収入（pt）。出玉×払出係数を500pt刻みで端数切り捨て
+    /// 回収（pt）。出玉×払出係数を500pt刻みで端数切り捨て
     var incomePt500Step: Int {
-        let raw = Double(totalHoldings) * selectedShop.payoutCoefficient
+        let raw = Double(totalHoldings) * selectedShop.interpretedPayoutCoefficientPtPerBall
         return Int(raw / 500) * 500
     }
 
-    /// 今回の成績（pt）。収入 − 投入
+    /// 今回の成績（pt）。回収 − 投入
     var balancePt: Int { incomePt500Step - totalInput }
 
-    /// 現在の損益（pt）。投入＋持ち玉投入（払出係数でpt換算）に対する、現在の持ち玉（払出係数でpt換算）の差。正＝黒字側
+    /// 現在の損益（pt）。投資＋持ち玉投資（払出係数でpt換算）に対する、現在の持ち玉（払出係数でpt換算）の差。正＝黒字側
     var chartProfitPt: Double {
-        let rate = selectedShop.payoutCoefficient
+        let rate = selectedShop.interpretedPayoutCoefficientPtPerBall
         let currentValue = Double(totalHoldings) * rate
         let cost = Double(totalInput) + Double(holdingsInvestedBalls) * rate
         return currentValue - cost
@@ -462,7 +469,7 @@ final class GameLog {
         if let cached = _cachedLiveChartPoints, _lastChartStateHash == chartStateHash {
             return cached
         }
-        let rate = selectedShop.payoutCoefficient
+        let rate = selectedShop.interpretedPayoutCoefficientPtPerBall
         var points: [(Int, Double)] = [(0, 0)]
         let winsOrdered = winRecords.sorted { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
         let lendingsOrdered = lendingRecords.sorted { ($0.timestamp) < ($1.timestamp) }
@@ -522,7 +529,7 @@ final class GameLog {
         }
         hasher.combine(normalRotations)
         hasher.combine(totalRotations)
-        hasher.combine(selectedShop.payoutCoefficient)
+        hasher.combine(selectedShop.interpretedPayoutCoefficientPtPerBall)
         hasher.combine(initialHoldings)
         hasher.combine(initialDisplayRotation)
         hasher.combine(dynamicBorder)
@@ -569,9 +576,9 @@ final class GameLog {
     /// 払出係数が等価4より大きい（換金が良い）ほど (4/係数) でボーダーは下がる。
     /// ※通常回転のみ（時短・電サポは含めない）。実質回転率と比較可能。
     var dynamicBorder: Double {
-        let rate = selectedShop.payoutCoefficient
+        let rate = selectedShop.interpretedPayoutCoefficientPtPerBall
         guard rate > 0 else { return 0 }
-        let ballsPer1000 = Double(selectedShop.ballsPerCashUnit * 2)
+        let ballsPer1000 = Double(selectedShop.interpretedBallsPer500Pt * 2)
         guard ballsPer1000 > 0 else { return 0 }
         let formula = formulaBorderAsNumber
         let loanCorrection = 250.0 / ballsPer1000
@@ -591,7 +598,7 @@ final class GameLog {
     /// 店補正後ボーダー用の「単位」数。1単位＝**等価250玉**に固定。現金は500ptごとの貸玉数で玉に換算し、持ち玉投資玉を加えて 250 で割る（貸玉が少ない店でも持ち玉は250玉＝1単位）。
     var effectiveUnitsForBorder: Double {
         let standardBallsPerUnit = 250.0
-        let cashToBalls = Double(totalInput / 500) * Double(selectedShop.ballsPerCashUnit)
+        let cashToBalls = Double(totalInput / 500) * Double(selectedShop.interpretedBallsPer500Pt)
         let totalBalls = cashToBalls + Double(holdingsInvestedBalls)
         return totalBalls / standardBallsPerUnit
     }
@@ -603,12 +610,12 @@ final class GameLog {
         return Int((Double(normalRotations) * 250.0 / dynamicBorder).rounded())
     }
 
-    /// **C**：現金投入から換算した撃ち玉数（店の貸玉料金）。
+    /// **C**：現金投資から換算した撃ち玉数（店の貸玉料金）。
     var cashOriginBallsConsumed: Int {
-        lendingRecords.filter { $0.type == .cash }.count * selectedShop.ballsPerCashUnit
+        lendingRecords.filter { $0.type == .cash }.count * selectedShop.interpretedBallsPer500Pt
     }
 
-    /// **H**：持ち玉由来の撃ち玉数。二重計上防止のため **H = max(0, T − C)** で一意に定義（T＝`tapDerivedBallsConsumed`）。投入記録の持ち玉玉数と乖離しうる。
+    /// **H**：持ち玉由来の撃ち玉数。二重計上防止のため **H = max(0, T − C)** で一意に定義（T＝`tapDerivedBallsConsumed`）。投資記録の持ち玉玉数と乖離しうる。
     var holdingsOriginBallsFromIdentity: Int {
         max(0, tapDerivedBallsConsumed - cashOriginBallsConsumed)
     }
@@ -643,8 +650,8 @@ final class GameLog {
         var hasher = Hasher()
         hasher.combine(totalInput)
         hasher.combine(holdingsInvestedBalls)
-        hasher.combine(selectedShop.payoutCoefficient)
-        hasher.combine(selectedShop.ballsPerCashUnit)
+        hasher.combine(selectedShop.interpretedPayoutCoefficientPtPerBall)
+        hasher.combine(selectedShop.interpretedBallsPer500Pt)
         hasher.combine(formulaBorderAsNumber)
         hasher.combine(effective1RNetPerRound)
         hasher.combine(selectedMachine.probabilityDenominator)
@@ -665,11 +672,72 @@ final class GameLog {
         return Double(normalRotations) / realCostThousands
     }
 
+    /// 実戦の実質回転率・期待値％・ゲージ色が「そのまま信じてよいか」。非有限・極端値・内部不整合を弾く。
+    enum RotationMetricsDisplayTrust: Equatable {
+        case trusted
+        /// 数値・色による誤認を防ぐため抑制する。`userHint` は短い日本語（1行目安）
+        case untrusted(userHint: String)
+    }
+
+    private enum RotationMetricsSanityThresholds {
+        /// 回転/単位（等価コスト基準）として現場で想定しうる上限の目安。超えたら入力・店・ボーダーを疑う。
+        static let maxRealRate: Double = 450
+        /// 期待値比の上限（= ボーダー比。例: 40 → 表示上 4000%）。超えたら設定不整合の可能性が高い。
+        static let maxExpectationRatio: Double = 40
+        /// 表面回転率（回/千pt実費）の上限の目安
+        static let maxSurfaceRatePer1k: Double = 800
+    }
+
+    /// 実戦メーター・期待値行の表示信頼性。`borderForGauge` は `PlayView.borderForGauge`（店補正ボーダーまたは等価フォールバック）と一致させること。
+    func rotationMetricsDisplayTrust(borderForGauge: Double) -> RotationMetricsDisplayTrust {
+        let eu = effectiveUnitsForBorder
+        let rr = realRate
+        let er = expectationRatio
+        let surface = rotationPer1000Yen
+
+        let gaugeMeaningful = eu > 0 && borderForGauge > 0
+        if gaugeMeaningful {
+            guard rr.isFinite, !rr.isNaN else {
+                return .untrusted(userHint: "実質回転率が数として成立しません")
+            }
+            guard rr >= 0 else {
+                return .untrusted(userHint: "データに不整合があります")
+            }
+            if rr > RotationMetricsSanityThresholds.maxRealRate {
+                return .untrusted(userHint: "実質回転率が想定を超えています。投入・店を確認")
+            }
+        }
+
+        let expectationDisplayed = dynamicBorder > 0 && eu > 0
+        if expectationDisplayed {
+            guard er.isFinite, !er.isNaN else {
+                return .untrusted(userHint: "期待値比が数として成立しません")
+            }
+            guard er >= 0 else {
+                return .untrusted(userHint: "データに不整合があります")
+            }
+            if er > RotationMetricsSanityThresholds.maxExpectationRatio {
+                return .untrusted(userHint: "期待値比が極端です。ボーダー・店設定を確認")
+            }
+        }
+
+        if totalRealCost > 0, surface > 0 {
+            guard surface.isFinite, !surface.isNaN, surface >= 0 else {
+                return .untrusted(userHint: "表面回転率が数として成立しません")
+            }
+            if surface > RotationMetricsSanityThresholds.maxSurfaceRatePer1k {
+                return .untrusted(userHint: "表面回転率が想定を超えています。実費・回転を確認")
+            }
+        }
+
+        return .trusted
+    }
+
     /// ボーダーゲージ説明用：現在の店設定から貸玉・交換が実質ボーダーへ与える倍率（タップ時点の値）。
     func borderGaugeAdjustmentSummary() -> String {
-        let ballsPer1000 = Double(max(1, selectedShop.ballsPerCashUnit * 2))
+        let ballsPer1000 = Double(max(1, selectedShop.interpretedBallsPer500Pt * 2))
         let loanC = 250.0 / ballsPer1000
-        let payout = selectedShop.payoutCoefficient
+        let payout = selectedShop.interpretedPayoutCoefficientPtPerBall
         var lines: [String] = []
         lines.append("【いまの店の補正（実質ボーダーが等価ボーダーからずれる主な要因）】")
         lines.append("貸玉補正：×\(String(format: "%.2f", loanC))倍（等価は1,000ptで250玉＝基準。この店は約\(Int(ballsPer1000))玉/1,000pt）")
@@ -686,9 +754,9 @@ final class GameLog {
     func borderGaugeFormulaExplanation() -> String {
         let shopName = selectedShop.name
         let machineName = selectedMachine.name
-        let ballsPer500 = selectedShop.ballsPerCashUnit
-        let ballsPer1000 = Double(max(1, selectedShop.ballsPerCashUnit * 2))
-        let payout = selectedShop.payoutCoefficient
+        let ballsPer500 = selectedShop.interpretedBallsPer500Pt
+        let ballsPer1000 = Double(max(1, selectedShop.interpretedBallsPer500Pt * 2))
+        let payout = selectedShop.interpretedPayoutCoefficientPtPerBall
         let loanC = 250.0 / ballsPer1000
         let exchC = payout > 0 ? 4.0 / payout : 0.0 // 等価から算出するときの係数（表示用）
         let formula = formulaBorderAsNumber
@@ -859,7 +927,7 @@ final class GameLog {
         totalRotations += diff
     }
 
-    /// 現金投入額をあとから修正（500pt単位。持ち玉投入はそのまま）
+    /// 現金投資額をあとから修正（500pt単位。持ち玉投資はそのまま）
     func setCashInput(pt: Int) {
         let cashUnits = max(0, pt / 500)
         let holdingsOnly = lendingRecords.filter { $0.type == .holdings }
@@ -944,7 +1012,7 @@ final class GameLog {
 
     /// 実際の持ち玉数で同期（終了時や確変終了後など）。
     /// アプリ上の持ち玉(totalHoldings)との差分を計算し、差分を持ち玉投資として追加・相殺する。
-    /// 遊技終了確認で入力した「終了時点の通常回転数」へ揃える。`totalRotations` は同じ差分だけ追随し、`total` が `normal` 未満にならないよう抑える。
+    /// 実戦終了確認で入力した「終了時点の通常回転数」へ揃える。`totalRotations` は同じ差分だけ追随し、`total` が `normal` 未満にならないよう抑える。
     func applySessionEndNormalRotations(_ endNormal: Int) {
         let n = max(0, endNormal)
         let d = n - normalRotations
@@ -969,6 +1037,7 @@ final class GameLog {
 
     func reset() {
         undoStack = []
+        sessionStartedAt = nil
         initialHoldings = 0
         initialDisplayRotation = 0
         totalRotations = 0
@@ -992,6 +1061,7 @@ final class GameLog {
     func applyResumableState(_ state: ResumableState, machine: Machine, shop: Shop) {
         selectedMachine = machine
         selectedShop = shop
+        sessionStartedAt = state.sessionStartedAt
         initialHoldings = state.initialHoldings
         totalRotations = state.totalRotations
         normalRotations = state.normalRotations

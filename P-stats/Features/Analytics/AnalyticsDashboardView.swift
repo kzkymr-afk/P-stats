@@ -1231,7 +1231,7 @@ struct AnalyticsDashboardView: View {
         HStack {
             Text("並び替え: \(current)")
                 .font(.subheadline.weight(.medium))
-                .foregroundColor(.white.opacity(0.92))
+                .foregroundColor(AppGlassStyle.textPrimary)
             Spacer()
             Image(systemName: "chevron.up.chevron.down")
                 .font(.caption.weight(.semibold))
@@ -1243,7 +1243,7 @@ struct AnalyticsDashboardView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
         )
     }
 
@@ -1259,13 +1259,13 @@ private struct OverviewTotalSummaryPanel: View {
     var machineMultiHitSummary: MachineMultiHitSummary? = nil
 
     private var lossColor: Color { Color.orange }
-    private var neutral: Color { Color.white.opacity(0.92) }
+    private var neutral: Color { AppGlassStyle.textPrimary }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(panelTitle)
                 .font(AppTypography.panelHeading)
-                .foregroundColor(.white)
+                .foregroundColor(AppGlassStyle.textPrimary)
                 .padding(.bottom, 6)
 
             summaryPairRow(
@@ -1320,6 +1320,17 @@ private struct OverviewTotalSummaryPanel: View {
                 metrics.avgPerformancePerSession.map { String(format: "%+.1f pt", $0) } ?? "—",
                 metrics.avgPerformancePerSession.map { $0 >= 0 ? accent : lossColor } ?? neutral
             )
+            if let m = metrics.totalPlayMinutes, m > 0 {
+                summaryDivider()
+                summaryPairRow(
+                    "総遊技時間",
+                    "\(m)分",
+                    neutral,
+                    "時給",
+                    metrics.hourlyWagePt.map { String(format: "%+.0f%@", $0, UnitDisplaySettings.currentSuffix()) } ?? "—",
+                    metrics.hourlyWagePt.map { $0 >= 0 ? accent : lossColor } ?? neutral
+                )
+            }
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1338,7 +1349,7 @@ private struct OverviewTotalSummaryPanel: View {
 
     private func summaryDivider() -> some View {
         Rectangle()
-            .fill(Color.white.opacity(0.12))
+            .fill(AppGlassStyle.divider)
             .frame(height: 1)
             .padding(.vertical, 5)
     }
@@ -1354,7 +1365,7 @@ private struct OverviewTotalSummaryPanel: View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
                 .font(AppTypography.bodyRounded)
-                .foregroundStyle(Color.white.opacity(0.55))
+                .foregroundStyle(AppGlassStyle.textSecondary)
             Spacer(minLength: 8)
             Text(value)
                 .font(AppTypography.bodyMonoSemibold)
@@ -1373,7 +1384,7 @@ private struct OverviewTotalSummaryPanel: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(leftTitle)
                     .font(AppTypography.bodyRounded)
-                    .foregroundStyle(Color.white.opacity(0.55))
+                    .foregroundStyle(AppGlassStyle.textSecondary)
                 Text(leftValue)
                     .font(AppTypography.bodyMonoSemibold)
                     .monospacedDigit()
@@ -1385,7 +1396,7 @@ private struct OverviewTotalSummaryPanel: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(rightTitle)
                     .font(AppTypography.bodyRounded)
-                    .foregroundStyle(Color.white.opacity(0.55))
+                    .foregroundStyle(AppGlassStyle.textSecondary)
                 Text(rightValue)
                     .font(AppTypography.bodyMonoSemibold)
                     .monospacedDigit()
@@ -1807,7 +1818,7 @@ private struct WeekdayTendencySection: View {
             chartRow(title: "実成績") {
                     Chart {
                         RuleMark(y: .value("ゼロ", 0))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                            .foregroundStyle(AppGlassStyle.gaugeLine.opacity(0.65))
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                         ForEach(groups) { g in
                             BarMark(
@@ -1820,21 +1831,21 @@ private struct WeekdayTendencySection: View {
                     }
                     .chartYAxis {
                         AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.2))
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(AppGlassStyle.chartGrid)
                             AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }
-                                .foregroundStyle(Color.white.opacity(0.7))
+                                .foregroundStyle(AppGlassStyle.textSecondary)
                         }
                     }
                     .chartXAxis {
                         AxisMarks { _ in
-                            AxisValueLabel().foregroundStyle(Color.white.opacity(0.8))
+                            AxisValueLabel().foregroundStyle(AppGlassStyle.textPrimary)
                         }
                     }
                 }
                 chartRow(title: "ボーダーとの差（回/1k）") {
                     Chart {
                         RuleMark(y: .value("ゼロ", 0))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                            .foregroundStyle(AppGlassStyle.gaugeLine.opacity(0.65))
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                         ForEach(groups) { g in
                             BarMark(
@@ -1847,20 +1858,20 @@ private struct WeekdayTendencySection: View {
                     }
                     .chartYAxis {
                         AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.2))
-                            AxisValueLabel().foregroundStyle(Color.white.opacity(0.7))
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(AppGlassStyle.chartGrid)
+                            AxisValueLabel().foregroundStyle(AppGlassStyle.textSecondary)
                         }
                     }
                     .chartXAxis {
                         AxisMarks { _ in
-                            AxisValueLabel().foregroundStyle(Color.white.opacity(0.8))
+                            AxisValueLabel().foregroundStyle(AppGlassStyle.textPrimary)
                         }
                     }
                 }
                 chartRow(title: "期待値との差（欠損・余剰）") {
                     Chart {
                         RuleMark(y: .value("ゼロ", 0))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                            .foregroundStyle(AppGlassStyle.gaugeLine.opacity(0.65))
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                         ForEach(groups) { g in
                             BarMark(
@@ -1873,14 +1884,14 @@ private struct WeekdayTendencySection: View {
                     }
                     .chartYAxis {
                         AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.2))
+                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(AppGlassStyle.chartGrid)
                             AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }
-                                .foregroundStyle(Color.white.opacity(0.7))
+                                .foregroundStyle(AppGlassStyle.textSecondary)
                         }
                     }
                     .chartXAxis {
                         AxisMarks { _ in
-                            AxisValueLabel().foregroundStyle(Color.white.opacity(0.8))
+                            AxisValueLabel().foregroundStyle(AppGlassStyle.textPrimary)
                         }
                     }
                 }
@@ -1896,7 +1907,7 @@ private struct WeekdayTendencySection: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.white)
+                .foregroundStyle(AppGlassStyle.textPrimary)
             content()
                 .frame(height: 120)
                 .chartLegend(.hidden)
@@ -2545,49 +2556,40 @@ private struct AnalyticsSessionCardView: View {
         guard session.totalRealCost > 0 else { return 0 }
         return (Double(session.normalRotations) / session.totalRealCost) * 1000
     }
-    /// 実戦回転率の表示文字列（ボーダーとの差を括弧内に表示）
-    private var rotationRateDisplay: String {
+    private var rotationRateValue: String {
         if session.excludesFromRotationExpectationAnalytics { return "—（帳簿）" }
-        let displayRate = session.realRotationRateAtSave > 0 ? session.realRotationRateAtSave : rotationPer1k
+        let displayRate = session.displayRealRotationRatePer1k ?? rotationPer1k
         if displayRate <= 0 { return "—" }
-        var s = String(format: "%.1f 回/1k", displayRate)
-        if let diff = session.sessionBorderDiffPer1k {
-            s += " (\(diff >= 0 ? "+" : "")\(String(format: "%.1f", diff)))"
-        }
-        return s
+        return String(format: "%.1f 回/1k", displayRate)
     }
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(session.machineName)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.white)
-                Spacer()
-                Text(session.shopName)
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.8))
+        VStack(alignment: .leading, spacing: 8) {
+            Text(session.machineName)
+                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .foregroundColor(.white.opacity(0.96))
+                .lineLimit(1)
+            Text(session.shopName)
+                .font(.subheadline)
+                .foregroundColor(.white.opacity(0.78))
+                .lineLimit(1)
+
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text("\(session.performance >= 0 ? "+" : "")\(session.performance.formattedPtWithUnit)")
+                    .font(AppDesignSystem.EmphasisNumber.font(size: 26, weight: .heavy))
+                    .foregroundStyle(session.performance >= 0 ? AppDesignSystem.Palette.win : AppDesignSystem.Palette.loss)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Spacer(minLength: 0)
+                Text("\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)")
+                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.78))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
             }
-            HStack(spacing: 16) {
-                Text("実成績 \(session.performance >= 0 ? "+" : "")\(session.performance.formattedPtWithUnit)")
-                    .font(.subheadline.monospacedDigit().weight(.medium))
-                    .foregroundColor(session.performance >= 0 ? .green : .red)
-                Text("当選 RUSH:\(session.rushWinCount) 通常:\(session.normalWinCount)")
-                    .font(.subheadline.monospacedDigit())
-                    .foregroundColor(.white.opacity(0.85))
-            }
-            HStack(spacing: 12) {
-                labelVal("総回転", "\(session.normalRotations)")
-                Text("・").foregroundColor(.white.opacity(0.5))
-                labelVal("投入", session.inputCash.formattedPtWithUnit)
-                Text("・").foregroundColor(.white.opacity(0.5))
-                labelVal("回収玉", "\(session.totalHoldings)")
-            }
-            .font(.caption)
-            .foregroundColor(.white.opacity(0.85))
+
             HStack(alignment: .top, spacing: 16) {
-                miniblock("実戦回転率", value: rotationRateDisplay, valueColor: .white)
-                miniblock("期待値", value: "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)", valueColor: .white.opacity(0.9))
-                deficitSurplusBlock
+                pairBlock(leftLabel: "総回転数", leftValue: "\(session.normalRotations)回", leftValueColor: .white.opacity(0.95),
+                          rightLabel: "実質回転率", rightValue: rotationRateValue, rightValueColor: .white.opacity(0.95))
             }
             .font(.caption)
         }
@@ -2600,33 +2602,36 @@ private struct AnalyticsSessionCardView: View {
                 .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
         )
     }
-    private var deficitSurplusBlock: some View {
-        Group {
-            if session.deficitSurplus > 0 {
-                miniblock("余剰", value: "+\(session.deficitSurplus.formattedPtWithUnit)", valueColor: .green.opacity(0.9))
-            } else if session.deficitSurplus < 0 {
-                miniblock("欠損", value: session.deficitSurplus.formattedPtWithUnit, valueColor: .red.opacity(0.9))
-            } else {
-                miniblock("余剰・欠損", value: "0 pt", valueColor: .white.opacity(0.8))
+    private func pairBlock(
+        leftLabel: String,
+        leftValue: String,
+        leftValueColor: Color,
+        rightLabel: String,
+        rightValue: String,
+        rightValueColor: Color
+    ) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(leftLabel)
+                    .foregroundColor(.white.opacity(0.62))
+                Text(leftValue)
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundColor(leftValueColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
             }
-        }
-    }
-    private func miniblock(_ label: String, value: String, valueColor: Color) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label)
-                .foregroundColor(.white.opacity(0.65))
-            Text(value)
-                .font(.caption.monospacedDigit().weight(.medium))
-                .foregroundColor(valueColor)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-        }
-        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
-    }
-    private func labelVal(_ label: String, _ value: String) -> some View {
-        HStack(spacing: 4) {
-            Text(label + ":").foregroundColor(.white.opacity(0.65))
-            Text(value).foregroundColor(.white)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(rightLabel)
+                    .foregroundColor(.white.opacity(0.62))
+                Text(rightValue)
+                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .foregroundColor(rightValueColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
@@ -2640,10 +2645,23 @@ private struct AnalyticsSessionDetailView: View {
     @Binding var periodFilter: AnalyticsPeriodFilter
     @Binding var showPeriodSheet: Bool
 
-    private var recoveryPt: Int { Int(Double(session.totalHoldings) * session.payoutCoefficient) }
-    private var rotationPer1k: Double {
-        guard session.inputCash > 0 else { return 0 }
-        return Double(session.normalRotations) / (Double(session.inputCash) / 1000.0)
+    private var payoutCoefficient: Double {
+        session.payoutCoefficient > 0 ? session.payoutCoefficient : PersistedDataSemantics.defaultPayoutCoefficientPtPerBall
+    }
+    private var totalRecoveryPt: Int { Int((Double(max(0, session.totalHoldings)) * payoutCoefficient).rounded()) }
+    private var totalInvestmentPt: Int { Int(max(0, session.totalRealCost).rounded()) }
+    private var realRotationRateDisplay: String {
+        guard let v = session.displayRealRotationRatePer1k else { return "—" }
+        return String(format: "%.1f 回/1k", v)
+    }
+    private var borderDiffDisplay: String {
+        guard let d = session.sessionBorderDiffPer1k else { return "—" }
+        return "\(d >= 0 ? "+" : "")\(String(format: "%.1f", d)) 回/1k"
+    }
+    private var expectationDisplay: String {
+        let pt = "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)"
+        let ratio = session.displayExpectationRatioAtSave.map { String(format: "%.2f%%", $0 * 100) } ?? "—"
+        return "\(pt)（\(ratio)）"
     }
     @State private var showEditSheet = false
 
@@ -2652,50 +2670,32 @@ private struct AnalyticsSessionDetailView: View {
             StaticHomeBackgroundView()
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    sessionDetailPanel(title: "実戦日") {
-                        Text(JapaneseDateFormatters.yearMonthDay.string(from: session.date))
-                            .font(AppTypography.bodyMonoSemibold)
-                            .foregroundColor(.white.opacity(0.95))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+                    SessionSlumpChartForSessionView(session: session, height: 180, strokeTint: AppGlassStyle.accent)
                     sessionDetailPanel(title: "機種・店舗") {
                         sessionDetailLabeledRow("機種", session.machineName)
                         sessionDetailDivider()
                         sessionDetailLabeledRow("店舗", session.shopName)
                     }
                     sessionDetailPanel(title: "数値サマリ") {
-                        sessionDetailLabeledRow("総回転数", "\(session.normalRotations)")
+                        sessionDetailLabeledRow("収支額", "\(session.performance >= 0 ? "+" : "")\(session.performance.formattedPtWithUnit)")
                         sessionDetailDivider()
-                        sessionDetailLabeledRow("当選", "RUSH: \(session.rushWinCount) / 通常: \(session.normalWinCount)")
+                        sessionDetailLabeledRow("総回転数", "\(session.normalRotations)回")
                         sessionDetailDivider()
-                        sessionDetailLabeledRow("総投入額（現金）", session.inputCash.formattedPtWithUnit)
+                        sessionDetailLabeledRow("大当たり回数", "RUSH：\(session.rushWinCount)回、通常：\(session.normalWinCount)回")
                         sessionDetailDivider()
-                        sessionDetailLabeledRow("回収出球", "\(session.totalHoldings) 玉")
+                        sessionDetailLabeledRow("総投資額（pt換算）", totalInvestmentPt.formattedPtWithUnit)
                         sessionDetailDivider()
-                        sessionDetailLabeledRow("回収額（pt換算）", recoveryPt.formattedPtWithUnit)
+                        sessionDetailLabeledRow("総回収額（pt換算）", totalRecoveryPt.formattedPtWithUnit)
                         sessionDetailDivider()
-                        sessionDetailLabeledRow("期待値", "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)")
+                        sessionDetailLabeledRow("回収出玉", "\(session.totalHoldings) 玉")
+                        sessionDetailDivider()
+                        sessionDetailLabeledRow("期待値（期待値比）", expectationDisplay)
                         sessionDetailDivider()
                         sessionDetailLabeledRow("欠損・余剰", "\(session.deficitSurplus >= 0 ? "+" : "")\(session.deficitSurplus.formattedPtWithUnit)")
                         sessionDetailDivider()
-                        HStack(alignment: .firstTextBaseline) {
-                            Text("実成績")
-                                .font(AppTypography.bodyRounded)
-                                .foregroundStyle(Color.white.opacity(0.55))
-                            Spacer(minLength: 8)
-                            Text("\(session.performance >= 0 ? "+" : "")\(session.performance.formattedPtWithUnit)")
-                                .font(AppTypography.bodyMonoSemibold)
-                                .foregroundColor(session.performance >= 0 ? .green : .red)
-                                .multilineTextAlignment(.trailing)
-                        }
-                    }
-                    sessionDetailPanel(title: "分析") {
-                        sessionDetailLabeledRow(
-                            "期待値比（保存時）",
-                            session.expectationRatioAtSave > 0 ? String(format: "%.2f%%", session.expectationRatioAtSave * 100) : "—"
-                        )
+                        sessionDetailLabeledRow("実質回転率", realRotationRateDisplay)
                         sessionDetailDivider()
-                        sessionDetailLabeledRow("実質回転率", String(format: "%.1f 回/1k", rotationPer1k))
+                        sessionDetailLabeledRow("ボーダーとの差", borderDiffDisplay)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -2706,16 +2706,44 @@ private struct AnalyticsSessionDetailView: View {
         .navigationTitle("履歴詳細")
         .navigationBarTitleDisplayMode(.inline)
         .preferredColorScheme(.dark)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("編集") {
-                    showEditSheet = true
-                }
-                .foregroundColor(AppGlassStyle.accent)
-            }
-        }
+        .toolbar { }
         .sheet(isPresented: $showEditSheet) {
             GameSessionEditView(sessionToEdit: session)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            HStack(spacing: 12) {
+                Button {
+                    showEditSheet = true
+                } label: {
+                    Label("編集", systemImage: "pencil")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .foregroundColor(.black)
+                        .background(AppGlassStyle.accent)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(AppMicroInteractions.PressableButtonStyle())
+
+                Button {
+                    // この詳細からは「期間ドック」を触る用途が多いので、右は“期間”へのショートカットにする
+                    bottomSegment = .period
+                    showPeriodSheet = true
+                } label: {
+                    Label("期間", systemImage: "calendar")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .foregroundColor(AppGlassStyle.textPrimary)
+                        .background(Color.white.opacity(0.10))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(AppMicroInteractions.PressableButtonStyle())
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 10)
+            .background(Color.black.opacity(0.55))
         }
     }
 
@@ -2757,7 +2785,7 @@ private struct AnalyticsSessionDetailView: View {
     }
 }
 
-/// 指定日の遊戯履歴のみ表示（ヒートマップのセルタップ先）
+/// 指定日の遊技履歴のみ表示（ヒートマップのセルタップ先）
 private struct AnalyticsDayDetailView: View {
     let day: Date
     let sessions: [GameSession]
@@ -2817,7 +2845,7 @@ private struct AnalyticsDayDetailView: View {
     }
 }
 
-/// 分析対象の遊戯履歴一覧（新しい順）。店舗/機種/メーカー別のセッション一覧（NavigationLink）用。メインの期間タブでは使用しない。
+/// 分析対象の遊技履歴一覧（新しい順）。店舗/機種/メーカー別のセッション一覧（NavigationLink）用。メインの期間タブでは使用しない。
 struct AnalyticsSessionListView: View {
     let segment: AnalyticsSegment
     let groupLabel: String
@@ -2867,6 +2895,14 @@ struct AnalyticsSessionListView: View {
                 LazyVStack(spacing: 12) {
                     ForEach(sessionsGroupedByDay(filteredSessions), id: \.day.timeIntervalSince1970) { group in
                         VStack(alignment: .leading, spacing: 4) {
+                            Text(JapaneseDateFormatters.yearMonthDay.string(from: group.day))
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.white.opacity(0.95))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color.black.opacity(0.58), in: Capsule())
+                                .overlay(Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1))
+                                .padding(.horizontal, 4)
                             ForEach(NativeAdListInterleaving.rowsForSessionGroup(daySessions: group.sessions, placementPrefix: "alist-\(groupLabel)-\(group.day.timeIntervalSince1970)"), id: \.id) { row in
                                 switch row {
                                 case .session(let session):
