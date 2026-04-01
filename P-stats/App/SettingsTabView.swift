@@ -27,6 +27,8 @@ struct SettingsTabView: View {
     @AppStorage("playStartMode") private var playStartModeRaw: String = "normal"
     /// 実戦画面表示中は自動スリープ（画面オフ）を無効化
     @AppStorage("playDisableIdleTimerDuringPlay") private var playDisableIdleTimerDuringPlay = true
+    /// 遊技中の時給の基準（実収支の損益 vs 期待値理論）
+    @AppStorage(PlayInfoPanelSettings.hourlyWageBasisKey) private var playHourlyWageBasisRaw: String = PlayHourlyWageBasis.actual.rawValue
     @AppStorage("startWithZeroHoldings") private var startWithZeroHoldings = false
     @AppStorage("hapticEnabled") private var hapticEnabled = true
     @AppStorage("defaultExchangeRate") private var defaultExchangeRateStr = "4.0"  // 払出係数（pt/玉）文字列
@@ -39,7 +41,10 @@ struct SettingsTabView: View {
     @AppStorage("homeInfoPanelOrder") private var homeInfoPanelOrderRaw = HomeInfoPanelSettings.defaultOrderCSV
     @AppStorage("homeInfoPanelHidden") private var homeInfoPanelHiddenRaw = ""
     @AppStorage("homeStatsLookbackDays") private var homeStatsLookbackDays = 30
+    @AppStorage(PlayInfoPanelSettings.orderKey) private var playInfoPanelOrderRaw: String = PlayInfoPanelSettings.defaultOrderCSV
+    @AppStorage(PlayInfoPanelSettings.hiddenKey) private var playInfoPanelHiddenRaw: String = ""
     @State private var panelOrderEdit: [Int] = []
+    @State private var playInfoOrderEdit: [PlayInfoPanelRowID] = []
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selectedPlayPhotoItem: PhotosPickerItem?
     @State private var isSavingPhoto = false
@@ -171,6 +176,20 @@ struct SettingsTabView: View {
                             Text("プロモードは「期待値と時給だけ見たい」「片手で最短入力したい」人向けのミニマルUIです。")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.65))
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("遊技中の時給の基準")
+                                    .font(AppTypography.sectionSubheading)
+                                    .foregroundColor(.white.opacity(0.9))
+                                Picker("", selection: $playHourlyWageBasisRaw) {
+                                    Text("実収支（現在損益）").tag(PlayHourlyWageBasis.actual.rawValue)
+                                    Text("期待値（理論）").tag(PlayHourlyWageBasis.expected.rawValue)
+                                }
+                                .pickerStyle(.segmented)
+                                .labelsHidden()
+                                Text("「実収支」は現在損益÷経過時間。「期待値」は実費×(期待値比−1)÷経過時間（ボーダーが取れているときのみ）。")
+                                    .font(.caption)
+                                    .foregroundColor(.white.opacity(0.65))
+                            }
                             Toggle(isOn: $playDisableIdleTimerDuringPlay) {
                                 Text("遊技中はスリープしない")
                                     .foregroundColor(.white.opacity(0.9))
@@ -260,6 +279,57 @@ struct SettingsTabView: View {
                                 }
                             }
                             .tint(cyan)
+                        }
+                    }
+
+                    settingsCard(title: "実戦の情報パネル（右側）", icon: "list.bullet.rectangle") {
+                        VStack(alignment: .leading, spacing: 14) {
+                            Text("実戦画面のゲージ右側に出す情報（最大5行）を、表示/並び替えできます。")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.68))
+
+                            Text("メイン（デフォルト）")
+                                .font(AppTypography.sectionSubheading)
+                                .foregroundColor(.white.opacity(0.88))
+                            ForEach(0..<playInfoOrderEdit.count, id: \.self) { idx in
+                                let rid = playInfoOrderEdit[idx]
+                                if PlayInfoPanelSettings.settingsPrimaryRowIDs.contains(rid) {
+                                    playInfoPanelSettingsRow(index: idx, rid: rid)
+                                }
+                            }
+
+                            Text("ほかに選べる項目")
+                                .font(AppTypography.sectionSubheading)
+                                .foregroundColor(.white.opacity(0.88))
+                                .padding(.top, 4)
+                            ForEach(0..<playInfoOrderEdit.count, id: \.self) { idx in
+                                let rid = playInfoOrderEdit[idx]
+                                if PlayInfoPanelSettings.settingsAlternateRowIDs.contains(rid) {
+                                    playInfoPanelSettingsRow(index: idx, rid: rid)
+                                }
+                            }
+
+                            Text("その他")
+                                .font(AppTypography.sectionSubheading)
+                                .foregroundColor(.white.opacity(0.88))
+                                .padding(.top, 4)
+                            ForEach(0..<playInfoOrderEdit.count, id: \.self) { idx in
+                                let rid = playInfoOrderEdit[idx]
+                                if !PlayInfoPanelSettings.settingsPrimaryRowIDs.contains(rid),
+                                   !PlayInfoPanelSettings.settingsAlternateRowIDs.contains(rid) {
+                                    playInfoPanelSettingsRow(index: idx, rid: rid)
+                                }
+                            }
+
+                            Text("※非表示が多い場合でも、実戦画面では上から最大5行まで表示します。")
+                                .font(.caption2)
+                                .foregroundColor(.white.opacity(0.58))
+                        }
+                        .onAppear {
+                            playInfoOrderEdit = PlayInfoPanelSettings.normalizedOrder(from: playInfoPanelOrderRaw)
+                        }
+                        .onChange(of: playInfoPanelOrderRaw) { _, new in
+                            playInfoOrderEdit = PlayInfoPanelSettings.normalizedOrder(from: new)
                         }
                     }
 
@@ -756,6 +826,57 @@ struct SettingsTabView: View {
         guard panelOrderEdit.indices.contains(j) else { return }
         panelOrderEdit.swapAt(index, j)
         homeInfoPanelOrderRaw = panelOrderEdit.map(String.init).joined(separator: ",")
+    }
+
+    private func movePlayInfoRow(from index: Int, direction: Int) {
+        let j = index + direction
+        guard playInfoOrderEdit.indices.contains(j) else { return }
+        playInfoOrderEdit.swapAt(index, j)
+        playInfoPanelOrderRaw = playInfoOrderEdit.map { String($0.rawValue) }.joined(separator: ",")
+    }
+
+    @ViewBuilder
+    private func playInfoPanelSettingsRow(index idx: Int, rid: PlayInfoPanelRowID) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            Text(rid.settingsLabel(unitSuffix: unitDisplaySuffix))
+                .font(.subheadline)
+                .foregroundColor(.white.opacity(0.92))
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Toggle(isOn: Binding(
+                get: { !PlayInfoPanelSettings.hiddenSet(from: playInfoPanelHiddenRaw).contains(rid.rawValue) },
+                set: { on in
+                    var h = PlayInfoPanelSettings.hiddenSet(from: playInfoPanelHiddenRaw)
+                    if on { h.remove(rid.rawValue) } else { h.insert(rid.rawValue) }
+                    playInfoPanelHiddenRaw = PlayInfoPanelSettings.persistHidden(h)
+                }
+            )) { EmptyView() }
+            .labelsHidden()
+            .tint(cyan)
+
+            VStack(spacing: 2) {
+                Button {
+                    movePlayInfoRow(from: idx, direction: -1)
+                } label: {
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .disabled(idx == 0)
+
+                Button {
+                    movePlayInfoRow(from: idx, direction: 1)
+                } label: {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .disabled(idx >= playInfoOrderEdit.count - 1)
+            }
+            .foregroundColor(cyan)
+            .opacity(0.95)
+        }
+        .padding(.vertical, 4)
     }
 
     private var bindingLockEnabled: Binding<Bool> {

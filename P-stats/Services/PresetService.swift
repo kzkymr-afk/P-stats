@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// 機種マスターデータ1件（正確な機種名とメーカー。管理人のみがリストを更新）
 struct MachineMasterItem: Codable, Identifiable {
@@ -186,7 +187,7 @@ enum PresetService {
     /// 指定URLからプリセット一覧を取得。Googleスプレッドシート（CSVエクスポート）またはJSON。失敗時は nil。15秒でタイムアウト。
     static func fetchPresets(from urlString: String) async -> [PresetFromServer]? {
         guard !urlString.isEmpty, let url = URL(string: urlString) else {
-            print("[PresetService] fetchPresets: URLが空または不正です")
+            AppLog.presets.error("fetchPresets: invalid or empty URL")
             return nil
         }
         do {
@@ -205,13 +206,13 @@ enum PresetService {
                 return try? JSONDecoder().decode([PresetFromServer].self, from: data)
             }.value
             guard let list = list else {
-                print("[PresetService] fetchPresets: パース失敗")
+                AppLog.presets.error("fetchPresets: parse failed")
                 return nil
             }
-            print("[PresetService] fetchPresets: 取得成功 \(list.count) 件")
+            AppLog.presets.debug("fetchPresets count=\(list.count, privacy: .public)")
             return list
         } catch {
-            print("[PresetService] fetchPresets 失敗: \(error)")
+            AppLog.presets.error("fetchPresets failed: \(error.localizedDescription, privacy: .public)")
             return nil
         }
     }

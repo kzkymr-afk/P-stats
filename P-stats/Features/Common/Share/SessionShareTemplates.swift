@@ -41,7 +41,7 @@ struct SessionShareCardView: View {
     private var avgFirstHitDisplay: String {
         guard let n = snapshot.averageFirstHitOdds, n.isFinite, n > 0 else { return "—" }
         if n >= 100 { return "1／\(Int(n.rounded()))" }
-        return "1／\(String(format: "%.1f", n))"
+        return "1／\(n.displayFormat("%.1f"))"
     }
 
     private var profitDisplayWithUnit: String {
@@ -326,7 +326,10 @@ struct SessionShareCardView: View {
             HStack(spacing: 16) {
                 metricBox(
                     title: "実質回転率",
-                    value: realRate.map { String(format: "%.1f 回/1k", $0) } ?? "—",
+                    value: realRate.flatMap { r -> String? in
+                        guard r.isValidForNumericDisplay else { return nil }
+                        return r.displayFormat("%.1f 回/1k")
+                    } ?? "—",
                     valueColor: baseTextColor,
                     valueMinScale: 0.78,
                     titleSize: 32,
@@ -334,7 +337,10 @@ struct SessionShareCardView: View {
                 )
                 metricBox(
                     title: "ボーダー＋",
-                    value: borderDiff.map { "\($0 >= 0 ? "+" : "")\(String(format: "%.1f", $0)) 回/1k" } ?? "—",
+                    value: borderDiff.flatMap { d -> String? in
+                        guard d.isValidForNumericDisplay else { return nil }
+                        return "\(d >= 0 ? "+" : "")\(d.displayFormat("%.1f")) 回/1k"
+                    } ?? "—",
                     valueColor: borderDiff.map { $0 >= 0 ? (template == .simple ? Color(red: 0.10, green: 0.50, blue: 0.90) : Color(red: 0.38, green: 0.95, blue: 0.70)) : Color(red: 1.00, green: 0.42, blue: 0.42) } ?? subTextColor,
                     valueMinScale: 0.76,
                     titleSize: 32,

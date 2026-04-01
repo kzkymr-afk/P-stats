@@ -1284,9 +1284,9 @@ private struct OverviewTotalSummaryPanel: View {
             )
             summaryDivider()
             summaryPairRow(
-                "勝率", metrics.winRatePercent.map { String(format: "%.1f%%", $0) } ?? "—", neutral,
+                "勝率", metrics.winRatePercent.map { $0.displayFormat("%.1f%%") } ?? "—", neutral,
                 "ボーダーとの差（回転加重）",
-                metrics.avgBorderDiffPer1k.map { String(format: "%+.1f 回/1k", $0) } ?? "—",
+                metrics.avgBorderDiffPer1k.map { $0.displayFormat("%+.1f 回/1k") } ?? "—",
                 {
                     guard let d = metrics.avgBorderDiffPer1k else { return neutral }
                     return d >= 0 ? accent : lossColor
@@ -1296,10 +1296,10 @@ private struct OverviewTotalSummaryPanel: View {
                 summaryDivider()
                 summaryPairRow(
                     "RUSH突入率",
-                    hit.multiHitSessionRatePercent.map { String(format: "%.1f%%", $0) } ?? "—",
+                    hit.multiHitSessionRatePercent.map { $0.displayFormat("%.1f%%") } ?? "—",
                     neutral,
                     "平均連チャン回数",
-                    hit.avgWinCountAmongMultiHitSessions.map { String(format: "%.2f回", $0) } ?? "—",
+                    hit.avgWinCountAmongMultiHitSessions.map { $0.displayFormat("%.2f回") } ?? "—",
                     neutral
                 )
             }
@@ -1317,7 +1317,7 @@ private struct OverviewTotalSummaryPanel: View {
             summaryPairRow(
                 "1日の最高収支額", signedPt(metrics.maxDailyPerformance), metrics.maxDailyPerformance >= 0 ? accent : lossColor,
                 "平均収支",
-                metrics.avgPerformancePerSession.map { String(format: "%+.1f pt", $0) } ?? "—",
+                metrics.avgPerformancePerSession.map { $0.displayFormat("%+.1f pt") } ?? "—",
                 metrics.avgPerformancePerSession.map { $0 >= 0 ? accent : lossColor } ?? neutral
             )
             if let m = metrics.totalPlayMinutes, m > 0 {
@@ -1327,7 +1327,7 @@ private struct OverviewTotalSummaryPanel: View {
                     "\(m)分",
                     neutral,
                     "時給",
-                    metrics.hourlyWagePt.map { String(format: "%+.0f%@", $0, UnitDisplaySettings.currentSuffix()) } ?? "—",
+                    metrics.hourlyWagePt.map { $0.displayFormat("%+.0f") + UnitDisplaySettings.currentSuffix() } ?? "—",
                     metrics.hourlyWagePt.map { $0 >= 0 ? accent : lossColor } ?? neutral
                 )
             }
@@ -1748,10 +1748,13 @@ private struct CrossAnalysisPairRowCard: View {
                     .foregroundColor(.white.opacity(0.55))
             }
             HStack(spacing: 14) {
-                crossAnalysisMetric(title: "回転率", value: avgRotationPer1k > 0 ? String(format: "%.1f/1k", avgRotationPer1k) : "—")
+                crossAnalysisMetric(
+                    title: "回転率",
+                    value: (avgRotationPer1k > 0 && avgRotationPer1k.isValidForNumericDisplay) ? avgRotationPer1k.displayFormat("%.1f/1k") : "—"
+                )
                 crossAnalysisMetric(
                     title: "ボーダーとの差",
-                    value: avgBorderDiffPer1k.map { String(format: "%+.1f", $0) } ?? "—",
+                    value: avgBorderDiffPer1k.map { $0.displayFormat("%+.1f") } ?? "—",
                     valueColor: (avgBorderDiffPer1k ?? 0) >= 0 ? cyan : Color.orange
                 )
                 crossAnalysisMetric(
@@ -2559,8 +2562,8 @@ private struct AnalyticsSessionCardView: View {
     private var rotationRateValue: String {
         if session.excludesFromRotationExpectationAnalytics { return "—（帳簿）" }
         let displayRate = session.displayRealRotationRatePer1k ?? rotationPer1k
-        if displayRate <= 0 { return "—" }
-        return String(format: "%.1f 回/1k", displayRate)
+        if displayRate <= 0 || !displayRate.isValidForNumericDisplay { return "—" }
+        return displayRate.displayFormat("%.1f 回/1k")
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -2651,16 +2654,16 @@ private struct AnalyticsSessionDetailView: View {
     private var totalRecoveryPt: Int { Int((Double(max(0, session.totalHoldings)) * payoutCoefficient).rounded()) }
     private var totalInvestmentPt: Int { Int(max(0, session.totalRealCost).rounded()) }
     private var realRotationRateDisplay: String {
-        guard let v = session.displayRealRotationRatePer1k else { return "—" }
-        return String(format: "%.1f 回/1k", v)
+        guard let v = session.displayRealRotationRatePer1k, v.isValidForNumericDisplay else { return "—" }
+        return v.displayFormat("%.1f 回/1k")
     }
     private var borderDiffDisplay: String {
-        guard let d = session.sessionBorderDiffPer1k else { return "—" }
-        return "\(d >= 0 ? "+" : "")\(String(format: "%.1f", d)) 回/1k"
+        guard let d = session.sessionBorderDiffPer1k, d.isValidForNumericDisplay else { return "—" }
+        return "\(d >= 0 ? "+" : "")\(d.displayFormat("%.1f")) 回/1k"
     }
     private var expectationDisplay: String {
         let pt = "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)"
-        let ratio = session.displayExpectationRatioAtSave.map { String(format: "%.2f%%", $0 * 100) } ?? "—"
+        let ratio = session.displayExpectationRatioAtSave.map { ($0 * 100).displayFormat("%.2f%%") } ?? "—"
         return "\(pt)（\(ratio)）"
     }
     @State private var showEditSheet = false
@@ -3358,9 +3361,12 @@ struct AnalyticsGroupCard: View {
 
     /// 二行目：実戦回転率・回数・ボーダーとの差（あれば）
     private var secondLineText: String {
-        var s = "実戦回転率 \(String(format: "%.1f", group.avgRotationRate))/1kpt · \(group.sessionCount)回"
-        if let diff = group.avgBorderDiffPer1k {
-            s += " （ボーダーとの差: \(String(format: "%+.1f 回/1k", diff))）"
+        let rateStr = group.avgRotationRate.isValidForNumericDisplay
+            ? group.avgRotationRate.displayFormat("%.1f")
+            : "—"
+        var s = "実戦回転率 \(rateStr)/1kpt · \(group.sessionCount)回"
+        if let diff = group.avgBorderDiffPer1k, diff.isValidForNumericDisplay {
+            s += " （ボーダーとの差: \(diff.displayFormat("%+.1f 回/1k"))）"
         }
         return s
     }
@@ -3411,10 +3417,10 @@ struct AnalyticsGroupCard: View {
             }
             compactRowDivider()
             HStack(alignment: .top, spacing: 12) {
-                shopMetricColumn(title: "勝率", value: m.winRatePercent.map { String(format: "%.1f%%", $0) } ?? "—", valueColor: neutralLabel)
+                shopMetricColumn(title: "勝率", value: m.winRatePercent.map { $0.displayFormat("%.1f%%") } ?? "—", valueColor: neutralLabel)
                 shopMetricColumn(
                     title: "ボーダーとの差（回転加重）",
-                    value: m.avgBorderDiffPer1k.map { String(format: "%+.1f 回/1k", $0) } ?? "—",
+                    value: m.avgBorderDiffPer1k.map { $0.displayFormat("%+.1f 回/1k") } ?? "—",
                     valueColor: borderColor
                 )
             }

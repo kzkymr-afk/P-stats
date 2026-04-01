@@ -298,8 +298,8 @@ struct InsightPanelView: View {
                                 InfoIconView(explanation: "H÷T。Tが0のときは表示しません。", tint: cyan.opacity(0.7))
                             }
                             Spacer()
-                            if let r = log.holdingsUsageRatio {
-                                Text(String(format: "%.1f%%", r * 100))
+                            if let r = log.holdingsUsageRatio, r.isValidForNumericDisplay {
+                                Text((r * 100).displayFormat("%.1f%%"))
                                     .font(.system(size: 13, weight: .medium, design: .monospaced))
                                     .foregroundColor(cyan.opacity(0.95))
                             } else {
@@ -315,7 +315,7 @@ struct InsightPanelView: View {
                             InfoIconView(explanation: "現金＋持ち玉を払出係数でpt換算した合計（回転率・期待値の実費ベース）。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
-                        Text(String(format: "%.0f pt", log.totalRealCost))
+                        Text(log.totalRealCost.displayFormat("%.0f pt"))
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
@@ -325,7 +325,7 @@ struct InsightPanelView: View {
                             InfoIconView(explanation: "回転率の分母。1単位＝等価250玉。現金は500ptごとの貸玉で玉に換算し持ち玉投資を足して250で割ります。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
-                        Text(String(format: "%.2f 単位", log.effectiveUnitsForBorder))
+                        Text(log.effectiveUnitsForBorder.displayFormat("%.2f 単位"))
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
@@ -335,7 +335,7 @@ struct InsightPanelView: View {
                             InfoIconView(explanation: "メーカー公表の等価ボーダー（回/1000pt）。通常回転のみ。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
-                        Text(log.formulaBorderValue > 0 ? String(format: "%.1f 回/1k", log.formulaBorderValue) : "—")
+                        Text(log.formulaBorderValue > 0 ? log.formulaBorderValue.displayFormat("%.1f 回/1k") : "—")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
@@ -345,7 +345,7 @@ struct InsightPanelView: View {
                             InfoIconView(explanation: "店の貸玉料金・払出係数で補正したボーダー（回/1000pt）。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
-                        Text(log.dynamicBorder > 0 ? String(format: "%.1f 回/1k", log.dynamicBorder) : "—")
+                        Text(log.dynamicBorder > 0 ? log.dynamicBorder.displayFormat("%.1f 回/1k") : "—")
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }
@@ -355,7 +355,7 @@ struct InsightPanelView: View {
                             InfoIconView(explanation: "実質回転率÷店補正後のボーダー。1.0で基準。", tint: cyan.opacity(0.7))
                         }
                         Spacer()
-                        Text(String(format: "%.2f%%", log.expectationRatio * 100))
+                        Text((log.expectationRatio * 100).displayFormat("%.2f%%"))
                             .font(.system(size: 13, weight: .medium, design: .monospaced))
                             .foregroundColor(cyan.opacity(0.95))
                     }

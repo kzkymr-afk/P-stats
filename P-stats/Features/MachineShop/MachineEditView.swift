@@ -30,13 +30,13 @@ enum PresetItem: Identifiable {
         case .server(let s):
             let type = MachineType(rawValue: s.machineTypeRaw ?? "") ?? .kakugen
             let avg = PresetService.averageNetPerRound(s)
-            return "\(type.displayName) / 確率 \(s.probability ?? "") / 1R純増 \(String(format: "%.0f", avg))"
+            return "\(type.displayName) / 確率 \(s.probability ?? "") / 1R純増 \(avg.displayFormat("%.0f"))"
         case .cloudShared(let c):
             let type = MachineType(rawValue: c.machineTypeRaw ?? "") ?? .kakugen
             let avg = PresetService.averageNetPerRound(c.asPresetFromServer)
-            return "ユーザー共有・\(type.displayName) / 確率 \(c.probability ?? "") / 1R純増 \(String(format: "%.0f", avg))"
+            return "ユーザー共有・\(type.displayName) / 確率 \(c.probability ?? "") / 1R純増 \(avg.displayFormat("%.0f"))"
         case .local(let m):
-            return "\(m.machineType.displayName) / 確率 \(m.probability) / 1R純増 \(String(format: "%.0f", m.averageNetPerRound))"
+            return "\(m.machineType.displayName) / 確率 \(m.probability) / 1R純増 \(m.averageNetPerRound.displayFormat("%.0f"))"
         }
     }
 }

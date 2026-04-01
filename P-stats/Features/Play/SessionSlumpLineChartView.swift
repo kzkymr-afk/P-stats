@@ -130,13 +130,18 @@ struct SessionSlumpLineChartView: View {
 
     /// 損益 pt を上がプラスになるよう Y（上端0）
     private func yPtToY(_ profit: Double, minY: Double, maxY: Double, plotH: CGFloat) -> CGFloat {
-        let t = (profit - minY) / (maxY - minY)
-        return plotH * (1 - t)
+        let span = maxY - minY
+        guard span.isFinite, abs(span) > 1e-9 else { return plotH * 0.5 }
+        let t = (profit - minY) / span
+        guard t.isFinite, !t.isNaN else { return plotH * 0.5 }
+        return plotH * CGFloat(1 - t)
     }
 
     private func formatPt(_ v: Double) -> String {
+        guard v.isValidForNumericDisplay else { return "—" }
         let k = v / 1000.0
-        if abs(k) >= 10 { return String(format: "%+.0fk", k) }
-        return String(format: "%+.0f", v)
+        guard k.isValidForNumericDisplay else { return "—" }
+        if abs(k) >= 10 { return k.displayFormat("%+.0fk") }
+        return v.displayFormat("%+.0f")
     }
 }

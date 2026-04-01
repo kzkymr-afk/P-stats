@@ -7,7 +7,8 @@ enum HomeBackgroundStore {
     static let customImageFileName = "HomeBackground.jpg"
 
     nonisolated static var documentsURL: URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
     }
 
     nonisolated static func saveCustomImage(_ image: UIImage) -> String? {

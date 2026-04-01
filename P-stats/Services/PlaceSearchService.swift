@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import CoreLocation
+import os
 
 /// Places API の HTTP エラー（デバッグ用）
 private enum PlacesAPIError: Error {
@@ -16,9 +17,9 @@ struct PlaceCandidate: Identifiable, Equatable, Sendable {
     let distanceMeters: Double?
 
     var distanceLabel: String? {
-        guard let m = distanceMeters, m >= 0 else { return nil }
-        if m < 1000 { return String(format: "%.0fm", m) }
-        return String(format: "%.1fkm", m / 1000)
+        guard let m = distanceMeters, m >= 0, m.isFinite, !m.isNaN else { return nil }
+        if m < 1000 { return m.displayFormat("%.0fm") }
+        return (m / 1000).displayFormat("%.1fkm")
     }
 
     nonisolated init(id: String, name: String, address: String, distanceMeters: Double? = nil) {
@@ -160,10 +161,9 @@ final class PlaceSearchService: ObservableObject {
             return
         }
         let userLoc = locationManager.currentLocation
-        let key = apiKey
         isFetchingNearby = true
 
-        if key == nil || key?.isEmpty == true {
+        guard let apiKeyValue = apiKey?.trimmingCharacters(in: .whitespacesAndNewlines), !apiKeyValue.isEmpty else {
             let result = mockNearbyCandidates(location: locStr)
             let filtered = result.filter { !PlaceSearchFilter.shouldExclude(name: $0.name) }
             nearbyCandidates = filtered
@@ -171,7 +171,6 @@ final class PlaceSearchService: ObservableObject {
             return
         }
 
-        let apiKeyValue = key!
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self else { return }
             do {
@@ -190,32 +189,32 @@ final class PlaceSearchService: ObservableObject {
         }
     }
 
-    // MARK: - デバッグ用リクエスト実行（URL・Header の print、エラー時の StatusCode とレスポンス body を出力）
-
     private static func performPlacesRequest(url: URL) async throws -> Data {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         if let bundleId = Bundle.main.bundleIdentifier {
             request.setValue(bundleId, forHTTPHeaderField: "X-Ios-Bundle-Identifier")
         }
-        print("[Places API] Bundle ID: \(Bundle.main.bundleIdentifier ?? "nil")")
-        print("[Places API] URL: \(url.absoluteString)")
-        print("[Places API] Headers: \(request.allHTTPHeaderFields ?? [:])")
+        #if DEBUG
+        AppLog.places.debug("Places request host=\(url.host ?? "nil", privacy: .public)")
+        #endif
         let (data, response) = try await URLSession.shared.data(for: request)
         if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
-            print("[Places API] Error StatusCode: \(http.statusCode)")
-            if let body = String(data: data, encoding: .utf8) {
-                print("[Places API] ErrorResponse (full): \(body)")
-            } else {
-                print("[Places API] ErrorResponse (raw): \(data.count) bytes")
-            }
+            AppLog.places.error("Places API HTTP error status=\(http.statusCode, privacy: .public)")
+            #if DEBUG
+            AppLog.places.debug("Places error response bytes=\(data.count, privacy: .public)")
+            #endif
             throw PlacesAPIError.httpError(statusCode: http.statusCode)
         }
-        if let http = response as? HTTPURLResponse, http.statusCode == 200, let body = String(data: data, encoding: .utf8), body.contains("\"status\"") {
-            if body.contains("\"REQUEST_DENIED\"") || body.contains("\"OVER_QUERY_LIMIT\"") || body.contains("\"INVALID_REQUEST\"") || body.contains("\"ZERO_RESULTS\"") {
-                print("[Places API] API status in body: \(body.prefix(500))\(body.count > 500 ? "…" : "")")
-            }
+        #if DEBUG
+        if let http = response as? HTTPURLResponse, http.statusCode == 200,
+           let body = String(data: data, encoding: .utf8), body.contains("\"status\""),
+           body.contains("\"REQUEST_DENIED\"") || body.contains("\"OVER_QUERY_LIMIT\"")
+            || body.contains("\"INVALID_REQUEST\"") || body.contains("\"ZERO_RESULTS\"") {
+            let snippet = String(body.prefix(200))
+            AppLog.places.debug("Places API body status snippet: \(snippet, privacy: .public)")
         }
+        #endif
         return data
     }
 

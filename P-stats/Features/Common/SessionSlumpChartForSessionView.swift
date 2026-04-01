@@ -162,9 +162,11 @@ struct SessionSlumpChartForSessionView: View {
     }
 
     private func formatPt(_ v: Double) -> String {
+        guard v.isValidForNumericDisplay else { return "—" }
         let k = v / 1000.0
-        if abs(k) >= 10 { return String(format: "%+.0fk", k) }
-        return String(format: "%+.0f", v)
+        guard k.isValidForNumericDisplay else { return "—" }
+        if abs(k) >= 10 { return k.displayFormat("%+.0fk") }
+        return v.displayFormat("%+.0f")
     }
 }
 

@@ -948,6 +948,8 @@ struct ShopEditView: View {
     @State private var address: String = ""
     @State private var placeID: String?
     @State private var ballsPerCashUnitStr: String = "125"
+    /// 0 または空で「貸玉と同じ」
+    @State private var holdingsBallsPerButtonStr: String = ""
     @State private var exchangeRatePreset: ExchangeRatePreset = .rate25
     @State private var customBallsPer100YenStr: String = ""
     @State private var customYenPerBallStr: String = ""
@@ -1191,6 +1193,26 @@ struct ShopEditView: View {
                                 )
                                     .multilineTextAlignment(.trailing)
                             }
+                            HStack(alignment: .top, spacing: 10) {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("持ち玉1回（玉）")
+                                        .foregroundColor(.white.opacity(0.9))
+                                    Text("空欄または0＝貸玉と同じ。コンパクト機などで1タップの減り玉が貸玉と違うときに入力。")
+                                        .font(.caption2)
+                                        .foregroundColor(.white.opacity(0.58))
+                                }
+                                Spacer(minLength: 8)
+                                IntegerPadTextField(
+                                    text: $holdingsBallsPerButtonStr,
+                                    placeholder: "同左",
+                                    maxDigits: 4,
+                                    font: .preferredFont(forTextStyle: .body),
+                                    textColor: UIColor.white,
+                                    accentColor: UIColor(accent)
+                                )
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(width: 88)
+                            }
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack(alignment: .center, spacing: 10) {
                                     Text("交換率")
@@ -1233,10 +1255,10 @@ struct ShopEditView: View {
                                         .onChange(of: customBallsPer100YenStr) { _, new in
                                             guard !isSyncingCustomRate, !new.isEmpty, let y = customYenPerBallFromBalls else { return }
                                             isSyncingCustomRate = true
-                                            customYenPerBallStr = String(format: "%.2f", y)
+                                            customYenPerBallStr = y.displayFormat("%.2f")
                                             DispatchQueue.main.async { isSyncingCustomRate = false }
                                         }
-                                    Text(customYenPerBallFromBalls.map { "→ \(String(format: "%.2f", $0))pt/玉" } ?? "→ — pt/玉")
+                                    Text(customYenPerBallFromBalls.map { "→ \($0.displayFormat("%.2f"))pt/玉" } ?? "→ — pt/玉")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                         .lineLimit(1)
@@ -1257,10 +1279,10 @@ struct ShopEditView: View {
                                         .onChange(of: customYenPerBallStr) { _, new in
                                             guard !isSyncingCustomRate, !new.isEmpty, let b = customBallsPer100FromYen else { return }
                                             isSyncingCustomRate = true
-                                            customBallsPer100YenStr = String(format: "%.1f", b)
+                                            customBallsPer100YenStr = b.displayFormat("%.1f")
                                             DispatchQueue.main.async { isSyncingCustomRate = false }
                                         }
-                                    Text(customBallsPer100FromYen.map { "→ \(String(format: "%.1f", $0))玉/100pt" } ?? "→ — 玉/100pt")
+                                    Text(customBallsPer100FromYen.map { "→ \($0.displayFormat("%.1f"))玉/100pt" } ?? "→ — 玉/100pt")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                         .lineLimit(1)
@@ -1417,6 +1439,7 @@ struct ShopEditView: View {
                     address = s.address
                     placeID = s.placeID
                     ballsPerCashUnitStr = "\(s.ballsPerCashUnit)"
+                    holdingsBallsPerButtonStr = s.holdingsBallsPerButton > 0 ? "\(s.holdingsBallsPerButton)" : ""
                     applyExchangeRateToPreset(s.payoutCoefficient)
                     loadSpecificDayEntries(from: s)
                     supportsChodamaService = s.supportsChodamaService
@@ -1645,8 +1668,12 @@ struct ShopEditView: View {
             customYenPerBallStr = ""
         } else {
             exchangeRatePreset = .other
-            customYenPerBallStr = String(format: "%.2f", rate)
-            customBallsPer100YenStr = String(format: "%.1f", 100.0 / rate)
+            customYenPerBallStr = rate.displayFormat("%.2f")
+            if rate.isValidForNumericDisplay, abs(rate) > 1e-9 {
+                customBallsPer100YenStr = (100.0 / rate).displayFormat("%.1f")
+            } else {
+                customBallsPer100YenStr = ""
+            }
         }
     }
 
@@ -1705,12 +1732,15 @@ struct ShopEditView: View {
             .joined(separator: ",")
         
         let chodamaBal = max(0, Int(chodamaBalanceStr.trimmingCharacters(in: .whitespaces)) ?? 0)
+        let holdTap = Int(holdingsBallsPerButtonStr.trimmingCharacters(in: .whitespaces)) ?? 0
+        let holdTapClamped = holdTap > 0 ? holdTap : 0
         if let existing = shop {
             existing.name = n
             existing.address = address.trimmingCharacters(in: .whitespaces)
             existing.placeID = placeID
             existing.ballsPerCashUnit = balls
             existing.payoutCoefficient = rate
+            existing.holdingsBallsPerButton = holdTapClamped
             existing.specificDayRulesStorage = rulesStorage
             existing.supportsChodamaService = supportsChodamaService
             existing.chodamaBalanceBalls = chodamaBal
@@ -1720,7 +1750,8 @@ struct ShopEditView: View {
                 ballsPerCashUnit: balls,
                 payoutCoefficient: rate,
                 placeID: placeID,
-                address: address.trimmingCharacters(in: .whitespaces)
+                address: address.trimmingCharacters(in: .whitespaces),
+                holdingsBallsPerButton: holdTapClamped
             )
             newShop.specificDayRulesStorage = rulesStorage
             newShop.supportsChodamaService = supportsChodamaService

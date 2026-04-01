@@ -117,8 +117,8 @@ final class GameLog {
         }
     }
 
-    /// 持ち玉投資は 1タップ＝店の貸玉数（500ptと同単位の玉数）。残りが少ないときは全額
-    private var holdingsBallsPerTap: Int { max(1, selectedShop.interpretedBallsPer500Pt) }
+    /// 持ち玉投資は 1タップ＝店の「持ち玉1回あたり」設定（未設定時は貸玉と同じ玉数）。残りが少ないときは全額
+    private var holdingsBallsPerTap: Int { max(1, selectedShop.interpretedHoldingsBallsPerTap) }
 
     init() {}
 
@@ -464,6 +464,25 @@ final class GameLog {
         return currentValue - cost
     }
 
+    /// 遊技中の時給（pt/h）。`basis` が期待値のときは理論損益（実費×(期待値比−1)）を時間で割った値。
+    func playHourlyWagePt(basis: PlayHourlyWageBasis, elapsedSeconds: TimeInterval) -> Double? {
+        guard elapsedSeconds.isFinite, elapsedSeconds > 30 else { return nil }
+        let hours = elapsedSeconds / 3600.0
+        guard hours > 0 else { return nil }
+        switch basis {
+        case .actual:
+            let w = chartProfitPt / hours
+            return w.isFinite ? w : nil
+        case .expected:
+            guard dynamicBorder > 0, effectiveUnitsForBorder > 0 else { return nil }
+            let er = expectationRatio
+            guard er.isFinite, !er.isNaN, er >= 0 else { return nil }
+            let expectedProfit = totalRealCost * (er - 1.0)
+            let w = expectedProfit / hours
+            return w.isFinite ? w : nil
+        }
+    }
+
     /// 成績グラフ用プロット。横軸＝総回転数（電サポ・時短を除く通常ゲーム累積）。縦軸＝損益（pt）
     var liveChartPoints: [(Int, Double)] {
         if let cached = _cachedLiveChartPoints, _lastChartStateHash == chartStateHash {
@@ -577,22 +596,31 @@ final class GameLog {
     /// ※通常回転のみ（時短・電サポは含めない）。実質回転率と比較可能。
     var dynamicBorder: Double {
         let rate = selectedShop.interpretedPayoutCoefficientPtPerBall
-        guard rate > 0 else { return 0 }
+        guard rate > 0, rate.isFinite else { return 0 }
         let ballsPer1000 = Double(selectedShop.interpretedBallsPer500Pt * 2)
-        guard ballsPer1000 > 0 else { return 0 }
+        guard ballsPer1000 > 0, ballsPer1000.isFinite else { return 0 }
         let formula = formulaBorderAsNumber
+        guard formula.isFinite else { return 0 }
         let loanCorrection = 250.0 / ballsPer1000
         let exchangeCorrection = 4.0 / rate
+        let oneR = effective1RNetPerRound
+        guard oneR.isFinite else { return 0 }
+        let raw: Double
         if formula > 0 {
-            return formula * loanCorrection * exchangeCorrection
+            raw = formula * loanCorrection * exchangeCorrection
+        } else if oneR > 0 {
+            let prob = selectedMachine.probabilityDenominator
+            if prob > 0, prob.isFinite {
+                raw = prob * 250.0 / oneR * loanCorrection * exchangeCorrection
+            } else {
+                // 確率未使用のフォールバック（旧式の貸玉項を打ち消して等価換算に統一）
+                raw = 1000.0 / (oneR * rate)
+            }
+        } else {
+            return 0
         }
-        guard effective1RNetPerRound > 0 else { return 0 }
-        let prob = selectedMachine.probabilityDenominator
-        if prob > 0 {
-            return prob * 250.0 / effective1RNetPerRound * loanCorrection * exchangeCorrection
-        }
-        // 確率未使用のフォールバック（旧式の貸玉項を打ち消して等価換算に統一）
-        return 1000.0 / (effective1RNetPerRound * rate)
+        guard raw.isFinite, !raw.isNaN, raw > 0 else { return 0 }
+        return raw
     }
 
     /// 店補正後ボーダー用の「単位」数。1単位＝**等価250玉**に固定。現金は500ptごとの貸玉数で玉に換算し、持ち玉投資玉を加えて 250 で割る（貸玉が少ない店でも持ち玉は250玉＝1単位）。
@@ -627,14 +655,85 @@ final class GameLog {
         return Double(holdingsOriginBallsFromIdentity) / Double(t)
     }
 
-    /// 期待値（ボーダー比）。実質回転率（1000pt・250玉単位）÷ 店補正後のボーダー。1.0で基準、>1で上回り
+    // MARK: - 持ち玉区間のみの回転・期待値（通算の実質回転率・期待値％とは別表示）
+    /// 持ち玉投資のユニット数。1ユニット＝店の500ptあたり玉数（現金500ptと同列）。
+    var holdingsInvestmentUnits: Double {
+        let b = Double(selectedShop.interpretedBallsPer500Pt)
+        guard b > 0, holdingsInvestedBalls > 0 else { return 0 }
+        return Double(holdingsInvestedBalls) / b
+    }
+
+    /// 通常回転のうち持ち玉由来とみなす分（`holdingsOriginBallsFromIdentity` / `tapDerivedBallsConsumed` で按分）。
+    var holdingsAttributedNormalRotations: Double {
+        let t = Double(tapDerivedBallsConsumed)
+        guard t > 0 else { return 0 }
+        let h = Double(holdingsOriginBallsFromIdentity)
+        return Double(normalRotations) * (h / t)
+    }
+
+    /// 1ユニットあたりの平均通常回転（持ち玉寄与分のみ）。
+    var holdingsAvgRotationsPerUnit: Double? {
+        let u = holdingsInvestmentUnits
+        guard u > 0 else { return nil }
+        let r = holdingsAttributedNormalRotations
+        guard r.isFinite, r >= 0 else { return nil }
+        let a = r / u
+        return a.isFinite ? a : nil
+    }
+
+    /// 上記平均の2倍を「持ち玉区間における実質回転率（1000pt相当）」と定義。
+    var holdingsSyntheticRealRatePer1k: Double? {
+        guard let a = holdingsAvgRotationsPerUnit else { return nil }
+        let v = a * 2.0
+        return v.isFinite && !v.isNaN ? v : nil
+    }
+
+    /// 等価ボーダー（`formulaBorderAsNumber`）に対する比。通算の `expectationRatio` とは別（分母は店補正なしの等価ボーダー）。
+    var holdingsExpectationRatioVsFormula: Double? {
+        guard let s = holdingsSyntheticRealRatePer1k else { return nil }
+        let f = formulaBorderAsNumber
+        guard f > 0 else { return nil }
+        let q = s / f
+        return q.isFinite && !q.isNaN ? q : nil
+    }
+
+    /// 持ち玉投資分のみの理論損益（pt）。`コスト×(比−1)`。
+    var holdingsSegmentExpectedProfitPt: Double? {
+        guard let ratio = holdingsExpectationRatioVsFormula else { return nil }
+        let rate = selectedShop.interpretedPayoutCoefficientPtPerBall
+        guard rate > 0 else { return nil }
+        let cost = Double(holdingsInvestedBalls) * rate
+        guard cost > 0 else { return nil }
+        let p = cost * (ratio - 1.0)
+        return p.isFinite ? p : nil
+    }
+
+    /// 持ち玉投資1000ptあたりの理論収支（表示「/k」用）。
+    var holdingsExpectedEdgePer1kPt: Double? {
+        guard let profit = holdingsSegmentExpectedProfitPt else { return nil }
+        let rate = selectedShop.interpretedPayoutCoefficientPtPerBall
+        guard rate > 0 else { return nil }
+        let cost = Double(holdingsInvestedBalls) * rate
+        guard cost > 0 else { return nil }
+        let perK = profit / cost * 1000.0
+        return perK.isFinite ? perK : nil
+    }
+
+    /// 期待値（ボーダー比）。実質回転率（千pt実費）÷ 店補正後のボーダー。1.0で基準、>1で上回り
     var expectationRatio: Double {
         if let cached = _cachedExpectationRatio, _lastExpectationStateHash == expectationStateHash {
             return cached
         }
         let ratio: Double
-        if dynamicBorder > 0 && effectiveUnitsForBorder > 0 {
-            ratio = realRate / dynamicBorder
+        if dynamicBorder > 0, dynamicBorder.isFinite,
+           effectiveUnitsForBorder > 0, effectiveUnitsForBorder.isFinite {
+            let rr = realRate
+            if rr.isFinite, !rr.isNaN {
+                let q = rr / dynamicBorder
+                ratio = (q.isFinite && !q.isNaN && q >= 0) ? q : 0
+            } else {
+                ratio = 0
+            }
         } else {
             ratio = 0
         }
@@ -659,17 +758,23 @@ final class GameLog {
         return hasher.finalize()
     }
 
-    /// 実質回転率（回転/単位）。分母は等価250玉＝1単位（現金は貸玉で玉換算＋持ち玉投資）。払出係数は店補正後ボーダー側のみ。
+    /// 実質回転率（回転/千pt実費）。現金投資（pt）＋持ち玉投資（玉×払出係数）の合計を 1000pt を1単位として割る。交換率の影響は主にここに反映。
     /// 分子は normalRotations（通常回転のみ・時短・電サポ除く）。
     var realRate: Double {
-        effectiveUnitsForBorder > 0 ? Double(normalRotations) / effectiveUnitsForBorder : 0.0
+        guard totalRealCost.isFinite, totalRealCost > 0 else { return 0 }
+        let realCostThousands = totalRealCost / 1000.0
+        guard realCostThousands > 0, realCostThousands.isFinite else { return 0 }
+        let r = Double(normalRotations) / realCostThousands
+        guard r.isFinite, !r.isNaN, r >= 0 else { return 0 }
+        return r
     }
 
-    /// 実費ベースの回転率（回転/千pt）。現金＋持ち玉（払出係数でpt換算）の実費で割る。ゲージの補足表示用
+    /// 表面回転率（回転/等価250玉単位）。分母は（貸玉換算の玉＋持ち玉投資の玉）÷250。払出係数は含めない「台の純粋な回り」に相当。
     var rotationPer1000Yen: Double {
-        let realCostThousands = totalRealCost / 1000.0
-        guard realCostThousands > 0 else { return 0 }
-        return Double(normalRotations) / realCostThousands
+        let eu = effectiveUnitsForBorder
+        guard eu > 0, eu.isFinite else { return 0 }
+        let r = Double(normalRotations) / eu
+        return r.isFinite && !r.isNaN && r >= 0 ? r : 0
     }
 
     /// 実戦の実質回転率・期待値％・ゲージ色が「そのまま信じてよいか」。非有限・極端値・内部不整合を弾く。
@@ -684,26 +789,26 @@ final class GameLog {
         static let maxRealRate: Double = 450
         /// 期待値比の上限（= ボーダー比。例: 40 → 表示上 4000%）。超えたら設定不整合の可能性が高い。
         static let maxExpectationRatio: Double = 40
-        /// 表面回転率（回/千pt実費）の上限の目安
+        /// 表面回転率（回/等価250玉単位）の上限の目安
         static let maxSurfaceRatePer1k: Double = 800
     }
 
     /// 実戦メーター・期待値行の表示信頼性。`borderForGauge` は `PlayView.borderForGauge`（店補正ボーダーまたは等価フォールバック）と一致させること。
     func rotationMetricsDisplayTrust(borderForGauge: Double) -> RotationMetricsDisplayTrust {
         let eu = effectiveUnitsForBorder
-        let rr = realRate
+        let economicRate = realRate
         let er = expectationRatio
-        let surface = rotationPer1000Yen
+        let ballSurfaceRate = rotationPer1000Yen
 
         let gaugeMeaningful = eu > 0 && borderForGauge > 0
         if gaugeMeaningful {
-            guard rr.isFinite, !rr.isNaN else {
+            guard economicRate.isFinite, !economicRate.isNaN else {
                 return .untrusted(userHint: "実質回転率が数として成立しません")
             }
-            guard rr >= 0 else {
+            guard economicRate >= 0 else {
                 return .untrusted(userHint: "データに不整合があります")
             }
-            if rr > RotationMetricsSanityThresholds.maxRealRate {
+            if economicRate > RotationMetricsSanityThresholds.maxRealRate {
                 return .untrusted(userHint: "実質回転率が想定を超えています。投入・店を確認")
             }
         }
@@ -721,12 +826,12 @@ final class GameLog {
             }
         }
 
-        if totalRealCost > 0, surface > 0 {
-            guard surface.isFinite, !surface.isNaN, surface >= 0 else {
+        if eu > 0, ballSurfaceRate > 0 {
+            guard ballSurfaceRate.isFinite, !ballSurfaceRate.isNaN, ballSurfaceRate >= 0 else {
                 return .untrusted(userHint: "表面回転率が数として成立しません")
             }
-            if surface > RotationMetricsSanityThresholds.maxSurfaceRatePer1k {
-                return .untrusted(userHint: "表面回転率が想定を超えています。実費・回転を確認")
+            if ballSurfaceRate > RotationMetricsSanityThresholds.maxSurfaceRatePer1k {
+                return .untrusted(userHint: "表面回転率が想定を超えています。投入・回転を確認")
             }
         }
 
@@ -740,10 +845,10 @@ final class GameLog {
         let payout = selectedShop.interpretedPayoutCoefficientPtPerBall
         var lines: [String] = []
         lines.append("【いまの店の補正（実質ボーダーが等価ボーダーからずれる主な要因）】")
-        lines.append("貸玉補正：×\(String(format: "%.2f", loanC))倍（等価は1,000ptで250玉＝基準。この店は約\(Int(ballsPer1000))玉/1,000pt）")
+        lines.append("貸玉補正：×\(loanC.displayFormat("%.2f"))倍（等価は1,000ptで250玉＝基準。この店は約\(Int(ballsPer1000))玉/1,000pt）")
         if payout > 0 {
             let exchC = 4.0 / payout
-            lines.append("交換補正：×\(String(format: "%.2f", exchC))倍（払出係数 \(String(format: "%.4g", payout))pt/玉。等価4pt/玉との比率がボーダーに反映されます）")
+            lines.append("交換補正：×\(exchC.displayFormat("%.2f"))倍（払出係数 \(payout.displayFormat("%.4g"))pt/玉。等価4pt/玉との比率がボーダーに反映されます）")
         } else {
             lines.append("交換補正：—（払出係数が未設定のため倍率を出せません）")
         }
@@ -772,32 +877,32 @@ final class GameLog {
         var lines: [String] = []
         lines.append("―― いまの値（この説明を開いたとき）――")
         lines.append("店：\(shopName) ／ 機：\(machineName)")
-        lines.append("貸玉 \(ballsPer500)玉/500pt → B＝\(Int(ballsPer1000))玉/1kpt ／ 払出 \(String(format: "%.4g", payout))pt/玉")
+        lines.append("貸玉 \(ballsPer500)玉/500pt → B＝\(Int(ballsPer1000))玉/1kpt ／ 払出 \(payout.displayFormat("%.4g"))pt/玉")
         lines.append("現金 \(cashPt)pt ／ 持ち玉投資 \(holdBalls)玉 ／ 通常回転 \(nRot)")
         lines.append("")
-        lines.append("実質ボーダー ≒ \(String(format: "%.2f", db)) 回/単位")
+        lines.append("実質ボーダー ≒ \(db.displayFormat("%.2f")) 回/単位")
         if payout <= 0 {
             lines.append("（払出0のため参考になりません）")
         } else if formula > 0 {
-            lines.append("＝ 等価\(String(format: "%.3g", formula)) × 250/B(\(String(format: "%.4g", loanC))) × 4/払出(\(String(format: "%.4g", exchC)))")
+            lines.append("＝ 等価\(formula.displayFormat("%.3g")) × 250/B(\(loanC.displayFormat("%.4g"))) × 4/払出(\(exchC.displayFormat("%.4g")))")
         } else if oneR > 0, probDenom > 0 {
-            lines.append("＝ 確率分母\(String(format: "%.4g", probDenom))×250÷1R\(String(format: "%.4g", oneR)) × 貸玉・交換補正（同上）")
+            lines.append("＝ 確率分母\(probDenom.displayFormat("%.4g"))×250÷1R\(oneR.displayFormat("%.4g")) × 貸玉・交換補正（同上）")
         } else if oneR > 0, payout > 0 {
-            lines.append("＝ 1000÷(1R\(String(format: "%.4g", oneR))×払出) など")
+            lines.append("＝ 1000÷(1R\(oneR.displayFormat("%.4g"))×払出) など")
         }
         lines.append("")
         let cashBalls = Double(cashPt / 500) * Double(ballsPer500)
-        lines.append("コスト単位 ＝ (現金換算 \(String(format: "%.4g", cashBalls))玉 + 持ち玉 \(holdBalls)玉) ÷ 250 ＝ \(String(format: "%.4g", units))")
+        lines.append("コスト単位 ＝ (現金換算 \(cashBalls.displayFormat("%.4g"))玉 + 持ち玉 \(holdBalls)玉) ÷ 250 ＝ \(units.displayFormat("%.4g"))")
         if units > 0 {
-            lines.append("実質回転率（針の元）＝ \(nRot)÷単位 ＝ \(String(format: "%.2f", realRate))")
+            lines.append("表面回転率（等価250玉単位）＝ \(nRot)÷単位 ＝ \(rotationPer1000Yen.displayFormat("%.2f"))")
         } else {
-            lines.append("実質回転率＝算出なし（単位0）")
+            lines.append("表面回転率＝算出なし（単位0）")
         }
-        lines.append("実費 ＝ \(cashPt) + \(holdBalls)×\(String(format: "%.4g", payout)) ＝ \(String(format: "%.1f", trc))pt")
+        lines.append("実費 ＝ \(cashPt) + \(holdBalls)×\(payout.displayFormat("%.4g")) ＝ \(trc.displayFormat("%.1f"))pt")
         if trc > 0 {
-            lines.append("表面回転率 ＝ \(nRot)÷(実費÷1000) ＝ \(String(format: "%.2f", rotationPer1000Yen))")
+            lines.append("実質回転率（千pt実費） ＝ \(nRot)÷(実費÷1000) ＝ \(realRate.displayFormat("%.2f"))")
         } else {
-            lines.append("表面回転率＝算出なし")
+            lines.append("実質回転率＝算出なし")
         }
         lines.append("針 ≒ 実質回転率 − 実質ボーダー を目盛にしたもの")
         return lines.joined(separator: "\n")
@@ -1090,4 +1195,12 @@ final class GameLog {
         case .normal: return 0
         }
     }
+}
+
+/// 遊技中の時給の算出基準（`GameLog.playHourlyWagePt` 用）
+enum PlayHourlyWageBasis: String, CaseIterable, Sendable {
+    /// 現在損益（`chartProfitPt`）÷ 経過時間
+    case actual = "actual"
+    /// 実費×(期待値比−1) ÷ 経過時間（ボーダー未設定時は算出不可）
+    case expected = "expected"
 }

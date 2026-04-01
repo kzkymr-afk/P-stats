@@ -128,7 +128,7 @@ enum CsvBackupExportService {
 
     static func buildShopsCSV(_ shops: [Shop]) -> String {
         let header = [
-            "name", "ballsPerCashUnit", "payoutCoefficient", "supportsChodamaService",
+            "name", "ballsPerCashUnit", "payoutCoefficient", "holdingsBallsPerButton", "supportsChodamaService",
             "chodamaBalanceBalls", "placeID", "address",
             "specificDayOfMonthStorage", "specificLastDigitsStorage", "specificDayRulesStorage"
         ].joined(separator: ",")
@@ -139,6 +139,7 @@ enum CsvBackupExportService {
                 s.name,
                 String(s.ballsPerCashUnit),
                 String(format: "%.10g", s.payoutCoefficient),
+                String(s.holdingsBallsPerButton),
                 s.supportsChodamaService ? "1" : "0",
                 String(s.chodamaBalanceBalls),
                 s.placeID ?? "",

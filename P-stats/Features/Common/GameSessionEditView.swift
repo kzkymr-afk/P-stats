@@ -652,8 +652,8 @@ struct GameSessionEditView: View {
         let ballsPer1000 = Double(shop.ballsPerCashUnit * 2)
         let cashToBalls = Double(invCash) / 500.0 * Double(shop.ballsPerCashUnit)
         let effectiveUnitsForBorder = (cashToBalls + Double(holdBalls)) / 250.0
-        let realRate = effectiveUnitsForBorder > 0 ? Double(nRotations) / effectiveUnitsForBorder : 0.0
-        
+        let economicRealRate: Double = realCost > 0 ? Double(nRotations) / (realCost / 1000.0) : 0.0
+
         // dynamicBorder の計算（GameLog.dynamicBorder と同一の貸玉・交換補正）
         let formula = parseFormulaBorder(machine.border)
         let effective1RNet = machine.averageNetPerRound
@@ -671,7 +671,7 @@ struct GameSessionEditView: View {
             dynamicBorder = 0
         }
         
-        let expectationRatio = (dynamicBorder > 0 && effectiveUnitsForBorder > 0) ? (realRate / dynamicBorder) : 1.0
+        let expectationRatio = (dynamicBorder > 0 && effectiveUnitsForBorder > 0) ? (economicRealRate / dynamicBorder) : 1.0
         
         let cashBalls = Int((Double(invCash) / 500.0 * Double(shop.ballsPerCashUnit)).rounded())
         let totalUsedBalls = cashBalls + holdBalls
@@ -694,7 +694,7 @@ struct GameSessionEditView: View {
             s.normalWinCount = nWin
             s.formulaBorderPer1k = formula > 0 ? formula : 0
             s.effectiveBorderPer1kAtSave = dynamicBorder
-            s.realRotationRateAtSave = realRate
+            s.realRotationRateAtSave = economicRealRate
             s.isCashflowOnlyRecord = false
             s.editSessionPhasesJSON = GameSessionEditPhasesStorage.encode(parsedPhases)
         } else {
@@ -717,7 +717,7 @@ struct GameSessionEditView: View {
             newSession.date = date
             newSession.isCashflowOnlyRecord = false
             newSession.effectiveBorderPer1kAtSave = dynamicBorder
-            newSession.realRotationRateAtSave = realRate
+            newSession.realRotationRateAtSave = economicRealRate
             newSession.editSessionPhasesJSON = GameSessionEditPhasesStorage.encode(parsedPhases)
             modelContext.insert(newSession)
         }

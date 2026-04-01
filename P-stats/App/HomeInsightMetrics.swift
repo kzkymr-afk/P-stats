@@ -57,7 +57,7 @@ enum HomeInsightMetrics {
             let keys = byDay.keys.sorted()
             var c = 0
             return keys.map { d in
-                c += byDay[d]!.reduce(0) { $0 + $1.performance }
+                c += (byDay[d] ?? []).reduce(0) { $0 + $1.performance }
                 return c
             }
         case .week:
@@ -65,7 +65,7 @@ enum HomeInsightMetrics {
             let keys = byDay.keys.sorted()
             var c = 0
             return keys.map { d in
-                c += byDay[d]!.reduce(0) { $0 + $1.performance }
+                c += (byDay[d] ?? []).reduce(0) { $0 + $1.performance }
                 return c
             }
         case .month:
@@ -73,7 +73,7 @@ enum HomeInsightMetrics {
             let keys = byDay.keys.sorted()
             var c = 0
             return keys.map { d in
-                c += byDay[d]!.reduce(0) { $0 + $1.performance }
+                c += (byDay[d] ?? []).reduce(0) { $0 + $1.performance }
                 return c
             }
         case .year:
@@ -83,7 +83,7 @@ enum HomeInsightMetrics {
             let keys = byMonth.keys.sorted()
             var c = 0
             return keys.map { k in
-                c += byMonth[k]!.reduce(0) { $0 + $1.performance }
+                c += (byMonth[k] ?? []).reduce(0) { $0 + $1.performance }
                 return c
             }
         }

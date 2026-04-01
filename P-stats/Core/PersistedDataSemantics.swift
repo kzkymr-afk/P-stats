@@ -60,6 +60,12 @@ extension Shop {
     var interpretedBallsPer1000Pt: Double {
         PersistedDataSemantics.ballsPer1000Pt(fromBallsPer500Pt: interpretedBallsPer500Pt)
     }
+
+    /// 持ち玉投資1回あたりの玉数。**0 以下**は未設定として貸玉（500ptあたり）と同じ。
+    var interpretedHoldingsBallsPerTap: Int {
+        if holdingsBallsPerButton > 0 { return holdingsBallsPerButton }
+        return interpretedBallsPer500Pt
+    }
 }
 
 // MARK: - GameSession（保存済み係数が欠ける行）

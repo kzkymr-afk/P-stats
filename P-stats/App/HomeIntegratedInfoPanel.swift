@@ -112,7 +112,7 @@ struct HomeIntegratedInfoPanel: View {
                     .foregroundColor(AppGlassStyle.textPrimary)
                 let p = HomeInsightMetrics.periodProfit(in: statsPeriod, sessions: sessions)
                 Text("\(p >= 0 ? "+" : "")\(p.formattedPtWithUnit)")
-                    .font(AppDesignSystem.EmphasisNumber.font(size: 30, weight: .heavy))
+                    .font(.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit())
                     .foregroundStyle(p >= 0 ? AppDesignSystem.Palette.win : AppDesignSystem.Palette.loss)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 let ds = HomeInsightMetrics.periodDeficitSurplus(in: statsPeriod, sessions: sessions)
@@ -139,7 +139,7 @@ struct HomeIntegratedInfoPanel: View {
                     .foregroundColor(AppGlassStyle.textPrimary)
                 let t = HomeInsightMetrics.periodTheoreticalSum(in: statsPeriod, sessions: sessions)
                 Text("\(t >= 0 ? "+" : "")\(t.formattedPtWithUnit)")
-                    .font(AppDesignSystem.EmphasisNumber.font(size: 30, weight: .heavy))
+                    .font(.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit())
                     .foregroundStyle(t >= 0 ? AppDesignSystem.Palette.expectation : AppDesignSystem.Palette.loss)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text("※期待値＝ボーダー比に基づく期待損益の合算です。")
@@ -162,11 +162,11 @@ struct HomeIntegratedInfoPanel: View {
                     .foregroundColor(AppGlassStyle.textPrimary)
                 if let avg = HomeInsightMetrics.averageFirstHitInvestment(in: statsPeriod, sessions: sessions) {
                     Text("\(Int(avg.rounded()).formattedPtWithUnit)")
-                        .font(AppDesignSystem.EmphasisNumber.font(size: 28, weight: .heavy))
+                        .font(.system(size: 18, weight: .semibold, design: .rounded).monospacedDigit())
                         .foregroundStyle(AppGlassStyle.textPrimary)
                 } else {
                     Text("—")
-                        .font(AppDesignSystem.EmphasisNumber.font(size: 28, weight: .heavy))
+                        .font(.system(size: 18, weight: .semibold, design: .rounded).monospacedDigit())
                         .foregroundColor(AppGlassStyle.textTertiary)
                 }
                 Text("実戦保存分のみ内部記録。手入力・旧データは平均に含みません。")
@@ -217,8 +217,14 @@ struct HomeIntegratedInfoPanel: View {
     private var miniTrendBlock: some View {
         let steps = HomeInsightMetrics.cumulativePerformanceSteps(in: statsPeriod, sessions: sessions)
         let indexed = steps.enumerated().map { ($0.offset, $0.element) }
-        let up = steps.count >= 2 && (steps.last! > steps.first!)
-        let down = steps.count >= 2 && (steps.last! < steps.first!)
+        let up: Bool = {
+            guard steps.count >= 2, let f = steps.first, let l = steps.last else { return false }
+            return l > f
+        }()
+        let down: Bool = {
+            guard steps.count >= 2, let f = steps.first, let l = steps.last else { return false }
+            return l < f
+        }()
 
         return VStack(alignment: .leading, spacing: 10) {
             Text("累積収支の推移（ミニ）")
@@ -333,11 +339,11 @@ struct HomeIntegratedInfoPanel: View {
                             .foregroundColor(AppGlassStyle.textPrimary)
                             .lineLimit(1)
                         Spacer(minLength: 8)
-                        Text(String(format: "%.1f 回/k", row.avgRotationPer1k))
+                        Text(row.avgRotationPer1k.displayFormat("%.1f 回/k"))
                             .font(.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit())
                             .foregroundColor(AppGlassStyle.textPrimary)
-                        if let d = row.avgBorderDiffPer1k {
-                            Text(String(format: "(%+.1f)", d))
+                        if let d = row.avgBorderDiffPer1k, d.isValidForNumericDisplay {
+                            Text(d.displayFormat("(%+.1f)"))
                                 .font(.system(size: 10, weight: .semibold, design: .rounded).monospacedDigit())
                                 .foregroundColor(d >= 0 ? cyan : lossPink)
                         }

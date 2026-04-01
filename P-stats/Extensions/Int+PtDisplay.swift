@@ -14,7 +14,7 @@ extension Int {
         let a = abs(self)
         if a >= 10_000 {
             let v = Double(a) / 10_000.0
-            let s = v >= 10 ? String(format: "%.0f", v) : String(format: "%.1f", v)
+            let s = v >= 10 ? v.displayFormat("%.0f") : v.displayFormat("%.1f")
             return "\(sign)\(s)万"
         }
         if a >= 1000 {
@@ -22,7 +22,7 @@ extension Int {
             let rem = a % 1000
             if rem == 0 { return "\(sign)\(k)k" }
             let v = Double(a) / 1000.0
-            let s = v >= 10 ? String(format: "%.0f", v) : String(format: "%.1f", v)
+            let s = v >= 10 ? v.displayFormat("%.0f") : v.displayFormat("%.1f")
             return "\(sign)\(s)k"
         }
         return "\(sign)\(a)"

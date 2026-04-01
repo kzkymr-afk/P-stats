@@ -538,16 +538,17 @@ struct SessionDetailView: View {
     private var totalInvestmentPt: Int { Int(max(0, session.totalRealCost).rounded()) }
     /// 実質回転率（回/1k）
     private var realRotationRateDisplay: String {
-        guard let v = session.displayRealRotationRatePer1k else { return "—" }
-        return String(format: "%.1f 回/1k", v)
+        guard let v = session.displayRealRotationRatePer1k, v.isValidForNumericDisplay else { return "—" }
+        return v.displayFormat("%.1f 回/1k")
     }
     private var borderDiffDisplay: String {
-        guard let d = session.sessionBorderDiffPer1k else { return "—" }
-        return "\(d >= 0 ? "+" : "")\(String(format: "%.1f", d)) 回/1k"
+        guard let d = session.sessionBorderDiffPer1k, d.isValidForNumericDisplay else { return "—" }
+        return "\(d >= 0 ? "+" : "")\(d.displayFormat("%.1f")) 回/1k"
     }
     private var expectationDisplay: String {
         let pt = "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)"
-        let ratio = session.displayExpectationRatioAtSave.map { String(format: "%.2f%%", $0 * 100) } ?? "—"
+        let ratio = session.displayExpectationRatioAtSave
+            .map { ($0 * 100).displayFormat("%.2f%%") } ?? "—"
         return "\(pt)（\(ratio)）"
     }
 
@@ -562,8 +563,8 @@ struct SessionDetailView: View {
             duration = "—"
         }
         let hourly: String
-        if let w = session.hourlyWagePt {
-            hourly = String(format: "%+.0f%@", w, UnitDisplaySettings.currentSuffix())
+        if let w = session.hourlyWagePt, w.isValidForNumericDisplay {
+            hourly = w.displayFormat("%+.0f") + UnitDisplaySettings.currentSuffix()
         } else {
             hourly = "—"
         }
@@ -709,8 +710,8 @@ struct HistorySessionCard: View {
     private var rotationRateValue: String {
         if session.excludesFromRotationExpectationAnalytics { return "—（帳簿）" }
         let displayRate = session.displayRealRotationRatePer1k ?? rotationPer1k
-        if displayRate <= 0 { return "—" }
-        return String(format: "%.1f 回/1k", displayRate)
+        if displayRate <= 0 || !displayRate.isValidForNumericDisplay { return "—" }
+        return displayRate.displayFormat("%.1f 回/1k")
     }
 
     var body: some View {

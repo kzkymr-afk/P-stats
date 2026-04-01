@@ -5,7 +5,8 @@ import UIKit
 enum PlayBackgroundStore {
     static let imageFileName = "PlayBackground.jpg"
     nonisolated static var documentsURL: URL {
-        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
     }
     nonisolated static func saveCustomImage(_ image: UIImage) -> String? {
         guard let data = image.jpegData(compressionQuality: 0.85) else { return nil }

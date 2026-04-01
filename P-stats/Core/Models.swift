@@ -213,6 +213,8 @@ final class Shop {
     var ballsPerCashUnit: Int = PersistedDataSemantics.defaultBallsPer500Pt
     /// 払出係数（1玉あたりのpt換算）。統計シミュレーション用。未設定の解釈は `interpretedPayoutCoefficientPtPerBall`。
     var payoutCoefficient: Double = PersistedDataSemantics.defaultPayoutCoefficientPtPerBall
+    /// 持ち玉投資ボタン1回で消費する玉数。**0** のときは `ballsPerCashUnit`（500ptあたり）と同じ扱い。
+    var holdingsBallsPerButton: Int = 0
     /// 店が貯玉（カウンター預かり）に対応しているか。実戦終了時の「貯玉」精算や端数の貯玉反映に使用。
     var supportsChodamaService: Bool = false
     /// その店の貯玉残高（玉数）。精算のたびに増加、店舗編集で手修正可能。
@@ -227,12 +229,13 @@ final class Shop {
     var specificLastDigitsStorage: String = ""
     /// 特定日ルールの追加順（最大6つ）。形式: "M13,L5,L7,L8" → M=毎月N日, L=Nのつく日。空なら旧2フィールドから復元
     var specificDayRulesStorage: String = ""
-    init(name: String, ballsPerCashUnit: Int, payoutCoefficient: Double, placeID: String? = nil, address: String = "") {
+    init(name: String, ballsPerCashUnit: Int, payoutCoefficient: Double, placeID: String? = nil, address: String = "", holdingsBallsPerButton: Int = 0) {
         self.name = name
         self.ballsPerCashUnit = ballsPerCashUnit
         self.payoutCoefficient = payoutCoefficient
         self.placeID = placeID
         self.address = address
+        self.holdingsBallsPerButton = holdingsBallsPerButton
     }
 }
 
@@ -505,7 +508,7 @@ final class GameSession {
     var formulaBorderPer1k: Double = 0
     /// 保存時点の店補正後ボーダー（回/1k）。貸玉・払出係数を反映（`GameLog.dynamicBorder` と同定義）
     var effectiveBorderPer1kAtSave: Double = 0
-    /// 保存時点の実質回転率（回/単位）。`normalRotations ÷ effectiveUnitsForBorder`（`GameLog.realRate` と同定義）
+    /// 保存時点の実質回転率（回/千pt実費）。`normalRotations ÷ (totalRealCost÷1000)`（`GameLog.realRate` と同定義）
     var realRotationRateAtSave: Double = 0
     /// 初当たり時点までの実質投資（pt）。実戦からの保存時のみ埋まる。手入力・旧データは nil
     var firstHitRealCostPt: Double? = nil
@@ -531,7 +534,9 @@ final class GameSession {
         self.payoutCoefficient = payoutCoefficient
         self.totalRealCost = totalRealCost
         self.expectationRatioAtSave = expectationRatioAtSave
-        self.theoreticalValue = Int(round(totalRealCost * (expectationRatioAtSave - 1)))
+        let theoreticalRaw = totalRealCost * (expectationRatioAtSave - 1)
+        let theoreticalSafe = theoreticalRaw.isFinite && !theoreticalRaw.isNaN ? theoreticalRaw : 0
+        self.theoreticalValue = Int(round(theoreticalSafe))
         self.rushWinCount = rushWinCount
         self.normalWinCount = normalWinCount
         self.formulaBorderPer1k = formulaBorderPer1k
@@ -567,13 +572,13 @@ extension GameSession {
         return v.isFinite ? v : nil
     }
 
-    /// 保存値が欠けている/旧データのときの表示用フォールバック（再計算で“黙って0”にしない）。
-    /// - `realRotationRateAtSave` が無い場合は `totalRealCost` から近似（\(normalRotations * 1000 / totalRealCost\)）。
+    /// 表示用の実質回転率（回/千pt実費）。`totalRealCost` を優先して再計算（保存値と定義が一致しない旧行を吸収）。
     var displayRealRotationRatePer1k: Double? {
-        if realRotationRateAtSave > 0 { return realRotationRateAtSave }
-        guard totalRealCost > 0, normalRotations > 0 else { return nil }
+        guard totalRealCost > 0, normalRotations > 0 else {
+            return realRotationRateAtSave > 0 ? realRotationRateAtSave : nil
+        }
         let v = (Double(normalRotations) * 1000.0) / totalRealCost
-        return v.isFinite && v > 0 ? v : nil
+        return v.isFinite && v > 0 ? v : (realRotationRateAtSave > 0 ? realRotationRateAtSave : nil)
     }
 
     /// 保存時の店補正ボーダー。保存値が 0 のときは nil（黙って 0 回/1k とみなさない）。
@@ -605,11 +610,11 @@ extension GameSession {
         sessionBorderDiffPer1k != nil
     }
 
-    /// ボーダーとの差（回/1k、実質回転率 − 店補正後ボーダー）。新規は保存済みの2値の差。旧データは `totalRealCost` 基準の回転率 − 等価ベースのボーダー（近似）
+    /// ボーダーとの差（回/1k、実質回転率 − 店補正後ボーダー）。`displayRealRotationRatePer1k`（実費ベース）を優先。
     var sessionBorderDiffPer1k: Double? {
         if excludesFromRotationExpectationAnalytics { return nil }
-        if effectiveBorderPer1kAtSave > 0, realRotationRateAtSave > 0 {
-            return realRotationRateAtSave - effectiveBorderPer1kAtSave
+        if effectiveBorderPer1kAtSave > 0, let rate = displayRealRotationRatePer1k {
+            return rate - effectiveBorderPer1kAtSave
         }
         guard formulaBorderPer1k > 0, totalRealCost > 0, normalRotations > 0 else { return nil }
         let rate = (Double(normalRotations) / totalRealCost) * 1000.0

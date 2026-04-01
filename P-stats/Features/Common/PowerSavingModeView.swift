@@ -32,13 +32,23 @@ struct ProModeView: View {
 
     private let headerFixedHeight: CGFloat = 100
     private let bottomBarFixedHeight: CGFloat = 72
+    @AppStorage(PlayInfoPanelSettings.hourlyWageBasisKey) private var playHourlyWageBasisRaw: String = PlayHourlyWageBasis.actual.rawValue
+
+    private var playHourlyWageBasis: PlayHourlyWageBasis {
+        PlayHourlyWageBasis(rawValue: playHourlyWageBasisRaw) ?? .actual
+    }
+
     private var currentHourlyWagePt: Double? {
         guard let started = log.sessionStartedAt else { return nil }
         let sec = Date().timeIntervalSince(started)
-        guard sec.isFinite, sec > 30 else { return nil }
-        let hours = sec / 3600.0
-        guard hours > 0 else { return nil }
-        return log.chartProfitPt / hours
+        return log.playHourlyWagePt(basis: playHourlyWageBasis, elapsedSeconds: sec)
+    }
+
+    private var hourlyWageHeaderLabel: String {
+        switch playHourlyWageBasis {
+        case .actual: return "時給（実収支）"
+        case .expected: return "時給（期待値）"
+        }
     }
 
     var body: some View {
@@ -127,16 +137,18 @@ struct ProModeView: View {
                     let rr = log.realRate
                     let bd = log.dynamicBorder
                     let diff = rr - bd
-                    row(label: "実質回転率", value: "\(String(format: "%.1f", rr))回/1k")
-                    Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
-                    row(label: "ボーダー差", value: "\(diff >= 0 ? "+" : "")\(String(format: "%.1f", diff))")
+                    let diffStr: String = {
+                        guard diff.isValidForNumericDisplay else { return "—" }
+                        return "\(diff >= 0 ? "+" : "")\(diff.displayFormat("%.1f"))"
+                    }()
+                    row(label: "ボーダー差", value: diffStr)
                     Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
                     row(label: "現在損益", value: "\(log.chartProfitPt >= 0 ? "+" : "")\(Int(log.chartProfitPt.rounded()).formattedPtWithUnit)")
                     Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
                     if let hw = currentHourlyWagePt {
-                        row(label: "時給", value: "\(hw >= 0 ? "+" : "")\(Int(hw.rounded()).formattedPtWithUnit)/h")
+                        row(label: hourlyWageHeaderLabel, value: "\(hw >= 0 ? "+" : "")\(Int(hw.rounded()).formattedPtWithUnit)/h")
                     } else {
-                        row(label: "時給", value: "—")
+                        row(label: hourlyWageHeaderLabel, value: "—")
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -205,7 +217,7 @@ struct ProModeView: View {
     }
 
     private func investmentZone(width: CGFloat, height: CGFloat, isCash: Bool) -> some View {
-        let ballsSwipe = max(1, log.selectedShop.ballsPerCashUnit)
+        let ballsSwipe = max(1, log.selectedShop.interpretedHoldingsBallsPerTap)
         let title = isCash ? "現金 500pt" : "持ち玉 \(ballsSwipe)玉"
         let cumulative = isCash ? "計 \(log.totalInput)pt" : "計 \(log.holdingsInvestedBalls)玉"
         return ZStack {

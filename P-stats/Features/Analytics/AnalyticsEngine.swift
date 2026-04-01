@@ -179,6 +179,12 @@ struct AnalyticsGroup: Identifiable {
 
 /// 保存された実戦データから機種別・メーカー別・店舗別に集計するエンジン
 enum AnalyticsEngine {
+    /// 店×メーカー／店×機種の複合キー区切り（ASCII Unit Separator U+001F）
+    private static let crossGroupKeySeparator: Character = {
+        guard let u = UnicodeScalar(31) else { return "?" }
+        return Character(u)
+    }()
+
     /// ボーダーとの差（回/1k）を通常回転数で加重平均。同一機種でも店でボーダーが違うとき、回転の多い店・実戦ほど集約値に反映される。重み0のセッションは除く。
     static func weightedAverageBorderDiffPer1k(sessions: [GameSession]) -> Double? {
         var weightedSum = 0.0
@@ -368,7 +374,7 @@ enum AnalyticsEngine {
         }
         let rows: [ShopManufacturerCrossRow] = grouped.compactMap { compoundKey, list -> ShopManufacturerCrossRow? in
             guard list.count >= minimumSessions else { return nil }
-            let parts = compoundKey.split(separator: Character(UnicodeScalar(31)!), maxSplits: 1).map(String.init)
+            let parts = compoundKey.split(separator: Self.crossGroupKeySeparator, maxSplits: 1).map(String.init)
             guard parts.count == 2 else { return nil }
             let shop = parts[0]
             let mfr = parts[1]
@@ -400,7 +406,7 @@ enum AnalyticsEngine {
         }
         let rows: [ShopMachineCrossRow] = grouped.compactMap { compoundKey, list -> ShopMachineCrossRow? in
             guard list.count >= minimumSessions else { return nil }
-            let parts = compoundKey.split(separator: Character(UnicodeScalar(31)!), maxSplits: 1).map(String.init)
+            let parts = compoundKey.split(separator: Self.crossGroupKeySeparator, maxSplits: 1).map(String.init)
             guard parts.count == 2 else { return nil }
             let shop = parts[0]
             let machine = parts[1]
@@ -702,8 +708,9 @@ struct AnalyticsOverviewTotalSummary {
             denomSum += m.probabilityDenominator
             denomCount += 1
         }
-        let avgFirstHitProbabilityText: String? = denomCount > 0
-            ? String(format: "1/%.1f", denomSum / Double(denomCount))
+        let avgDenom = denomSum / Double(denomCount)
+        let avgFirstHitProbabilityText: String? = (denomCount > 0 && avgDenom.isValidForNumericDisplay)
+            ? "1/\(avgDenom.displayFormat("%.1f"))"
             : nil
 
         let totalTheoretical = sessions.reduce(0) { $0 + $1.theoreticalValue }

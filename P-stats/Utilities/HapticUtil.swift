@@ -16,17 +16,23 @@ enum HapticUtil {
         UINotificationFeedbackGenerator().notificationOccurred(type)
     }
 
-    /// 大当たり中の連チャン +1 用。rigid でキレのある一回、続けてごく短い soft で余韻を付ける。
+    /// 大当たり中の連チャン +1 用。heavy→medium→soft の短い連打で「胸が跳ねる」感じ（通知音ほど大袈裟にはしない）。
     static func bigHitChainIncrement() {
         guard isEnabled else { return }
-        let head = UIImpactFeedbackGenerator(style: .rigid)
+        let head = UIImpactFeedbackGenerator(style: .heavy)
         head.prepare()
-        head.impactOccurred(intensity: 1.0)
+        head.impactOccurred(intensity: 0.92)
+        let mid = UIImpactFeedbackGenerator(style: .medium)
+        mid.prepare()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.052) {
+            guard isEnabled else { return }
+            mid.impactOccurred(intensity: 0.62)
+        }
         let tail = UIImpactFeedbackGenerator(style: .soft)
         tail.prepare()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.045) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.11) {
             guard isEnabled else { return }
-            tail.impactOccurred(intensity: 0.55)
+            tail.impactOccurred(intensity: 0.42)
         }
     }
 }

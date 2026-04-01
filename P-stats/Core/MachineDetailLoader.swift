@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// `index.json` と `machines/{id}.json`（MachineFullMaster）を取得する。本番は GitHub Pages（`defaultMachineDetailBaseURL`）。バンドル内 `master_out` は任意のオフライン用。
 enum MachineDetailLoader {
@@ -35,24 +36,28 @@ enum MachineDetailLoader {
         return URL(string: path)
     }
 
+    /// `baseURL` が空・nil のときは既定のマスターURL。
+    private static func resolvedMasterBaseURL(_ baseURL: String?) -> String {
+        if let b = baseURL?.trimmingCharacters(in: .whitespacesAndNewlines), !b.isEmpty { return b }
+        return PresetServiceConfig.defaultMachineDetailBaseURL
+    }
+
     static func fetchIndex(baseURL: String? = nil) async -> [MachineMasterIndexEntry]? {
-        let base = baseURL?.trimmingCharacters(in: .whitespaces).isEmpty == false
-            ? baseURL!
-            : PresetServiceConfig.defaultMachineDetailBaseURL
+        let base = resolvedMasterBaseURL(baseURL)
         if let url = indexURL(baseURL: base) {
             do {
                 let (data, _) = try await session.data(from: url)
                 let list = try decoder.decode([MachineMasterIndexEntry].self, from: data)
-                print("[MachineDetailLoader] fetchIndex: \(list.count) 件")
+                AppLog.machineMaster.debug("fetchIndex count=\(list.count, privacy: .public)")
                 return list
             } catch {
-                print("[MachineDetailLoader] fetchIndex 失敗: \(error)")
+                AppLog.machineMaster.error("fetchIndex failed: \(error.localizedDescription, privacy: .public)")
             }
         }
         if let data = Bundle.main.url(forResource: "index", withExtension: "json", subdirectory: "master_out")
             .flatMap({ try? Data(contentsOf: $0) }) {
             if let list = try? decoder.decode([MachineMasterIndexEntry].self, from: data) {
-                print("[MachineDetailLoader] fetchIndex: バンドルから \(list.count) 件")
+                AppLog.machineMaster.debug("fetchIndex bundle count=\(list.count, privacy: .public)")
                 return list
             }
         }
@@ -60,31 +65,27 @@ enum MachineDetailLoader {
     }
 
     static func fetchMachineDetail(machineId: String, baseURL: String? = nil) async -> MachineFullMaster? {
-        let base = baseURL?.trimmingCharacters(in: .whitespaces).isEmpty == false
-            ? baseURL!
-            : PresetServiceConfig.defaultMachineDetailBaseURL
+        let base = resolvedMasterBaseURL(baseURL)
         let safe = sanitizeMachineId(machineId)
         if let url = machineDetailURL(baseURL: base, machineId: machineId) {
             do {
                 let (data, _) = try await session.data(from: url)
                 return try decoder.decode(MachineFullMaster.self, from: data)
             } catch {
-                print("[MachineDetailLoader] fetchMachineDetail 失敗 machineId=\(machineId): \(error)")
+                AppLog.machineMaster.error("fetchMachineDetail failed id=\(machineId, privacy: .public): \(error.localizedDescription, privacy: .public)")
             }
         }
         if let url = Bundle.main.url(forResource: safe, withExtension: "json", subdirectory: "master_out/machines"),
            let data = try? Data(contentsOf: url),
            let master = try? decoder.decode(MachineFullMaster.self, from: data) {
-            print("[MachineDetailLoader] fetchMachineDetail: バンドルから machineId=\(machineId)")
+            AppLog.machineMaster.debug("fetchMachineDetail bundle id=\(machineId, privacy: .public)")
             return master
         }
         return nil
     }
 
     static func fetchMachineDetail(machineId: String?, machineName: String?, baseURL: String? = nil) async -> MachineFullMaster? {
-        let base = baseURL?.trimmingCharacters(in: .whitespaces).isEmpty == false
-            ? baseURL!
-            : PresetServiceConfig.defaultMachineDetailBaseURL
+        let base = resolvedMasterBaseURL(baseURL)
         let idTrimmed = machineId?.trimmingCharacters(in: .whitespaces) ?? ""
         if !idTrimmed.isEmpty {
             if let detail = await fetchMachineDetail(machineId: idTrimmed, baseURL: base) {
@@ -102,10 +103,10 @@ enum MachineDetailLoader {
                 || nameTrimmed.contains(entry.name.trimmingCharacters(in: .whitespaces))
         }
         guard let entry = match else {
-            print("[MachineDetailLoader] 機種名で index に一致なし: \(nameTrimmed)")
+            AppLog.machineMaster.debug("index no match for name=\(nameTrimmed, privacy: .public)")
             return nil
         }
-        print("[MachineDetailLoader] 機種名で解決: \(nameTrimmed) -> machineId=\(entry.machineId)")
+        AppLog.machineMaster.debug("resolved name=\(nameTrimmed, privacy: .public) -> id=\(entry.machineId, privacy: .public)")
         return await fetchMachineDetail(machineId: entry.machineId, baseURL: base)
     }
 }

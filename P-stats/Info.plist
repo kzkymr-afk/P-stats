@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleDisplayName</key>
+	<string>P-stats</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>ja</string>
 	<key>GADApplicationIdentifier</key>
@@ -18,6 +20,8 @@
 	<dict>
 		<key>UIColorName</key>
 		<string>LaunchScreenBackground</string>
+		<key>UIImageName</key>
+		<string>SplashIcon</string>
 	</dict>
 </dict>
 </plist>
