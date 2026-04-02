@@ -689,7 +689,10 @@ struct GameSessionEditView: View {
             s.payoutCoefficient = rate
             s.totalRealCost = realCost
             s.expectationRatioAtSave = expectationRatio
-            s.theoreticalValue = Int(round(realCost * (expectationRatio - 1)))
+            s.theoreticalValue = PStatsCalculator.theoreticalValuePt(
+                totalRealCostPt: realCost,
+                expectationRatio: expectationRatio
+            )
             s.rushWinCount = rWin
             s.normalWinCount = nWin
             s.formulaBorderPer1k = formula > 0 ? formula : 0

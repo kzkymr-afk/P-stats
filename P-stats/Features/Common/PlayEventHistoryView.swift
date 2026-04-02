@@ -76,7 +76,7 @@ struct PlayEventHistoryView: View {
 
     private func winRow(_ record: WinRecord) -> some View {
         HStack {
-            Text(record.type == .rush ? "RUSH" : "通常")
+            Text(record.type.compactHistoryLabel)
                 .font(.system(size: 12, weight: .semibold, design: .monospaced))
                 .foregroundColor(record.type == .rush ? .red : .blue)
             Spacer()
@@ -92,7 +92,7 @@ struct PlayEventHistoryView: View {
 
     private func lendingRow(_ record: LendingRecord) -> some View {
         HStack {
-            Text(record.type == .cash ? "現金" : "持ち玉")
+            Text(record.type.compactHistoryLabel)
                 .font(.system(size: 12, weight: .medium, design: .monospaced))
             Spacer()
             if record.type == .cash {

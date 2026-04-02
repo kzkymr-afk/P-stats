@@ -1,7 +1,9 @@
 import Foundation
 
 /// P-stats の計算ロジック「真実のソース」。
-/// - UI / 分析 / 永続化の各層から同じ定義を参照できるよう、状態を持たない純粋関数として提供する。
+/// - UI / 分析 / 永続化の各層から同じ定義を参照できるよう、状態を持たない純粋関数として提供する（シングルトン不要）。
+/// - ライブ実戦の `GameLog` は内部状態から比率を求めるが、**保存時の期待値・回転率**はここ経由に寄せる。
+/// - 永続モデルとドメインの分離・Play の一方向データ流は別途段階的に（`PStatsSchemaVersions`・ViewModel 化）。
 enum PStatsCalculator {
     // MARK: - Cashflow
 
@@ -47,6 +49,29 @@ enum PStatsCalculator {
             return rate - formulaBorderPer1k
         }
         return nil
+    }
+
+    /// 保存済みセッションのボーダー差（回/1k）。`GameSession.sessionBorderDiffPer1k` と同一の分岐。
+    static func sessionBorderDiffPer1k(
+        excludesFromRotationExpectationAnalytics: Bool,
+        normalRotations: Int,
+        totalRealCost: Double,
+        realRotationRateAtSave: Double,
+        effectiveBorderPer1kAtSave: Double,
+        formulaBorderPer1k: Double
+    ) -> Double? {
+        if excludesFromRotationExpectationAnalytics { return nil }
+        let displayRate = realRotationRatePer1k(
+            normalRotations: normalRotations,
+            totalRealCostPt: totalRealCost,
+            fallbackRateAtSave: realRotationRateAtSave
+        )
+        if effectiveBorderPer1kAtSave > 0, let rate = displayRate {
+            return rate - effectiveBorderPer1kAtSave
+        }
+        guard formulaBorderPer1k > 0, totalRealCost > 0, normalRotations > 0 else { return nil }
+        let rate = (Double(normalRotations) / totalRealCost) * 1000.0
+        return rate - formulaBorderPer1k
     }
 
     /// 回転率の加重平均に用いる分母（pt）。

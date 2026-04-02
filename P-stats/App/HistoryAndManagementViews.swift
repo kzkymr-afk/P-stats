@@ -1008,7 +1008,10 @@ struct SessionEditView: View {
                 Button("期待値を再計算") {
                     let ratio = session.expectationRatioAtSave > 0 ? session.expectationRatioAtSave : 1.0
                     let cost = session.totalRealCost > 0 ? session.totalRealCost : Double(session.inputCash)
-                    session.theoreticalValue = Int(round(cost * (ratio - 1)))
+                    session.theoreticalValue = PStatsCalculator.theoreticalValuePt(
+                        totalRealCostPt: cost,
+                        expectationRatio: ratio
+                    )
                     if session.totalRealCost == 0 && session.inputCash > 0 {
                         session.totalRealCost = Double(session.inputCash)
                     }

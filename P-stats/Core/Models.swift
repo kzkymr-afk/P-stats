@@ -534,9 +534,10 @@ final class GameSession {
         self.payoutCoefficient = payoutCoefficient
         self.totalRealCost = totalRealCost
         self.expectationRatioAtSave = expectationRatioAtSave
-        let theoreticalRaw = totalRealCost * (expectationRatioAtSave - 1)
-        let theoreticalSafe = theoreticalRaw.isFinite && !theoreticalRaw.isNaN ? theoreticalRaw : 0
-        self.theoreticalValue = Int(round(theoreticalSafe))
+        self.theoreticalValue = PStatsCalculator.theoreticalValuePt(
+            totalRealCostPt: totalRealCost,
+            expectationRatio: expectationRatioAtSave
+        )
         self.rushWinCount = rushWinCount
         self.normalWinCount = normalWinCount
         self.formulaBorderPer1k = formulaBorderPer1k
@@ -549,7 +550,9 @@ final class GameSession {
     }
 
     /// 欠損・余剰（成績 − 期待値）。正＝期待値より得、負＝期待値より損
-    var deficitSurplus: Int { performance - theoreticalValue }
+    var deficitSurplus: Int {
+        PStatsCalculator.deficitSurplusPt(performancePt: performance, theoreticalValuePt: theoreticalValue)
+    }
 }
 
 // MARK: - 分析での母集団（帳簿のみ行の扱い）
@@ -574,11 +577,11 @@ extension GameSession {
 
     /// 表示用の実質回転率（回/千pt実費）。`totalRealCost` を優先して再計算（保存値と定義が一致しない旧行を吸収）。
     var displayRealRotationRatePer1k: Double? {
-        guard totalRealCost > 0, normalRotations > 0 else {
-            return realRotationRateAtSave > 0 ? realRotationRateAtSave : nil
-        }
-        let v = (Double(normalRotations) * 1000.0) / totalRealCost
-        return v.isFinite && v > 0 ? v : (realRotationRateAtSave > 0 ? realRotationRateAtSave : nil)
+        PStatsCalculator.realRotationRatePer1k(
+            normalRotations: normalRotations,
+            totalRealCostPt: totalRealCost,
+            fallbackRateAtSave: realRotationRateAtSave
+        )
     }
 
     /// 保存時の店補正ボーダー。保存値が 0 のときは nil（黙って 0 回/1k とみなさない）。
@@ -612,13 +615,14 @@ extension GameSession {
 
     /// ボーダーとの差（回/1k、実質回転率 − 店補正後ボーダー）。`displayRealRotationRatePer1k`（実費ベース）を優先。
     var sessionBorderDiffPer1k: Double? {
-        if excludesFromRotationExpectationAnalytics { return nil }
-        if effectiveBorderPer1kAtSave > 0, let rate = displayRealRotationRatePer1k {
-            return rate - effectiveBorderPer1kAtSave
-        }
-        guard formulaBorderPer1k > 0, totalRealCost > 0, normalRotations > 0 else { return nil }
-        let rate = (Double(normalRotations) / totalRealCost) * 1000.0
-        return rate - formulaBorderPer1k
+        PStatsCalculator.sessionBorderDiffPer1k(
+            excludesFromRotationExpectationAnalytics: excludesFromRotationExpectationAnalytics,
+            normalRotations: normalRotations,
+            totalRealCost: totalRealCost,
+            realRotationRateAtSave: realRotationRateAtSave,
+            effectiveBorderPer1kAtSave: effectiveBorderPer1kAtSave,
+            formulaBorderPer1k: formulaBorderPer1k
+        )
     }
 
     /// 保存時ボーダー比の平均に含める
@@ -628,8 +632,7 @@ extension GameSession {
 
     /// 通算実戦回転率の加重平均の分母（pt）。`totalRealCost` を優先し、0 の旧データは `inputCash`（pt）で代替（実戦保存時の補正と同趣旨）。
     var rotationRateDenominatorPt: Double {
-        if totalRealCost > 0 { return totalRealCost }
-        return Double(inputCash)
+        PStatsCalculator.rotationRateDenominatorPt(totalRealCostPt: totalRealCost, inputCashPt: inputCash)
     }
 }
 

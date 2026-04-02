@@ -627,6 +627,7 @@ struct PlayView: View {
             applyPlayIdleTimerPreference()
         }
         /// フリーズ・強制終了対策: 低頻度タイマー＋最短間隔スロットル（バッテリー負荷を抑える）
+        /// - Note: `View` は構造体のため `self` の循環参照は発生しにくい（クラス型 ViewModel とは異なる）。
         .onReceive(Timer.publish(every: 75, on: .main, in: .common).autoconnect()) { _ in
             guard scenePhase == .active else { return }
             ResumableStateStore.autosave(from: log, force: false)

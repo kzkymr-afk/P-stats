@@ -962,6 +962,9 @@ struct ShopEditView: View {
     @State private var showErrorAlert = false
     @State private var errorMessage = ""
     @StateObject private var placeSearchService = PlaceSearchService()
+    /// Places API 失敗時のトースト
+    @State private var showPlacesToast = false
+    @State private var placesToastText = ""
     /// 下部バー：左＝登録フォーム、右＝店名＋「交換率」で Google 検索（アプリ内）
     @State private var isShopBrowserExpanded = false
 
@@ -1456,6 +1459,16 @@ struct ShopEditView: View {
                 }
                 isShopBrowserExpanded = false
             }
+            .onChange(of: placeSearchService.lastUserFacingMessage) { _, new in
+                guard let m = new, !m.isEmpty else { return }
+                placesToastText = m
+                showPlacesToast = true
+                placeSearchService.clearLastUserFacingMessage()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                    showPlacesToast = false
+                }
+            }
+            .appToast(isPresented: $showPlacesToast, text: placesToastText, systemImage: "wifi.exclamationmark")
         }
     }
 

@@ -1,0 +1,50 @@
+{
+  "sourceLanguage" : "ja",
+  "strings" : {
+    "places.error.network" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "店舗情報を取得できませんでした（通信エラー・オフライン等）。"
+          }
+        }
+      }
+    },
+    "places.error.quota" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "店舗検索の利用上限に達しました。しばらくしてからお試しください。"
+          }
+        }
+      }
+    },
+    "places.error.denied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "店舗検索を利用できません（APIキーまたは制限の確認が必要です）。"
+          }
+        }
+      }
+    },
+    "places.error.invalid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "店舗検索の要求が無効でした。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
