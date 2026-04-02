@@ -111,16 +111,20 @@ struct HomeIntegratedInfoPanel: View {
                     .font(AppTypography.panelHeading)
                     .foregroundColor(AppGlassStyle.textPrimary)
                 let p = HomeInsightMetrics.periodProfit(in: statsPeriod, sessions: sessions)
-                Text("\(p >= 0 ? "+" : "")\(p.formattedPtWithUnit)")
-                    .font(.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit())
-                    .foregroundStyle(p >= 0 ? AppDesignSystem.Palette.win : AppDesignSystem.Palette.loss)
-                    .frame(maxWidth: .infinity, alignment: .leading)
                 let ds = HomeInsightMetrics.periodDeficitSurplus(in: statsPeriod, sessions: sessions)
-                HStack {
-                    Spacer(minLength: 0)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("\(p >= 0 ? "+" : "")\(p.formattedPtWithUnit)")
+                        .font(.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit())
+                        .foregroundStyle(p >= 0 ? AppDesignSystem.Palette.win : AppDesignSystem.Palette.loss)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     Text(ds >= 0 ? "余剰 +\(ds.formattedPtWithUnit)" : "欠損 \(ds.formattedPtWithUnit)")
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .font(.system(size: 14, weight: .semibold, design: .rounded))
                         .foregroundColor(ds >= 0 ? Color(red: 0.35, green: 0.92, blue: 0.55) : Color.orange.opacity(0.95))
+                        .multilineTextAlignment(.trailing)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

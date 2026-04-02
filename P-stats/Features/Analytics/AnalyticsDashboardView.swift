@@ -1285,7 +1285,7 @@ private struct OverviewTotalSummaryPanel: View {
             summaryDivider()
             summaryPairRow(
                 "勝率", metrics.winRatePercent.map { $0.displayFormat("%.1f%%") } ?? "—", neutral,
-                "ボーダーとの差（回転加重）",
+                "ボーダーとの差",
                 metrics.avgBorderDiffPer1k.map { $0.displayFormat("%+.1f 回/1k") } ?? "—",
                 {
                     guard let d = metrics.avgBorderDiffPer1k else { return neutral }
@@ -2569,11 +2569,11 @@ private struct AnalyticsSessionCardView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(session.machineName)
                 .font(.system(size: 16, weight: .semibold, design: .rounded))
-                .foregroundColor(.white.opacity(0.96))
+                .foregroundColor(AppGlassStyle.textPrimary)
                 .lineLimit(1)
             Text(session.shopName)
                 .font(.subheadline)
-                .foregroundColor(.white.opacity(0.78))
+                .foregroundColor(AppGlassStyle.textSecondary)
                 .lineLimit(1)
 
             HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -2585,25 +2585,19 @@ private struct AnalyticsSessionCardView: View {
                 Spacer(minLength: 0)
                 Text("\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)")
                     .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.78))
+                    .foregroundStyle(AppGlassStyle.textSecondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
 
             HStack(alignment: .top, spacing: 16) {
-                pairBlock(leftLabel: "総回転数", leftValue: "\(session.normalRotations)回", leftValueColor: .white.opacity(0.95),
-                          rightLabel: "実質回転率", rightValue: rotationRateValue, rightValueColor: .white.opacity(0.95))
+                pairBlock(leftLabel: "総回転数", leftValue: "\(session.normalRotations)回", leftValueColor: AppGlassStyle.textPrimary,
+                          rightLabel: "実質回転率", rightValue: rotationRateValue, rightValueColor: AppGlassStyle.textPrimary)
             }
             .font(.caption)
         }
-        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AnalyticsPanelStyle.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
+        .pstatsPanel(.card)
     }
     private func pairBlock(
         leftLabel: String,
@@ -2616,7 +2610,7 @@ private struct AnalyticsSessionCardView: View {
         HStack(alignment: .firstTextBaseline, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(leftLabel)
-                    .foregroundColor(.white.opacity(0.62))
+                    .foregroundColor(AppGlassStyle.textSecondary)
                 Text(leftValue)
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundColor(leftValueColor)
@@ -2627,7 +2621,7 @@ private struct AnalyticsSessionCardView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(rightLabel)
-                    .foregroundColor(.white.opacity(0.62))
+                    .foregroundColor(AppGlassStyle.textSecondary)
                 Text(rightValue)
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundColor(rightValueColor)
@@ -3382,7 +3376,8 @@ struct AnalyticsGroupCard: View {
         "\(n >= 0 ? "+" : "")\(n.formattedPtWithUnit)"
     }
 
-    private func shopMetricColumn(title: String, value: String, valueColor: Color) -> some View {
+    /// 店舗・機種・メーカー一覧のコンパクトカード用。ラベルは `bodyRounded`、数値だけ少し大きくする。
+    private func shopMetricColumn(title: String, value: String, valueColor: Color, valueFont: Font) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(AppTypography.bodyRounded)
@@ -3390,7 +3385,7 @@ struct AnalyticsGroupCard: View {
                 .lineLimit(2)
                 .minimumScaleFactor(0.85)
             Text(value)
-                .font(AppTypography.bodyMonoSemibold)
+                .font(valueFont)
                 .monospacedDigit()
                 .foregroundColor(valueColor)
                 .lineLimit(2)
@@ -3406,22 +3401,24 @@ struct AnalyticsGroupCard: View {
             guard let d = m.avgBorderDiffPer1k else { return neutralLabel }
             return d >= 0 ? accent : lossColor
         }()
+        let metricValueFont = Font.system(size: 16, weight: .semibold, design: .monospaced)
         return VStack(alignment: .leading, spacing: 0) {
             Text(group.label)
                 .font(AppTypography.panelHeading)
                 .foregroundColor(.white)
                 .padding(.bottom, 6)
             HStack(alignment: .top, spacing: 12) {
-                shopMetricColumn(title: "通算成績", value: signedPt(m.totalPerformance), valueColor: m.totalPerformance >= 0 ? accent : lossColor)
-                shopMetricColumn(title: "通算遊技回数", value: "\(m.sessionCount)回", valueColor: neutralLabel)
+                shopMetricColumn(title: "通算成績", value: signedPt(m.totalPerformance), valueColor: m.totalPerformance >= 0 ? accent : lossColor, valueFont: metricValueFont)
+                shopMetricColumn(title: "通算遊技回数", value: "\(m.sessionCount)回", valueColor: neutralLabel, valueFont: metricValueFont)
             }
             compactRowDivider()
             HStack(alignment: .top, spacing: 12) {
-                shopMetricColumn(title: "勝率", value: m.winRatePercent.map { $0.displayFormat("%.1f%%") } ?? "—", valueColor: neutralLabel)
+                shopMetricColumn(title: "勝率", value: m.winRatePercent.map { $0.displayFormat("%.1f%%") } ?? "—", valueColor: neutralLabel, valueFont: metricValueFont)
                 shopMetricColumn(
-                    title: "ボーダーとの差（回転加重）",
+                    title: "ボーダーとの差",
                     value: m.avgBorderDiffPer1k.map { $0.displayFormat("%+.1f 回/1k") } ?? "—",
-                    valueColor: borderColor
+                    valueColor: borderColor,
+                    valueFont: metricValueFont
                 )
             }
         }

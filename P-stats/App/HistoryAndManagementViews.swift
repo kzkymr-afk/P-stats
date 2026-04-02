@@ -745,14 +745,8 @@ struct HistorySessionCard: View {
             }
             .font(.caption)
         }
-        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AppGlassStyle.rowBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
+        .pstatsPanel(.card)
     }
 
     private func pairBlock(
@@ -766,7 +760,7 @@ struct HistorySessionCard: View {
         HStack(alignment: .firstTextBaseline, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(leftLabel)
-                    .foregroundColor(.white.opacity(0.62))
+                    .foregroundColor(AppGlassStyle.textSecondary)
                 Text(leftValue)
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundColor(leftValueColor)
@@ -777,7 +771,7 @@ struct HistorySessionCard: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(rightLabel)
-                    .foregroundColor(.white.opacity(0.62))
+                    .foregroundColor(AppGlassStyle.textSecondary)
                 Text(rightValue)
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundColor(rightValueColor)
