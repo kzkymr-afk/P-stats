@@ -16,3 +16,6 @@ node_modules/
 
 # 各機種スペック JSON は GitHub Pages（gh-pages）が正。main では追跡しない（convert 実行時はローカルに生成される）
 master_out/machines/
+
+# Google Places など API キー（xcconfig でビルド時注入。example のみコミット）
+Config/P-statsSecrets.xcconfig

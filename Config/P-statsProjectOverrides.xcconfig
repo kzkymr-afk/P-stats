@@ -1,0 +1,4 @@
+// このファイルはリポジトリにコミットする。実際のキーは Secrets にだけ書く。
+// 上書き順: まず空の既定 → 次行の #include? で Secrets があればそちらが優先される。
+GOOGLE_PLACES_API_KEY =
+#include? "P-statsSecrets.xcconfig"

@@ -9,7 +9,7 @@
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>
 	<key>GooglePlacesAPIKey</key>
-	<string>AIzaSyBi_H6osYb-1GZrchNsVNxiEP5nnKWrcG8</string>
+	<string>$(GOOGLE_PLACES_API_KEY)</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>現在地周辺のパチンコ店を検索するために位置情報を利用します。</string>
 	<key>UIBackgroundModes</key>
