@@ -554,6 +554,7 @@ struct HomeView: View {
             } label: {
                 HomeGridButtonLabelSplit(
                     title: "新規スタート",
+                    subtitle: "実戦画面で記録",
                     icon: "plus.circle",
                     width: iw,
                     height: newStartHeight
@@ -577,6 +578,7 @@ struct HomeView: View {
                 } label: {
                     HomeGridButtonLabelSplit(
                         title: "続きから",
+                        subtitle: "自動保存から",
                         icon: "play.circle",
                         width: cellW,
                         height: secondaryHeight
@@ -591,6 +593,7 @@ struct HomeView: View {
                 } label: {
                     HomeGridButtonLabelSplit(
                         title: "実戦履歴",
+                        subtitle: "保存済み一覧",
                         icon: "calendar",
                         width: cellW,
                         height: secondaryHeight
@@ -607,6 +610,7 @@ struct HomeView: View {
                 } label: {
                     HomeGridButtonLabelSplit(
                         title: "シンプル入力",
+                        subtitle: "画面なしで手入力",
                         icon: "square.and.pencil",
                         width: cellW,
                         height: secondaryHeight
@@ -622,6 +626,7 @@ struct HomeView: View {
                 } label: {
                     HomeGridButtonLabelSplit(
                         title: "データ分析",
+                        subtitle: "集計・グラフ",
                         icon: "chart.bar",
                         width: cellW,
                         height: secondaryHeight
@@ -637,6 +642,8 @@ struct HomeView: View {
     // MARK: - ホーム右列など（高さ可変ラベル）
     private struct HomeGridButtonLabelSplit: View {
         let title: String
+        /// 補足1行（初心者向け・省略可）
+        var subtitle: String? = nil
         let icon: String
         let width: CGFloat
         let height: CGFloat
@@ -653,9 +660,17 @@ struct HomeView: View {
         }
 
         private var minDim: CGFloat { min(safeW, safeH) }
-        private var iconSize: CGFloat { min(36, max(20, minDim * 0.205)) }
-        private var titleSize: CGFloat { min(16, max(11, minDim * 0.088)) }
-        private var innerSpacing: CGFloat { max(4, minDim * 0.06) }
+        private var hasSubtitle: Bool { !(subtitle?.isEmpty ?? true) }
+        private var iconSize: CGFloat {
+            let base = min(36, max(20, minDim * 0.205))
+            return hasSubtitle ? base * 0.9 : base
+        }
+        private var titleSize: CGFloat {
+            let base = min(16, max(11, minDim * 0.088))
+            return hasSubtitle ? base * 0.92 : base
+        }
+        private var subtitleSize: CGFloat { min(10, max(8, titleSize * 0.78)) }
+        private var innerSpacing: CGFloat { max(3, minDim * (hasSubtitle ? 0.045 : 0.06)) }
 
         var body: some View {
             VStack(spacing: innerSpacing) {
@@ -665,11 +680,21 @@ struct HomeView: View {
                     .font(themeManager.currentTheme.themedFont(size: titleSize, weight: .medium))
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                if let subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(themeManager.currentTheme.themedFont(size: subtitleSize, weight: .regular))
+                        .foregroundColor(themeManager.currentTheme.subTextColor.opacity(0.92))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
             }
             .foregroundColor(themeManager.currentTheme.mainTextColor.opacity(0.95))
             .frame(width: safeW, height: safeH)
             .pstatsPanelStyle()
             .compositingGroup()
+            .accessibilityElement(children: .combine)
         }
     }
 

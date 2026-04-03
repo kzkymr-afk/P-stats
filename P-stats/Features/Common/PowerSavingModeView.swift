@@ -132,7 +132,7 @@ struct ProModeView: View {
                 Spacer(minLength: 6)
 
                 VStack(alignment: .leading, spacing: 0) {
-                    row(label: "現在の回転数", value: "\(log.gamesSinceLastWin)回")
+                    row(label: "前回当選から", value: "\(log.gamesSinceLastWin)回")
                     Divider().background(cyan.opacity(0.3)).padding(.horizontal, 8)
                     let rr = log.realRate
                     let bd = log.dynamicBorder
@@ -198,10 +198,15 @@ struct ProModeView: View {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 triggerRipple(at: CGPoint(x: leftW + rightW / 2, y: rowH / 2))
             }) {
-                VStack(spacing: 4) {
+                VStack(spacing: 3) {
                     Text("\(log.gamesSinceLastWin)")
                         .font(.system(size: min(48, rowH * 0.4), weight: .bold, design: .monospaced))
                         .foregroundColor(cyan)
+                    Text("前回当選から")
+                        .font(.system(size: 9, weight: .medium, design: .rounded))
+                        .foregroundColor(cyan.opacity(0.65))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                     Text("タップ+1")
                         .font(.system(size: 13, weight: .medium, design: .rounded))
                         .foregroundColor(cyan.opacity(0.8))
@@ -212,6 +217,8 @@ struct ProModeView: View {
             .frame(width: rightW, height: rowH)
             .background(Color.black.opacity(0.2))
             .overlay(RoundedRectangle(cornerRadius: 0).stroke(cyan.opacity(0.35), lineWidth: 1))
+            .accessibilityLabel("前回当選から \(log.gamesSinceLastWin) ゲーム")
+            .accessibilityHint("タップで1増やします")
         }
         .frame(height: rowH)
     }

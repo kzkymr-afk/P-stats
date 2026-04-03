@@ -555,6 +555,7 @@ private struct AnalyticsPeriodReferencePicker: View {
 
 // MARK: - 分析ドック一式（`AnalyticsDashboardView` 内の `NavigationStack` と同一階層の `safeAreaInset` に載せる）
 struct AnalyticsDashboardBottomChrome: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @ObservedObject var model: AnalyticsDashboardSharedModel
     @ObservedObject private var adVisibility = AdVisibilityManager.shared
     var onDismissToHome: () -> Void
@@ -583,14 +584,7 @@ struct AnalyticsDashboardBottomChrome: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(Color(red: 0.14, green: 0.14, blue: 0.15))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                )
+                .pstatsPanelStyle()
                 .padding(.horizontal, 20)
                 .padding(.bottom, 8)
             }
@@ -1787,7 +1781,7 @@ private struct WeekdayTendencySection: View {
                                 y: .value("pt", g.totalProfit),
                                 width: barWidth
                             )
-                            .foregroundStyle(g.totalProfit >= 0 ? Color.green : Color.orange)
+                            .foregroundStyle(g.totalProfit >= 0 ? accent : Color.orange)
                         }
                     }
                     .chartYAxis {
@@ -1911,7 +1905,7 @@ private struct SpecificDayBarChartSection: View {
                                 y: .value("pt", g.label.hasPrefix("_pad") ? 0 : g.totalProfit),
                                 width: barWidth
                             )
-                            .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : (g.totalProfit >= 0 ? Color.green : Color.orange))
+                            .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : (g.totalProfit >= 0 ? accent : Color.orange))
                         }
                     }
                     .chartYAxis { AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
@@ -2022,7 +2016,7 @@ private struct CumulativeProfitTrendSection: View {
         let hi0: Int
         let lo1: Int
         let hi1: Int
-        /// true: 累計実質収支が累計期待値より上（余剰寄り＝青系）
+        /// true: 累計実質収支が累計期待値より上（余剰寄り＝アクセント色寄りの帯）
         let isSurplus: Bool
     }
 
@@ -2093,7 +2087,7 @@ private struct CumulativeProfitTrendSection: View {
     }
 
     private static let chartExplanation =
-        "右端は基準日を含む月・週・日です。折れ線は左から順に足し上げた累計（実質収支＝実成績、期待値）。2線の間は、実質が期待より上なら青系・下なら赤系の帯で示します。棒は各バケットの期待値合計です。実戦が無い期間も 0 として並びます。"
+        "右端は基準日を含む月・週・日です。折れ線は左から順に足し上げた累計（実質収支＝実成績、期待値）。2線の間は、実質が期待より上ならアクセント色寄り・下なら赤系の帯で示します。棒は各バケットの期待値合計です。実戦が無い期間も 0 として並びます。"
 
     /// 下段のラベル付き目盛（30日は間引き）。上段は全点で縦線を引く。
     private var xAxisLabelIndices: [Int] {
@@ -2136,7 +2130,7 @@ private struct CumulativeProfitTrendSection: View {
                 .accessibilityHint("タップで直近12ヶ月・直近12週・直近30日を切り替え")
                 InfoIconView(explanation: Self.chartExplanation, tint: .white.opacity(0.6))
             }
-            Text("折れ線＝累計（実質・期待）。帯＝その間（余剰＝青／欠損＝赤）。棒＝期間別の期待値合計。")
+            Text("折れ線＝累計（実質・期待）。帯＝その間（余剰＝アクセント色／欠損＝赤）。棒＝期間別の期待値合計。")
                 .font(.system(size: 11, weight: .medium, design: .rounded))
                 .foregroundColor(.white.opacity(0.58))
                 .fixedSize(horizontal: false, vertical: true)
@@ -2352,7 +2346,7 @@ private struct CalendarHeatmapSection: View {
                 Text("稼働ヒートマップ")
                     .font(AppTypography.panelHeading)
                     .foregroundColor(.white)
-                InfoIconView(explanation: "濃いほど収支の絶対値が大きい（青=プラス・赤=マイナス）。タップでその日の履歴へ。", tint: .white.opacity(0.6))
+                InfoIconView(explanation: "濃いほど収支の絶対値が大きい（アクセント色＝プラス・赤系＝マイナス）。タップでその日の履歴へ。", tint: .white.opacity(0.6))
             }
 
             VStack(spacing: 20) {
@@ -2544,8 +2538,9 @@ private struct AnalyticsSessionCardView: View {
             }
             .font(.caption)
         }
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .pstatsPanel(.card)
+        .pstatsPanelStyle()
     }
     private func pairBlock(
         leftLabel: String,

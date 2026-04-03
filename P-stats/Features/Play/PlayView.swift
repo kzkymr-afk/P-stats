@@ -28,6 +28,8 @@ struct PlayView: View {
     @State private var showSettlementSheet = false
     /// 保存結果（失敗時のみ）。成功は OK 段を挟まずにトースト／即戻りで処理する
     @State private var saveResult: String? = nil
+    /// 精算シートの「確定」連打などで SwiftData に二重 insert しないための再入防止
+    @State private var isSavingSession = false
     @State private var showSavedToast = false
     @State private var showHoldingsSyncSheet = false
     @State private var tempHoldingsSyncValue: String = ""
@@ -229,15 +231,11 @@ struct PlayView: View {
         }
     }
 
-    /// ヘッダー帯＋その直下スペーサまでの高さ（`body` 内の `headerTopMargin` / `h2` / 10pt と整合）
+    /// ヘッダー帯＋その直下スペーサまでの高さ（`PlaySessionLayoutMetrics` と 10pt スペーサと整合）
     private func playTopAdTopInset(geo: GeometryProxy) -> CGFloat {
-        let H = geo.size.height
-        let hHeaderOne = H * 0.05
-        let hHeaderBigHitExtra: CGFloat = log.isBigHitMode ? max(34, H * 0.042) : 0
-        let h2 = hHeaderOne + hHeaderBigHitExtra
-        let headerTopMargin = max(headerTopInset, 20)
+        let m = playSessionLayoutMetrics(geo: geo)
         let spacerBelowHeader: CGFloat = 10
-        return headerTopMargin + h2 + spacerBelowHeader
+        return m.headerTopMargin + m.h2 + spacerBelowHeader
     }
 
     private func dismissPlayAfterSaveFlow() {
@@ -366,26 +364,258 @@ struct PlayView: View {
         }
     }
 
+    // MARK: - メインカラム分割（body の縦レイアウト定数と if/else を整理）
+
+    /// GeometryReader 内の縦方向比率・余白を1か所に集約
+    private struct PlaySessionLayoutMetrics {
+        let screenHeight: CGFloat
+        let hHeaderOne: CGFloat
+        let h2: CGFloat
+        let hWinCount: CGFloat
+        let hSlumpBig: CGFloat
+        let hHistBig: CGFloat
+        let h20info: CGFloat
+        let h10: CGFloat
+        let h22center: CGFloat
+        let barHeight: CGFloat
+        let headerTopMargin: CGFloat
+        let maxRippleSize: CGFloat
+    }
+
+    private func playSessionLayoutMetrics(geo: GeometryProxy) -> PlaySessionLayoutMetrics {
+        let H = geo.size.height
+        let hHeaderOne = H * 0.05
+        let hHeaderBigHitExtra: CGFloat = log.isBigHitMode ? max(34, H * 0.042) : 0
+        let h2 = hHeaderOne + hHeaderBigHitExtra
+        let hWinCount = H * 0.055
+        let hSlumpBig = H * 0.168
+        let hHistBig = H * 0.118
+        let h20info = max(H * 0.191, 155)
+        let h10 = H * 0.088
+        let bigHitChainAndNormalTotal = max(H * 0.22 + min(H * 0.18, 96), 160)
+        let h22center = bigHitChainAndNormalTotal * 3 / 4
+        let barHeight = bigHitChainAndNormalTotal * 1 / 4
+        let headerTopMargin = max(headerTopInset, 20)
+        let maxRippleSize = max(geo.size.width, geo.size.height) * 1.4
+        return PlaySessionLayoutMetrics(
+            screenHeight: H,
+            hHeaderOne: hHeaderOne,
+            h2: h2,
+            hWinCount: hWinCount,
+            hSlumpBig: hSlumpBig,
+            hHistBig: hHistBig,
+            h20info: h20info,
+            h10: h10,
+            h22center: h22center,
+            barHeight: barHeight,
+            headerTopMargin: headerTopMargin,
+            maxRippleSize: maxRippleSize
+        )
+    }
+
+    @ViewBuilder
+    private func playSessionHeaderBlock(metrics: PlaySessionLayoutMetrics) -> some View {
+        ZStack(alignment: .bottom) {
+            theme.playHeaderBackground
+            headerRow(firstRowHeight: metrics.hHeaderOne)
+        }
+        .frame(minHeight: metrics.headerTopMargin + metrics.h2)
+        .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private func playNormalModeMainColumn(geo: GeometryProxy, metrics: PlaySessionLayoutMetrics) -> some View {
+        winCountPanel(height: metrics.hWinCount)
+        Spacer().frame(height: 3)
+
+        infoRow(height: metrics.h20info)
+        Spacer().frame(height: sectionGap)
+
+        WinHistoryBarChartView(
+            records: Array(log.winRecords.suffix(winRecordsDisplayLimit)),
+            maxHeight: metrics.h10,
+            accentStroke: focusAccent,
+            onSelectRecord: { rec in
+                tempWinBonusEditId = rec.id
+                tempWinBonusEditCount = "\(max(1, rec.bonusSessionHitCount ?? 1))"
+                showWinBonusEditSheet = true
+            }
+        )
+        .padding(6)
+        .frame(maxWidth: .infinity)
+        .background(playPanelBackground)
+        .clipShape(RoundedRectangle(cornerRadius: panelRadius))
+        .overlay(RoundedRectangle(cornerRadius: panelRadius).stroke(glassStroke(tint: focusAccent), lineWidth: panelStrokeWidth))
+        .padding(.horizontal, contentHorizontalPadding)
+        Spacer().frame(height: sectionGap)
+
+        PlaySessionSwipeHintBar(
+            focusAccent: focusAccent,
+            rightHandMode: rightHandMode,
+            insightPanelWidth: insightPanelWidth,
+            drawerOffset: $drawerOffset,
+            swipeZoneGlow: $swipeZoneGlow,
+            didFireUnlockHaptic: $didFireUnlockHaptic,
+            geo: geo,
+            onUnlockThresholdHaptic: { haptic(.light) }
+        )
+        .offset(x: rightHandMode ? drawerOffset : -drawerOffset)
+        .animation(.easeOut(duration: 0.22), value: drawerOffset)
+        Spacer().frame(height: sectionGap)
+
+        centerActionRow(geo: geo, height: metrics.h22center)
+        Spacer().frame(height: sectionGap)
+
+        floatingBottomBar(geo: geo, barHeight: metrics.barHeight)
+            .frame(minHeight: metrics.barHeight)
+            .frame(maxHeight: .infinity)
+        Spacer(minLength: 0)
+            .frame(height: geo.safeAreaInsets.bottom > 0 ? geo.safeAreaInsets.bottom : 8)
+    }
+
+    @ViewBuilder
+    private func playBigHitModeMainColumn(geo: GeometryProxy, metrics: PlaySessionLayoutMetrics) -> some View {
+        SessionSlumpLineChartView(log: log, height: metrics.hSlumpBig, strokeTint: bigHitChainLineTint(log.bigHitChainCount))
+            .padding(.horizontal, infoPanelHorizontalMargin)
+            .animation(.easeInOut(duration: 0.28), value: log.bigHitChainCount)
+        Spacer().frame(height: sectionGap)
+        WinHistoryBarChartView(
+            records: Array(log.winRecordsForChartDisplay().suffix(winRecordsDisplayLimit)),
+            maxHeight: metrics.hHistBig,
+            accentStroke: bigHitChainUsesRainbow(log.bigHitChainCount)
+                ? Color.white.opacity(0.92)
+                : bigHitChainPrimaryColor(log.bigHitChainCount),
+            chainBarColor: bigHitChainUsesRainbow(log.bigHitChainCount)
+                ? nil
+                : bigHitChainPrimaryColor(log.bigHitChainCount),
+            chainBarGradient: bigHitChainUsesRainbow(log.bigHitChainCount) ? bigHitRainbowForeground : nil,
+            onSelectRecord: { rec in
+                if rec.id == GameLog.provisionalBigHitChartId { return }
+                tempWinBonusEditId = rec.id
+                tempWinBonusEditCount = "\(max(1, rec.bonusSessionHitCount ?? 1))"
+                showWinBonusEditSheet = true
+            }
+        )
+        .padding(6)
+        .frame(maxWidth: .infinity)
+        .background(playPanelBackground)
+        .clipShape(RoundedRectangle(cornerRadius: panelRadius))
+        .overlay(bigHitThemedStroke(cornerRadius: panelRadius, chainCount: log.bigHitChainCount))
+        .animation(.easeInOut(duration: 0.28), value: log.bigHitChainCount)
+        .padding(.horizontal, contentHorizontalPadding)
+        Spacer().frame(height: sectionGap)
+        PlaySessionSwipeHintBar(
+            focusAccent: focusAccent,
+            rightHandMode: rightHandMode,
+            insightPanelWidth: insightPanelWidth,
+            drawerOffset: $drawerOffset,
+            swipeZoneGlow: $swipeZoneGlow,
+            didFireUnlockHaptic: $didFireUnlockHaptic,
+            geo: geo,
+            onUnlockThresholdHaptic: { haptic(.light) }
+        )
+        .offset(x: rightHandMode ? drawerOffset : -drawerOffset)
+        .animation(.easeOut(duration: 0.22), value: drawerOffset)
+        Spacer().frame(height: sectionGap)
+        bigHitCenterRow(geo: geo, height: metrics.h22center)
+        Spacer().frame(height: sectionGap)
+        bigHitFloatingBottomBar(geo: geo, barHeight: metrics.barHeight)
+            .frame(height: metrics.barHeight)
+        Spacer(minLength: 0)
+            .frame(height: geo.safeAreaInsets.bottom > 0 ? geo.safeAreaInsets.bottom : 8)
+    }
+
+    @ViewBuilder
+    private func playInsightDrawerLayer() -> some View {
+        if drawerOffset > 0 {
+            ZStack(alignment: rightHandMode ? .leading : .trailing) {
+                theme.playDrawerScrim
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        haptic(.light)
+                        withAnimation(.easeOut(duration: 0.22)) {
+                            drawerOffset = 0
+                            didFireUnlockHaptic = false
+                        }
+                    }
+                InsightPanelView(log: log, onClose: {
+                    haptic(.light)
+                    withAnimation(.easeOut(duration: 0.22)) {
+                        drawerOffset = 0
+                        didFireUnlockHaptic = false
+                    }
+                }, onShareSNS: {
+                    shareSheetItem = ShareSheetItem(snapshot: SessionShareSnapshot.from(log: log))
+                    haptic(.light)
+                }, onCorrectInitialRotation: {
+                    tempInitialRotationCorrect = "\(log.initialDisplayRotation)"
+                    showInitialRotationCorrectSheet = true
+                }, onCorrectCash: {
+                    tempCashCorrect = "\(log.totalInput)"
+                    showCashCorrectSheet = true
+                }, onCorrectHoldings: {
+                    tempHoldingsCorrectValue = "\(log.holdingsInvestedBalls)"
+                    showHoldingsCorrectSheet = true
+                }, onCorrectWinCount: {
+                    tempRushWinCount = "\(log.rushWinCount)"
+                    tempNormalWinCount = "\(log.normalWinCount)"
+                    showWinCountCorrectSheet = true
+                }, onOpenHistory: {
+                    showHistoryFromPlay = true
+                }, onOpenEventHistory: {
+                    showEventHistorySheet = true
+                }, onOpenAnalytics: {
+                    showAnalyticsFromPlay = true
+                }, onOpenPowerSaving: {
+                    showProMode = true
+                    haptic(.light)
+                }, onOpenSettings: {
+                    if let onOpenSettingsTab = onOpenSettingsTab {
+                        onOpenSettingsTab()
+                    } else {
+                        showSettingsSheet = true
+                    }
+                    haptic(.light)
+                }, onToggleRightHandMode: {
+                    rightHandMode = !rightHandMode
+                    haptic(.light)
+                }, isRightHandMode: rightHandMode)
+                .frame(width: insightPanelWidth)
+                .offset(x: rightHandMode ? (-insightPanelWidth + drawerOffset) : (insightPanelWidth - drawerOffset))
+            }
+            .transition(.opacity)
+        }
+    }
+
+    @ViewBuilder
+    private func playRippleOverlay(geo: GeometryProxy, maxRippleSize: CGFloat) -> some View {
+        if rippleActive {
+            let size = maxRippleSize
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            rippleColor.opacity(rippleOpacity),
+                            rippleColor.opacity(rippleOpacity * 0.4),
+                            rippleColor.opacity(rippleOpacity * 0.15),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: size / 2
+                    )
+                )
+                .frame(width: size, height: size)
+                .scaleEffect(rippleScale)
+                .position(x: geo.size.width / 2, y: geo.size.height / 2)
+                .blur(radius: 0.8)
+                .allowsHitTesting(false)
+        }
+    }
+
     var body: some View {
         GeometryReader { geo in
-            let H = geo.size.height
-            // 縦方向を全面調整：合計が画面に収まるよう比率を抑え、下部バーは高さ上限あり
-            /// ヘッダー1行（機種・店舗）。大当たり時は連チャン行を追加するため下で加算
-            let hHeaderOne = H * 0.05
-            let hHeaderBigHitExtra: CGFloat = log.isBigHitMode ? max(34, H * 0.042) : 0
-            let h2 = hHeaderOne + hHeaderBigHitExtra
-            let hWinCount = H * 0.055  // 最上部「大当たり回数」パネル
-            /// 大当たり中：ヘッダー化で空いた分をスランプ・履歴へ
-            let hSlumpBig = H * 0.168
-            let hHistBig = H * 0.118
-            /// 回転率ゲージ＋右パネル（はみ出し防止の最小高さ）。約5％縦に広げる
-            let h20info = max(H * 0.191, 155)
-            let h10 = H * 0.088  // 大当たり履歴（通常時）
-            /// 大当たり中：連チャン vs 通常へ の縦スペース比 3:1（通常へをより小さく）
-            let bigHitChainAndNormalTotal = max(H * 0.22 + min(H * 0.18, 96), 160)
-            let h22center = bigHitChainAndNormalTotal * 3 / 4
-            let barHeight = bigHitChainAndNormalTotal * 1 / 4
-            let maxRippleSize = max(geo.size.width, geo.size.height) * 1.4
+            let m = playSessionLayoutMetrics(geo: geo)
             ZStack(alignment: .bottomLeading) {
                 playBackgroundLayer(geo: geo)
                     .ignoresSafeArea(edges: .all)
@@ -398,201 +628,33 @@ struct PlayView: View {
                 }
 
                 VStack(spacing: 0) {
-                    // ヘッダー領域: 上マージン＝画面上端〜ダイナミックアイランド下端（同色）。ヘッダー本体はその直下から
-                    let headerTopMargin = max(headerTopInset, 20)
-                    ZStack(alignment: .bottom) {
-                        theme.playHeaderBackground
-                        headerRow(firstRowHeight: hHeaderOne)
-                    }
-                    .frame(minHeight: headerTopMargin + h2)
-                    .frame(maxWidth: .infinity)
-
-                    // ヘッダーと大当たり回数パネルの間（情報ブロック内の隙間と揃えてやや詰める）
+                    playSessionHeaderBlock(metrics: m)
                     Spacer().frame(height: 6)
 
                     if log.isBigHitMode {
-                        // 通常実戦と同じ縦割り＋壁紙。見た目は従来の RUSH 系（赤系・グラス・大きな操作域）
-                        SessionSlumpLineChartView(log: log, height: hSlumpBig, strokeTint: bigHitChainLineTint(log.bigHitChainCount))
-                            .padding(.horizontal, infoPanelHorizontalMargin)
-                            .animation(.easeInOut(duration: 0.28), value: log.bigHitChainCount)
-                        Spacer().frame(height: sectionGap)
-                        WinHistoryBarChartView(
-                            records: Array(log.winRecordsForChartDisplay().suffix(winRecordsDisplayLimit)),
-                            maxHeight: hHistBig,
-                            accentStroke: bigHitChainUsesRainbow(log.bigHitChainCount)
-                                ? Color.white.opacity(0.92)
-                                : bigHitChainPrimaryColor(log.bigHitChainCount),
-                            chainBarColor: bigHitChainUsesRainbow(log.bigHitChainCount)
-                                ? nil
-                                : bigHitChainPrimaryColor(log.bigHitChainCount),
-                            chainBarGradient: bigHitChainUsesRainbow(log.bigHitChainCount) ? bigHitRainbowForeground : nil,
-                            onSelectRecord: { rec in
-                                if rec.id == GameLog.provisionalBigHitChartId { return }
-                                tempWinBonusEditId = rec.id
-                                tempWinBonusEditCount = "\(max(1, rec.bonusSessionHitCount ?? 1))"
-                                showWinBonusEditSheet = true
-                            }
-                        )
-                            .padding(6)
-                            .frame(maxWidth: .infinity)
-                            .background(playPanelBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: panelRadius))
-                            .overlay(bigHitThemedStroke(cornerRadius: panelRadius, chainCount: log.bigHitChainCount))
-                            .animation(.easeInOut(duration: 0.28), value: log.bigHitChainCount)
-                            .padding(.horizontal, contentHorizontalPadding)
-                        Spacer().frame(height: sectionGap)
-                        swipeGapRow(geo: geo)
-                            .offset(x: rightHandMode ? drawerOffset : -drawerOffset)
-                            .animation(.easeOut(duration: 0.22), value: drawerOffset)
-                        Spacer().frame(height: sectionGap)
-                        bigHitCenterRow(geo: geo, height: h22center)
-                        Spacer().frame(height: sectionGap)
-                        bigHitFloatingBottomBar(geo: geo, barHeight: barHeight)
-                            .frame(height: barHeight)
-                        Spacer(minLength: 0)
-                            .frame(height: geo.safeAreaInsets.bottom > 0 ? geo.safeAreaInsets.bottom : 8)
+                        playBigHitModeMainColumn(geo: geo, metrics: m)
                     } else {
-                    // 最上部：大当たり回数パネル（RUSH / 通常）
-                    winCountPanel(height: hWinCount)
-                    Spacer().frame(height: 3)
-
-                    // 状態表示（ゲージ＝総回転上端〜持ち玉下端、下余白詰め）
-                    infoRow(height: h20info)
-                    Spacer().frame(height: sectionGap)
-
-                    // 大当たり履歴
-                    WinHistoryBarChartView(
-                        records: Array(log.winRecords.suffix(winRecordsDisplayLimit)),
-                        maxHeight: h10,
-                        accentStroke: focusAccent,
-                        onSelectRecord: { rec in
-                            tempWinBonusEditId = rec.id
-                            tempWinBonusEditCount = "\(max(1, rec.bonusSessionHitCount ?? 1))"
-                            showWinBonusEditSheet = true
-                        }
-                    )
-                        .padding(6)
-                        .frame(maxWidth: .infinity)
-                        .background(playPanelBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: panelRadius))
-                        .overlay(RoundedRectangle(cornerRadius: panelRadius).stroke(glassStroke(tint: focusAccent), lineWidth: panelStrokeWidth))
-                        .padding(.horizontal, contentHorizontalPadding)
-                    Spacer().frame(height: sectionGap)
-
-                    // スワイプバー（高さ60pt）
-                    swipeGapRow(geo: geo)
-                        .offset(x: rightHandMode ? drawerOffset : -drawerOffset)
-                        .animation(.easeOut(duration: 0.22), value: drawerOffset)
-                    Spacer().frame(height: sectionGap)
-
-                    // 中央 現金・持ち玉・カウント（ボタン間隔は sectionGap と統一）
-                    centerActionRow(geo: geo, height: h22center)
-                    Spacer().frame(height: sectionGap)
-
-                    // ボタン群（上寄せ・余白はRUSH/通常の高さで吸収）
-                    floatingBottomBar(geo: geo, barHeight: barHeight)
-                        .frame(minHeight: barHeight)
-                        .frame(maxHeight: .infinity)
-                    Spacer(minLength: 0)
-                        .frame(height: geo.safeAreaInsets.bottom > 0 ? geo.safeAreaInsets.bottom : 8)
+                        playNormalModeMainColumn(geo: geo, metrics: m)
                     }
                 }
-                .frame(minHeight: H)
+                .frame(minHeight: m.screenHeight)
                 .ignoresSafeArea(edges: .top)
 
-                // バナー：最上部・メインより手前／ドロワー・ポップアップより奥（順序のみで z 順）
                 playTopAdOverlay(geo: geo)
 
-                // 長押しポップアップ類（最前面）
                 popoverOverlays(geo: geo)
 
-                // インサイトパネル（ドラッグ1:1追従ドロワー）。左手=右から、右手=左から
-                if drawerOffset > 0 {
-                    ZStack(alignment: rightHandMode ? .leading : .trailing) {
-                        theme.playDrawerScrim
-                            .ignoresSafeArea()
-                            .onTapGesture {
-                                haptic(.light)
-                                withAnimation(.easeOut(duration: 0.22)) {
-                                    drawerOffset = 0
-                                    didFireUnlockHaptic = false
-                                }
-                            }
-                        InsightPanelView(log: log, onClose: {
-                            haptic(.light)
-                            withAnimation(.easeOut(duration: 0.22)) {
-                                drawerOffset = 0
-                                didFireUnlockHaptic = false
-                            }
-                        }, onShareSNS: {
-                            shareSheetItem = ShareSheetItem(snapshot: SessionShareSnapshot.from(log: log))
-                            haptic(.light)
-                        }, onCorrectInitialRotation: {
-                            tempInitialRotationCorrect = "\(log.initialDisplayRotation)"
-                            showInitialRotationCorrectSheet = true
-                        }, onCorrectCash: {
-                            tempCashCorrect = "\(log.totalInput)"
-                            showCashCorrectSheet = true
-                        }, onCorrectHoldings: {
-                            tempHoldingsCorrectValue = "\(log.holdingsInvestedBalls)"
-                            showHoldingsCorrectSheet = true
-                        }, onCorrectWinCount: {
-                            tempRushWinCount = "\(log.rushWinCount)"
-                            tempNormalWinCount = "\(log.normalWinCount)"
-                            showWinCountCorrectSheet = true
-                        }, onOpenHistory: {
-                            showHistoryFromPlay = true
-                        }, onOpenEventHistory: {
-                            showEventHistorySheet = true
-                        }, onOpenAnalytics: {
-                            showAnalyticsFromPlay = true
-                        }, onOpenPowerSaving: {
-                            showProMode = true
-                            haptic(.light)
-                        }, onOpenSettings: {
-                            if let onOpenSettingsTab = onOpenSettingsTab {
-                                onOpenSettingsTab()
-                            } else {
-                                showSettingsSheet = true
-                            }
-                            haptic(.light)
-                        }, onToggleRightHandMode: {
-                            rightHandMode = !rightHandMode
-                            haptic(.light)
-                        }, isRightHandMode: rightHandMode)
-                        .frame(width: insightPanelWidth)
-                        .offset(x: rightHandMode ? (-insightPanelWidth + drawerOffset) : (insightPanelWidth - drawerOffset))
-                    }
-                    .transition(.opacity)
-                }
+                playInsightDrawerLayer()
 
-                // 期待値に応じた波紋（中央→外周・タップ成功時）。放射グラデで柔らかく、連打時は1本のみ
-                if rippleActive {
-                    let size = maxRippleSize
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [
-                                    rippleColor.opacity(rippleOpacity),
-                                    rippleColor.opacity(rippleOpacity * 0.4),
-                                    rippleColor.opacity(rippleOpacity * 0.15),
-                                    Color.clear
-                                ],
-                                center: .center,
-                                startRadius: 0,
-                                endRadius: size / 2
-                            )
-                        )
-                        .frame(width: size, height: size)
-                        .scaleEffect(rippleScale)
-                        .position(x: geo.size.width / 2, y: geo.size.height / 2)
-                        .blur(radius: 0.8)
-                        .allowsHitTesting(false)
-                }
+                playRippleOverlay(geo: geo, maxRippleSize: m.maxRippleSize)
             }
         }
         .ignoresSafeArea(edges: .all)
         .keyboardDismissToolbar()
+        /// 75 秒タイマーをメイン `GeometryReader` から切り離し、発火時に実戦画面全体の body を再走査しないようにする
+        .background {
+            PlayResumableAutosaveHook(log: log)
+        }
         .onAppear {
             // 実戦開始時刻（新規/復元どちらでも nil のときのみ採番）
             if log.sessionStartedAt == nil {
@@ -634,12 +696,6 @@ struct PlayView: View {
         }
         .onChange(of: playDisableIdleTimerDuringPlay) { _, _ in
             applyPlayIdleTimerPreference()
-        }
-        /// フリーズ・強制終了対策: 低頻度タイマー＋最短間隔スロットル（バッテリー負荷を抑える）
-        /// - Note: `View` は構造体のため `self` の循環参照は発生しにくい（クラス型 ViewModel とは異なる）。
-        .onReceive(Timer.publish(every: 75, on: .main, in: .common).autoconnect()) { _ in
-            guard scenePhase == .active else { return }
-            ResumableStateStore.autosave(from: log, force: false)
         }
         .sheet(isPresented: $showSyncSheet) { SyncInputView(title: "ゲーム数同期", label: "データランプの現在表示数（自分の回転数と合わせる・回転率に反映されます）", val: $tempLampValue) { if let v = Int(tempLampValue) { log.syncTotalRotations(newTotal: v) }; showSyncSheet = false } }
         .sheet(isPresented: $showTrayAdjustSheet) { SyncInputView(title: "上皿精算", label: "ランプ回転数", val: $tempAdjustValue) { if let v = Int(tempAdjustValue) { log.adjustForZeroTray(syncRotation: v) }; showTrayAdjustSheet = false } }
@@ -804,100 +860,6 @@ struct PlayView: View {
         }
     }
 
-    /// スワイプバー: 高さ60pt・角丸4pt・左右16ptマージン。サイバーメタリック＋ヘアライン＋ネオンライン
-    private func swipeGapRow(geo: GeometryProxy) -> some View {
-        let openThreshold = geo.size.width * 0.25
-        let unlockHapticThreshold: CGFloat = 10
-        let swipeBarHeight: CGFloat = 60
-        let swipeBarCornerRadius: CGFloat = 4
-        let swipeBarHorizontalMargin: CGFloat = 16
-        let stainlessBase = Color(red: 0.22, green: 0.23, blue: 0.25)
-        let cyanNeon = Color(hex: "00FFFF")
-        let magentaNeon = Color(hex: "FF00FF")
-        let bgGradient = LinearGradient(
-            colors: [stainlessBase, stainlessBase.opacity(0.98), stainlessBase],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        // 横方向ヘアラインのみ：本物のステンレスような微細な直線の反射
-        let hairlineGradient = LinearGradient(
-            stops: [
-                .init(color: Color.white.opacity(0), location: 0),
-                .init(color: Color.white.opacity(0.04), location: 0.2),
-                .init(color: Color.white.opacity(0.11), location: 0.35),
-                .init(color: Color.white.opacity(0.06), location: 0.5),
-                .init(color: Color.white.opacity(0.12), location: 0.65),
-                .init(color: Color.white.opacity(0.03), location: 0.8),
-                .init(color: Color.white.opacity(0), location: 1)
-            ],
-            startPoint: .leading,
-            endPoint: .trailing
-        )
-        return ZStack {
-            RoundedRectangle(cornerRadius: swipeBarCornerRadius)
-                .fill(bgGradient)
-            RoundedRectangle(cornerRadius: swipeBarCornerRadius)
-                .fill(hairlineGradient)
-            if swipeZoneGlow {
-                RoundedRectangle(cornerRadius: swipeBarCornerRadius)
-                    .fill(focusAccent.opacity(0.15))
-                    .blur(radius: 8)
-                    .animation(.easeOut(duration: 0.15), value: swipeZoneGlow)
-            }
-            HStack(spacing: 8) {
-                Image(systemName: "chevron.left.2")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(Color.white.opacity(0.5))
-                Spacer()
-                Text("スワイプで情報")
-                    .font(.caption2)
-                    .fontWeight(.bold)
-                    .foregroundColor(Color.white.opacity(0.7))
-                Spacer()
-                Color.clear.frame(width: 24, height: 1)
-            }
-            .padding(.horizontal, 12)
-        }
-        .overlay(alignment: .top) {
-            Rectangle().fill(cyanNeon.opacity(1)).frame(height: 0.5)
-                .shadow(color: cyanNeon.opacity(0.7), radius: 4)
-        }
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(magentaNeon.opacity(1)).frame(height: 0.5)
-                .shadow(color: magentaNeon.opacity(0.7), radius: 4)
-        }
-        .clipShape(RoundedRectangle(cornerRadius: swipeBarCornerRadius))
-        .frame(height: swipeBarHeight)
-        .padding(.horizontal, swipeBarHorizontalMargin)
-        .contentShape(Rectangle())
-        .gesture(
-            DragGesture(minimumDistance: 8)
-                .onChanged { value in
-                    if !swipeZoneGlow { swipeZoneGlow = true }
-                    let delta = rightHandMode ? value.translation.width : -value.translation.width
-                    let newOffset = min(insightPanelWidth, max(0, delta))
-                    drawerOffset = newOffset
-                    if newOffset >= unlockHapticThreshold && !didFireUnlockHaptic {
-                        haptic(.light)
-                        didFireUnlockHaptic = true
-                    }
-                }
-                .onEnded { value in
-                    swipeZoneGlow = false
-                    let delta = rightHandMode ? value.translation.width : -value.translation.width
-                    let current = min(insightPanelWidth, max(0, delta))
-                    if current > openThreshold {
-                        withAnimation(.easeOut(duration: 0.22)) { drawerOffset = insightPanelWidth }
-                    } else {
-                        withAnimation(.easeOut(duration: 0.2)) {
-                            drawerOffset = 0
-                            didFireUnlockHaptic = false
-                        }
-                    }
-                }
-        )
-    }
-
     /// 画面上端は黒背景。1行目＝Undo・機種・店舗。大当たり中は2行目に連チャン（ゲージ用の余白を確保するためパネルは使わない）
     @ViewBuilder
     private func headerRow(firstRowHeight: CGFloat) -> some View {
@@ -944,19 +906,30 @@ struct PlayView: View {
     private func headerMachineShopButton() -> some View {
         Button(action: { showSettingsSheet = true; haptic(.light) }) {
             HStack(alignment: .center, spacing: 8) {
-                Text(log.selectedMachine.name)
-                    .font(playThemedFont(15, weight: .semibold))
-                    .foregroundColor(theme.playLabelPrimary)
-                    .lineLimit(1)
-                Text(log.selectedShop.name)
-                    .font(playThemedFont(14, weight: .medium))
-                    .foregroundColor(theme.playLabelPrimary.opacity(0.9))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+                VStack(alignment: rightHandMode ? .trailing : .leading, spacing: 2) {
+                    Text(log.selectedMachine.name)
+                        .font(playThemedFont(15, weight: .semibold))
+                        .foregroundColor(theme.playLabelPrimary)
+                        .lineLimit(1)
+                    Text(log.selectedShop.name)
+                        .font(playThemedFont(14, weight: .medium))
+                        .foregroundColor(theme.playLabelPrimary.opacity(0.9))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Text("タップで機種・店を変更")
+                        .font(playThemedFont(10, weight: .medium))
+                        .foregroundColor(theme.playLabelSecondary.opacity(0.95))
+                        .lineLimit(1)
+                }
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(theme.playLabelSecondary.opacity(0.85))
             }
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity, alignment: rightHandMode ? .trailing : .leading)
+        .accessibilityLabel("機種 \(log.selectedMachine.name)、店舗 \(log.selectedShop.name)")
+        .accessibilityHint("タップで機種と店舗の選択画面を開きます")
     }
 
     private func headerRowUndoButton() -> some View {
@@ -969,6 +942,8 @@ struct PlayView: View {
         }
         .disabled(log.undoCount == 0)
         .padding(2)
+        .accessibilityLabel("直前の操作を取り消す")
+        .accessibilityHint(log.undoCount > 0 ? "投資または当選記録を1つ戻します。最大3回まで。" : "取り消せる操作がありません")
     }
 
     /// 設定はドロワー「モード切替」から開く
@@ -987,13 +962,13 @@ struct PlayView: View {
         HStack(spacing: 16) {
             Text("RUSH")
                 .font(playThemedFont(15, weight: .semibold))
-                .foregroundColor(AppGlassStyle.rushColor.opacity(0.95))
+                .foregroundColor(skin.playRushAccent.opacity(0.95))
             Text("\(log.rushWinCount)回")
                 .font(playThemedFont(17, weight: .bold, monospaced: true))
                 .foregroundColor(focusAccent)
             Text("通常")
                 .font(playThemedFont(15, weight: .semibold))
-                .foregroundColor(AppGlassStyle.normalColor.opacity(0.95))
+                .foregroundColor(skin.playNormalAccent.opacity(0.95))
             Text("\(log.normalWinCount)回")
                 .font(playThemedFont(17, weight: .bold, monospaced: true))
                 .foregroundColor(focusAccent)
@@ -1259,7 +1234,6 @@ struct PlayView: View {
     private let buttonGap: CGFloat = 8
     private let buttonCornerRadius: CGFloat = 16
     /// 投資ボタン見出し（赤系・視認性優先）
-    private let investmentTextColor = Color(red: 1.0, green: 0.35, blue: 0.32)
     private let investmentSubTextColor = Color(red: 1.0, green: 0.48, blue: 0.44)
     /// 下部「大当たり」スライドのアクセント（テーマに合わせる）
     private var bigHitBarTitleColor: Color { themeManager.currentTheme.accentColor }
@@ -1281,7 +1255,7 @@ struct PlayView: View {
                     zoneButton(
                         content: {
                             VStack(spacing: 3) {
-                                Text("現金").font(playThemedFont(titlePt, weight: .bold, monospaced: true)).foregroundColor(investmentTextColor)
+                                Text("現金").font(playThemedFont(titlePt, weight: .bold, monospaced: true)).foregroundColor(skin.playInvestmentHeadline)
                                 Text("500pt").font(playThemedFont(subPt, weight: .medium, monospaced: true)).foregroundColor(investmentSubTextColor)
                                 Text("計 \(log.totalInput)pt")
                                     .font(playThemedFont(totalPt, weight: .semibold, monospaced: true))
@@ -1296,7 +1270,7 @@ struct PlayView: View {
                     zoneButton(
                         content: {
                             VStack(spacing: 3) {
-                                Text("持ち玉").font(playThemedFont(titlePt, weight: .bold, monospaced: true)).foregroundColor(investmentTextColor)
+                                Text("持ち玉").font(playThemedFont(titlePt, weight: .bold, monospaced: true)).foregroundColor(skin.playInvestmentHeadline)
                                 Text("\(ballsPerTap)玉").font(playThemedFont(subPt, weight: .medium, monospaced: true)).foregroundColor(investmentSubTextColor)
                                 Text("計 \(log.holdingsInvestedBalls)玉")
                                     .font(playThemedFont(totalPt, weight: .semibold, monospaced: true))
@@ -1316,7 +1290,7 @@ struct PlayView: View {
                 zoneButton(
                     content: {
                         VStack(spacing: 3) {
-                            Text("現金").font(playThemedFont(titlePt, weight: .bold, monospaced: true)).foregroundColor(investmentTextColor)
+                            Text("現金").font(playThemedFont(titlePt, weight: .bold, monospaced: true)).foregroundColor(skin.playInvestmentHeadline)
                             Text("500pt").font(playThemedFont(subPt, weight: .medium, monospaced: true)).foregroundColor(investmentSubTextColor)
                             Text("計 \(log.totalInput)pt")
                                 .font(playThemedFont(totalPt, weight: .semibold, monospaced: true))
@@ -1332,7 +1306,7 @@ struct PlayView: View {
                 zoneButton(
                     content: {
                         VStack(spacing: 3) {
-                            Text("持ち玉").font(playThemedFont(titlePt, weight: .bold, monospaced: true)).foregroundColor(investmentTextColor)
+                            Text("持ち玉").font(playThemedFont(titlePt, weight: .bold, monospaced: true)).foregroundColor(skin.playInvestmentHeadline)
                             Text("\(ballsPerTap)玉").font(playThemedFont(subPt, weight: .medium, monospaced: true)).foregroundColor(investmentSubTextColor)
                             Text("計 \(log.holdingsInvestedBalls)玉")
                                 .font(playThemedFont(totalPt, weight: .semibold, monospaced: true))
@@ -1357,17 +1331,22 @@ struct PlayView: View {
             triggerRipple()
         } label: {
             ZStack {
-                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius, appTheme: theme)
-                VStack(spacing: 4) {
+                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius)
+                VStack(spacing: 3) {
                     Text("\(log.gamesSinceLastWin)")
                         .font(playThemedFont(min(geo.size.width * 0.14, height * 0.32), weight: .black, monospaced: true))
-                        .foregroundColor(AppGlassStyle.normalColor)
+                        .foregroundColor(skin.playNormalAccent)
+                    Text("前回当選からのゲーム数")
+                        .font(playThemedFont(9, weight: .medium, monospaced: true))
+                        .foregroundColor(skin.playNormalAccent.opacity(0.68))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                     Text(log.currentState == .normal ? "タップ+1" : (log.isTimeShortMode ? "時短中" : "電サポ中"))
                         .font(playThemedFont(13, weight: .medium, monospaced: true))
-                        .foregroundColor(AppGlassStyle.normalColor.opacity(0.9))
-                    Text("長押しで回転数入力")
+                        .foregroundColor(skin.playNormalAccent.opacity(0.9))
+                    Text("長押しでランプ回転を入力")
                         .font(playThemedFont(10, weight: .medium, monospaced: true))
-                        .foregroundColor(AppGlassStyle.normalColor.opacity(0.72))
+                        .foregroundColor(skin.playNormalAccent.opacity(0.72))
                 }
             }
             .frame(maxWidth: .infinity)
@@ -1375,6 +1354,8 @@ struct PlayView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(HomeStyleGridButtonPressStyle())
+        .accessibilityLabel("前回当選から \(log.gamesSinceLastWin) ゲーム")
+        .accessibilityHint("タップで1増やす。長押しで台ランプの回転数を直接入力します。")
         .simultaneousGesture(
             LongPressGesture(minimumDuration: 0.5).onEnded { _ in
                 tempLampValue = "\(log.gamesSinceLastWin)"
@@ -1405,7 +1386,7 @@ struct PlayView: View {
             if !disabled { onTap() }
         } label: {
             ZStack {
-                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius, appTheme: theme)
+                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius)
                 content()
             }
             .frame(maxWidth: .infinity).frame(maxHeight: .infinity)
@@ -1632,7 +1613,7 @@ struct PlayView: View {
                 haptic(.medium)
             } label: {
                 ZStack {
-                    HomeStylePlayCardBackground(cornerRadius: r, appTheme: theme)
+                    HomeStylePlayCardBackground(cornerRadius: r)
                     Text("実戦終了")
                         .font(.system(size: 17, weight: .bold, design: .monospaced))
                         .foregroundColor(theme.playLabelPrimary.opacity(0.96))
@@ -1676,6 +1657,10 @@ struct PlayView: View {
     /// - Parameter settlementMode: 回収玉が 1 玉以上のとき実戦フローで選択。`nil` は未精算（旧挙動・回収 0）
     @discardableResult
     private func saveCurrentSession(settlementMode: SessionSettlementMode?) -> Bool {
+        guard !isSavingSession else { return false }
+        isSavingSession = true
+        defer { isSavingSession = false }
+
         let refShop = log.selectedShop
         let persistedShop = resolvePersistedShop(matching: refShop)
         var settlementRaw = ""
@@ -1706,6 +1691,8 @@ struct PlayView: View {
             : Double(log.totalInput) + Double(log.holdingsInvestedBalls) * log.selectedShop.payoutCoefficient
         let ratio = log.expectationRatio > 0 ? log.expectationRatio : 1.0
         let formulaBorder = parseFormulaBorder(log.selectedMachine.border)
+        /// 履歴の並び・月別・日別集計は `GameSession.date` をキーにする。`endedAt` と同一にし、日付またぎは「保存（終了）した日」に紐づく。
+        let endDate = Date()
         let session = GameSession(
             machineName: log.selectedMachine.name,
             shopName: log.selectedShop.name,
@@ -1721,8 +1708,9 @@ struct PlayView: View {
             normalWinCount: log.normalWinCount,
             formulaBorderPer1k: formulaBorder > 0 ? formulaBorder : 0
         )
+        session.date = endDate
         session.startedAt = log.sessionStartedAt
-        session.endedAt = Date()
+        session.endedAt = endDate
         session.firstHitRealCostPt = log.realCostAtFirstWin()
         session.effectiveBorderPer1kAtSave = log.dynamicBorder
         session.realRotationRateAtSave = log.realRate
@@ -1731,9 +1719,10 @@ struct PlayView: View {
         session.chodamaBalanceDeltaBalls = chodamaDelta
         session.isCashflowOnlyRecord = false
         modelContext.insert(session)
-        ResumableStateStore.save(from: log)
         do {
             try modelContext.save()
+            // 確定済みセッションを「続きから」に残すと同一内容の再保存リスクがあるため消す。失敗時はオートセーブ済みスナップショットを温存。
+            ResumableStateStore.clear()
             // 成功：アラートは出さない。必要ならトーストのみ。
             saveResult = nil
             withAnimation(.easeOut(duration: 0.18)) {
@@ -1790,9 +1779,9 @@ struct PlayView: View {
             } else if chainCount >= 2 {
                 LinearGradient(
                     colors: [
-                        AppGlassStyle.rushColor.opacity(0.32),
+                        skin.playRushAccent.opacity(0.32),
                         Color.red.opacity(0.2),
-                        AppGlassStyle.rushColor.opacity(0.14)
+                        skin.playRushAccent.opacity(0.14)
                     ],
                     startPoint: .top,
                     endPoint: .bottom
@@ -1834,7 +1823,7 @@ struct PlayView: View {
         case 1:
             return Color(red: 0.45, green: 0.72, blue: 0.98)
         case 2 ..< 5:
-            return AppGlassStyle.rushColor
+            return skin.playRushAccent
         case 5 ..< 10:
             return Color(red: 1.0, green: 0.78, blue: 0.22)
         default:
@@ -2315,7 +2304,7 @@ struct PlayView: View {
             HapticUtil.bigHitChainIncrement()
         } label: {
             ZStack {
-                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius, appTheme: theme)
+                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius)
                 VStack(spacing: 6) {
                     Text("\(n)連チャン")
                         .font(.system(size: titleSize, weight: .black, design: .rounded))
@@ -2355,7 +2344,7 @@ struct PlayView: View {
                 showBigHitExitSheet = true
             } label: {
                 ZStack {
-                    HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius, appTheme: theme)
+                    HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius)
                     Text("通常へ")
                         .font(.system(size: normalFont, weight: .bold, design: .monospaced))
                         .modifier(BigHitThemedForeground(isRainbow: rainbow, solid: c))
@@ -2754,8 +2743,8 @@ private struct HoneycombOverlay: View {
 struct WinHistoryBarChartView: View {
     let records: [WinRecord]
     var maxHeight: CGFloat? = nil
-    /// 枠・ラベル用の強調色
-    var accentStroke: Color = AppGlassStyle.accent
+    /// 枠・ラベル用の強調色。nil のときは現在スキンの `accentColor`
+    var accentStroke: Color? = nil
     /// 連チャン棒の色。nil のときは従来どおり `rushColor`
     var chainBarColor: Color? = nil
     /// 連チャン棒を塗るグラデーション（10連以上のレインボー帯など）。指定時は `chainBarColor` より優先
@@ -2764,6 +2753,9 @@ struct WinHistoryBarChartView: View {
     var onSelectRecord: ((WinRecord) -> Void)? = nil
 
     @EnvironmentObject private var themeManager: ThemeManager
+
+    private var skin: any ApplicationTheme { themeManager.currentTheme }
+    private var resolvedAccentStroke: Color { accentStroke ?? skin.accentColor }
 
     private let defaultBarHeight: CGFloat = 56
     /// 棒の太さ（列幅とは別。下の数字は列幅を広く取り2桁でも1行に収める）
@@ -2776,8 +2768,8 @@ struct WinHistoryBarChartView: View {
     /// 「大当たり履歴」行の高さ（上余白・フォント・下余白）。棒グラフはこの下から始まる
     private let chartTitleReserveHeight: CGFloat = 34
     private let vStackTitleChartSpacing: CGFloat = 6
-    private var chainColor: Color { chainBarColor ?? AppGlassStyle.rushColor }
-    private var singleColor: Color { AppGlassStyle.normalColor }
+    private var chainColor: Color { chainBarColor ?? skin.playRushAccent }
+    private var singleColor: Color { skin.playNormalAccent }
 
     /// 時系列（古い→新しい）で「前当たりからの通常回転差」
     private var rotationsBetweenById: [UUID: Int] {
@@ -2824,7 +2816,7 @@ struct WinHistoryBarChartView: View {
         VStack(alignment: .leading, spacing: vStackTitleChartSpacing) {
             Text("大当たり履歴")
                 .font(themeManager.currentTheme.themedFont(size: 15, weight: .semibold))
-                .foregroundColor(accentStroke.opacity(0.95))
+                .foregroundColor(resolvedAccentStroke.opacity(0.95))
                 .padding(.horizontal, 8)
                 .padding(.top, 8)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -3056,6 +3048,23 @@ struct WinCountCorrectView: View {
         } message: {
             Text("負の数は入力できません")
         }
+    }
+}
+
+// MARK: - 続きからオートセーブ（タイマー更新のスコープを限定）
+/// `ResumableStateStore.autosave` 内の最短間隔スロットルと併用。タイマーは本型の body のみ無効化し、実戦メイン UI の再レイアウトコストを抑える。
+private struct PlayResumableAutosaveHook: View {
+    @Bindable var log: GameLog
+    @Environment(\.scenePhase) private var scenePhase
+
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .accessibilityHidden(true)
+            .onReceive(Timer.publish(every: 75, on: .main, in: .common).autoconnect()) { _ in
+                guard scenePhase == .active else { return }
+                ResumableStateStore.autosave(from: log, force: false)
+            }
     }
 }
 

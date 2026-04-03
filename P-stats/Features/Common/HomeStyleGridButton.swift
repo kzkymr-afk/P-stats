@@ -21,17 +21,20 @@ struct HomeStyleGridButtonPressStyle: ButtonStyle {
     }
 }
 
-/// ホーム `HomeGridButtonLabelSplit` と同系のカード面（実戦の現金・持ち玉・カウント・下部バー用）
+/// ホーム `HomeGridButtonLabelSplit` と同系のカード面（実戦の現金・持ち玉・カウント・下部バー用）。
+/// 背景・枠は `ThemeManager` のスキン（`ApplicationTheme`）に追従する。
 struct HomeStylePlayCardBackground: View {
     var cornerRadius: CGFloat
-    var appTheme: AppTheme = .dark
+    @EnvironmentObject private var themeManager: ThemeManager
 
     var body: some View {
-        RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(AppGlassStyle.cardBackground)
+        let skin = themeManager.currentTheme
+        let strokeW: CGFloat = skin.borderWidth >= 2 ? min(2, skin.borderWidth) : 1
+        return RoundedRectangle(cornerRadius: cornerRadius)
+            .fill(skin.panelBackground)
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
+                    .stroke(skin.playCardOutline, lineWidth: strokeW)
             )
             .compositingGroup()
     }

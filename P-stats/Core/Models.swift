@@ -486,6 +486,7 @@ enum AppTheme: String, CaseIterable, Codable {
 @Model
 final class GameSession {
     var id: UUID = UUID()
+    /// 履歴一覧・分析の月別・日別キー。実戦保存時は `endedAt` と揃える（日付またぎは「終了した日」側に計上）。
     var date: Date = Date()
     /// 実戦開始時刻（実戦フロー）。旧データは nil
     var startedAt: Date? = nil
@@ -543,10 +544,13 @@ final class GameSession {
         self.formulaBorderPer1k = formulaBorderPer1k
     }
 
-    /// 成績（回収 − 投資・pt）
+    /// 成績（回収 − 投資・pt）。永続データで `totalHoldings` が負のときは回収 0 扱い（`PStatsCalculator` と整合）。
     var performance: Int {
-        let recovery = Int(Double(totalHoldings) * payoutCoefficient)
-        return recovery - inputCash
+        PStatsCalculator.performancePt(
+            inputCashPt: inputCash,
+            totalHoldingsBalls: max(0, totalHoldings),
+            payoutCoefficientPtPerBall: payoutCoefficient
+        )
     }
 
     /// 欠損・余剰（成績 − 期待値）。正＝期待値より得、負＝期待値より損

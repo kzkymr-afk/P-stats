@@ -66,11 +66,13 @@ enum PStatsCalculator {
             totalRealCostPt: totalRealCost,
             fallbackRateAtSave: realRotationRateAtSave
         )
-        if effectiveBorderPer1kAtSave > 0, let rate = displayRate {
+        if effectiveBorderPer1kAtSave.isFinite, effectiveBorderPer1kAtSave > 0, let rate = displayRate {
             return rate - effectiveBorderPer1kAtSave
         }
-        guard formulaBorderPer1k > 0, totalRealCost > 0, normalRotations > 0 else { return nil }
+        guard formulaBorderPer1k.isFinite, formulaBorderPer1k > 0,
+              totalRealCost.isFinite, totalRealCost > 0, normalRotations > 0 else { return nil }
         let rate = (Double(normalRotations) / totalRealCost) * 1000.0
+        guard rate.isFinite else { return nil }
         return rate - formulaBorderPer1k
     }
 

@@ -468,7 +468,7 @@ enum AnalyticsEngine {
         var rotationRateSampleCount = 0
         for s in rotationEligible {
             let denom = s.rotationRateDenominatorPt
-            guard denom > 0 else { continue }
+            guard denom > 0, denom.isFinite else { continue }
             sumRate += (Double(s.normalRotations) / denom) * 1000.0
             rotationRateSampleCount += 1
         }
@@ -695,7 +695,12 @@ struct AnalyticsOverviewTotalSummary {
         let sessionCount = sessions.count
         let totalPerformance = sessions.reduce(0) { $0 + $1.performance }
         let totalInputCash = sessions.reduce(0) { $0 + $1.inputCash }
-        let totalRecoveryPt = sessions.reduce(0) { $0 + Int(Double($1.totalHoldings) * $1.payoutCoefficient) }
+        let totalRecoveryPt = sessions.reduce(0) { acc, s in
+            acc + PStatsCalculator.recoveryPt(
+                totalHoldingsBalls: max(0, s.totalHoldings),
+                payoutCoefficientPtPerBall: s.payoutCoefficient
+            )
+        }
         let winCount = sessions.filter { $0.performance > 0 }.count
         let loseCount = sessions.filter { $0.performance < 0 }.count
         let winRatePercent: Double? = sessionCount > 0 ? Double(winCount) / Double(sessionCount) * 100 : nil
@@ -708,10 +713,12 @@ struct AnalyticsOverviewTotalSummary {
             denomSum += m.probabilityDenominator
             denomCount += 1
         }
-        let avgDenom = denomSum / Double(denomCount)
-        let avgFirstHitProbabilityText: String? = (denomCount > 0 && avgDenom.isValidForNumericDisplay)
-            ? "1/\(avgDenom.displayFormat("%.1f"))"
-            : nil
+        let avgFirstHitProbabilityText: String? = {
+            guard denomCount > 0 else { return nil }
+            let avgDenom = denomSum / Double(denomCount)
+            guard avgDenom.isValidForNumericDisplay else { return nil }
+            return "1/\(avgDenom.displayFormat("%.1f"))"
+        }()
 
         let totalTheoretical = sessions.reduce(0) { $0 + $1.theoreticalValue }
         let totalExpectationDiff = sessions.reduce(0) { $0 + $1.deficitSurplus }
@@ -719,14 +726,23 @@ struct AnalyticsOverviewTotalSummary {
         let rotList = sessions.filter(\.participatesInRotationRateAnalytics)
         let totalRotations = rotList.reduce(0) { $0 + $1.normalRotations }
         let totalCost = rotList.reduce(0.0) { $0 + $1.rotationRateDenominatorPt }
-        let avgRotationPer1k: Double? = totalCost > 0 ? Double(totalRotations) / (totalCost / 1000.0) : nil
+        let avgRotationPer1k: Double? = {
+            guard totalCost > 0, totalCost.isFinite else { return nil }
+            let v = Double(totalRotations) / (totalCost / 1000.0)
+            return v.isFinite ? v : nil
+        }()
 
         let avgBorderDiffPer1k = AnalyticsEngine.weightedAverageBorderDiffPer1k(sessions: sessions)
 
         let byDay = Dictionary(grouping: sessions) { cal.startOfDay(for: $0.date) }
         let maxDailyInput = byDay.values.map { $0.reduce(0) { $0 + $1.inputCash } }.max() ?? 0
         let maxDailyRecovery = byDay.values.map { daySessions in
-            daySessions.reduce(0) { $0 + Int(Double($1.totalHoldings) * $1.payoutCoefficient) }
+            daySessions.reduce(0) { acc, s in
+                acc + PStatsCalculator.recoveryPt(
+                    totalHoldingsBalls: max(0, s.totalHoldings),
+                    payoutCoefficientPtPerBall: s.payoutCoefficient
+                )
+            }
         }.max() ?? 0
         let maxDailyPerformance = byDay.values.map { $0.reduce(0) { $0 + $1.performance } }.max() ?? 0
         let avgPerformancePerSession: Double? = sessionCount > 0 ? Double(totalPerformance) / Double(sessionCount) : nil
@@ -734,12 +750,16 @@ struct AnalyticsOverviewTotalSummary {
         // 時給：開始/終了があるセッションのみ合算（旧データは除外）
         var totalSeconds = 0.0
         for s in sessions {
-            if let sec = s.playDurationSeconds { totalSeconds += sec }
+            if let sec = s.playDurationSeconds, sec.isFinite, sec > 0 { totalSeconds += sec }
         }
-        let totalPlayMinutes: Int? = totalSeconds > 0 ? Int((totalSeconds / 60).rounded()) : nil
+        let totalPlayMinutes: Int? = {
+            guard totalSeconds.isFinite, totalSeconds > 0 else { return nil }
+            return Int((totalSeconds / 60).rounded())
+        }()
         let hourlyWagePt: Double? = {
+            guard totalSeconds.isFinite, totalSeconds > 0 else { return nil }
             let hours = totalSeconds / 3600.0
-            guard hours > 0 else { return nil }
+            guard hours > 0, hours.isFinite else { return nil }
             let v = Double(totalPerformance) / hours
             return v.isFinite ? v : nil
         }()

@@ -47,4 +47,25 @@ struct PStatsCalculatorTests {
             formulaBorderPer1k: 100
         ) == nil)
     }
+
+    @Test func sessionBorderDiffPer1k_nanTotalRealCost_noCrash() {
+        let d = PStatsCalculator.sessionBorderDiffPer1k(
+            excludesFromRotationExpectationAnalytics: false,
+            normalRotations: 100,
+            totalRealCost: Double.nan,
+            realRotationRateAtSave: 0,
+            effectiveBorderPer1kAtSave: 0,
+            formulaBorderPer1k: 20
+        )
+        #expect(d == nil)
+    }
+
+    @Test func performancePt_negativeHoldingsTreatsRecoveryAsZero() {
+        let p = PStatsCalculator.performancePt(
+            inputCashPt: 1000,
+            totalHoldingsBalls: -10,
+            payoutCoefficientPtPerBall: 4
+        )
+        #expect(p == -1000)
+    }
 }
