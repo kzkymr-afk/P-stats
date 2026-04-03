@@ -55,6 +55,7 @@ enum HomeTab: String, CaseIterable {
 
 // MARK: - グラスモーフィズム・ホーム画面
 struct HomeView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("homeBackgroundStyle") private var homeBackgroundStyle = HomeBackgroundStore.defaultStyle
     @AppStorage("homeBackgroundImagePath") private var homeBackgroundImagePath = ""
@@ -115,7 +116,8 @@ struct HomeView: View {
         selectedTab == .home && scenePhase == .active && !ProcessInfo.processInfo.isLowPowerModeEnabled
     }
 
-    private let cyan = AppGlassStyle.accent
+    private var themeAccent: Color { themeManager.currentTheme.accentColor }
+    /// 背景オーブ用（アクセント以外の色相バリエーション）
     private let purple = Color(red: 0.5, green: 0.2, blue: 0.9)
     private let magenta = Color(red: 0.9, green: 0.2, blue: 0.5)
 
@@ -287,7 +289,7 @@ struct HomeView: View {
                                         isPlaying = true
                                     }
                                     .fontWeight(.semibold)
-                                    .foregroundColor(AppGlassStyle.accent)
+                                    .foregroundColor(themeManager.currentTheme.accentColor)
                                 }
                             }
                         }
@@ -381,7 +383,7 @@ struct HomeView: View {
                         .position(x: geo.size.width / 2, y: geo.size.height / 2)
                 } else if shouldRunBackgroundAnimation {
                     AppGlassStyle.background
-                    orbView(color: cyan, x: 0.2, y: 0.15)
+                    orbView(color: themeAccent, x: 0.2, y: 0.15)
                     orbView(color: purple, x: 0.75, y: 0.3)
                     orbView(color: magenta, x: 0.5, y: 0.75)
                     geometricBackground
@@ -393,7 +395,7 @@ struct HomeView: View {
                         }
                 } else {
                     AppGlassStyle.background
-                    staticOrbView(color: cyan, x: 0.2, y: 0.15)
+                    staticOrbView(color: themeAccent, x: 0.2, y: 0.15)
                     staticOrbView(color: purple, x: 0.75, y: 0.3)
                     staticOrbView(color: magenta, x: 0.5, y: 0.75)
                 }
@@ -440,7 +442,7 @@ struct HomeView: View {
                 Rectangle()
                     .fill(
                         LinearGradient(
-                            colors: [.clear, cyan.opacity(0.04), .clear],
+                            colors: [.clear, themeAccent.opacity(0.04), .clear],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -639,6 +641,8 @@ struct HomeView: View {
         let width: CGFloat
         let height: CGFloat
 
+        @EnvironmentObject private var themeManager: ThemeManager
+
         private var safeW: CGFloat {
             guard width.isFinite, width > 0 else { return 1 }
             return width
@@ -648,7 +652,6 @@ struct HomeView: View {
             return height
         }
 
-        private var cornerRadius: CGFloat { min(20, max(14, safeH * 0.22)) }
         private var minDim: CGFloat { min(safeW, safeH) }
         private var iconSize: CGFloat { min(36, max(20, minDim * 0.205)) }
         private var titleSize: CGFloat { min(16, max(11, minDim * 0.088)) }
@@ -659,20 +662,13 @@ struct HomeView: View {
                 Image(systemName: icon)
                     .font(.system(size: iconSize, weight: .medium))
                 Text(title)
-                    .font(.system(size: titleSize, weight: .medium, design: .rounded))
+                    .font(themeManager.currentTheme.themedFont(size: titleSize, weight: .medium))
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
             }
-            .foregroundColor(.white.opacity(0.95))
+            .foregroundColor(themeManager.currentTheme.mainTextColor.opacity(0.95))
             .frame(width: safeW, height: safeH)
-            .background(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(AppGlassStyle.cardBackground)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius)
-                    .stroke(Color.white.opacity(0.14), lineWidth: 1)
-            )
+            .pstatsPanelStyle()
             .compositingGroup()
         }
     }

@@ -30,6 +30,7 @@ struct P_statsApp: App {
         WindowGroup {
             AppBootstrapView()
                 .environment(\.locale, Locale(identifier: "ja_JP"))
+                .environmentObject(ThemeManager.shared)
         }
     }
 }

@@ -321,14 +321,14 @@ private extension View {
     }
 }
 
-/// データ分析内パネル用スタイル（不透明度を15%上げて背景との重なりで文字が見にくくなるのを軽減）
+/// 期間ピッカー等のリスト行背景（パネル本体は `pstatsPanelStyle()`）
 private enum AnalyticsPanelStyle {
-    static let panelBackground = Color.black.opacity(0.90)
     static let rowBackground = Color.black.opacity(0.85)
 }
 
 // MARK: - 分析フッター（ドック。ホーム下部タブバーと同一の黒パネル・下寄せ）
 private struct AnalyticsBottomBarView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @ObservedObject private var entitlements = EntitlementsStore.shared
     @Binding var bottomSegment: AnalyticsBottomSegment
     @Binding var selectedFilterLabel: String?
@@ -411,7 +411,7 @@ private struct AnalyticsBottomBarView: View {
                             if !entitlements.analyticsUnlocked && seg != .overview {
                                 Image(systemName: "lock.fill")
                                     .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(AppGlassStyle.accent)
+                                    .foregroundColor(themeManager.currentTheme.accentColor)
                                     .offset(x: 8, y: -6)
                                     .accessibilityHidden(true)
                             }
@@ -461,7 +461,7 @@ private struct AnalyticsBottomBarView: View {
                         if !entitlements.analyticsUnlocked {
                             Image(systemName: "lock.fill")
                                 .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(AppGlassStyle.accent)
+                                .foregroundColor(themeManager.currentTheme.accentColor)
                                 .offset(x: 8, y: -6)
                                 .accessibilityHidden(true)
                         }
@@ -633,6 +633,7 @@ struct AnalyticsDashboardView: View {
     var onDismissEmbeddedToHome: (() -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
     @ObservedObject private var entitlements = EntitlementsStore.shared
     @ObservedObject private var adVisibility = AdVisibilityManager.shared
     @Query(sort: \GameSession.date, order: .reverse) private var sessionsQuery: [GameSession]
@@ -833,7 +834,7 @@ struct AnalyticsDashboardView: View {
         })
     }
 
-    private var cyan: Color { AppGlassStyle.accent }
+    private var themeAccent: Color { themeManager.currentTheme.accentColor }
 
     var body: some View {
         NavigationStack(path: $model.analyticsNavPath) {
@@ -910,7 +911,7 @@ struct AnalyticsDashboardView: View {
                     model.showGameSessionEdit = true
                 }) {
                     Image(systemName: "plus")
-                        .foregroundColor(cyan)
+                        .foregroundColor(themeAccent)
                 }
             }
         }
@@ -1029,7 +1030,7 @@ struct AnalyticsDashboardView: View {
                 selectedPeriodDate: model.selectedPeriodDate,
                 dimension: $model.crossAnalysisDimension,
                 sortAxis: $model.crossAnalysisSortAxis,
-                cyan: cyan,
+                cyan: themeAccent,
                 onShopMachineRowSelected: { row in
                     appendAnalyticsRoute(.shopMachineCrossDetail(shop: row.shop, machine: row.machine))
                 }
@@ -1063,24 +1064,19 @@ struct AnalyticsDashboardView: View {
         VStack(spacing: 16) {
             Image(systemName: "chart.bar.doc.horizontal")
                 .font(.system(size: 48))
-                .foregroundColor(cyan.opacity(0.5))
+                .foregroundColor(themeAccent.opacity(0.5))
             Text("データがありません")
-                .font(AppTypography.panelHeading)
+                .font(themeManager.currentTheme.themedFont(size: 17, weight: .semibold))
                 .foregroundColor(.white)
             Text("実戦を保存するとここに集計が表示されます")
-                .font(AppTypography.bodyRounded)
+                .font(themeManager.currentTheme.themedFont(size: 15, weight: .regular))
                 .foregroundColor(.white.opacity(0.75))
                 .multilineTextAlignment(.center)
         }
         .padding(.vertical, 28)
         .padding(.horizontal, 24)
         .frame(maxWidth: .infinity)
-        .background(AnalyticsPanelStyle.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
+        .pstatsPanelStyle()
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -1092,11 +1088,11 @@ struct AnalyticsDashboardView: View {
                 if model.bottomSegment == .overview && !filteredSessions.isEmpty {
                     OverviewTotalSummaryPanel(
                         metrics: overviewTotalSummary,
-                        accent: cyan,
+                        accent: themeAccent,
                         panelTitle: model.periodFilter.summaryPanelTitle(referenceDate: model.selectedPeriodDate)
                     )
-                    CumulativeProfitTrendSection(sessions: filteredSessions, referenceEnd: model.selectedPeriodDate, cyan: cyan)
-                    CalendarHeatmapSection(sessions: filteredSessions, cyan: cyan, selectedDay: $model.heatmapSelectedDay, bottomSegment: $model.bottomSegment, selectedFilterLabel: $model.selectedFilterLabel, periodFilter: $model.periodFilter, showPeriodSheet: $model.showPeriodSheet)
+                    CumulativeProfitTrendSection(sessions: filteredSessions, referenceEnd: model.selectedPeriodDate, cyan: themeAccent)
+                    CalendarHeatmapSection(sessions: filteredSessions, cyan: themeAccent, selectedDay: $model.heatmapSelectedDay, bottomSegment: $model.bottomSegment, selectedFilterLabel: $model.selectedFilterLabel, periodFilter: $model.periodFilter, showPeriodSheet: $model.showPeriodSheet)
                     if entitlements.analyticsUnlocked {
                         CrossAnalysisOverviewSection(
                             sessions: filteredSessions,
@@ -1104,7 +1100,7 @@ struct AnalyticsDashboardView: View {
                             selectedPeriodDate: model.selectedPeriodDate,
                             dimension: $model.crossAnalysisDimension,
                             sortAxis: $model.crossAnalysisSortAxis,
-                            cyan: cyan,
+                            cyan: themeAccent,
                             onRequestFullScreen: { appendAnalyticsRoute(.crossAnalysis) },
                             onShopMachineRowSelected: { row in
                                 appendAnalyticsRoute(.shopMachineCrossDetail(shop: row.shop, machine: row.machine))
@@ -1120,12 +1116,7 @@ struct AnalyticsDashboardView: View {
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
-                            .background(AnalyticsPanelStyle.panelBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-                            )
+                            .pstatsPanelStyle()
                     }
                     .buttonStyle(.plain)
                 }
@@ -1141,7 +1132,7 @@ struct AnalyticsDashboardView: View {
                                 } label: {
                                     AnalyticsGroupCard(
                                         group: g,
-                                        accent: cyan,
+                                        accent: themeAccent,
                                         compactListSessions: filteredSessions.filter { ($0.shopName.isEmpty ? "未設定" : $0.shopName) == g.label },
                                         machinesByNameForCompact: machinesByName
                                     )
@@ -1152,7 +1143,7 @@ struct AnalyticsDashboardView: View {
                                 } label: {
                                     AnalyticsGroupCard(
                                         group: g,
-                                        accent: cyan,
+                                        accent: themeAccent,
                                         compactListSessions: filteredSessions.filter { ($0.machineName.isEmpty ? "未設定" : $0.machineName) == g.label },
                                         machinesByNameForCompact: machinesByName
                                     )
@@ -1161,7 +1152,7 @@ struct AnalyticsDashboardView: View {
                                 Button {
                                     openPeriodAnalyticsGroup(g)
                                 } label: {
-                                    AnalyticsGroupCard(group: g, accent: cyan)
+                                    AnalyticsGroupCard(group: g, accent: themeAccent)
                                 }
                             } else {
                                 Button {
@@ -1169,7 +1160,7 @@ struct AnalyticsDashboardView: View {
                                 } label: {
                                     AnalyticsGroupCard(
                                         group: g,
-                                        accent: cyan,
+                                        accent: themeAccent,
                                         compactListSessions: filteredSessions.filter {
                                             let row = $0.manufacturerName.trimmingCharacters(in: .whitespaces).isEmpty ? "未設定" : $0.manufacturerName
                                             let card = g.label.trimmingCharacters(in: .whitespaces).isEmpty ? "未設定" : g.label
@@ -1235,16 +1226,11 @@ struct AnalyticsDashboardView: View {
             Spacer()
             Image(systemName: "chevron.up.chevron.down")
                 .font(.caption.weight(.semibold))
-                .foregroundColor(cyan.opacity(0.9))
+                .foregroundColor(themeAccent.opacity(0.9))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(AnalyticsPanelStyle.rowBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
+        .pstatsPanelStyle()
     }
 
 }
@@ -1334,12 +1320,7 @@ private struct OverviewTotalSummaryPanel: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AnalyticsPanelStyle.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
+        .pstatsPanelStyle()
         .allowsHitTesting(false)
     }
 
@@ -1415,6 +1396,7 @@ struct StandaloneAnalyticsDashboardView: View {
 
     var body: some View {
         AnalyticsDashboardView(model: model, embedBottomChrome: false)
+            .environmentObject(ThemeManager.shared)
     }
 }
 
@@ -1422,6 +1404,7 @@ struct StandaloneAnalyticsDashboardView: View {
 private struct AnalyticsPeriodPickerSheet: View {
     @Binding var selected: AnalyticsPeriodFilter
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
 
     var body: some View {
         NavigationStack {
@@ -1436,7 +1419,7 @@ private struct AnalyticsPeriodPickerSheet: View {
                         if option == selected {
                             Spacer()
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(AppGlassStyle.accent)
+                                .foregroundColor(themeManager.currentTheme.accentColor)
                         }
                     }
                 }
@@ -1499,12 +1482,7 @@ private struct CrossAnalysisPanelCore: View {
                     .foregroundColor(cyan)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
-                    .background(AnalyticsPanelStyle.rowBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(AppGlassStyle.strokeGradient.opacity(0.75), lineWidth: 1)
-                    )
+                    .pstatsPanelStyle()
                 }
                 .buttonStyle(.plain)
             }
@@ -1540,12 +1518,7 @@ private struct CrossAnalysisPanelCore: View {
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 10)
-                    .background(AnalyticsPanelStyle.rowBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
+                    .pstatsPanelStyle()
                 }
             }
 
@@ -1648,12 +1621,7 @@ private struct CrossAnalysisOverviewSection: View {
         )
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AnalyticsPanelStyle.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
+        .pstatsPanelStyle()
     }
 }
 
@@ -1683,12 +1651,7 @@ private struct CrossAnalysisFullScreenView: View {
                 )
                 .padding(14)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(AnalyticsPanelStyle.panelBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-                )
+                .pstatsPanelStyle()
                 .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .padding(.bottom, 120)
@@ -1766,12 +1729,7 @@ private struct CrossAnalysisPairRowCard: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
-        .background(AnalyticsPanelStyle.rowBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        )
+        .pstatsPanelStyle()
     }
 
     private func crossAnalysisMetric(title: String, value: String, valueColor: Color = .white.opacity(0.92)) -> some View {
@@ -1882,7 +1840,7 @@ private struct WeekdayTendencySection: View {
                                 y: .value("pt", g.totalDeficitSurplus),
                                 width: barWidth
                             )
-                            .foregroundStyle(g.totalDeficitSurplus >= 0 ? Color.cyan : Color.orange)
+                            .foregroundStyle(g.totalDeficitSurplus >= 0 ? accent : Color.orange)
                         }
                     }
                     .chartYAxis {
@@ -1901,9 +1859,7 @@ private struct WeekdayTendencySection: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AnalyticsPanelStyle.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+        .pstatsPanelStyle()
     }
 
     private func chartRow<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -2004,7 +1960,7 @@ private struct SpecificDayBarChartSection: View {
                                 y: .value("pt", g.label.hasPrefix("_pad") ? 0 : g.totalDeficitSurplus),
                                 width: barWidth
                             )
-                            .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : (g.totalDeficitSurplus >= 0 ? Color.cyan : Color.orange))
+                            .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : (g.totalDeficitSurplus >= 0 ? accent : Color.orange))
                         }
                     }
                     .chartYAxis { AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
@@ -2018,9 +1974,7 @@ private struct SpecificDayBarChartSection: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AnalyticsPanelStyle.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+        .pstatsPanelStyle()
     }
 
     private func chartRow<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -2208,9 +2162,7 @@ private struct CumulativeProfitTrendSection: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AnalyticsPanelStyle.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+        .pstatsPanelStyle()
     }
 
     private var cumulativeLinesChart: some View {
@@ -2425,9 +2377,7 @@ private struct CalendarHeatmapSection: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AnalyticsPanelStyle.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+        .pstatsPanelStyle()
         .sheet(isPresented: $showFullCalendar) {
             NavigationStack {
                 fullCalendarSheetContent
@@ -2444,9 +2394,7 @@ private struct CalendarHeatmapSection: View {
                         monthBlock(monthStart: monthStart, selectedDay: $sheetSelectedDay)
                             .padding(14)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(AnalyticsPanelStyle.panelBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+                            .pstatsPanelStyle()
                     }
                 }
                 .padding(16)
@@ -2753,12 +2701,7 @@ private struct AnalyticsSessionDetailView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AnalyticsPanelStyle.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
+        .pstatsPanelStyle()
     }
 
     private func sessionDetailLabeledRow(_ title: String, _ value: String) -> some View {
@@ -2941,6 +2884,7 @@ private struct AnalyticsShopDetailView: View {
     @Binding var periodFilter: AnalyticsPeriodFilter
     @Binding var showPeriodSheet: Bool
     let onSessionTap: (UUID) -> Void
+    @EnvironmentObject private var themeManager: ThemeManager
 
     private var shopSessions: [GameSession] {
         sessions.filter { ($0.shopName.isEmpty ? "未設定" : $0.shopName) == shopName }
@@ -2961,7 +2905,7 @@ private struct AnalyticsShopDetailView: View {
         return labels.map { byLabel[$0] ?? AnalyticsEngine.emptyGroup(label: $0) }
     }
 
-    private var cyan: Color { AppGlassStyle.accent }
+    private var themeAccent: Color { themeManager.currentTheme.accentColor }
 
     private var shopScopeOverview: AnalyticsOverviewTotalSummary {
         AnalyticsOverviewTotalSummary.compute(sessions: shopSessions, machinesByName: machinesByName)
@@ -2975,13 +2919,13 @@ private struct AnalyticsShopDetailView: View {
                     if !shopSessions.isEmpty {
                         OverviewTotalSummaryPanel(
                             metrics: shopScopeOverview,
-                            accent: cyan,
+                            accent: themeAccent,
                             panelTitle: periodFilter.summaryPanelTitle(referenceDate: selectedPeriodDate)
                         )
                             .padding(.horizontal, 16)
                         VStack(alignment: .leading, spacing: 20) {
-                            WeekdayTendencySection(groups: weekdayGroups, accent: cyan)
-                            SpecificDayBarChartSection(groups: specificDayGroups, accent: cyan, fixedSegmentCount: 7)
+                            WeekdayTendencySection(groups: weekdayGroups, accent: themeAccent)
+                            SpecificDayBarChartSection(groups: specificDayGroups, accent: themeAccent, fixedSegmentCount: 7)
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 4)
@@ -3045,6 +2989,7 @@ private struct AnalyticsShopMachineCrossDetailView: View {
     @Binding var periodFilter: AnalyticsPeriodFilter
     @Binding var showPeriodSheet: Bool
     let onSessionTap: (UUID) -> Void
+    @EnvironmentObject private var themeManager: ThemeManager
 
     private var pairSessions: [GameSession] {
         sessions.filter {
@@ -3071,7 +3016,7 @@ private struct AnalyticsShopMachineCrossDetailView: View {
         return labels.map { byLabel[$0] ?? AnalyticsEngine.emptyGroup(label: $0) }
     }
 
-    private var cyan: Color { AppGlassStyle.accent }
+    private var themeAccent: Color { themeManager.currentTheme.accentColor }
 
     private var navigationTitleText: String {
         let pair = "\(shopName) × \(machineName)"
@@ -3086,16 +3031,16 @@ private struct AnalyticsShopMachineCrossDetailView: View {
                     if !pairSessions.isEmpty {
                         OverviewTotalSummaryPanel(
                             metrics: scopeOverview,
-                            accent: cyan,
+                            accent: themeAccent,
                             panelTitle: periodFilter.summaryPanelTitle(referenceDate: selectedPeriodDate),
                             machineMultiHitSummary: MachineMultiHitSummary.compute(from: pairSessions)
                         )
                         .padding(.horizontal, 16)
                         VStack(alignment: .leading, spacing: 20) {
-                            WeekdayTendencySection(groups: weekdayGroups, accent: cyan)
+                            WeekdayTendencySection(groups: weekdayGroups, accent: themeAccent)
                             SpecificDayBarChartSection(
                                 groups: specificDayGroups,
-                                accent: cyan,
+                                accent: themeAccent,
                                 fixedSegmentCount: 7,
                                 titleInfoIconExplanation: "特定日はこの店舗に設定したルールに基づき分類しています。"
                             )
@@ -3157,6 +3102,7 @@ private struct AnalyticsMachineDetailView: View {
     @Binding var periodFilter: AnalyticsPeriodFilter
     @Binding var showPeriodSheet: Bool
     let onSessionTap: (UUID) -> Void
+    @EnvironmentObject private var themeManager: ThemeManager
 
     private var machineSessions: [GameSession] {
         sessions.filter { ($0.machineName.isEmpty ? "未設定" : $0.machineName) == machineName }
@@ -3173,7 +3119,7 @@ private struct AnalyticsMachineDetailView: View {
         return order.map { day in byWeekday.first(where: { $0.label == day }) ?? AnalyticsEngine.emptyGroup(label: day) }
     }
 
-    private var cyan: Color { AppGlassStyle.accent }
+    private var themeAccent: Color { themeManager.currentTheme.accentColor }
 
     var body: some View {
         ZStack {
@@ -3183,13 +3129,13 @@ private struct AnalyticsMachineDetailView: View {
                     if !machineSessions.isEmpty {
                         OverviewTotalSummaryPanel(
                             metrics: machineScopeOverview,
-                            accent: cyan,
+                            accent: themeAccent,
                             panelTitle: periodFilter.summaryPanelTitle(referenceDate: selectedPeriodDate),
                             machineMultiHitSummary: MachineMultiHitSummary.compute(from: machineSessions)
                         )
                             .padding(.horizontal, 16)
                         VStack(alignment: .leading, spacing: 20) {
-                            WeekdayTendencySection(groups: weekdayGroups, accent: cyan)
+                            WeekdayTendencySection(groups: weekdayGroups, accent: themeAccent)
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 4)
@@ -3249,6 +3195,7 @@ private struct AnalyticsManufacturerDetailView: View {
     @Binding var periodFilter: AnalyticsPeriodFilter
     @Binding var showPeriodSheet: Bool
     let onSessionTap: (UUID) -> Void
+    @EnvironmentObject private var themeManager: ThemeManager
 
     private var manufacturerSessions: [GameSession] {
         let key = manufacturerName.trimmingCharacters(in: .whitespaces).isEmpty ? "未設定" : manufacturerName
@@ -3272,7 +3219,7 @@ private struct AnalyticsManufacturerDetailView: View {
         let byLabel = Dictionary(uniqueKeysWithValues: fromAttr.map { ($0.label, $0) })
         return AnalyticsFixedSpecificDayLabels.list.map { byLabel[$0] ?? AnalyticsEngine.emptyGroup(label: $0) }
     }
-    private var cyan: Color { AppGlassStyle.accent }
+    private var themeAccent: Color { themeManager.currentTheme.accentColor }
 
     var body: some View {
         ZStack {
@@ -3282,13 +3229,13 @@ private struct AnalyticsManufacturerDetailView: View {
                     if !manufacturerSessions.isEmpty {
                         OverviewTotalSummaryPanel(
                             metrics: manufacturerScopeOverview,
-                            accent: cyan,
+                            accent: themeAccent,
                             panelTitle: periodFilter.summaryPanelTitle(referenceDate: selectedPeriodDate)
                         )
                             .padding(.horizontal, 16)
                         VStack(alignment: .leading, spacing: 20) {
-                            WeekdayTendencySection(groups: weekdayGroups, accent: cyan)
-                            SpecificDayBarChartSection(groups: specificDayGroups, accent: cyan, fixedSegmentCount: 7)
+                            WeekdayTendencySection(groups: weekdayGroups, accent: themeAccent)
+                            SpecificDayBarChartSection(groups: specificDayGroups, accent: themeAccent, fixedSegmentCount: 7)
                         }
                         .padding(.horizontal, 16)
                         .padding(.top, 4)
@@ -3504,12 +3451,7 @@ struct AnalyticsGroupCard: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AnalyticsPanelStyle.panelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
+        .pstatsPanelStyle()
     }
 }
 

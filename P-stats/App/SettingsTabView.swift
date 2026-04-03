@@ -10,6 +10,7 @@ struct SettingsTabView: View {
     @ObservedObject private var appLock = AppLockState.shared
     @ObservedObject private var entitlements = EntitlementsStore.shared
     @ObservedObject private var analyticsTrial = RewardedAnalyticsTrialController.shared
+    @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Machine.name) private var machines: [Machine]
     @Query(sort: \Shop.name) private var shops: [Shop]
@@ -56,7 +57,7 @@ struct SettingsTabView: View {
     @State private var csvExportErrorMessage: String?
     @State private var showCsvImportSheet = false
 
-    private var cyan: Color { AppGlassStyle.accent }
+    private var cyan: Color { themeManager.currentTheme.accentColor }
 
     @ViewBuilder
     private func sectionHeader(_ title: String) -> some View {
@@ -107,6 +108,24 @@ struct SettingsTabView: View {
                                     .tint(cyan)
                                 }
                             }
+                        }
+                    }
+
+                    settingsCard(title: "アプリのスキン", icon: "paintpalette.fill") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("ホーム・分析・パネル枠などの見ためを切り替えます。")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.65))
+                            Picker("スキン", selection: Binding(
+                                get: { themeManager.selectedSkin },
+                                set: { themeManager.applySkin($0) }
+                            )) {
+                                ForEach(PStatsSkin.allCases) { skin in
+                                    Text(skin.title).tag(skin)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                            .tint(cyan)
                         }
                     }
 

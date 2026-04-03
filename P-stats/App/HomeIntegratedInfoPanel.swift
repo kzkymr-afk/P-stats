@@ -32,6 +32,7 @@ extension EarningsPeriod {
 
 /// ホーム上部の統合情報パネル（グラスカード＋任意で横長広告スロット）
 struct HomeIntegratedInfoPanel: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     // 設定の単位ラベル変更を即時反映させるための更新トリガー
     @AppStorage(UnitDisplaySettings.unitSuffixKey) private var unitDisplaySuffix: String = "pt"
 
@@ -44,7 +45,8 @@ struct HomeIntegratedInfoPanel: View {
     let freeTierWithAds: Bool
     let cardPadding: CGFloat
 
-    private var cyan: Color { AppGlassStyle.accent }
+    private var accent: Color { themeManager.currentTheme.accentColor }
+    private var skin: ApplicationTheme { themeManager.currentTheme }
     private var lossPink: Color { Color(red: 0.95, green: 0.3, blue: 0.5) }
 
     private var visibleSectionIDs: [Int] {
@@ -55,28 +57,23 @@ struct HomeIntegratedInfoPanel: View {
     }
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
-        ZStack {
-            shape.fill(AppGlassStyle.cardBackground)
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(visibleSectionIDs.enumerated()), id: \.offset) { index, sid in
-                        if index > 0 {
-                            Rectangle()
-                                .fill(AppGlassStyle.divider)
-                                .frame(height: 1)
-                                .padding(.vertical, 12)
-                        }
-                        sectionBlock(sid)
-                            .padding(.vertical, 4)
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(visibleSectionIDs.enumerated()), id: \.offset) { index, sid in
+                    if index > 0 {
+                        Rectangle()
+                            .fill(AppGlassStyle.divider)
+                            .frame(height: 1)
+                            .padding(.vertical, 12)
                     }
+                    sectionBlock(sid)
+                        .padding(.vertical, 4)
                 }
-                .padding(cardPadding)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .padding(cardPadding)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .clipShape(shape)
-        .overlay(shape.stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+        .pstatsPanelStyle()
     }
 
     @ViewBuilder
@@ -108,19 +105,19 @@ struct HomeIntegratedInfoPanel: View {
         Button(action: cyclePeriod) {
             VStack(alignment: .leading, spacing: 10) {
                 Text(statsPeriod.homeBalanceTitle)
-                    .font(AppTypography.panelHeading)
-                    .foregroundColor(AppGlassStyle.textPrimary)
+                    .font(skin.themedFont(size: 17, weight: .semibold))
+                    .foregroundColor(skin.mainTextColor)
                 let p = HomeInsightMetrics.periodProfit(in: statsPeriod, sessions: sessions)
                 let ds = HomeInsightMetrics.periodDeficitSurplus(in: statsPeriod, sessions: sessions)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text("\(p >= 0 ? "+" : "")\(p.formattedPtWithUnit)")
-                        .font(.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit())
+                        .font(skin.themedFont(size: 20, weight: .semibold, monospaced: true))
                         .foregroundStyle(p >= 0 ? AppDesignSystem.Palette.win : AppDesignSystem.Palette.loss)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Text(ds >= 0 ? "余剰 +\(ds.formattedPtWithUnit)" : "欠損 \(ds.formattedPtWithUnit)")
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        .font(skin.themedFont(size: 14, weight: .semibold))
                         .foregroundColor(ds >= 0 ? Color(red: 0.35, green: 0.92, blue: 0.55) : Color.orange.opacity(0.95))
                         .multilineTextAlignment(.trailing)
                         .lineLimit(1)
@@ -139,16 +136,16 @@ struct HomeIntegratedInfoPanel: View {
         Button(action: cyclePeriod) {
             VStack(alignment: .leading, spacing: 10) {
                 Text(statsPeriod.homeTheoreticalTitle)
-                    .font(AppTypography.panelHeading)
-                    .foregroundColor(AppGlassStyle.textPrimary)
+                    .font(skin.themedFont(size: 17, weight: .semibold))
+                    .foregroundColor(skin.mainTextColor)
                 let t = HomeInsightMetrics.periodTheoreticalSum(in: statsPeriod, sessions: sessions)
                 Text("\(t >= 0 ? "+" : "")\(t.formattedPtWithUnit)")
-                    .font(.system(size: 20, weight: .semibold, design: .rounded).monospacedDigit())
+                    .font(skin.themedFont(size: 20, weight: .semibold, monospaced: true))
                     .foregroundStyle(t >= 0 ? AppDesignSystem.Palette.expectation : AppDesignSystem.Palette.loss)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Text("※期待値＝ボーダー比に基づく期待損益の合算です。")
-                    .font(.system(size: 10, weight: .regular, design: .rounded))
-                    .foregroundColor(AppGlassStyle.textSecondary)
+                    .font(skin.themedFont(size: 10, weight: .regular))
+                    .foregroundColor(skin.subTextColor)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
@@ -162,20 +159,20 @@ struct HomeIntegratedInfoPanel: View {
         Button(action: cyclePeriod) {
             VStack(alignment: .leading, spacing: 10) {
                 Text(statsPeriod.homeFirstHitTitle)
-                    .font(AppTypography.panelHeading)
-                    .foregroundColor(AppGlassStyle.textPrimary)
+                    .font(skin.themedFont(size: 17, weight: .semibold))
+                    .foregroundColor(skin.mainTextColor)
                 if let avg = HomeInsightMetrics.averageFirstHitInvestment(in: statsPeriod, sessions: sessions) {
                     Text("\(Int(avg.rounded()).formattedPtWithUnit)")
-                        .font(.system(size: 18, weight: .semibold, design: .rounded).monospacedDigit())
-                        .foregroundStyle(AppGlassStyle.textPrimary)
+                        .font(skin.themedFont(size: 18, weight: .semibold, monospaced: true))
+                        .foregroundStyle(skin.mainTextColor)
                 } else {
                     Text("—")
-                        .font(.system(size: 18, weight: .semibold, design: .rounded).monospacedDigit())
-                        .foregroundColor(AppGlassStyle.textTertiary)
+                        .font(skin.themedFont(size: 18, weight: .semibold, monospaced: true))
+                        .foregroundColor(skin.subTextColor.opacity(0.88))
                 }
                 Text("実戦保存分のみ内部記録。手入力・旧データは平均に含みません。")
-                    .font(.system(size: 10, weight: .regular, design: .rounded))
-                    .foregroundColor(AppGlassStyle.textSecondary)
+                    .font(skin.themedFont(size: 10, weight: .regular))
+                    .foregroundColor(skin.subTextColor)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
@@ -190,17 +187,17 @@ struct HomeIntegratedInfoPanel: View {
             .sorted { $0.date < $1.date }
         return VStack(alignment: .leading, spacing: 10) {
             Text("直近\(ordered.count)実戦の星取り")
-                .font(AppTypography.panelHeading)
-                .foregroundColor(AppGlassStyle.textPrimary)
+                .font(skin.themedFont(size: 17, weight: .semibold))
+                .foregroundColor(skin.mainTextColor)
             HStack(spacing: 4) {
                 ForEach(ordered, id: \.id) { s in
                     VStack(spacing: 2) {
                         Text(s.performance >= 0 ? "○" : "●")
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(s.performance >= 0 ? cyan : lossPink)
+                            .font(skin.themedFont(size: 14, weight: .bold))
+                            .foregroundColor(s.performance >= 0 ? accent : lossPink)
                         Text(s.performance.formattedPtCompactK)
-                            .font(.system(size: 9, weight: .medium, design: .rounded).monospacedDigit())
-                            .foregroundColor(AppGlassStyle.textSecondary)
+                            .font(skin.themedFont(size: 9, weight: .medium, monospaced: true))
+                            .foregroundColor(skin.subTextColor)
                             .lineLimit(1)
                             .minimumScaleFactor(0.7)
                     }
@@ -208,8 +205,8 @@ struct HomeIntegratedInfoPanel: View {
                 }
                 if ordered.isEmpty {
                     Text("実戦データがありません")
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
-                        .foregroundColor(AppGlassStyle.textTertiary)
+                        .font(skin.themedFont(size: 12, weight: .regular))
+                        .foregroundColor(skin.subTextColor.opacity(0.88))
                 }
             }
         }
@@ -232,8 +229,8 @@ struct HomeIntegratedInfoPanel: View {
 
         return VStack(alignment: .leading, spacing: 10) {
             Text("累積収支の推移（ミニ）")
-                .font(AppTypography.panelHeading)
-                .foregroundColor(AppGlassStyle.textPrimary)
+                .font(skin.themedFont(size: 17, weight: .semibold))
+                .foregroundColor(skin.mainTextColor)
             if steps.count >= 2 {
                 Chart {
                     ForEach(Array(indexed), id: \.0) { pair in
@@ -244,7 +241,7 @@ struct HomeIntegratedInfoPanel: View {
                         .interpolationMethod(.catmullRom)
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [cyan.opacity(0.95), cyan.opacity(0.35)],
+                                colors: [accent.opacity(0.95), accent.opacity(0.35)],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -259,17 +256,17 @@ struct HomeIntegratedInfoPanel: View {
 
                 if up {
                     Text("推移は右肩上がりです。")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .font(skin.themedFont(size: 10, weight: .medium))
                         .foregroundColor(Color(red: 0.35, green: 0.92, blue: 0.55).opacity(0.9))
                 } else if down {
                     Text("推移は右肩下がり。今日は慎重に。")
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .font(skin.themedFont(size: 10, weight: .medium))
                         .foregroundColor(Color.orange.opacity(0.92))
                 }
             } else {
                 Text("2ステップ以上の実戦が集まると折れ線が表示されます。")
-                    .font(.system(size: 11, weight: .regular, design: .rounded))
-                    .foregroundColor(AppGlassStyle.textSecondary)
+                    .font(skin.themedFont(size: 11, weight: .regular))
+                    .foregroundColor(skin.subTextColor)
                     .frame(height: 40, alignment: .leading)
             }
         }
@@ -284,34 +281,34 @@ struct HomeIntegratedInfoPanel: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("相性の良い台 Top3")
-                    .font(AppTypography.panelHeading)
-                    .foregroundColor(AppGlassStyle.textPrimary)
+                    .font(skin.themedFont(size: 17, weight: .semibold))
+                    .foregroundColor(skin.mainTextColor)
                 Spacer(minLength: 0)
                 Text("直近\(lookbackDays)日")
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
-                    .foregroundColor(AppGlassStyle.textTertiary)
+                    .font(skin.themedFont(size: 10, weight: .medium))
+                    .foregroundColor(skin.subTextColor.opacity(0.88))
             }
             if top.isEmpty {
                 Text("対象期間にデータがありません")
-                    .font(.system(size: 11, weight: .regular, design: .rounded))
-                    .foregroundColor(AppGlassStyle.textSecondary)
+                    .font(skin.themedFont(size: 11, weight: .regular))
+                    .foregroundColor(skin.subTextColor)
             } else {
                 ForEach(Array(top.enumerated()), id: \.offset) { i, row in
                     HStack(alignment: .firstTextBaseline) {
                         Text("\(i + 1). \(row.name)")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundColor(AppGlassStyle.textPrimary)
+                            .font(skin.themedFont(size: 12, weight: .medium))
+                            .foregroundColor(skin.mainTextColor)
                             .lineLimit(1)
                         Spacer(minLength: 8)
                         Text(row.deficitSurplus >= 0 ? "+\(row.deficitSurplus.formattedPtWithUnit)" : row.deficitSurplus.formattedPtWithUnit)
-                            .font(.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit())
-                            .foregroundColor(row.deficitSurplus >= 0 ? cyan : lossPink)
+                            .font(skin.themedFont(size: 11, weight: .semibold, monospaced: true))
+                            .foregroundColor(row.deficitSurplus >= 0 ? accent : lossPink)
                     }
                 }
             }
             Text("並び：期待値に対する余剰が大きい順（期待値より上振れしている度合いの目安）。")
-                .font(.system(size: 9, weight: .regular, design: .rounded))
-                .foregroundColor(AppGlassStyle.textTertiary)
+                .font(skin.themedFont(size: 9, weight: .regular))
+                .foregroundColor(skin.subTextColor.opacity(0.88))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -324,39 +321,39 @@ struct HomeIntegratedInfoPanel: View {
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("主力機種の回転率")
-                    .font(AppTypography.panelHeading)
-                    .foregroundColor(AppGlassStyle.textPrimary)
+                    .font(skin.themedFont(size: 17, weight: .semibold))
+                    .foregroundColor(skin.mainTextColor)
                 Spacer(minLength: 0)
                 Text("直近\(lookbackDays)日")
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
-                    .foregroundColor(AppGlassStyle.textTertiary)
+                    .font(skin.themedFont(size: 10, weight: .medium))
+                    .foregroundColor(skin.subTextColor.opacity(0.88))
             }
             if leaders.isEmpty {
                 Text("対象期間にデータがありません")
-                    .font(.system(size: 11, weight: .regular, design: .rounded))
-                    .foregroundColor(AppGlassStyle.textSecondary)
+                    .font(skin.themedFont(size: 11, weight: .regular))
+                    .foregroundColor(skin.subTextColor)
             } else {
                 ForEach(leaders) { row in
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Text(row.name)
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundColor(AppGlassStyle.textPrimary)
+                            .font(skin.themedFont(size: 12, weight: .medium))
+                            .foregroundColor(skin.mainTextColor)
                             .lineLimit(1)
                         Spacer(minLength: 8)
                         Text(row.avgRotationPer1k.displayFormat("%.1f 回/k"))
-                            .font(.system(size: 11, weight: .semibold, design: .rounded).monospacedDigit())
-                            .foregroundColor(AppGlassStyle.textPrimary)
+                            .font(skin.themedFont(size: 11, weight: .semibold, monospaced: true))
+                            .foregroundColor(skin.mainTextColor)
                         if let d = row.avgBorderDiffPer1k, d.isValidForNumericDisplay {
                             Text(d.displayFormat("(%+.1f)"))
-                                .font(.system(size: 10, weight: .semibold, design: .rounded).monospacedDigit())
-                                .foregroundColor(d >= 0 ? cyan : lossPink)
+                                .font(skin.themedFont(size: 10, weight: .semibold, monospaced: true))
+                                .foregroundColor(d >= 0 ? accent : lossPink)
                         }
                     }
                 }
             }
             Text("並び：通常回転数の合計が多い機種順。括弧はボーダーとの差（回/1k・各実戦の通常回転数で加重）。")
-                .font(.system(size: 9, weight: .regular, design: .rounded))
-                .foregroundColor(AppGlassStyle.textTertiary)
+                .font(skin.themedFont(size: 9, weight: .regular))
+                .foregroundColor(skin.subTextColor.opacity(0.88))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
