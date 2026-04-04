@@ -31,6 +31,7 @@
 		F5A96E772F420C61005AC1EF /* P-stats.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "P-stats.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5A96E8B2F420C62005AC1EF /* P-statsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "P-statsTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5A96E952F420C62005AC1EF /* P-statsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "P-statsUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F5B268CD2F90000100ADD465 /* P-statsProjectOverrides.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = P-statsProjectOverrides.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -98,12 +99,21 @@
 		F5A96E6E2F420C60005AC1EF = {
 			isa = PBXGroup;
 			children = (
+				F5B268CE2F90000100ADD465 /* Config */,
 				F5A96E792F420C61005AC1EF /* P-stats */,
 				F5A96E8E2F420C62005AC1EF /* P-statsTests */,
 				F5A96E982F420C62005AC1EF /* P-statsUITests */,
 				F5A96E782F420C61005AC1EF /* Products */,
 				F5B2689A2F793E1700ADD465 /* docs */,
 			);
+			sourceTree = "<group>";
+		};
+		F5B268CE2F90000100ADD465 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				F5B268CD2F90000100ADD465 /* P-statsProjectOverrides.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 		F5A96E782F420C61005AC1EF /* Products */ = {
@@ -300,6 +310,7 @@
 /* Begin XCBuildConfiguration section */
 		F5A96E9F2F420C62005AC1EF /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = F5B268CD2F90000100ADD465 /* P-statsProjectOverrides.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -337,6 +348,7 @@
 		};
 		F5A96EA02F420C62005AC1EF /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = F5B268CD2F90000100ADD465 /* P-statsProjectOverrides.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

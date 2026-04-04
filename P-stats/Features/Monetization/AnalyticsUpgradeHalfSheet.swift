@@ -45,7 +45,7 @@ struct AnalyticsUpgradeHalfSheet: View {
                         Button {
                             Task { await entitlements.purchasePremium() }
                         } label: {
-                            Text("今すぐ登録（\(product.displayPrice)）")
+                            Text("今すぐ登録（\(product.displayPriceJapanese)）")
                                 .fontWeight(.semibold)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 14)

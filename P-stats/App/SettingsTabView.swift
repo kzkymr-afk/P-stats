@@ -557,7 +557,7 @@ struct SettingsTabView: View {
                                     Button {
                                         Task { await entitlements.purchasePremium() }
                                     } label: {
-                                        Text("登録する（\(product.displayPrice)）")
+                                        Text("登録する（\(product.displayPriceJapanese)）")
                                             .fontWeight(.semibold)
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 12)

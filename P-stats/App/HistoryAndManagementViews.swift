@@ -6,6 +6,26 @@ import UIKit
 private let machineOrderKey = "machineDisplayOrder"
 private let shopOrderKey = "shopDisplayOrder"
 
+/// 機種・店舗管理リスト上部の控えめなスワイプ案内
+private struct ManagementSwipeHintBar: View {
+    @EnvironmentObject private var themeManager: ThemeManager
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "chevron.left")
+                .font(.caption2.weight(.semibold))
+            Text(text)
+                .font(.caption2)
+        }
+        .foregroundColor(themeManager.currentTheme.accentColor.opacity(0.5))
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 5)
+        .padding(.horizontal, 16)
+        .allowsHitTesting(false)
+    }
+}
+
 private enum ManagementSessionStats {
     static func machinePlayStats(machineName: String, sessions: [GameSession]) -> (count: Int, winRatePercent: Int) {
         let filtered = sessions.filter { $0.machineName == machineName }
@@ -56,10 +76,6 @@ private struct MachineManagementCard: View {
                 Image(systemName: "line.3.horizontal")
                     .font(.caption)
                     .foregroundColor(skin.accentColor.opacity(DesignTokens.Surface.AccentTint.chromeTintMid))
-            } else {
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(skin.accentColor.opacity(DesignTokens.Surface.AccentTint.chromeTintMid))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -100,10 +116,6 @@ private struct ShopManagementCard: View {
                 Image(systemName: "line.3.horizontal")
                     .font(.caption)
                     .foregroundColor(themeManager.currentTheme.accentColor.opacity(DesignTokens.Surface.AccentTint.chromeTintMid))
-            } else {
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(themeManager.currentTheme.accentColor.opacity(DesignTokens.Surface.AccentTint.chromeTintMid))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -113,6 +125,7 @@ private struct ShopManagementCard: View {
 }
 
 struct MachineManagementView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Machine.name) private var machines: [Machine]
     @Query(sort: \GameSession.date, order: .reverse) private var recentSessions: [GameSession]
@@ -167,21 +180,17 @@ struct MachineManagementView: View {
         // 行に listSelectionStyle() を付けない（DragGesture minimumDistance:0 が List の縦スクロール・swipeActions と競合するため）
         ZStack(alignment: .bottomTrailing) {
             StaticHomeBackgroundView()
-            List {
+            VStack(spacing: 0) {
+                ManagementSwipeHintBar(text: "左にスワイプで編集・削除")
+                List {
                 ForEach(machinesForList) { m in
-                    Button {
-                        guard !isReorderMode else { return }
-                        machineToEdit = m
-                    } label: {
-                        let st = ManagementSessionStats.machinePlayStats(machineName: m.name, sessions: recentSessions)
-                        MachineManagementCard(
-                            machine: m,
-                            sessionCount: st.count,
-                            winRatePercent: st.winRatePercent,
-                            isReorderMode: isReorderMode
-                        )
-                    }
-                    .buttonStyle(.plain)
+                    let st = ManagementSessionStats.machinePlayStats(machineName: m.name, sessions: recentSessions)
+                    MachineManagementCard(
+                        machine: m,
+                        sessionCount: st.count,
+                        winRatePercent: st.winRatePercent,
+                        isReorderMode: isReorderMode
+                    )
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .listRowSeparator(.hidden)
@@ -202,12 +211,13 @@ struct MachineManagementView: View {
                     arr.move(fromOffsets: from, toOffset: to)
                     saveMachineOrder(arr)
                 }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .contentMargins(.bottom, listBottomContentMargin, for: .scrollContent)
+                .environment(\.editMode, .constant(isReorderMode ? .active : .inactive))
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .contentMargins(.bottom, listBottomContentMargin, for: .scrollContent)
-            .environment(\.editMode, .constant(isReorderMode ? .active : .inactive))
 
             Button {
                 showNewMachine = true
@@ -275,6 +285,7 @@ struct MachineManagementView: View {
 
 // MARK: - 店舗管理（スワイプで編集・削除、右上並べ替え、右下FABで新規登録）
 struct ShopManagementView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Shop.name) private var shops: [Shop]
     @Query(sort: \GameSession.date, order: .reverse) private var allSessions: [GameSession]
@@ -305,21 +316,17 @@ struct ShopManagementView: View {
         // 行に listSelectionStyle() を付けない（機種管理と同様、List のスクロール・swipeActions と競合するため）
         ZStack(alignment: .bottomTrailing) {
             StaticHomeBackgroundView()
-            List {
+            VStack(spacing: 0) {
+                ManagementSwipeHintBar(text: "左にスワイプで編集・削除")
+                List {
                 ForEach(orderedShops) { s in
-                    Button {
-                        guard !isReorderMode else { return }
-                        shopToEdit = s
-                    } label: {
-                        let st = ManagementSessionStats.shopPlayStats(shopName: s.name, sessions: allSessions)
-                        ShopManagementCard(
-                            shop: s,
-                            sessionCount: st.count,
-                            winRatePercent: st.winRatePercent,
-                            isReorderMode: isReorderMode
-                        )
-                    }
-                    .buttonStyle(.plain)
+                    let st = ManagementSessionStats.shopPlayStats(shopName: s.name, sessions: allSessions)
+                    ShopManagementCard(
+                        shop: s,
+                        sessionCount: st.count,
+                        winRatePercent: st.winRatePercent,
+                        isReorderMode: isReorderMode
+                    )
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .listRowSeparator(.hidden)
@@ -340,12 +347,13 @@ struct ShopManagementView: View {
                     arr.move(fromOffsets: from, toOffset: to)
                     saveShopOrder(arr)
                 }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .contentMargins(.bottom, listBottomContentMargin, for: .scrollContent)
+                .environment(\.editMode, .constant(isReorderMode ? .active : .inactive))
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .contentMargins(.bottom, listBottomContentMargin, for: .scrollContent)
-            .environment(\.editMode, .constant(isReorderMode ? .active : .inactive))
 
             Button {
                 showNewShop = true
@@ -379,12 +387,12 @@ struct ShopManagementView: View {
             )) {
             if let s = shopToEdit {
                 ShopEditView(shop: s) { shopToEdit = nil }
-                    .presentationDetents([.medium, .large])
+                    .presentationDetents([.large])
             }
         }
         .sheet(isPresented: $showNewShop) {
             ShopEditView(shop: nil) { showNewShop = false }
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
         }
         .alert("店舗を削除しますか？", isPresented: Binding(
             get: { pendingDeleteShop != nil },

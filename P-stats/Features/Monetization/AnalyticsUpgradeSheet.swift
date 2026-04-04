@@ -64,7 +64,7 @@ struct AnalyticsUpgradeSheet: View {
                 Button {
                     Task { await action() }
                 } label: {
-                    Text("月額で登録する（\(product.displayPrice)）")
+                    Text("月額で登録する（\(product.displayPriceJapanese)）")
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 14)

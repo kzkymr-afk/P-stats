@@ -17,6 +17,11 @@
           "description" : "広告非表示と分析機能のフル利用",
           "displayName" : "P-stats プレミアム",
           "locale" : "ja_JP"
+        },
+        {
+          "description" : "広告非表示と分析機能のフル利用",
+          "displayName" : "P-stats プレミアム",
+          "locale" : "en_US"
         }
       ],
       "name" : "P-stats プレミアム",
@@ -38,11 +43,16 @@
               "description" : "アプリ内広告を非表示にし、すべての分析機能を利用できます。",
               "displayName" : "プレミアム（月額）",
               "locale" : "ja_JP"
+            },
+            {
+              "description" : "アプリ内広告を非表示にし、すべての分析機能を利用できます。",
+              "displayName" : "プレミアム（月額）",
+              "locale" : "en_US"
             }
           ],
           "productID" : "jp.kzkymr.p-stats.sub.premium.monthly",
           "recurringSubscriptionPeriod" : "P1M",
-          "referenceName" : "Premium Monthly",
+          "referenceName" : "プレミアム（月額）",
           "subscriptionGroupID" : "21482000",
           "type" : "RecurringSubscription"
         }

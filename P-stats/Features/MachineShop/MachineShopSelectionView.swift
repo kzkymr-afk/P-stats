@@ -654,13 +654,13 @@ struct MachineShopSelectionView: View {
                 ShopEditView(shop: shop) {
                     shopToEdit = nil
                 }
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
             }
             .sheet(isPresented: $showNewShopSheet) {
                 ShopEditView(shop: nil) {
                     showNewShopSheet = false
                 }
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
             }
             .onAppear {
                 if gateMode, !savedMachines.isEmpty || !savedShops.isEmpty {
@@ -683,6 +683,26 @@ struct MachineShopSelectionView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - マイリスト「一覧」内：控えめなスワイプ案内
+private struct MyListSwipeHintBar: View {
+    @EnvironmentObject private var themeManager: ThemeManager
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "arrow.left.arrow.right")
+                .font(.caption2.weight(.semibold))
+            Text(text)
+                .font(.caption2)
+        }
+        .foregroundColor(themeManager.currentTheme.accentColor.opacity(0.5))
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 5)
+        .padding(.horizontal, 16)
+        .allowsHitTesting(false)
     }
 }
 
@@ -714,34 +734,27 @@ struct MyListMachinesView: View {
     var body: some View {
         ZStack {
             StaticHomeBackgroundView()
-            List {
+            VStack(spacing: 0) {
+                MyListSwipeHintBar(text: "左にスワイプで選択　右にスワイプで編集・削除")
+                List {
                 ForEach(sortedMachinesForList) { m in
-                    HStack(spacing: 12) {
-                        Button {
-                            log.selectedMachine = m
-                            dismiss()
-                        } label: {
-                            HStack {
-                                Text(m.name)
-                                    .foregroundColor(themeManager.currentTheme.mainTextColor)
-                                if log.selectedMachine.persistentModelID == m.persistentModelID {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.subheadline)
-                                        .foregroundStyle(AppGlassStyle.accent)
-                                }
+                    Button {
+                        log.selectedMachine = m
+                        dismiss()
+                    } label: {
+                        HStack {
+                            Text(m.name)
+                                .foregroundColor(themeManager.currentTheme.mainTextColor)
+                            if log.selectedMachine.persistentModelID == m.persistentModelID {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.subheadline)
+                                    .foregroundStyle(AppGlassStyle.accent)
                             }
+                            Spacer(minLength: 0)
                         }
-                        .buttonStyle(.plain)
-                        Spacer(minLength: 8)
-                        Button {
-                            machineToEdit = m
-                        } label: {
-                            Image(systemName: "pencil.circle.fill")
-                                .font(.title3)
-                                .foregroundStyle(accent)
-                        }
-                        .buttonStyle(.plain)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                     .listRowBackground(AppGlassStyle.rowBackground)
                     .listSelectionStyle(isSelected: log.selectedMachine.persistentModelID == m.persistentModelID)
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -768,9 +781,10 @@ struct MyListMachinesView: View {
                         .foregroundColor(accent)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
         }
         .navigationTitle("登録済み機種")
         .navigationBarTitleDisplayMode(.inline)
@@ -820,34 +834,27 @@ struct MyListShopsView: View {
     var body: some View {
         ZStack {
             StaticHomeBackgroundView()
-            List {
+            VStack(spacing: 0) {
+                MyListSwipeHintBar(text: "左にスワイプで選択　右にスワイプで編集・削除")
+                List {
                 ForEach(sortedShopsForList) { s in
-                    HStack(spacing: 12) {
-                        Button {
-                            log.selectedShop = s
-                            dismiss()
-                        } label: {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(s.name)
-                                    .foregroundColor(themeManager.currentTheme.mainTextColor)
-                                if s.supportsChodamaService || s.chodamaBalanceBalls > 0 {
-                                    Text("貯玉 \(s.chodamaBalanceBalls)玉")
-                                        .font(.caption2)
-                                        .foregroundStyle(themeManager.currentTheme.subTextColor.opacity(0.88))
-                                }
+                    Button {
+                        log.selectedShop = s
+                        dismiss()
+                    } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(s.name)
+                                .foregroundColor(themeManager.currentTheme.mainTextColor)
+                            if s.supportsChodamaService || s.chodamaBalanceBalls > 0 {
+                                Text("貯玉 \(s.chodamaBalanceBalls)玉")
+                                    .font(.caption2)
+                                    .foregroundStyle(themeManager.currentTheme.subTextColor.opacity(0.88))
                             }
                         }
-                        .buttonStyle(.plain)
-                        Spacer(minLength: 8)
-                        Button {
-                            shopToEdit = s
-                        } label: {
-                            Image(systemName: "pencil.circle.fill")
-                                .font(.title3)
-                                .foregroundStyle(accent)
-                        }
-                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
+                    .buttonStyle(.plain)
                     .listRowBackground(AppGlassStyle.rowBackground)
                     .listSelectionStyle(isSelected: log.selectedShop.persistentModelID == s.persistentModelID)
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -874,9 +881,10 @@ struct MyListShopsView: View {
                         .foregroundColor(accent)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
+                }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
         }
         .navigationTitle("登録済み店舗")
         .navigationBarTitleDisplayMode(.inline)
@@ -887,11 +895,11 @@ struct MyListShopsView: View {
         .tint(themeManager.currentTheme.mainTextColor)
         .sheet(item: $shopToEdit, onDismiss: { shopToEdit = nil }) { s in
             ShopEditView(shop: s) { shopToEdit = nil }
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
         }
         .sheet(isPresented: $showNewSheet) {
             ShopEditView(shop: nil) { showNewSheet = false }
-                .presentationDetents([.medium, .large])
+                .presentationDetents([.large])
         }
     }
 }

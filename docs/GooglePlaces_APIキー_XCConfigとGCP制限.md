@@ -4,7 +4,7 @@
 
 ### 仕組み
 
-- `Config/P-statsProjectOverrides.xcconfig` を **P-stats ターゲットの Base Configuration** に指定している。
+- `Config/P-statsProjectOverrides.xcconfig` を **P-stats ターゲットの Base Configuration** に指定している（`project.pbxproj` の `baseConfigurationReference`。未接続だと `$(GOOGLE_PLACES_API_KEY)` がバンドルにそのまま残り、アプリは「キー未設定」になる）。
 - その中で `GOOGLE_PLACES_API_KEY` をビルド設定として定義し、`Info.plist` の `$(GOOGLE_PLACES_API_KEY)` がビルド時に置き換わる。
 - 実キーは **`Config/P-statsSecrets.xcconfig`** にだけ書く（`.gitignore` 済み）。リポジトリには **`P-statsSecrets.xcconfig.example`** のみコミットする。
 
