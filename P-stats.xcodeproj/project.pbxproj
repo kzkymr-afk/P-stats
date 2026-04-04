@@ -31,7 +31,7 @@
 		F5A96E772F420C61005AC1EF /* P-stats.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "P-stats.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5A96E8B2F420C62005AC1EF /* P-statsTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "P-statsTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F5A96E952F420C62005AC1EF /* P-statsUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "P-statsUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		F5B268CD2F90000100ADD465 /* P-statsProjectOverrides.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = P-statsProjectOverrides.xcconfig; sourceTree = "<group>"; };
+		F5B268CD2F90000100ADD465 /* P-statsProjectOverrides.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "P-statsProjectOverrides.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -108,14 +108,6 @@
 			);
 			sourceTree = "<group>";
 		};
-		F5B268CE2F90000100ADD465 /* Config */ = {
-			isa = PBXGroup;
-			children = (
-				F5B268CD2F90000100ADD465 /* P-statsProjectOverrides.xcconfig */,
-			);
-			path = Config;
-			sourceTree = "<group>";
-		};
 		F5A96E782F420C61005AC1EF /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -124,6 +116,14 @@
 				F5A96E952F420C62005AC1EF /* P-statsUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		F5B268CE2F90000100ADD465 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				F5B268CD2F90000100ADD465 /* P-statsProjectOverrides.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -322,8 +322,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "P-stats/Info.plist";
+				INFOPLIST_KEY_CFBundleDevelopmentRegion = ja;
 				INFOPLIST_KEY_CFBundleDisplayName = "P-stats";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "アプリのロック解除にFace IDを使用します。";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "現在地周辺のパチンコ店を検索するために位置情報を利用します。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -360,8 +362,10 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "P-stats/Info.plist";
+				INFOPLIST_KEY_CFBundleDevelopmentRegion = ja;
 				INFOPLIST_KEY_CFBundleDisplayName = "P-stats";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "アプリのロック解除にFace IDを使用します。";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "現在地周辺のパチンコ店を検索するために位置情報を利用します。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
