@@ -8,7 +8,8 @@ struct SessionSettlementSheet: View {
     let onCancel: () -> Void
     let onConfirm: (SessionSettlementMode) -> Void
 
-    private var accent: Color { AppGlassStyle.accent }
+    @EnvironmentObject private var themeManager: ThemeManager
+    private var accent: Color { themeManager.currentTheme.accentColor }
     private var breakdown: ChodamaExchangeBreakdown {
         ChodamaSettlement.exchangeBreakdown(balls: recoveryBalls, yenPerBall: payoutCoefficient)
     }
@@ -29,8 +30,7 @@ struct SessionSettlementSheet: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(16)
-                        .background(AppGlassStyle.cardBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .pstatsPanelStyle()
 
                         if supportsChodama {
                             settlementButton(
@@ -46,11 +46,11 @@ struct SessionSettlementSheet: View {
                                 .foregroundStyle(.white.opacity(0.7))
                                 .padding(12)
                                 .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.white.opacity(0.06))
+                                .background(Color.white.opacity(DesignTokens.Surface.Settlement.auxiliaryWash))
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                         }
 
-                        Divider().background(Color.white.opacity(0.2))
+                        Divider().background(themeManager.currentTheme.hairlineDividerColor)
 
                         settlementButton(
                             title: "換金",
@@ -129,12 +129,7 @@ struct SessionSettlementSheet: View {
             }
             .padding(16)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(AppGlassStyle.cardBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-            )
+            .pstatsPanelStyle()
         }
         .buttonStyle(.plain)
     }

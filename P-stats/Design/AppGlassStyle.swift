@@ -1,25 +1,26 @@
 import SwiftUI
 
 // MARK: - グラスモーフィズム共通（やや不透明で統一）
-/// SwiftUI 用の Color / Gradient。DesignTokens の値を参照して組み立てる。
+/// SwiftUI 用の Color / Gradient。`DefaultTheme`（`ApplicationTheme`）の値を参照し、スキンと数値トークンを一貫させる。
 enum AppGlassStyle {
     // MARK: - Dark only (ライトモードは一旦撤去)
 
-    static let background = AppDesignSystem.Palette.background
-    /// リスト行・ドロワーの面（壁紙上でも読みやすく）
-    static let rowBackground = Color.black.opacity(DesignTokens.Opacity.rowBackground)
+    /// アプリ土台（スプラッシュ等は `Palette` と揃える）
+    static var background: Color { AppDesignSystem.Palette.background }
+    /// リスト行・ドロワーの面
+    static var rowBackground: Color { DefaultTheme.shared.listRowBackground }
     /// カード・パネル全般
-    static let cardBackground = Color.black.opacity(DesignTokens.Opacity.cardBackground)
-    static let accent = AppDesignSystem.Palette.accent
+    static var cardBackground: Color { DefaultTheme.shared.panelBackground }
+    static var accent: Color { DefaultTheme.shared.accentColor }
 
-    /// ダーク固定のテキスト色
-    static let textPrimary = AppDesignSystem.Palette.textPrimary
-    static let textSecondary = AppDesignSystem.Palette.textSecondary
-    static let textTertiary = AppDesignSystem.Palette.textTertiary
+    /// ダーク固定のテキスト色（既定スキン＝`DefaultTheme`）
+    static var textPrimary: Color { DefaultTheme.shared.mainTextColor }
+    static var textSecondary: Color { DefaultTheme.shared.subTextColor }
+    static var textTertiary: Color { AppDesignSystem.Palette.textTertiary }
 
     /// RUSH／通常ボタン用（背景・枠・文字の統一）
-    static let rushColor = Color(hex: DesignTokens.Color.rushHex)
-    static let normalColor = Color(hex: DesignTokens.Color.normalHex)
+    static var rushColor: Color { DefaultTheme.shared.playRushAccent }
+    static var normalColor: Color { DefaultTheme.shared.playNormalAccent }
     static let rushBackgroundOpacity: Double = DesignTokens.Opacity.rushBackground
     static let rushStrokeOpacity: Double = DesignTokens.Opacity.rushStroke
     static let normalBackgroundOpacity: Double = DesignTokens.Opacity.normalBackground
@@ -93,12 +94,25 @@ enum AppGlassStyle {
         )
     }
 
-    /// 区切り線（ダーク固定）
-    static let divider = AppDesignSystem.Palette.divider
-    /// ゲージ・チャートの線色（ダーク固定）
-    static let gaugeLine = AppDesignSystem.Palette.gaugeLine
-    /// チャートのグリッド（ダーク固定）
-    static let chartGrid = AppDesignSystem.Palette.chartGrid
+    /// 区切り線
+    static var divider: Color { DefaultTheme.shared.hairlineDividerColor }
+    /// ゲージ・チャートの線色
+    static var gaugeLine: Color { DefaultTheme.shared.gaugeLineColor }
+    /// チャートのグリッド
+    static var chartGrid: Color { DefaultTheme.shared.chartGridLineColor }
+
+    /// 主パネル上の薄い二次面（`ApplicationTheme.panelSecondaryBackground`）
+    static var panelSecondaryBackground: Color { DefaultTheme.shared.panelSecondaryBackground }
+    /// 入力欄・フォーム行の下地
+    static var inputFieldBackground: Color { DefaultTheme.shared.inputFieldBackground }
+    /// 二次面より明るいフォーム内区画
+    static var panelElevatedSecondaryBackground: Color { DefaultTheme.shared.panelElevatedSecondaryBackground }
+    /// 投資・支出系のセマンティック色
+    static var investmentColor: Color { DefaultTheme.shared.investmentColor }
+    /// 回収・プラス系
+    static var recoveryColor: Color { DefaultTheme.shared.recoveryColor }
+    /// 当たり・ジャックポット系のネオン強調
+    static var jackpotColor: Color { DefaultTheme.shared.jackpotColor }
 
     /// ホーム下部タブバーとデータ分析ドックで共通の寸法・タイポ（参考: Prime Video 系下部ナビ）
     enum MainTabDock {
@@ -113,12 +127,30 @@ enum AppGlassStyle {
         static let tabIconLabelSpacing: CGFloat = 2
         static let horizontalInset: CGFloat = 0
         static let innerHorizontalPadding: CGFloat = 10
-        static let inactiveTint = Color(red: 0.6, green: 0.6, blue: 0.6)
+        static var inactiveTint: Color {
+            Color(
+                red: DesignTokens.Glass.dockInactiveTintR,
+                green: DesignTokens.Glass.dockInactiveTintG,
+                blue: DesignTokens.Glass.dockInactiveTintB
+            )
+        }
         /// 選択列スポットライト（ドック高さを抑えつつアイコン背後に収める）
         static let selectedGlowSlotHeight: CGFloat = 56
         /// Prime 風：純黒ではなくわずかに青みのあるチャコール
-        static let dockBackgroundTop = Color(red: 0.11, green: 0.12, blue: 0.14)
-        static let dockBackgroundBottom = Color(red: 0.035, green: 0.036, blue: 0.042)
+        static var dockBackgroundTop: Color {
+            Color(
+                red: DesignTokens.Glass.dockBackgroundTopR,
+                green: DesignTokens.Glass.dockBackgroundTopG,
+                blue: DesignTokens.Glass.dockBackgroundTopB
+            )
+        }
+        static var dockBackgroundBottom: Color {
+            Color(
+                red: DesignTokens.Glass.dockBackgroundBottomR,
+                green: DesignTokens.Glass.dockBackgroundBottomG,
+                blue: DesignTokens.Glass.dockBackgroundBottomB
+            )
+        }
     }
 
     /// 選択列背面：アイコン直下を最亮にし、下方向と画面奥へフェード（下端への垂れ下がりを抑える）

@@ -8,8 +8,20 @@ struct StaticHomeBackgroundView: View {
     @State private var loadedBackgroundImage: UIImage?
 
     private let cyan = AppGlassStyle.accent
-    private let purple = Color(red: 0.5, green: 0.2, blue: 0.9)
-    private let magenta = Color(red: 0.9, green: 0.2, blue: 0.5)
+    private var orbPrimary: Color {
+        Color(
+            red: DesignTokens.HomeBackground.orbPrimaryR,
+            green: DesignTokens.HomeBackground.orbPrimaryG,
+            blue: DesignTokens.HomeBackground.orbPrimaryB
+        )
+    }
+    private var orbSecondary: Color {
+        Color(
+            red: DesignTokens.HomeBackground.orbSecondaryR,
+            green: DesignTokens.HomeBackground.orbSecondaryG,
+            blue: DesignTokens.HomeBackground.orbSecondaryB
+        )
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -23,8 +35,8 @@ struct StaticHomeBackgroundView: View {
                 } else {
                     AppDesignSystem.Background.base
                     orbViewStatic(color: cyan, x: 0.2, y: 0.15, geo: geo)
-                    orbViewStatic(color: purple, x: 0.75, y: 0.3, geo: geo)
-                    orbViewStatic(color: magenta, x: 0.5, y: 0.75, geo: geo)
+                    orbViewStatic(color: orbPrimary, x: 0.75, y: 0.3, geo: geo)
+                    orbViewStatic(color: orbSecondary, x: 0.5, y: 0.75, geo: geo)
                     geometricLineStatic(geo: geo)
                 }
             }

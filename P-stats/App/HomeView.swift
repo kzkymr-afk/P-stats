@@ -117,9 +117,21 @@ struct HomeView: View {
     }
 
     private var themeAccent: Color { themeManager.currentTheme.accentColor }
-    /// 背景オーブ用（アクセント以外の色相バリエーション）
-    private let purple = Color(red: 0.5, green: 0.2, blue: 0.9)
-    private let magenta = Color(red: 0.9, green: 0.2, blue: 0.5)
+    /// 背景オーブ用（`DesignTokens.HomeBackground` と `StaticHomeBackgroundView` で共通）
+    private var orbPrimary: Color {
+        Color(
+            red: DesignTokens.HomeBackground.orbPrimaryR,
+            green: DesignTokens.HomeBackground.orbPrimaryG,
+            blue: DesignTokens.HomeBackground.orbPrimaryB
+        )
+    }
+    private var orbSecondary: Color {
+        Color(
+            red: DesignTokens.HomeBackground.orbSecondaryR,
+            green: DesignTokens.HomeBackground.orbSecondaryG,
+            blue: DesignTokens.HomeBackground.orbSecondaryB
+        )
+    }
 
     /// 画面幅の約5.5%（最小20・最大32）。ドックなどで使用
     private func contentHorizontalPadding(_ width: CGFloat) -> CGFloat { min(32, max(20, width * 0.055)) }
@@ -384,8 +396,8 @@ struct HomeView: View {
                 } else if shouldRunBackgroundAnimation {
                     AppGlassStyle.background
                     orbView(color: themeAccent, x: 0.2, y: 0.15)
-                    orbView(color: purple, x: 0.75, y: 0.3)
-                    orbView(color: magenta, x: 0.5, y: 0.75)
+                    orbView(color: orbPrimary, x: 0.75, y: 0.3)
+                    orbView(color: orbSecondary, x: 0.5, y: 0.75)
                     geometricBackground
                         .onAppear {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -396,8 +408,8 @@ struct HomeView: View {
                 } else {
                     AppGlassStyle.background
                     staticOrbView(color: themeAccent, x: 0.2, y: 0.15)
-                    staticOrbView(color: purple, x: 0.75, y: 0.3)
-                    staticOrbView(color: magenta, x: 0.5, y: 0.75)
+                    staticOrbView(color: orbPrimary, x: 0.75, y: 0.3)
+                    staticOrbView(color: orbSecondary, x: 0.5, y: 0.75)
                 }
             }
             .frame(width: geo.size.width, height: geo.size.height)

@@ -6,6 +6,7 @@ struct SessionShareComposerSheet: View {
     let snapshot: SessionShareSnapshot
     @Environment(\.dismiss) private var dismiss
     @Environment(\.displayScale) private var displayScale
+    @EnvironmentObject private var themeManager: ThemeManager
 
     @State private var template: SessionShareTemplate = .simple
     @State private var showShopName = true
@@ -15,7 +16,7 @@ struct SessionShareComposerSheet: View {
     @State private var showShareSheet = false
     @State private var errorMessage: String?
 
-    private var cyan: Color { AppGlassStyle.accent }
+    private var cyan: Color { themeManager.currentTheme.accentColor }
 
     var body: some View {
         NavigationStack {
@@ -44,9 +45,7 @@ struct SessionShareComposerSheet: View {
                             .tint(cyan)
                         }
                         .padding(14)
-                        .background(Color.black.opacity(0.6))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+                        .pstatsPanelStyle()
 
                         Button {
                             openShareSheet()
@@ -97,8 +96,8 @@ struct SessionShareComposerSheet: View {
         VStack(alignment: .leading, spacing: 10) {
             ZStack {
                 RoundedRectangle(cornerRadius: 18)
-                    .fill(Color.black.opacity(0.55))
-                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.12), lineWidth: 1))
+                    .fill(Color.black.opacity(DesignTokens.ShareCard.ComposerChrome.previewBackdrop))
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(DesignTokens.ShareCard.ComposerChrome.previewStroke), lineWidth: DesignTokens.Thickness.hairline))
 
                 if let img = renderedImage {
                     Image(uiImage: img)

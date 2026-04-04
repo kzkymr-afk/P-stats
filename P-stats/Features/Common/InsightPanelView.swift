@@ -203,7 +203,7 @@ struct InsightPanelView: View {
                             .foregroundColor(insightAccent.opacity(0.75))
                         Text(log.balancePt >= 0 ? "+\(log.balancePt.formattedPtWithUnit)" : "\(log.balancePt.formattedPtWithUnit)")
                             .font(.system(size: 20, weight: .bold, design: .monospaced))
-                            .foregroundColor(log.balancePt >= 0 ? insightAccent : Color.orange.opacity(0.95))
+                            .foregroundColor(log.balancePt >= 0 ? insightAccent : themeManager.currentTheme.cautionForegroundColor.opacity(0.95))
                         Text("回収−投入（回収＝出玉×払出係数・500pt刻み端数切捨て）")
                             .font(.system(size: 9, weight: .regular, design: .rounded))
                             .foregroundColor(insightAccent.opacity(0.5))
@@ -217,7 +217,7 @@ struct InsightPanelView: View {
                             let pt = theoreticalExpectationPt
                             Text(pt >= 0 ? "+\(pt.formattedPtWithUnit)" : "\(pt.formattedPtWithUnit)")
                                 .font(.system(size: 18, weight: .semibold, design: .monospaced))
-                                .foregroundColor(pt >= 0 ? insightAccent : Color.orange.opacity(0.95))
+                                .foregroundColor(pt >= 0 ? insightAccent : themeManager.currentTheme.cautionForegroundColor.opacity(0.95))
                         } else {
                             Text("—")
                                 .font(.system(size: 18, weight: .semibold, design: .monospaced))

@@ -4,10 +4,12 @@ import SwiftUI
 struct LaunchView: View {
     var onFinish: () -> Void
 
-    private let cyan = AppGlassStyle.accent
+    @EnvironmentObject private var themeManager: ThemeManager
     @State private var gradientProgress: Double = 0
 
     var body: some View {
+        let t = themeManager.currentTheme
+        let cyan = t.accentColor
         ZStack {
             LaunchAppearance.launchEndColor
                 .ignoresSafeArea()
@@ -22,13 +24,13 @@ struct LaunchView: View {
                     .font(.system(size: 32, weight: .ultraLight, design: .default))
                     .tracking(2)
                     .foregroundStyle(cyan)
-                    .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
-                    .shadow(color: cyan.opacity(0.5), radius: 6)
+                    .themeShadow(t.splashTitleDepthShadow)
+                    .themeShadow(t.splashTitleGlowShadow)
                 Text("実戦データを記録・分析")
                     .font(.system(size: 9, weight: .light, design: .default))
                     .tracking(0.5)
                     .foregroundColor(.white.opacity(0.9))
-                    .shadow(color: .black.opacity(0.4), radius: 1)
+                    .themeShadow(t.splashSubtitleDepthShadow)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

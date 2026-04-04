@@ -2,6 +2,7 @@ import SwiftUI
 
 /// 実戦画面の「スワイプで情報」バー。`PlayView` 本体から切り出し、レイアウトとジェスチャを局所化する。
 struct PlaySessionSwipeHintBar: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let focusAccent: Color
     let rightHandMode: Bool
     let insightPanelWidth: CGFloat
@@ -12,14 +13,19 @@ struct PlaySessionSwipeHintBar: View {
     var onUnlockThresholdHaptic: () -> Void
 
     var body: some View {
+        let skin = themeManager.currentTheme
         let openThreshold = geo.size.width * 0.25
         let unlockHapticThreshold: CGFloat = 10
         let swipeBarHeight: CGFloat = 60
         let swipeBarCornerRadius: CGFloat = 4
         let swipeBarHorizontalMargin: CGFloat = 16
-        let stainlessBase = Color(red: 0.22, green: 0.23, blue: 0.25)
-        let cyanNeon = Color(hex: "00FFFF")
-        let magentaNeon = Color(hex: "FF00FF")
+        let stainlessBase = Color(
+            red: DesignTokens.PlaySessionChrome.swipeHintBarStainlessR,
+            green: DesignTokens.PlaySessionChrome.swipeHintBarStainlessG,
+            blue: DesignTokens.PlaySessionChrome.swipeHintBarStainlessB
+        )
+        let cyanNeon = skin.playNormalAccent
+        let magentaNeon = skin.playRushAccent
         let bgGradient = LinearGradient(
             colors: [stainlessBase, stainlessBase.opacity(0.98), stainlessBase],
             startPoint: .topLeading,
@@ -27,13 +33,13 @@ struct PlaySessionSwipeHintBar: View {
         )
         let hairlineGradient = LinearGradient(
             stops: [
-                .init(color: Color.white.opacity(0), location: 0),
-                .init(color: Color.white.opacity(0.04), location: 0.2),
-                .init(color: Color.white.opacity(0.11), location: 0.35),
-                .init(color: Color.white.opacity(0.06), location: 0.5),
-                .init(color: Color.white.opacity(0.12), location: 0.65),
-                .init(color: Color.white.opacity(0.03), location: 0.8),
-                .init(color: Color.white.opacity(0), location: 1)
+                .init(color: Color.white.opacity(DesignTokens.Surface.Interaction.SwipeHintHairline.clear), location: 0),
+                .init(color: Color.white.opacity(DesignTokens.Surface.Interaction.SwipeHintHairline.stop02), location: 0.2),
+                .init(color: Color.white.opacity(DesignTokens.Surface.Interaction.SwipeHintHairline.stop035), location: 0.35),
+                .init(color: Color.white.opacity(DesignTokens.Surface.Interaction.SwipeHintHairline.stop05), location: 0.5),
+                .init(color: Color.white.opacity(DesignTokens.Surface.Interaction.SwipeHintHairline.stop065), location: 0.65),
+                .init(color: Color.white.opacity(DesignTokens.Surface.Interaction.SwipeHintHairline.stop08), location: 0.8),
+                .init(color: Color.white.opacity(DesignTokens.Surface.Interaction.SwipeHintHairline.clear), location: 1)
             ],
             startPoint: .leading,
             endPoint: .trailing
@@ -52,12 +58,12 @@ struct PlaySessionSwipeHintBar: View {
             HStack(spacing: 8) {
                 Image(systemName: "chevron.left.2")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(Color.white.opacity(0.5))
+                    .foregroundColor(skin.mainTextColor.opacity(0.5))
                 Spacer()
                 Text("スワイプで情報")
                     .font(.caption2)
                     .fontWeight(.bold)
-                    .foregroundColor(Color.white.opacity(0.7))
+                    .foregroundColor(skin.mainTextColor.opacity(0.7))
                 Spacer()
                 Color.clear.frame(width: 24, height: 1)
             }
@@ -65,11 +71,11 @@ struct PlaySessionSwipeHintBar: View {
         }
         .overlay(alignment: .top) {
             Rectangle().fill(cyanNeon.opacity(1)).frame(height: 0.5)
-                .shadow(color: cyanNeon.opacity(0.7), radius: 4)
+                .themeShadow(skin.playSwipeHintLeadingShadow)
         }
         .overlay(alignment: .bottom) {
             Rectangle().fill(magentaNeon.opacity(1)).frame(height: 0.5)
-                .shadow(color: magentaNeon.opacity(0.7), radius: 4)
+                .themeShadow(skin.playSwipeHintTrailingShadow)
         }
         .clipShape(RoundedRectangle(cornerRadius: swipeBarCornerRadius))
         .frame(height: swipeBarHeight)

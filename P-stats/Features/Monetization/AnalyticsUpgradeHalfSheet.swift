@@ -79,7 +79,7 @@ struct AnalyticsUpgradeHalfSheet: View {
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
                                 .foregroundColor(.white)
-                                .background(Color.white.opacity(0.14))
+                                .background(Color.white.opacity(DesignTokens.Surface.Monetization.teaserRowWash))
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
                             .disabled(rewardedBusy)

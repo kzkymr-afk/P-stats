@@ -47,7 +47,28 @@ struct HomeIntegratedInfoPanel: View {
 
     private var accent: Color { themeManager.currentTheme.accentColor }
     private var skin: ApplicationTheme { themeManager.currentTheme }
-    private var lossPink: Color { Color(red: 0.95, green: 0.3, blue: 0.5) }
+
+    private var homeStatusPositive: Color {
+        Color(
+            red: DesignTokens.Home.statusPositiveR,
+            green: DesignTokens.Home.statusPositiveG,
+            blue: DesignTokens.Home.statusPositiveB
+        )
+    }
+    private var homeStatusLossAccent: Color {
+        Color(
+            red: DesignTokens.Home.statusLossAccentR,
+            green: DesignTokens.Home.statusLossAccentG,
+            blue: DesignTokens.Home.statusLossAccentB
+        )
+    }
+    private var homeStatusWarning: Color {
+        Color(
+            red: DesignTokens.Home.statusWarningR,
+            green: DesignTokens.Home.statusWarningG,
+            blue: DesignTokens.Home.statusWarningB
+        )
+    }
 
     private var visibleSectionIDs: [Int] {
         if freeTierWithAds {
@@ -118,7 +139,7 @@ struct HomeIntegratedInfoPanel: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     Text(ds >= 0 ? "余剰 +\(ds.formattedPtWithUnit)" : "欠損 \(ds.formattedPtWithUnit)")
                         .font(skin.themedFont(size: 14, weight: .semibold))
-                        .foregroundColor(ds >= 0 ? Color(red: 0.35, green: 0.92, blue: 0.55) : Color.orange.opacity(0.95))
+                        .foregroundColor(ds >= 0 ? homeStatusPositive : homeStatusWarning.opacity(0.95))
                         .multilineTextAlignment(.trailing)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
@@ -194,7 +215,7 @@ struct HomeIntegratedInfoPanel: View {
                     VStack(spacing: 2) {
                         Text(s.performance >= 0 ? "○" : "●")
                             .font(skin.themedFont(size: 14, weight: .bold))
-                            .foregroundColor(s.performance >= 0 ? accent : lossPink)
+                            .foregroundColor(s.performance >= 0 ? accent : homeStatusLossAccent)
                         Text(s.performance.formattedPtCompactK)
                             .font(skin.themedFont(size: 9, weight: .medium, monospaced: true))
                             .foregroundColor(skin.subTextColor)
@@ -213,35 +234,47 @@ struct HomeIntegratedInfoPanel: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // MARK: - ⑤ ミニチャート
+    // MARK: - ⑤ 累積収支チャート
 
     private var miniTrendBlock: some View {
-        let steps = HomeInsightMetrics.cumulativePerformanceSteps(in: statsPeriod, sessions: sessions)
-        let indexed = steps.enumerated().map { ($0.offset, $0.element) }
+        let data = HomeInsightMetrics.cumulativeTrendData(in: statsPeriod, sessions: sessions)
         let up: Bool = {
-            guard steps.count >= 2, let f = steps.first, let l = steps.last else { return false }
-            return l > f
+            guard data.count >= 2, let f = data.first, let l = data.last else { return false }
+            return l.cumulativePt > f.cumulativePt
         }()
         let down: Bool = {
-            guard steps.count >= 2, let f = steps.first, let l = steps.last else { return false }
-            return l < f
+            guard data.count >= 2, let f = data.first, let l = data.last else { return false }
+            return l.cumulativePt < f.cumulativePt
+        }()
+
+        let trendFootnote: String = {
+            switch statsPeriod {
+            case .day:
+                return "横軸: 今日、実戦が発生した順（日付は月/日）。縦軸: 累積収支を千円換算（pt→○k）。"
+            case .week:
+                return "横軸: 今週・実戦があった日（月/日）の古い順。縦軸: その日までの累積収支（○k）。"
+            case .month:
+                return "横軸: 今月・実戦があった日（月/日）の古い順。縦軸: その日までの累積収支（○k）。"
+            case .year:
+                return "横軸: 今年・実戦があった月（○月）の古い順。縦軸: その月までの累積収支（○k）。"
+            }
         }()
 
         return VStack(alignment: .leading, spacing: 10) {
-            Text("累積収支の推移（ミニ）")
+            Text("累積収支の推移")
                 .font(skin.themedFont(size: 17, weight: .semibold))
                 .foregroundColor(skin.mainTextColor)
-            if steps.count >= 2 {
+            if data.count >= 2 {
                 Chart {
-                    ForEach(Array(indexed), id: \.0) { pair in
+                    ForEach(data) { d in
                         LineMark(
-                            x: .value("n", pair.0),
-                            y: .value("累計", pair.1)
+                            x: .value("期間", d.xLabel),
+                            y: .value("累計pt", d.cumulativePt)
                         )
                         .interpolationMethod(.catmullRom)
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [accent.opacity(0.95), accent.opacity(0.35)],
+                                colors: [accent.opacity(DesignTokens.Surface.AccentTint.splashTitleGlow), accent.opacity(DesignTokens.Surface.AccentTint.listSelectionGlow)],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -249,28 +282,61 @@ struct HomeIntegratedInfoPanel: View {
                         .lineStyle(StrokeStyle(lineWidth: 1.8))
                     }
                 }
-                .chartXAxis(.hidden)
-                .chartYAxis(.hidden)
-                .frame(height: 44)
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { val in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: DesignTokens.Thickness.hairline))
+                            .foregroundStyle(skin.chartFaintGridColor)
+                        AxisValueLabel {
+                            if let pt = val.as(Int.self) {
+                                Text(Self.cumulativeTrendYAxisLabel(pt: pt))
+                                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                            }
+                        }
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks(preset: .aligned, position: .bottom, values: .automatic(desiredCount: 5)) { _ in
+                        AxisValueLabel(anchor: .top)
+                            .font(.system(size: 8, weight: .medium, design: .rounded))
+                    }
+                }
+                .frame(height: 112)
                 .padding(.vertical, 2)
 
+                Text(trendFootnote)
+                    .font(skin.themedFont(size: 9, weight: .regular))
+                    .foregroundColor(skin.subTextColor)
+                    .fixedSize(horizontal: false, vertical: true)
+
                 if up {
-                    Text("推移は右肩上がりです。")
+                    Text("直近の区切りでは累積が上がっています。")
                         .font(skin.themedFont(size: 10, weight: .medium))
-                        .foregroundColor(Color(red: 0.35, green: 0.92, blue: 0.55).opacity(0.9))
+                        .foregroundColor(homeStatusPositive.opacity(0.9))
                 } else if down {
-                    Text("推移は右肩下がり。今日は慎重に。")
+                    Text("直近の区切りでは累積が下がっています。")
                         .font(skin.themedFont(size: 10, weight: .medium))
-                        .foregroundColor(Color.orange.opacity(0.92))
+                        .foregroundColor(homeStatusWarning.opacity(0.92))
                 }
             } else {
-                Text("2ステップ以上の実戦が集まると折れ線が表示されます。")
+                Text("同一期間に実戦が2件以上あると、累積収支の折れ線が表示されます。")
                     .font(skin.themedFont(size: 11, weight: .regular))
                     .foregroundColor(skin.subTextColor)
                     .frame(height: 40, alignment: .leading)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// 縦軸ラベル: pt を千円単位の ○k 表記（`Color` リテラル禁止の方針に合わせ数値は `DesignTokens` 由来のフォントサイズのみ）
+    private static func cumulativeTrendYAxisLabel(pt: Int) -> String {
+        let sign = pt >= 0 ? "+" : "-"
+        let a = abs(pt)
+        let k = Double(a) / 1000.0
+        var s = k.displayFormat("%.1f")
+        if s.hasSuffix(".0") {
+            s = String(s.dropLast(2))
+        }
+        return "\(sign)\(s)k"
     }
 
     // MARK: - ⑥ 相性 Top3
@@ -302,7 +368,7 @@ struct HomeIntegratedInfoPanel: View {
                         Spacer(minLength: 8)
                         Text(row.deficitSurplus >= 0 ? "+\(row.deficitSurplus.formattedPtWithUnit)" : row.deficitSurplus.formattedPtWithUnit)
                             .font(skin.themedFont(size: 11, weight: .semibold, monospaced: true))
-                            .foregroundColor(row.deficitSurplus >= 0 ? accent : lossPink)
+                            .foregroundColor(row.deficitSurplus >= 0 ? accent : homeStatusLossAccent)
                     }
                 }
             }
@@ -346,7 +412,7 @@ struct HomeIntegratedInfoPanel: View {
                         if let d = row.avgBorderDiffPer1k, d.isValidForNumericDisplay {
                             Text(d.displayFormat("(%+.1f)"))
                                 .font(skin.themedFont(size: 10, weight: .semibold, monospaced: true))
-                                .foregroundColor(d >= 0 ? accent : lossPink)
+                                .foregroundColor(d >= 0 ? accent : homeStatusLossAccent)
                         }
                     }
                 }

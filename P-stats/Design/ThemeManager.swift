@@ -1,40 +1,21 @@
 import Combine
 import SwiftUI
 
-// MARK: - 現在のスキン配信
+// MARK: - アプリ共通の見た目トークン配信
 //
-// 設定画面の `AppTheme` enum（ダーク固定等）とは別で、**見た目のトークン**（`ApplicationTheme`）を
-// 全画面に渡すためのマネージャーです。
+// 設定の `AppTheme`（ダーク固定等）とは別。パネル・文字色・チャート色は `DefaultTheme` を経由して統一する。
+// 将来スキン切替を再導入する場合は `currentTheme` の差し替えポイントをここに集約する。
 //
-// 言語上、プロトコルを型として持つ場合は `any ApplicationTheme` と書きます（指示の `ApplicationTheme` と同義）。
+// プロトコルを型として持つ場合は `any ApplicationTheme` と書く。
 
-/// 現在選択中の `ApplicationTheme` を保持し、`@Published` でビューへ反映する。
+/// 現在有効な `ApplicationTheme` を保持し、`@Published` でビューへ反映する。
 @MainActor
 final class ThemeManager: ObservableObject {
-    /// 現在有効なスキン。
     @Published var currentTheme: any ApplicationTheme
-    /// 設定画面の Picker 等と同期する選択中スキン。
-    @Published private(set) var selectedSkin: PStatsSkin
 
-    /// アプリ全体で共有するインスタンス（`EnvironmentObject` 注入用）。
     static let shared = ThemeManager()
 
     private init() {
-        let raw = UserDefaults.standard.string(forKey: PStatsSkin.storageKey)
-        let skin = raw.flatMap { PStatsSkin(rawValue: $0) } ?? .standard
-        selectedSkin = skin
-        currentTheme = skin.resolveTheme()
-    }
-
-    /// プリセットスキンに切り替え（永続化する）。
-    func applySkin(_ skin: PStatsSkin) {
-        selectedSkin = skin
-        currentTheme = skin.resolveTheme()
-        UserDefaults.standard.set(skin.rawValue, forKey: PStatsSkin.storageKey)
-    }
-
-    /// 任意の `ApplicationTheme` を直接適用する（デバッグ等）。永続化しない。
-    func applyTheme(_ theme: any ApplicationTheme) {
-        currentTheme = theme
+        currentTheme = DefaultTheme.shared
     }
 }

@@ -47,12 +47,13 @@ extension View {
 struct ListSelectionStyleModifier: ViewModifier {
     var isSelected: Bool
 
+    @EnvironmentObject private var themeManager: ThemeManager
     @State private var isPressed = false
 
     func body(content: Content) -> some View {
         content
             .scaleEffect(isPressed ? 0.95 : 1.0)
-            .shadow(color: isSelected ? AppGlassStyle.accent.opacity(0.3) : .clear, radius: 10)
+            .themeShadow(themeManager.currentTheme.listSelectionShadowSpec(isSelected: isSelected))
             .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isPressed)
             .animation(.easeOut(duration: 0.2), value: isSelected)
             .simultaneousGesture(

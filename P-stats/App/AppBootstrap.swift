@@ -6,8 +6,12 @@ import SwiftData
 private struct BootstrapLoadingView: View {
     var body: some View {
         ZStack {
-            Color(red: 28/255, green: 28/255, blue: 30/255)
-                .ignoresSafeArea()
+            Color(
+                red: DesignTokens.System.rootBackgroundR,
+                green: DesignTokens.System.rootBackgroundG,
+                blue: DesignTokens.System.rootBackgroundB
+            )
+            .ignoresSafeArea()
             ProgressView()
                 .progressViewStyle(.circular)
                 .tint(.white)
@@ -56,8 +60,12 @@ private struct BootstrapFailedView: View {
 
     var body: some View {
         ZStack {
-            Color(red: 28/255, green: 28/255, blue: 30/255)
-                .ignoresSafeArea()
+            Color(
+                red: DesignTokens.System.rootBackgroundR,
+                green: DesignTokens.System.rootBackgroundG,
+                blue: DesignTokens.System.rootBackgroundB
+            )
+            .ignoresSafeArea()
             VStack(spacing: 16) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.largeTitle)

@@ -15,6 +15,7 @@ enum BigHitRailChrome: Equatable {
 
 /// 右端配置想定：つまみを左へスライドし、`thresholdFraction`（可動距離の約3/5）以上で `onConfirmed`
 struct SlideToConfirmBigHitRail: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     var height: CGFloat
     var cornerRadius: CGFloat
     var accent: Color
@@ -171,9 +172,9 @@ struct SlideToConfirmBigHitRail: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.12),
-                                    accent.opacity(0.06),
-                                    Color.white.opacity(0.08)
+                                    Color.white.opacity(DesignTokens.Surface.Interaction.BigHitRail.trackBandHigh),
+                                    accent.opacity(DesignTokens.Surface.Interaction.BigHitRail.accentInTrack),
+                                    Color.white.opacity(DesignTokens.Surface.Interaction.BigHitRail.trackBandLow)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -199,8 +200,14 @@ struct SlideToConfirmBigHitRail: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.08 + Double(p) * 0.38),
-                            Color.white.opacity(0.04 + Double(p) * 0.28)
+                            Color.white.opacity(
+                                DesignTokens.Surface.Interaction.BigHitRail.progressWhiteStartBase
+                                    + Double(p) * DesignTokens.Surface.Interaction.BigHitRail.progressWhiteStartScale
+                            ),
+                            Color.white.opacity(
+                                DesignTokens.Surface.Interaction.BigHitRail.progressWhiteEndBase
+                                    + Double(p) * DesignTokens.Surface.Interaction.BigHitRail.progressWhiteEndScale
+                            )
                         ],
                         startPoint: .leading,
                         endPoint: .trailing
@@ -217,8 +224,14 @@ struct SlideToConfirmBigHitRail: View {
             return AnyShapeStyle(
                 LinearGradient(
                     colors: [
-                        Color.white.opacity(0.45 + p * 0.25),
-                        accent.opacity(0.25 + p * 0.2)
+                        Color.white.opacity(
+                            DesignTokens.Surface.Interaction.BigHitRail.strokeWhiteBase
+                                + p * DesignTokens.Surface.Interaction.BigHitRail.strokeWhiteScale
+                        ),
+                        accent.opacity(
+                            DesignTokens.Surface.Interaction.BigHitRail.strokeAccentBase
+                                + p * DesignTokens.Surface.Interaction.BigHitRail.strokeAccentScale
+                        )
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -259,15 +272,18 @@ struct SlideToConfirmBigHitRail: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(0.94),
-                                Color.white.opacity(0.7)
+                                Color.white.opacity(DesignTokens.Surface.Interaction.BigHitRail.thumbHighlight),
+                                Color.white.opacity(DesignTokens.Surface.Interaction.BigHitRail.thumbMid)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
                 RoundedRectangle(cornerRadius: r)
-                    .stroke(Color.white.opacity(0.75), lineWidth: 1.1)
+                    .stroke(
+                        Color.white.opacity(DesignTokens.Surface.Interaction.BigHitRail.thumbRim),
+                        lineWidth: DesignTokens.Thickness.bigHitRailThumbRim
+                    )
                 Image(systemName: "arrow.left")
                     .font(.system(size: icon, weight: .bold, design: .rounded))
                     .foregroundStyle(
@@ -275,7 +291,7 @@ struct SlideToConfirmBigHitRail: View {
                     )
             }
             .frame(width: w, height: h)
-            .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 4)
+            .themeShadow(themeManager.currentTheme.railShadow)
         }
     }
 

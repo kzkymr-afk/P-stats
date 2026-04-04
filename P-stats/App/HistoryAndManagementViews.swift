@@ -6,6 +6,112 @@ import UIKit
 private let machineOrderKey = "machineDisplayOrder"
 private let shopOrderKey = "shopDisplayOrder"
 
+private enum ManagementSessionStats {
+    static func machinePlayStats(machineName: String, sessions: [GameSession]) -> (count: Int, winRatePercent: Int) {
+        let filtered = sessions.filter { $0.machineName == machineName }
+        let n = filtered.count
+        guard n > 0 else { return (0, 0) }
+        let wins = filtered.filter { $0.performance >= 0 }.count
+        return (n, Int((Double(wins) / Double(n) * 100).rounded()))
+    }
+
+    static func shopPlayStats(shopName: String, sessions: [GameSession]) -> (count: Int, winRatePercent: Int) {
+        let filtered = sessions.filter { $0.shopName == shopName }
+        let n = filtered.count
+        guard n > 0 else { return (0, 0) }
+        let wins = filtered.filter { $0.performance >= 0 }.count
+        return (n, Int((Double(wins) / Double(n) * 100).rounded()))
+    }
+}
+
+/// 機種管理一覧用カード（`pstatsPanelStyle` でホーム・分析・履歴と同一パネル）
+private struct MachineManagementCard: View {
+    @EnvironmentObject private var themeManager: ThemeManager
+    let machine: Machine
+    let sessionCount: Int
+    let winRatePercent: Int
+    let isReorderMode: Bool
+
+    private var skin: any ApplicationTheme { themeManager.currentTheme }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(machine.name)
+                    .font(skin.themedFont(size: 17, weight: .semibold))
+                    .foregroundColor(skin.mainTextColor)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                let maker = machine.manufacturer.trimmingCharacters(in: .whitespacesAndNewlines)
+                Text(maker.isEmpty ? "メーカー未登録" : maker)
+                    .font(skin.themedFont(size: 13, weight: .regular))
+                    .foregroundColor(skin.subTextColor)
+                    .lineLimit(1)
+                Text("実戦 \(sessionCount)回　勝率 \(winRatePercent)%")
+                    .font(skin.themedFont(size: 12, weight: .medium, monospaced: true))
+                    .foregroundColor(skin.subTextColor)
+            }
+            Spacer(minLength: 0)
+            if isReorderMode {
+                Image(systemName: "line.3.horizontal")
+                    .font(.caption)
+                    .foregroundColor(skin.accentColor.opacity(DesignTokens.Surface.AccentTint.chromeTintMid))
+            } else {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(skin.accentColor.opacity(DesignTokens.Surface.AccentTint.chromeTintMid))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .pstatsPanelStyle()
+    }
+}
+
+/// 店舗管理一覧用カード（`pstatsPanelStyle` で他画面パネルと統一）
+private struct ShopManagementCard: View {
+    @EnvironmentObject private var themeManager: ThemeManager
+    let shop: Shop
+    let sessionCount: Int
+    let winRatePercent: Int
+    let isReorderMode: Bool
+
+    private var skin: any ApplicationTheme { themeManager.currentTheme }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(shop.name)
+                    .font(skin.themedFont(size: 17, weight: .semibold))
+                    .foregroundColor(skin.mainTextColor)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
+                Text("実戦 \(sessionCount)回　勝率 \(winRatePercent)%")
+                    .font(skin.themedFont(size: 12, weight: .medium, monospaced: true))
+                    .foregroundColor(skin.subTextColor)
+                if shop.supportsChodamaService || shop.chodamaBalanceBalls > 0 {
+                    Text("貯玉　\(shop.chodamaBalanceBalls)玉")
+                        .font(skin.themedFont(size: 11, weight: .regular))
+                        .foregroundColor(skin.subTextColor)
+                }
+            }
+            Spacer(minLength: 0)
+            if isReorderMode {
+                Image(systemName: "line.3.horizontal")
+                    .font(.caption)
+                    .foregroundColor(themeManager.currentTheme.accentColor.opacity(DesignTokens.Surface.AccentTint.chromeTintMid))
+            } else {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundColor(themeManager.currentTheme.accentColor.opacity(DesignTokens.Surface.AccentTint.chromeTintMid))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .pstatsPanelStyle()
+    }
+}
+
 struct MachineManagementView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Machine.name) private var machines: [Machine]
@@ -67,22 +173,18 @@ struct MachineManagementView: View {
                         guard !isReorderMode else { return }
                         machineToEdit = m
                     } label: {
-                        HStack(alignment: .center) {
-                            Text(m.name)
-                                .foregroundColor(.white)
-                            Spacer()
-                            if !isReorderMode {
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundColor(cyan.opacity(0.8))
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
-                        .padding(.vertical, 12)
+                        let st = ManagementSessionStats.machinePlayStats(machineName: m.name, sessions: recentSessions)
+                        MachineManagementCard(
+                            machine: m,
+                            sessionCount: st.count,
+                            winRatePercent: st.winRatePercent,
+                            isReorderMode: isReorderMode
+                        )
                     }
                     .buttonStyle(.plain)
-                    .listRowBackground(AppGlassStyle.rowBackground)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                    .listRowSeparator(.hidden)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button {
                             machineToEdit = m
@@ -175,6 +277,7 @@ struct MachineManagementView: View {
 struct ShopManagementView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Shop.name) private var shops: [Shop]
+    @Query(sort: \GameSession.date, order: .reverse) private var allSessions: [GameSession]
     @AppStorage(shopOrderKey) private var shopOrderStr = ""
     @State private var shopToEdit: Shop?
     @State private var showNewShop = false
@@ -208,28 +311,18 @@ struct ShopManagementView: View {
                         guard !isReorderMode else { return }
                         shopToEdit = s
                     } label: {
-                        HStack(alignment: .center) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(s.name)
-                                    .foregroundColor(.white)
-                                if s.supportsChodamaService || s.chodamaBalanceBalls > 0 {
-                                    Text("貯玉　\(s.chodamaBalanceBalls)玉")
-                                        .font(.caption)
-                                        .foregroundColor(.white.opacity(0.68))
-                                }
-                            }
-                            Spacer()
-                            if !isReorderMode {
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundColor(cyan.opacity(0.8))
-                            }
-                        }
-                        .padding(.vertical, 12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .contentShape(Rectangle())
+                        let st = ManagementSessionStats.shopPlayStats(shopName: s.name, sessions: allSessions)
+                        ShopManagementCard(
+                            shop: s,
+                            sessionCount: st.count,
+                            winRatePercent: st.winRatePercent,
+                            isReorderMode: isReorderMode
+                        )
                     }
-                    .listRowBackground(AppGlassStyle.rowBackground)
+                    .buttonStyle(.plain)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                    .listRowSeparator(.hidden)
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
                             pendingDeleteShop = s
@@ -318,6 +411,7 @@ struct ContinuePlaySelectionView: View {
     var onStart: () -> Void
     var onCancel: () -> Void
 
+    @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \GameSession.date, order: .reverse) private var allSessions: [GameSession]
     @Query(sort: \Machine.name) private var machines: [Machine]
@@ -337,20 +431,18 @@ struct ContinuePlaySelectionView: View {
                         VStack(spacing: 16) {
                             Image(systemName: "tray")
                                 .font(.system(size: 48))
-                                .foregroundStyle(.white.opacity(0.5))
+                                .foregroundStyle(themeManager.currentTheme.subTextColor.opacity(0.55))
                             Text("遊技履歴がありません")
                                 .font(AppTypography.panelHeading)
-                                .foregroundColor(.white)
+                                .foregroundColor(themeManager.currentTheme.mainTextColor)
                             Text("新規遊技スタートで遊技を開始してください")
                                 .font(AppTypography.bodyRounded)
-                                .foregroundStyle(.white.opacity(0.85))
+                                .foregroundStyle(themeManager.currentTheme.subTextColor.opacity(0.92))
                         }
                         .padding(.vertical, 28)
                         .padding(.horizontal, 24)
                         .frame(maxWidth: .infinity)
-                        .background(AppGlassStyle.cardBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: DesignTokens.CornerRadius.panel))
-                        .overlay(RoundedRectangle(cornerRadius: DesignTokens.CornerRadius.panel).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+                        .pstatsPanelStyle()
                         .padding(.horizontal, 20)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
@@ -358,8 +450,8 @@ struct ContinuePlaySelectionView: View {
                             Section {
                                 Text("再開したい遊技を選んでください。同じ機種・店舗で遊技を開始します。")
                                     .font(.caption)
-                                    .foregroundStyle(.white.opacity(0.7))
-                                    .listRowBackground(AppGlassStyle.rowBackground)
+                                    .foregroundStyle(themeManager.currentTheme.subTextColor.opacity(0.88))
+                                    .listRowBackground(themeManager.currentTheme.listRowBackground)
                             }
                             ForEach(recentSessions, id: \.id) { session in
                                 Button {
@@ -369,20 +461,20 @@ struct ContinuePlaySelectionView: View {
                                         HStack {
                                             Text(session.machineName)
                                                 .font(.body.weight(.semibold))
-                                                .foregroundColor(.white)
+                                                .foregroundColor(themeManager.currentTheme.mainTextColor)
                                             Spacer()
                                             Text(JapaneseDateFormatters.yearMonthDay.string(from: session.date))
                                                 .font(.caption)
-                                                .foregroundColor(.white.opacity(0.95))
-                                                .shadow(color: .black.opacity(0.7), radius: 2, x: 0, y: 1)
+                                                .foregroundColor(themeManager.currentTheme.subTextColor)
+                                                .themeShadow(themeManager.currentTheme.compactLabelShadow)
                                         }
                                         Text(session.shopName)
                                             .font(.subheadline)
-                                            .foregroundStyle(.white.opacity(0.8))
+                                            .foregroundStyle(themeManager.currentTheme.subTextColor.opacity(0.92))
                                     }
                                     .padding(.vertical, 4)
                                 }
-                                .listRowBackground(AppGlassStyle.rowBackground)
+                                .listRowBackground(themeManager.currentTheme.listRowBackground)
                                 .listSelectionStyle()
                             }
                         }
@@ -455,9 +547,9 @@ struct HistoryListView: View {
                                 .foregroundColor(.white.opacity(0.95))
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)
-                                .background(Color.black.opacity(0.58), in: Capsule())
+                                .background(Color.black.opacity(DesignTokens.Surface.History.filterCapsuleFill), in: Capsule())
                                 .overlay(
-                                    Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1)
+                                    Capsule().stroke(Color.white.opacity(DesignTokens.Surface.History.filterCapsuleStroke), lineWidth: DesignTokens.Thickness.hairline)
                                 )
                                 .padding(.horizontal, 4)
                             ForEach(NativeAdListInterleaving.rowsForSessionGroup(daySessions: item.1, placementPrefix: "hist-\(item.0)"), id: \.id) { row in
@@ -522,12 +614,11 @@ struct HistoryListView: View {
 struct SessionDetailView: View {
     let session: GameSession
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
     @State private var showEditSheet = false
     @State private var showShareSheet = false
 
-    private let panelBg = AppGlassStyle.cardBackground
-    private let labelColor = AppGlassStyle.textPrimary
-    private let labelShadow = (color: Color.black.opacity(0.7), radius: CGFloat(2), x: CGFloat(0), y: CGFloat(1))
+    private var skin: any ApplicationTheme { themeManager.currentTheme }
 
     private var payoutCoefficient: Double {
         session.payoutCoefficient > 0 ? session.payoutCoefficient : PersistedDataSemantics.defaultPayoutCoefficientPtPerBall
@@ -576,7 +667,7 @@ struct SessionDetailView: View {
             StaticHomeBackgroundView()
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
-                    SessionSlumpChartForSessionView(session: session, height: 180, strokeTint: AppGlassStyle.accent)
+                    SessionSlumpChartForSessionView(session: session, height: 180, strokeTint: themeManager.currentTheme.accentColor)
 
                     detailPanel(title: "機種・店舗") {
                         VStack(alignment: .leading, spacing: 8) {
@@ -643,9 +734,9 @@ struct SessionDetailView: View {
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .foregroundColor(AppGlassStyle.textPrimary)
-                        .background(Color.white.opacity(0.10))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(skin.mainTextColor)
+                        .background(skin.panelSecondaryBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: max(12, skin.cornerRadius * 0.75), style: .continuous))
                 }
                 .buttonStyle(AppMicroInteractions.PressableButtonStyle())
 
@@ -656,16 +747,16 @@ struct SessionDetailView: View {
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .foregroundColor(.black)
-                        .background(AppGlassStyle.accent)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(.black.opacity(0.88))
+                        .background(skin.accentColor)
+                        .clipShape(RoundedRectangle(cornerRadius: max(12, skin.cornerRadius * 0.75), style: .continuous))
                 }
                 .buttonStyle(AppMicroInteractions.PressableButtonStyle())
             }
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .padding(.bottom, 10)
-            .background(Color.black.opacity(0.55))
+            .background(Color.black.opacity(DesignTokens.Surface.History.panelScrim))
         }
     }
 
@@ -673,28 +764,26 @@ struct SessionDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(title)
                 .font(AppTypography.panelHeading)
-                .foregroundColor(labelColor)
-                .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
+                .foregroundColor(skin.mainTextColor)
+                .themeShadow(skin.compactLabelShadow)
             content()
-                .foregroundColor(AppGlassStyle.textPrimary)
+                .foregroundColor(skin.mainTextColor)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(panelBg)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+        .pstatsPanelStyle()
     }
 
     private func detailRow(label: String, value: String) -> some View {
         HStack {
             Text(label)
                 .font(.subheadline)
-                .foregroundColor(labelColor)
-                .shadow(color: labelShadow.color, radius: labelShadow.radius, x: labelShadow.x, y: labelShadow.y)
+                .foregroundColor(skin.subTextColor)
+                .themeShadow(skin.compactLabelShadow)
             Spacer()
             Text(value)
                 .font(.subheadline.monospacedDigit())
-                .foregroundColor(AppGlassStyle.textPrimary)
+                .foregroundColor(skin.mainTextColor)
         }
     }
 }
@@ -702,6 +791,9 @@ struct SessionDetailView: View {
 // MARK: - 実戦履歴カード（1記録＝1枚の角丸グラスパネル）
 struct HistorySessionCard: View {
     let session: GameSession
+    @EnvironmentObject private var themeManager: ThemeManager
+
+    private var skin: any ApplicationTheme { themeManager.currentTheme }
 
     private var rotationPer1k: Double {
         guard session.totalRealCost > 0 else { return 0 }
@@ -717,36 +809,37 @@ struct HistorySessionCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(session.machineName)
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                .foregroundColor(AppGlassStyle.textPrimary)
+                .font(skin.themedFont(size: 16, weight: .semibold))
+                .foregroundColor(skin.mainTextColor)
                 .lineLimit(1)
             Text(session.shopName)
-                .font(.subheadline)
-                .foregroundColor(AppGlassStyle.textSecondary)
+                .font(skin.themedFont(size: 15, weight: .regular))
+                .foregroundColor(skin.subTextColor)
                 .lineLimit(1)
 
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text("\(session.performance >= 0 ? "+" : "")\(session.performance.formattedPtWithUnit)")
                     .font(AppDesignSystem.EmphasisNumber.font(size: 26, weight: .heavy))
-                    .foregroundStyle(session.performance >= 0 ? AppDesignSystem.Palette.win : AppDesignSystem.Palette.loss)
+                    .foregroundStyle(session.performance >= 0 ? skin.accentColor : skin.cautionForegroundColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
                 Spacer(minLength: 0)
                 Text("\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)")
-                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(AppGlassStyle.textSecondary)
+                    .font(skin.themedFont(size: 14, weight: .semibold, monospaced: true))
+                    .foregroundStyle(skin.subTextColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
 
             HStack(alignment: .top, spacing: 16) {
-                pairBlock(leftLabel: "総回転数", leftValue: "\(session.normalRotations)回", leftValueColor: AppGlassStyle.textPrimary,
-                          rightLabel: "実質回転率", rightValue: rotationRateValue, rightValueColor: AppGlassStyle.textPrimary)
+                pairBlock(leftLabel: "総回転数", leftValue: "\(session.normalRotations)回", leftValueColor: skin.mainTextColor,
+                          rightLabel: "実質回転率", rightValue: rotationRateValue, rightValueColor: skin.mainTextColor)
             }
             .font(.caption)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .pstatsPanel(.card)
+        .padding(14)
+        .pstatsPanelStyle()
     }
 
     private func pairBlock(
@@ -760,7 +853,7 @@ struct HistorySessionCard: View {
         HStack(alignment: .firstTextBaseline, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(leftLabel)
-                    .foregroundColor(AppGlassStyle.textSecondary)
+                    .foregroundColor(skin.subTextColor)
                 Text(leftValue)
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundColor(leftValueColor)
@@ -771,7 +864,7 @@ struct HistorySessionCard: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(rightLabel)
-                    .foregroundColor(AppGlassStyle.textSecondary)
+                    .foregroundColor(skin.subTextColor)
                 Text(rightValue)
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundColor(rightValueColor)
@@ -787,6 +880,7 @@ struct HistorySessionCard: View {
 struct SessionEditView: View {
     @Bindable var session: GameSession
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
     @Query(sort: \Machine.name) private var machines: [Machine]
     @Query(sort: \Shop.name) private var shops: [Shop]
     @State private var selectedMachine: Machine?
@@ -810,17 +904,17 @@ struct SessionEditView: View {
                             session.manufacturerName = m.manufacturer
                         }
                     }
-                    .listRowBackground(AppGlassStyle.rowBackground)
+                    .listRowBackground(themeManager.currentTheme.listRowBackground)
                 }
                 Text("一覧にない場合は下記で入力")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.7))
-                    .listRowBackground(AppGlassStyle.rowBackground)
+                    .listRowBackground(themeManager.currentTheme.listRowBackground)
                 TextField("機種名（手入力）", text: $session.machineName)
                     .onChange(of: session.machineName) { _, _ in selectedMachine = nil }
-                    .listRowBackground(AppGlassStyle.rowBackground)
+                    .listRowBackground(themeManager.currentTheme.listRowBackground)
                 TextField("メーカー（分析用）", text: $session.manufacturerName)
-                    .listRowBackground(AppGlassStyle.rowBackground)
+                    .listRowBackground(themeManager.currentTheme.listRowBackground)
             }
 
             Section("店舗（マイリスト）") {
@@ -837,15 +931,15 @@ struct SessionEditView: View {
                             session.payoutCoefficient = s.payoutCoefficient
                         }
                     }
-                    .listRowBackground(AppGlassStyle.rowBackground)
+                    .listRowBackground(themeManager.currentTheme.listRowBackground)
                 }
                 Text("一覧にない場合は下記で入力")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.7))
-                    .listRowBackground(AppGlassStyle.rowBackground)
+                    .listRowBackground(themeManager.currentTheme.listRowBackground)
                 TextField("店舗名（手入力）", text: $session.shopName)
                     .onChange(of: session.shopName) { _, _ in selectedShop = nil }
-                    .listRowBackground(AppGlassStyle.rowBackground)
+                    .listRowBackground(themeManager.currentTheme.listRowBackground)
             }
 
             Section("数値") {
@@ -861,12 +955,12 @@ struct SessionEditView: View {
                         maxDigits: 9,
                         font: .preferredFont(forTextStyle: .body),
                         textColor: UIColor.white,
-                        accentColor: UIColor(AppGlassStyle.accent)
+                        accentColor: UIColor(themeManager.currentTheme.accentColor)
                     )
                     .frame(minWidth: 80, minHeight: 36)
                     .multilineTextAlignment(.trailing)
                 }
-                .listRowBackground(AppGlassStyle.rowBackground)
+                .listRowBackground(themeManager.currentTheme.listRowBackground)
                 HStack {
                     Text("回収玉数")
                     Spacer()
@@ -879,12 +973,12 @@ struct SessionEditView: View {
                         maxDigits: 8,
                         font: .preferredFont(forTextStyle: .body),
                         textColor: UIColor.white,
-                        accentColor: UIColor(AppGlassStyle.accent)
+                        accentColor: UIColor(themeManager.currentTheme.accentColor)
                     )
                     .frame(minWidth: 80, minHeight: 36)
                     .multilineTextAlignment(.trailing)
                 }
-                .listRowBackground(AppGlassStyle.rowBackground)
+                .listRowBackground(themeManager.currentTheme.listRowBackground)
                 HStack {
                     Text("総回転数")
                     Spacer()
@@ -897,12 +991,12 @@ struct SessionEditView: View {
                         maxDigits: 7,
                         font: .preferredFont(forTextStyle: .body),
                         textColor: UIColor.white,
-                        accentColor: UIColor(AppGlassStyle.accent)
+                        accentColor: UIColor(themeManager.currentTheme.accentColor)
                     )
                     .frame(minWidth: 80, minHeight: 36)
                     .multilineTextAlignment(.trailing)
                 }
-                .listRowBackground(AppGlassStyle.rowBackground)
+                .listRowBackground(themeManager.currentTheme.listRowBackground)
                 HStack {
                     Text("RUSH当選回数")
                     Spacer()
@@ -915,12 +1009,12 @@ struct SessionEditView: View {
                         maxDigits: 5,
                         font: .preferredFont(forTextStyle: .body),
                         textColor: UIColor.white,
-                        accentColor: UIColor(AppGlassStyle.accent)
+                        accentColor: UIColor(themeManager.currentTheme.accentColor)
                     )
                     .frame(minWidth: 80, minHeight: 36)
                     .multilineTextAlignment(.trailing)
                 }
-                .listRowBackground(AppGlassStyle.rowBackground)
+                .listRowBackground(themeManager.currentTheme.listRowBackground)
                 HStack {
                     Text("通常当選回数")
                     Spacer()
@@ -933,12 +1027,12 @@ struct SessionEditView: View {
                         maxDigits: 5,
                         font: .preferredFont(forTextStyle: .body),
                         textColor: UIColor.white,
-                        accentColor: UIColor(AppGlassStyle.accent)
+                        accentColor: UIColor(themeManager.currentTheme.accentColor)
                     )
                     .frame(minWidth: 80, minHeight: 36)
                     .multilineTextAlignment(.trailing)
                 }
-                .listRowBackground(AppGlassStyle.rowBackground)
+                .listRowBackground(themeManager.currentTheme.listRowBackground)
                 HStack {
                     Text("払出係数（pt/玉）")
                     Spacer()
@@ -952,12 +1046,12 @@ struct SessionEditView: View {
                         maxFractionDigits: 4,
                         font: .preferredFont(forTextStyle: .body),
                         textColor: UIColor.white,
-                        accentColor: UIColor(AppGlassStyle.accent)
+                        accentColor: UIColor(themeManager.currentTheme.accentColor)
                     )
                     .frame(minWidth: 80, minHeight: 36)
                     .multilineTextAlignment(.trailing)
                 }
-                .listRowBackground(AppGlassStyle.rowBackground)
+                .listRowBackground(themeManager.currentTheme.listRowBackground)
             }
 
             Section("計算用（変更時は期待値を再計算）") {
@@ -974,12 +1068,12 @@ struct SessionEditView: View {
                         maxFractionDigits: 2,
                         font: .preferredFont(forTextStyle: .body),
                         textColor: UIColor.white,
-                        accentColor: UIColor(AppGlassStyle.accent)
+                        accentColor: UIColor(themeManager.currentTheme.accentColor)
                     )
                     .frame(minWidth: 80, minHeight: 36)
                     .multilineTextAlignment(.trailing)
                 }
-                .listRowBackground(AppGlassStyle.rowBackground)
+                .listRowBackground(themeManager.currentTheme.listRowBackground)
                 HStack {
                     Text("ボーダー比（保存時）")
                     Spacer()
@@ -993,17 +1087,17 @@ struct SessionEditView: View {
                         maxFractionDigits: 4,
                         font: .preferredFont(forTextStyle: .body),
                         textColor: UIColor.white,
-                        accentColor: UIColor(AppGlassStyle.accent)
+                        accentColor: UIColor(themeManager.currentTheme.accentColor)
                     )
                     .frame(minWidth: 80, minHeight: 36)
                     .multilineTextAlignment(.trailing)
                 }
-                .listRowBackground(AppGlassStyle.rowBackground)
+                .listRowBackground(themeManager.currentTheme.listRowBackground)
                 if session.expectationRatioAtSave == 0 || session.totalRealCost == 0 {
                     Text("期待値を出すには「実質投資」と「ボーダー比」を入力し、「期待値を再計算」をタップしてください。1.0＝基準、1.1＝10%上回り。")
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.7))
-                        .listRowBackground(AppGlassStyle.rowBackground)
+                        .listRowBackground(themeManager.currentTheme.listRowBackground)
                 }
                 Button("期待値を再計算") {
                     let ratio = session.expectationRatioAtSave > 0 ? session.expectationRatioAtSave : 1.0
@@ -1016,7 +1110,7 @@ struct SessionEditView: View {
                         session.totalRealCost = Double(session.inputCash)
                     }
                 }
-                .listRowBackground(AppGlassStyle.rowBackground)
+                .listRowBackground(themeManager.currentTheme.listRowBackground)
             }
             }
             .listStyle(.plain)

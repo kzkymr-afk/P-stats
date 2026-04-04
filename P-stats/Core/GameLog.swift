@@ -488,43 +488,18 @@ final class GameLog {
         if let cached = _cachedLiveChartPoints, _lastChartStateHash == chartStateHash {
             return cached
         }
-        let rate = selectedShop.interpretedPayoutCoefficientPtPerBall
-        var points: [(Int, Double)] = [(0, 0)]
-        let winsOrdered = winRecords.sorted { ($0.timestamp ?? .distantPast) < ($1.timestamp ?? .distantPast) }
-        let lendingsOrdered = lendingRecords.sorted { ($0.timestamp) < ($1.timestamp) }
-        
-        var cumulativePrize = 0
-        var currentLendingIndex = 0
-        var runningInvYen = 0
-        var runningHoldBalls = 0
-
-        for win in winsOrdered {
-            let t = win.timestamp ?? .distantPast
-            
-            while currentLendingIndex < lendingsOrdered.count && lendingsOrdered[currentLendingIndex].timestamp < t {
-                let l = lendingsOrdered[currentLendingIndex]
-                if l.type == .cash {
-                    runningInvYen += 500
-                } else {
-                    runningHoldBalls += l.balls ?? holdingsBallsPerTap
-                }
-                currentLendingIndex += 1
-            }
-            
-            cumulativePrize += win.prize ?? 0
-            let consumedAtWin = consumedBallsForWin(win)
-            let holdingsAtWin = initialHoldings + cumulativePrize - runningHoldBalls - consumedAtWin
-            let cost = Double(runningInvYen) + Double(runningHoldBalls) * rate
-            let profit = Double(max(0, holdingsAtWin)) * rate - cost
-            let xRot = win.normalRotationsAtWin ?? win.rotationAtWin
-            points.append((xRot, profit))
-        }
-        
-        let lastWinNormal = winsOrdered.last.flatMap { $0.normalRotationsAtWin ?? Optional($0.rotationAtWin) } ?? -1
-        if normalRotations > lastWinNormal {
-            points.append((normalRotations, chartProfitPt))
-        }
-        
+        let points = SessionSlumpLiveChartPoints.build(
+            wins: winRecords,
+            lendings: lendingRecords,
+            initialHoldings: initialHoldings,
+            initialDisplayRotation: initialDisplayRotation,
+            normalRotationsEnd: normalRotations,
+            dynamicBorder: dynamicBorder,
+            payoutCoefficient: selectedShop.interpretedPayoutCoefficientPtPerBall,
+            holdingsBallsPerTap: holdingsBallsPerTap,
+            finalProfitPt: chartProfitPt,
+            timeline: SlumpChartTimelineContext(sessionStart: sessionStartedAt, timelineEnd: Date())
+        )
         _cachedLiveChartPoints = points
         _lastChartStateHash = chartStateHash
         return points
@@ -553,22 +528,6 @@ final class GameLog {
         hasher.combine(initialDisplayRotation)
         hasher.combine(dynamicBorder)
         return hasher.finalize()
-    }
-
-    /// 当選時点までの消費玉数（liveChartPoints 用）。通常累積が取れるときは **通常回転のみ**（右打ち・電サポ相当を除外）で按分。旧データは総回転ベースで代替。
-    private func consumedBallsForWin(_ win: WinRecord) -> Int {
-        if let nr = win.normalRotationsAtWin {
-            return consumedBallsAtNormalRotation(nr)
-        }
-        let delta = win.rotationAtWin - initialDisplayRotation
-        guard delta > 0 else { return 0 }
-        let borderPer250 = max(dynamicBorder, 0.01)
-        return Int((Double(delta) * 250.0 / borderPer250).rounded())
-    }
-
-    private func consumedBallsAtNormalRotation(_ normalRotation: Int) -> Int {
-        guard normalRotation > 0, dynamicBorder > 0 else { return 0 }
-        return Int((Double(normalRotation) * 250.0 / dynamicBorder).rounded())
     }
 
     /// 実戦で使う1Rあたり純増（遊技中調整 or 機種のaverageNetPerRound）

@@ -48,33 +48,30 @@ enum HomeInsightMetrics {
         Array(sessions.sorted { $0.date > $1.date }.prefix(7))
     }
 
-    /// 表示用：古い順の累積収支ステップ（ミニチャート）
+    /// 累積収支チャート用：古い順のステップ（数値のみ・後方互換）
     static func cumulativePerformanceSteps(in period: EarningsPeriod, sessions: [GameSession]) -> [Int] {
+        cumulativeTrendData(in: period, sessions: sessions).map(\.cumulativePt)
+    }
+
+    struct CumulativeTrendDatum: Identifiable {
+        let id: Int
+        /// 横軸ラベル（日: M/d、年モード: M月）
+        let xLabel: String
+        let cumulativePt: Int
+    }
+
+    /// 累積収支の折れ線用。横軸＝期間内で実戦があった日（または月）の時系列、縦軸＝その時点までの累積収支（pt）。
+    static func cumulativeTrendData(in period: EarningsPeriod, sessions: [GameSession]) -> [CumulativeTrendDatum] {
         let scoped = Self.sessions(in: period, from: sessions)
         switch period {
-        case .day:
+        case .day, .week, .month:
             let byDay = Dictionary(grouping: scoped) { calendar.startOfDay(for: $0.date) }
             let keys = byDay.keys.sorted()
             var c = 0
-            return keys.map { d in
+            return keys.enumerated().map { i, d in
                 c += (byDay[d] ?? []).reduce(0) { $0 + $1.performance }
-                return c
-            }
-        case .week:
-            let byDay = Dictionary(grouping: scoped) { calendar.startOfDay(for: $0.date) }
-            let keys = byDay.keys.sorted()
-            var c = 0
-            return keys.map { d in
-                c += (byDay[d] ?? []).reduce(0) { $0 + $1.performance }
-                return c
-            }
-        case .month:
-            let byDay = Dictionary(grouping: scoped) { calendar.startOfDay(for: $0.date) }
-            let keys = byDay.keys.sorted()
-            var c = 0
-            return keys.map { d in
-                c += (byDay[d] ?? []).reduce(0) { $0 + $1.performance }
-                return c
+                let label = shortDayFormatter.string(from: d)
+                return CumulativeTrendDatum(id: i, xLabel: label, cumulativePt: c)
             }
         case .year:
             let y = calendar.component(.year, from: Date())
@@ -82,11 +79,18 @@ enum HomeInsightMetrics {
             let byMonth = Dictionary(grouping: inYear) { AnalyticsEngine.monthKey(from: $0.date) }
             let keys = byMonth.keys.sorted()
             var c = 0
-            return keys.map { k in
+            return keys.enumerated().map { i, k in
                 c += (byMonth[k] ?? []).reduce(0) { $0 + $1.performance }
-                return c
+                let label = monthLabelFromYearMonthKey(k)
+                return CumulativeTrendDatum(id: i, xLabel: label, cumulativePt: c)
             }
         }
+    }
+
+    private static func monthLabelFromYearMonthKey(_ key: String) -> String {
+        let parts = key.split(separator: "/")
+        guard parts.count >= 2, let m = Int(parts[1]) else { return key }
+        return "\(m)月"
     }
 
     /// 直近N日・期待値に対する余剰が大きい機種上位3（同一機種は集計済み想定で `AnalyticsEngine` を利用）

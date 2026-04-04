@@ -1,1 +1,3 @@
 用語や画面名に迷ったら `用語定義.md` を参照すること。
+
+色・不透明度・線幅などのデザイン値は View に数値直書きせず、`docs/デザイン・トークン原則.md` に従い `DesignTokens` / `AppGlassStyle` / テーマ経由で定義すること。確認は `./scripts/check_design_literals.sh`。

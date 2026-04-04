@@ -4,9 +4,10 @@ import SwiftUI
 /// プレミアム案内・購入（設定シート）
 struct AnalyticsUpgradeSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
     @ObservedObject private var entitlements = EntitlementsStore.shared
 
-    private var cyan: Color { AppGlassStyle.accent }
+    private var cyan: Color { themeManager.currentTheme.accentColor }
 
     var body: some View {
         NavigationStack {
@@ -81,11 +82,6 @@ struct AnalyticsUpgradeSheet: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AppGlassStyle.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
+        .pstatsPanelStyle()
     }
 }

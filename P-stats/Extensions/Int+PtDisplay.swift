@@ -7,24 +7,16 @@ extension Int {
     /// 表示用：数値 + " pt" 単位（例: 12345 → "12,345 pt"）
     var formattedPtWithUnit: String { formatted(.number) + UnitDisplaySettings.currentSuffix() }
 
-    /// コンパクト表示（ホーム星取り下など）。例: +3k, -30k, +1.2k
+    /// コンパクト表示（ホーム星取り下など）。pt を千円換算し **k** で統一（例: +10k, -0.5k, +1.2k）
     var formattedPtCompactK: String {
         if self == 0 { return "0" }
         let sign = self >= 0 ? "+" : "-"
         let a = abs(self)
-        if a >= 10_000 {
-            let v = Double(a) / 10_000.0
-            let s = v >= 10 ? v.displayFormat("%.0f") : v.displayFormat("%.1f")
-            return "\(sign)\(s)万"
+        let k = Double(a) / 1000.0
+        var s = k.displayFormat("%.1f")
+        if s.hasSuffix(".0") {
+            s = String(s.dropLast(2))
         }
-        if a >= 1000 {
-            let k = a / 1000
-            let rem = a % 1000
-            if rem == 0 { return "\(sign)\(k)k" }
-            let v = Double(a) / 1000.0
-            let s = v >= 10 ? v.displayFormat("%.0f") : v.displayFormat("%.1f")
-            return "\(sign)\(s)k"
-        }
-        return "\(sign)\(a)"
+        return "\(sign)\(s)k"
     }
 }

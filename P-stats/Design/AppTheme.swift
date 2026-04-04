@@ -25,27 +25,43 @@ enum AppDesignSystem {
         static let subAccent = Color(hex: DesignTokens.Color.normalHex)
 
         /// 勝ち（プラス）
-        static let win = Color(red: 0.30, green: 0.74, blue: 1.00) // 青寄りの勝ち
+        static let win = Color(
+            red: DesignTokens.Semantic.Standard.winR,
+            green: DesignTokens.Semantic.Standard.winG,
+            blue: DesignTokens.Semantic.Standard.winB
+        )
         /// 大勝ち（強調したいプラス）
-        static let winStrong = Color(red: 0.98, green: 0.84, blue: 0.28) // 金寄り
+        static let winStrong = Color(
+            red: DesignTokens.Semantic.Standard.winStrongR,
+            green: DesignTokens.Semantic.Standard.winStrongG,
+            blue: DesignTokens.Semantic.Standard.winStrongB
+        )
         /// 負け（マイナス）
-        static let loss = Color(red: 1.00, green: 0.30, blue: 0.30)
+        static let loss = Color(
+            red: DesignTokens.Semantic.Standard.lossR,
+            green: DesignTokens.Semantic.Standard.lossG,
+            blue: DesignTokens.Semantic.Standard.lossB
+        )
         /// 期待値（分析の“正”）
-        static let expectation = Color(red: 0.38, green: 0.95, blue: 0.70) // シアン〜ミント
+        static let expectation = Color(
+            red: DesignTokens.Semantic.Standard.expectationR,
+            green: DesignTokens.Semantic.Standard.expectationG,
+            blue: DesignTokens.Semantic.Standard.expectationB
+        )
 
         /// 主テキスト
-        static let textPrimary = Color.white.opacity(0.92)
+        static let textPrimary = Color.white.opacity(DesignTokens.Surface.WhiteOnDark.textPrimary)
         /// 補助テキスト
-        static let textSecondary = Color.white.opacity(0.68)
+        static let textSecondary = Color.white.opacity(DesignTokens.Surface.WhiteOnDark.textSecondary)
         /// 薄い補助/注釈
-        static let textTertiary = Color.white.opacity(0.52)
+        static let textTertiary = Color.white.opacity(DesignTokens.Surface.WhiteOnDark.textTertiary)
 
         /// 区切り線（薄い）
-        static let divider = Color.white.opacity(0.15)
+        static let divider = Color.white.opacity(DesignTokens.Surface.WhiteOnDark.divider)
         /// チャート/ゲージの線
-        static let gaugeLine = Color.white.opacity(0.22)
+        static let gaugeLine = Color.white.opacity(DesignTokens.Surface.WhiteOnDark.gaugeLine)
         /// チャートのグリッド
-        static let chartGrid = Color.white.opacity(0.18)
+        static let chartGrid = Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartGrid)
     }
 
     // MARK: - Typography (Numbers first)
@@ -71,9 +87,9 @@ enum AppDesignSystem {
         }
 
         /// “浮かせたい”要素向けの共通シャドウ
-        static let elevatedShadowColor = Color.black.opacity(0.36)
-        static let elevatedShadowRadius: CGFloat = 5
-        static let elevatedShadowY: CGFloat = 3
+        static let elevatedShadowColor = Color.black.opacity(DesignTokens.Surface.BlackOverlay.shadowMedium)
+        static let elevatedShadowRadius: CGFloat = DesignTokens.Elevation.shadowRadiusInteractive
+        static let elevatedShadowY: CGFloat = DesignTokens.Elevation.shadowYCard
     }
 
     // MARK: - Components (Reusable look & feel)
@@ -100,7 +116,7 @@ enum AppDesignSystem {
                     endPoint: .bottomTrailing
                 )
                 RadialGradient(
-                    colors: [Color.white.opacity(0.06), .clear],
+                    colors: [Color.white.opacity(DesignTokens.Surface.WhiteOnDark.low), .clear],
                     center: .topTrailing,
                     startRadius: 10,
                     endRadius: 520
@@ -113,7 +129,7 @@ enum AppDesignSystem {
     enum CardStyle {
         static let fill = AppGlassStyle.cardBackground
         static let stroke = AppGlassStyle.strokeGradient
-        static let strokeLineWidth: CGFloat = 1
+        static let strokeLineWidth: CGFloat = DesignTokens.Thickness.hairline
         static let cornerRadius: CGFloat = Metrics.CornerRadius.panel
 
         static func shadow(isEnabled: Bool = true) -> (color: Color, radius: CGFloat, x: CGFloat, y: CGFloat) {

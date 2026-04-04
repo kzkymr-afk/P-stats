@@ -35,7 +35,7 @@ struct SwipeDismissiblePlayAdBanner: View {
                     VStack(spacing: 0) {
                         HStack(spacing: 8) {
                             Capsule()
-                                .fill(Color.white.opacity(0.38))
+                                .fill(Color.white.opacity(DesignTokens.Surface.AdBanner.dismissAffordance))
                                 .frame(width: 42, height: 5)
                             Text("上スワイプで隠す")
                                 .font(.system(size: 10, weight: .medium, design: .rounded))
@@ -44,7 +44,7 @@ struct SwipeDismissiblePlayAdBanner: View {
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 7)
-                        .background(Color.black.opacity(0.9))
+                        .background(Color.black.opacity(DesignTokens.Surface.AdBanner.chromeBackdropStrong))
                         .gesture(dismissDrag)
 
                         AdaptiveBannerSlot(adUnitID: adUnitID)
@@ -73,7 +73,7 @@ struct SwipeDismissiblePlayAdBanner: View {
                     .foregroundColor(.white.opacity(0.88))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 7)
-                    .background(Color.black.opacity(0.88))
+                    .background(Color.black.opacity(DesignTokens.Surface.AdBanner.chromeBackdrop))
                 }
                 .buttonStyle(.plain)
             }

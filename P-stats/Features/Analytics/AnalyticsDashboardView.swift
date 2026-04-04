@@ -229,11 +229,13 @@ final class AnalyticsDashboardSharedModel: ObservableObject {
 
 /// 分析スタック内のナビバー：背景をほぼ不透明にして視認性を確保
 private struct AnalyticsNavigationBarChrome: ViewModifier {
+    @EnvironmentObject private var themeManager: ThemeManager
+
     func body(content: Content) -> some View {
         content
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarBackground(Color.black.opacity(0.94), for: .navigationBar)
+            .toolbarBackground(themeManager.currentTheme.navigationBarBackdropColor, for: .navigationBar)
     }
 }
 
@@ -321,9 +323,32 @@ private extension View {
     }
 }
 
-/// 期間ピッカー等のリスト行背景（パネル本体は `pstatsPanelStyle()`）
-private enum AnalyticsPanelStyle {
-    static let rowBackground = Color.black.opacity(0.85)
+/// 分析 Swift Charts の軸・ルール線・補助色（`ApplicationTheme` をファイル内で束ねる）
+private struct AnalyticsChartStyle {
+    let theme: any ApplicationTheme
+    var ruleMuted: Color { theme.chartRuleMarkMutedColor }
+    var gridMajor: Color { theme.chartMajorGridColor }
+    var gridMedium: Color { theme.chartMediumGridColor }
+    var gridMinor: Color { theme.chartMinorGridColor }
+    var yLabel: Color { theme.chartYAxisLabelColor }
+    var yLabelSoft: Color { theme.chartYAxisLabelSoftColor }
+    var xLabel: Color { theme.chartXAxisLabelColor }
+    var xCaption: Color { theme.chartXAxisCaptionColor }
+    var zeroLine: Color { theme.chartZeroBaselineColor }
+    var axisTick: Color { theme.chartAxisTickColor }
+    var gridFaint: Color { theme.chartFaintGridColor }
+    var lossBar: Color { theme.chartLossBarColor }
+    var separator: Color { theme.analyticsSeparatorLineColor }
+    var datePillFill: Color { theme.analyticsDatePillBackground }
+    var datePillStroke: Color { theme.hairlineDividerColor }
+    var bottomScrim: Color { theme.bottomToolbarScrimColor }
+    var secondaryChromeFill: Color { theme.panelElevatedSecondaryBackground }
+    var theoreticalStroke: Color { theme.chartTheoreticalAccentColor.opacity(0.92) }
+    var theoreticalBar: Color { theme.chartTheoreticalAccentColor.opacity(0.78) }
+    var deficitBand: Color { theme.analyticsTrendDeficitBandColor }
+    var heatmapEmpty: Color { theme.panelSecondaryBackground }
+    var heatmapLoss: Color { theme.chartLossBarColor }
+    var heatmapCellStroke: Color { theme.hairlineDividerColor }
 }
 
 // MARK: - 分析フッター（ドック。ホーム下部タブバーと同一の黒パネル・下寄せ）
@@ -416,7 +441,7 @@ private struct AnalyticsBottomBarView: View {
                                     .accessibilityHidden(true)
                             }
                         }
-                        .foregroundColor(on ? Color.white : AppGlassStyle.MainTabDock.inactiveTint)
+                        .foregroundColor(on ? themeManager.currentTheme.mainTextColor : AppGlassStyle.MainTabDock.inactiveTint)
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: AppGlassStyle.MainTabDock.tabRowHeight, alignment: .center)
                         .contentShape(Rectangle())
@@ -466,7 +491,7 @@ private struct AnalyticsBottomBarView: View {
                                 .accessibilityHidden(true)
                         }
                     }
-                    .foregroundColor(periodOn ? Color.white : AppGlassStyle.MainTabDock.inactiveTint)
+                    .foregroundColor(periodOn ? themeManager.currentTheme.mainTextColor : AppGlassStyle.MainTabDock.inactiveTint)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: AppGlassStyle.MainTabDock.tabRowHeight, alignment: .center)
                     .contentShape(Rectangle())
@@ -568,14 +593,14 @@ struct AnalyticsDashboardBottomChrome: View {
             if adVisibility.shouldShowBanner {
                 AdaptiveBannerSlot(adUnitID: AdMobConfig.bannerUnitID)
                     .frame(maxWidth: .infinity)
-                    .background(Color.black)
+                    .background(themeManager.currentTheme.panelBackground)
             }
             if model.periodFilter.showsPeriodDrum {
                 VStack(spacing: 4) {
                     if let cap = model.periodFilter.dockDrumSelectionCaption(referenceDate: model.selectedPeriodDate) {
                         Text(cap)
                             .font(.caption.weight(.semibold))
-                            .foregroundColor(.white.opacity(0.88))
+                            .foregroundColor(themeManager.currentTheme.subTextColor.opacity(0.95))
                     }
                     AnalyticsPeriodReferencePicker(selectedDate: $model.selectedPeriodDate, filter: model.periodFilter)
                         .labelsHidden()
@@ -965,7 +990,7 @@ struct AnalyticsDashboardView: View {
                 )
             } else {
                 Text("データが見つかりません")
-                    .foregroundStyle(.white)
+                    .foregroundStyle(themeManager.currentTheme.mainTextColor)
             }
         case .shopDetail(let name):
             AnalyticsShopDetailView(
@@ -1061,10 +1086,10 @@ struct AnalyticsDashboardView: View {
                 .foregroundColor(themeAccent.opacity(0.5))
             Text("データがありません")
                 .font(themeManager.currentTheme.themedFont(size: 17, weight: .semibold))
-                .foregroundColor(.white)
+                .foregroundColor(themeManager.currentTheme.mainTextColor)
             Text("実戦を保存するとここに集計が表示されます")
                 .font(themeManager.currentTheme.themedFont(size: 15, weight: .regular))
-                .foregroundColor(.white.opacity(0.75))
+                .foregroundColor(themeManager.currentTheme.subTextColor.opacity(0.9))
                 .multilineTextAlignment(.center)
         }
         .padding(.vertical, 28)
@@ -1107,7 +1132,7 @@ struct AnalyticsDashboardView: View {
                     } label: {
                         Text("実戦履歴")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(themeManager.currentTheme.mainTextColor)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                             .pstatsPanelStyle()
@@ -1231,6 +1256,7 @@ struct AnalyticsDashboardView: View {
 
 /// 全般タブ最上段：タップで遷移しないサマリーカード（見出しは期間フィルタに連動）
 private struct OverviewTotalSummaryPanel: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let metrics: AnalyticsOverviewTotalSummary
     let accent: Color
     /// 呼び出し側で `periodFilter.summaryPanelTitle(referenceDate:)` を渡す。省略時は通算扱いの文言。
@@ -1238,7 +1264,7 @@ private struct OverviewTotalSummaryPanel: View {
     /// 個別機種分析のみ。`勝率` 行の直下に横並びで追加。
     var machineMultiHitSummary: MachineMultiHitSummary? = nil
 
-    private var lossColor: Color { Color.orange }
+    private var lossColor: Color { themeManager.currentTheme.chartLossBarColor }
     private var neutral: Color { AppGlassStyle.textPrimary }
 
     var body: some View {
@@ -1409,7 +1435,7 @@ private struct AnalyticsPeriodPickerSheet: View {
                 } label: {
                     HStack {
                         Text(option.label)
-                            .foregroundColor(.white)
+                            .foregroundColor(themeManager.currentTheme.mainTextColor)
                         if option == selected {
                             Spacer()
                             Image(systemName: "checkmark.circle.fill")
@@ -1417,7 +1443,7 @@ private struct AnalyticsPeriodPickerSheet: View {
                         }
                     }
                 }
-                .listRowBackground(AnalyticsPanelStyle.rowBackground)
+                .listRowBackground(themeManager.currentTheme.analyticsAuxiliaryListRowColor)
             }
             .navigationTitle("期間")
             .navigationBarTitleDisplayMode(.inline)
@@ -1431,6 +1457,7 @@ private struct AnalyticsPeriodPickerSheet: View {
 
 /// パネル内外で共有する中身（外枠のグラスパネルは呼び出し側）
 private struct CrossAnalysisPanelCore: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let sessions: [GameSession]
     let periodFilter: AnalyticsPeriodFilter
     let selectedPeriodDate: Date
@@ -1439,6 +1466,8 @@ private struct CrossAnalysisPanelCore: View {
     let cyan: Color
     var onRequestFullScreen: (() -> Void)? = nil
     var onShopMachineRowSelected: ((ShopMachineCrossRow) -> Void)? = nil
+
+    private var t: any ApplicationTheme { themeManager.currentTheme }
 
     private var periodCaption: String {
         periodFilter.crossAnalysisPeriodCaption(referenceDate: selectedPeriodDate)
@@ -1457,10 +1486,10 @@ private struct CrossAnalysisPanelCore: View {
             HStack(spacing: 6) {
                 Text("クロス分析")
                     .font(AppTypography.panelHeading)
-                    .foregroundColor(.white)
+                    .foregroundColor(t.mainTextColor)
                 InfoIconView(
                     explanation: "店舗とメーカー、または店舗と機種の組み合わせごとに集計します。同一組み合わせの実戦が2件以上あるときだけ表示します。下部ドックの「期間」（通算・直近・年・月）に連動します。並び替えで回りやすさ・収支の振れを見つけやすくできます。",
-                    tint: .white.opacity(0.6)
+                    tint: t.subTextColor.opacity(0.65)
                 )
             }
 
@@ -1483,7 +1512,7 @@ private struct CrossAnalysisPanelCore: View {
 
             Text(periodCaption)
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.62))
+                .foregroundColor(t.subTextColor.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
 
             VStack(alignment: .leading, spacing: 10) {
@@ -1504,7 +1533,7 @@ private struct CrossAnalysisPanelCore: View {
                     HStack {
                         Text("並び替え: \(sortAxis.menuLabel)")
                             .font(.subheadline.weight(.medium))
-                            .foregroundColor(.white.opacity(0.92))
+                            .foregroundColor(t.mainTextColor.opacity(0.95))
                         Spacer()
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.caption.weight(.semibold))
@@ -1587,7 +1616,7 @@ private struct CrossAnalysisPanelCore: View {
                 : "表示できる組み合わせがありません（同一店・同一メーカー分類の実戦を2件以上蓄えると表示されます）"
         )
         .font(.caption)
-        .foregroundColor(.white.opacity(0.65))
+        .foregroundColor(t.subTextColor.opacity(0.9))
     }
 }
 
@@ -1668,6 +1697,7 @@ private struct CrossAnalysisRowTapButtonStyle: ButtonStyle {
 }
 
 private struct CrossAnalysisPairRowCard: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let shop: String
     let counterpart: String
     let sessionCount: Int
@@ -1677,15 +1707,17 @@ private struct CrossAnalysisPairRowCard: View {
     let cyan: Color
     var showsDrillDownAffordance: Bool = false
 
+    private var t: any ApplicationTheme { themeManager.currentTheme }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .firstTextBaseline) {
                 Text(shop)
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(t.mainTextColor)
                 Image(systemName: "multiply")
                     .font(.caption.weight(.light))
-                    .foregroundColor(.white.opacity(0.45))
+                    .foregroundColor(t.subTextColor.opacity(0.75))
                 Text(counterpart)
                     .font(.subheadline.weight(.medium))
                     .foregroundColor(cyan.opacity(0.95))
@@ -1702,7 +1734,7 @@ private struct CrossAnalysisPairRowCard: View {
                 }
                 Text("実戦 \(sessionCount)件")
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.55))
+                    .foregroundColor(t.subTextColor.opacity(0.85))
             }
             HStack(spacing: 14) {
                 crossAnalysisMetric(
@@ -1712,12 +1744,12 @@ private struct CrossAnalysisPairRowCard: View {
                 crossAnalysisMetric(
                     title: "ボーダーとの差",
                     value: avgBorderDiffPer1k.map { $0.displayFormat("%+.1f") } ?? "—",
-                    valueColor: (avgBorderDiffPer1k ?? 0) >= 0 ? cyan : Color.orange
+                    valueColor: (avgBorderDiffPer1k ?? 0) >= 0 ? cyan : t.chartLossBarColor
                 )
                 crossAnalysisMetric(
                     title: "実成績",
                     value: "\(totalProfit >= 0 ? "+" : "")\(totalProfit.formattedPtWithUnit)",
-                    valueColor: totalProfit >= 0 ? .green : .red
+                    valueColor: totalProfit >= 0 ? t.recoveryColor : t.chartLossBarColor
                 )
             }
         }
@@ -1726,14 +1758,15 @@ private struct CrossAnalysisPairRowCard: View {
         .pstatsPanelStyle()
     }
 
-    private func crossAnalysisMetric(title: String, value: String, valueColor: Color = .white.opacity(0.92)) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+    private func crossAnalysisMetric(title: String, value: String, valueColor: Color? = nil) -> some View {
+        let resolved = valueColor ?? t.mainTextColor.opacity(0.95)
+        return VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.system(size: 10))
-                .foregroundColor(.white.opacity(0.42))
+                .foregroundColor(t.subTextColor.opacity(0.82))
             Text(value)
                 .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                .foregroundColor(valueColor)
+                .foregroundColor(resolved)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
@@ -1759,17 +1792,20 @@ private func compactIntegerLabel(_ n: Int) -> String {
 
 // MARK: - 曜日傾向（SwiftCharts: ゼロライン・細めの棒幅）
 private struct WeekdayTendencySection: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let groups: [AnalyticsGroup]
     let accent: Color
 
     /// 従来 `width: .ratio(0.8)` の 70% ≈ 0.56
     private var barWidth: MarkDimension { .ratio(0.56) }
 
+    private var lossBar: Color { themeManager.currentTheme.chartLossBarColor }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("曜日傾向")
                 .font(AppTypography.panelHeading)
-                .foregroundColor(.white)
+                .foregroundColor(themeManager.currentTheme.mainTextColor)
             chartRow(title: "実成績") {
                     Chart {
                         RuleMark(y: .value("ゼロ", 0))
@@ -1781,7 +1817,7 @@ private struct WeekdayTendencySection: View {
                                 y: .value("pt", g.totalProfit),
                                 width: barWidth
                             )
-                            .foregroundStyle(g.totalProfit >= 0 ? accent : Color.orange)
+                            .foregroundStyle(g.totalProfit >= 0 ? accent : lossBar)
                         }
                     }
                     .chartYAxis {
@@ -1808,7 +1844,7 @@ private struct WeekdayTendencySection: View {
                                 y: .value("差", g.avgBorderDiffPer1k ?? 0),
                                 width: barWidth
                             )
-                            .foregroundStyle((g.avgBorderDiffPer1k ?? 0) >= 0 ? accent : Color.orange)
+                            .foregroundStyle((g.avgBorderDiffPer1k ?? 0) >= 0 ? accent : lossBar)
                         }
                     }
                     .chartYAxis {
@@ -1834,7 +1870,7 @@ private struct WeekdayTendencySection: View {
                                 y: .value("pt", g.totalDeficitSurplus),
                                 width: barWidth
                             )
-                            .foregroundStyle(g.totalDeficitSurplus >= 0 ? accent : Color.orange)
+                            .foregroundStyle(g.totalDeficitSurplus >= 0 ? accent : lossBar)
                         }
                     }
                     .chartYAxis {
@@ -1870,11 +1906,14 @@ private struct WeekdayTendencySection: View {
 
 // MARK: - 特定日傾向（SwiftCharts。_pad は値0で表示し軸のみ維持）
 private struct SpecificDayBarChartSection: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let groups: [AnalyticsGroup]
     let accent: Color
     var fixedSegmentCount: Int? = nil
     /// 見出し横に「i」説明を出すときのみ設定
     var titleInfoIconExplanation: String? = nil
+
+    private var ch: AnalyticsChartStyle { AnalyticsChartStyle(theme: themeManager.currentTheme) }
 
     private var barWidth: MarkDimension { .ratio(0.56) }
 
@@ -1888,16 +1927,16 @@ private struct SpecificDayBarChartSection: View {
             HStack(alignment: .center, spacing: 6) {
                 Text("特定日傾向")
                     .font(AppTypography.panelHeading)
-                    .foregroundColor(.white)
+                    .foregroundColor(ch.theme.mainTextColor)
                 if let tip = titleInfoIconExplanation {
-                    InfoIconView(explanation: tip, tint: .white.opacity(0.6))
+                    InfoIconView(explanation: tip, tint: ch.theme.subTextColor.opacity(0.65))
                 }
                 Spacer(minLength: 0)
             }
             chartRow(title: "実成績") {
                     Chart {
                         RuleMark(y: .value("ゼロ", 0))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                            .foregroundStyle(ch.ruleMuted)
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                         ForEach(displayGroups) { g in
                             BarMark(
@@ -1905,21 +1944,21 @@ private struct SpecificDayBarChartSection: View {
                                 y: .value("pt", g.label.hasPrefix("_pad") ? 0 : g.totalProfit),
                                 width: barWidth
                             )
-                            .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : (g.totalProfit >= 0 ? accent : Color.orange))
+                            .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : (g.totalProfit >= 0 ? accent : ch.lossBar))
                         }
                     }
                     .chartYAxis { AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.2))
-                        AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(Color.white.opacity(0.7))
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(ch.gridMajor)
+                        AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(ch.yLabel)
                     } }
                     .chartXAxis { AxisMarks(preset: .aligned) { value in
-                        AxisValueLabel { if let s = value.as(String.self), !s.hasPrefix("_pad") { Text(s).foregroundStyle(Color.white.opacity(0.8)) } }
+                        AxisValueLabel { if let s = value.as(String.self), !s.hasPrefix("_pad") { Text(s).foregroundStyle(ch.xLabel) } }
                     } }
                 }
                 chartRow(title: "ボーダーとの差（回/1k）") {
                     Chart {
                         RuleMark(y: .value("ゼロ", 0))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                            .foregroundStyle(ch.ruleMuted)
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                         ForEach(displayGroups) { g in
                             let yVal = g.label.hasPrefix("_pad") ? 0.0 : (g.avgBorderDiffPer1k ?? 0)
@@ -1931,22 +1970,22 @@ private struct SpecificDayBarChartSection: View {
                             .foregroundStyle(
                                 g.label.hasPrefix("_pad")
                                     ? Color.clear
-                                    : ((g.avgBorderDiffPer1k ?? 0) >= 0 ? accent : Color.orange)
+                                    : ((g.avgBorderDiffPer1k ?? 0) >= 0 ? accent : ch.lossBar)
                             )
                         }
                     }
                     .chartYAxis { AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.2))
-                        AxisValueLabel().foregroundStyle(Color.white.opacity(0.7))
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(ch.gridMajor)
+                        AxisValueLabel().foregroundStyle(ch.yLabel)
                     } }
                     .chartXAxis { AxisMarks(preset: .aligned) { value in
-                        AxisValueLabel { if let s = value.as(String.self), !s.hasPrefix("_pad") { Text(s).foregroundStyle(Color.white.opacity(0.8)) } }
+                        AxisValueLabel { if let s = value.as(String.self), !s.hasPrefix("_pad") { Text(s).foregroundStyle(ch.xLabel) } }
                     } }
                 }
                 chartRow(title: "期待値との差（欠損・余剰）") {
                     Chart {
                         RuleMark(y: .value("ゼロ", 0))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                            .foregroundStyle(ch.ruleMuted)
                             .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
                         ForEach(displayGroups) { g in
                             BarMark(
@@ -1954,15 +1993,15 @@ private struct SpecificDayBarChartSection: View {
                                 y: .value("pt", g.label.hasPrefix("_pad") ? 0 : g.totalDeficitSurplus),
                                 width: barWidth
                             )
-                            .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : (g.totalDeficitSurplus >= 0 ? accent : Color.orange))
+                            .foregroundStyle(g.label.hasPrefix("_pad") ? Color.clear : (g.totalDeficitSurplus >= 0 ? accent : ch.lossBar))
                         }
                     }
                     .chartYAxis { AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.2))
-                        AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(Color.white.opacity(0.7))
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(ch.gridMajor)
+                        AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(ch.yLabel)
                     } }
                     .chartXAxis { AxisMarks(preset: .aligned) { value in
-                        AxisValueLabel { if let s = value.as(String.self), !s.hasPrefix("_pad") { Text(s).foregroundStyle(Color.white.opacity(0.8)) } }
+                        AxisValueLabel { if let s = value.as(String.self), !s.hasPrefix("_pad") { Text(s).foregroundStyle(ch.xLabel) } }
                     } }
                 }
         }
@@ -1975,7 +2014,7 @@ private struct SpecificDayBarChartSection: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.white)
+                .foregroundStyle(ch.theme.mainTextColor)
             content().frame(height: 72).chartLegend(.hidden)
         }
     }
@@ -1983,25 +2022,22 @@ private struct SpecificDayBarChartSection: View {
 
 // MARK: - 収支トレンド（直近12ヶ月／12週／30日・タップ切替。折れ線は累計、棒は期間ごとの期待値）
 private struct CumulativeProfitTrendSection: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let sessions: [GameSession]
     let referenceEnd: Date
     let cyan: Color
 
     @State private var displayMode: AnalyticsEngine.ProfitTrendDisplayMode = .twelveMonths
 
-    private var theoreticalLineColor: Color { Color.orange.opacity(0.92) }
+    private var ch: AnalyticsChartStyle { AnalyticsChartStyle(theme: themeManager.currentTheme) }
 
-    private var barTheoreticalColor: Color { Color.orange.opacity(0.78) }
+    private var theoreticalLineColor: Color { ch.theoreticalStroke }
+
+    private var barTheoreticalColor: Color { ch.theoreticalBar }
 
     private var surplusBandColor: Color { cyan.opacity(0.2) }
 
-    private var deficitBandColor: Color {
-        Color(
-            red: DesignTokens.Color.edgeGlowRedR,
-            green: DesignTokens.Color.edgeGlowRedG,
-            blue: DesignTokens.Color.edgeGlowRedB
-        ).opacity(0.22)
-    }
+    private var deficitBandColor: Color { ch.deficitBand }
 
     private var points: [AnalyticsEngine.ProfitTrendPoint] {
         AnalyticsEngine.profitTrendSeries(sessions: sessions, mode: displayMode, referenceEnd: referenceEnd)
@@ -2119,20 +2155,20 @@ private struct CumulativeProfitTrendSection: View {
                     HStack(spacing: 6) {
                         Text(displayMode.panelTitle)
                             .font(AppTypography.panelHeading)
-                            .foregroundColor(.white)
+                            .foregroundColor(ch.theme.mainTextColor)
                             .multilineTextAlignment(.leading)
                         Image(systemName: "arrow.triangle.2.circlepath")
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(.white.opacity(0.55))
+                            .foregroundStyle(ch.theme.subTextColor.opacity(0.75))
                     }
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint("タップで直近12ヶ月・直近12週・直近30日を切り替え")
-                InfoIconView(explanation: Self.chartExplanation, tint: .white.opacity(0.6))
+                InfoIconView(explanation: Self.chartExplanation, tint: ch.theme.subTextColor.opacity(0.65))
             }
             Text("折れ線＝累計（実質・期待）。帯＝その間（余剰＝アクセント色／欠損＝赤）。棒＝期間別の期待値合計。")
                 .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundColor(.white.opacity(0.58))
+                .foregroundColor(ch.theme.subTextColor.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: 10) {
                 cumulativeLinesChart
@@ -2152,7 +2188,7 @@ private struct CumulativeProfitTrendSection: View {
                 legendBarSwatch(barTheoreticalColor, label: "期待値（期間別）")
             }
             .font(.caption)
-            .foregroundColor(.white.opacity(0.8))
+            .foregroundColor(ch.theme.subTextColor.opacity(0.9))
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2203,8 +2239,8 @@ private struct CumulativeProfitTrendSection: View {
         .chartLegend(.hidden)
         .chartYAxis {
             AxisMarks(position: .leading, values: .automatic(desiredCount: 6)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.2))
-                AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(Color.white.opacity(0.7))
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(ch.gridMajor)
+                AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(ch.yLabel)
             }
         }
         .chartXAxis { trendXAxis(showLabels: false, markIndices: xAxisAllIndices) }
@@ -2214,7 +2250,7 @@ private struct CumulativeProfitTrendSection: View {
     private var theoreticalBarsChart: some View {
         Chart {
             RuleMark(y: .value("ゼロ", 0))
-                .foregroundStyle(Color.white.opacity(0.35))
+                .foregroundStyle(ch.zeroLine)
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
             ForEach(points) { p in
                 BarMark(
@@ -2228,8 +2264,8 @@ private struct CumulativeProfitTrendSection: View {
         .chartLegend(.hidden)
         .chartYAxis {
             AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
-                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.15))
-                AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(Color.white.opacity(0.65))
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(ch.gridMedium)
+                AxisValueLabel { if let v = value.as(Int.self) { Text("\(v / 10000)万") } }.foregroundStyle(ch.yLabelSoft)
             }
         }
         .chartXAxis { trendXAxis(showLabels: true, markIndices: xAxisLabelIndices) }
@@ -2239,13 +2275,13 @@ private struct CumulativeProfitTrendSection: View {
     @AxisContentBuilder
     private func trendXAxis(showLabels: Bool, markIndices: [Int]) -> some AxisContent {
         AxisMarks(values: markIndices) { value in
-            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(showLabels ? 0.12 : 0.07))
+            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(showLabels ? ch.gridMinor : ch.gridFaint)
             if showLabels, let i = value.as(Int.self), i < points.count {
-                AxisTick(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(Color.white.opacity(0.35))
+                AxisTick(stroke: StrokeStyle(lineWidth: 0.5)).foregroundStyle(ch.axisTick)
                 AxisValueLabel(centered: true) {
                     Text(points[i].axisLabel)
                         .font(.system(size: 9, weight: .medium, design: .rounded))
-                        .foregroundStyle(Color.white.opacity(0.78))
+                        .foregroundStyle(ch.xCaption)
                         .lineLimit(2)
                         .minimumScaleFactor(0.7)
                 }
@@ -2265,7 +2301,7 @@ private struct CumulativeProfitTrendSection: View {
                     .frame(width: 18, height: 3)
             }
             Text(label)
-                .foregroundColor(.white.opacity(0.8))
+                .foregroundColor(ch.theme.subTextColor.opacity(0.92))
         }
     }
 
@@ -2275,7 +2311,7 @@ private struct CumulativeProfitTrendSection: View {
                 .fill(color)
                 .frame(width: 14, height: 8)
             Text(label)
-                .foregroundColor(.white.opacity(0.8))
+                .foregroundColor(ch.theme.subTextColor.opacity(0.92))
         }
     }
 
@@ -2285,13 +2321,14 @@ private struct CumulativeProfitTrendSection: View {
                 .fill(color)
                 .frame(width: 18, height: 10)
             Text(label)
-                .foregroundColor(.white.opacity(0.8))
+                .foregroundColor(ch.theme.subTextColor.opacity(0.92))
         }
     }
 }
 
 // MARK: - カレンダーヒートマップ（稼働日・勝敗の濃淡・縦並び・タップで日別履歴へ）
 private struct CalendarHeatmapSection: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let sessions: [GameSession]
     let cyan: Color
     @Binding var selectedDay: Date?
@@ -2300,7 +2337,8 @@ private struct CalendarHeatmapSection: View {
     @Binding var periodFilter: AnalyticsPeriodFilter
     @Binding var showPeriodSheet: Bool
 
-    private let magenta = Color(red: 0.9, green: 0.2, blue: 0.5)
+    private var ch: AnalyticsChartStyle { AnalyticsChartStyle(theme: themeManager.currentTheme) }
+
     private let cal = Calendar.current
     private let cellSize: CGFloat = 40
     private let cellSpacing: CGFloat = 3
@@ -2345,8 +2383,8 @@ private struct CalendarHeatmapSection: View {
             HStack(spacing: 4) {
                 Text("稼働ヒートマップ")
                     .font(AppTypography.panelHeading)
-                    .foregroundColor(.white)
-                InfoIconView(explanation: "濃いほど収支の絶対値が大きい（アクセント色＝プラス・赤系＝マイナス）。タップでその日の履歴へ。", tint: .white.opacity(0.6))
+                    .foregroundColor(ch.theme.mainTextColor)
+                InfoIconView(explanation: "濃いほど収支の絶対値が大きい（アクセント色＝プラス・赤系＝マイナス）。タップでその日の履歴へ。", tint: ch.theme.subTextColor.opacity(0.65))
             }
 
             VStack(spacing: 20) {
@@ -2428,13 +2466,13 @@ private struct CalendarHeatmapSection: View {
         return VStack(alignment: .leading, spacing: 8) {
             Text(monthHeaderLabel(monthStart))
                 .font(.subheadline.weight(.semibold))
-                .foregroundColor(.white.opacity(0.9))
+                .foregroundColor(ch.theme.mainTextColor.opacity(0.95))
 
             LazyVGrid(columns: columns, spacing: cellSpacing) {
                 ForEach(weekdayHeaderIndices(), id: \.self) { i in
                     Text(weekdayLabel(i))
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.white.opacity(0.5))
+                        .foregroundColor(ch.theme.subTextColor.opacity(0.85))
                         .frame(width: cellSize, height: 22)
                 }
                 ForEach(0..<(rows * 7), id: \.self) { i in
@@ -2473,8 +2511,10 @@ private struct CalendarHeatmapSection: View {
     private func cellView(profit: Int, maxAbs: Int, date: Date, day: Int, selectedDay: Binding<Date?>) -> some View {
         let isEmpty = profit == Int.min
         let alpha = isEmpty ? 0.0 : min(1.0, 0.3 + 0.7 * Double(abs(profit)) / Double(maxAbs))
-        let fillColor: Color = isEmpty ? Color.white.opacity(0.1) : (profit >= 0 ? cyan : magenta)
-        let textColor: Color = isEmpty ? .white.opacity(0.6) : (alpha > 0.5 ? .white : .white.opacity(0.9))
+        let fillColor: Color = isEmpty ? ch.heatmapEmpty : (profit >= 0 ? cyan : ch.heatmapLoss)
+        let textColor: Color = isEmpty
+            ? ch.theme.subTextColor.opacity(0.75)
+            : (alpha > 0.5 ? ch.theme.mainTextColor : ch.theme.mainTextColor.opacity(0.92))
 
         return Button {
             selectedDay.wrappedValue = date
@@ -2483,7 +2523,7 @@ private struct CalendarHeatmapSection: View {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(fillColor.opacity(isEmpty ? 1 : alpha))
                 RoundedRectangle(cornerRadius: 4)
-                    .stroke(Color.white.opacity(0.15), lineWidth: 0.8)
+                    .stroke(ch.heatmapCellStroke, lineWidth: 0.8)
                 Text("\(day)")
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundColor(textColor)
@@ -2494,9 +2534,13 @@ private struct CalendarHeatmapSection: View {
     }
 }
 
-/// 分析用セッションカード（実戦履歴カードと同じレイアウト・同一ファイル内で参照）
+/// 分析用セッションカード（実戦履歴カードと同一の `pstatsPanelStyle` パネル）
 private struct AnalyticsSessionCardView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let session: GameSession
+
+    private var skin: any ApplicationTheme { themeManager.currentTheme }
+
     private var rotationPer1k: Double {
         guard session.totalRealCost > 0 else { return 0 }
         return (Double(session.normalRotations) / session.totalRealCost) * 1000
@@ -2510,31 +2554,31 @@ private struct AnalyticsSessionCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(session.machineName)
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
-                .foregroundColor(AppGlassStyle.textPrimary)
+                .font(skin.themedFont(size: 16, weight: .semibold))
+                .foregroundColor(skin.mainTextColor)
                 .lineLimit(1)
             Text(session.shopName)
-                .font(.subheadline)
-                .foregroundColor(AppGlassStyle.textSecondary)
+                .font(skin.themedFont(size: 15, weight: .regular))
+                .foregroundColor(skin.subTextColor)
                 .lineLimit(1)
 
             HStack(alignment: .firstTextBaseline, spacing: 10) {
                 Text("\(session.performance >= 0 ? "+" : "")\(session.performance.formattedPtWithUnit)")
                     .font(AppDesignSystem.EmphasisNumber.font(size: 26, weight: .heavy))
-                    .foregroundStyle(session.performance >= 0 ? AppDesignSystem.Palette.win : AppDesignSystem.Palette.loss)
+                    .foregroundStyle(session.performance >= 0 ? skin.accentColor : skin.cautionForegroundColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
                 Spacer(minLength: 0)
                 Text("\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)")
-                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(AppGlassStyle.textSecondary)
+                    .font(skin.themedFont(size: 14, weight: .semibold, monospaced: true))
+                    .foregroundStyle(skin.subTextColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
 
             HStack(alignment: .top, spacing: 16) {
-                pairBlock(leftLabel: "総回転数", leftValue: "\(session.normalRotations)回", leftValueColor: AppGlassStyle.textPrimary,
-                          rightLabel: "実質回転率", rightValue: rotationRateValue, rightValueColor: AppGlassStyle.textPrimary)
+                pairBlock(leftLabel: "総回転数", leftValue: "\(session.normalRotations)回", leftValueColor: skin.mainTextColor,
+                          rightLabel: "実質回転率", rightValue: rotationRateValue, rightValueColor: skin.mainTextColor)
             }
             .font(.caption)
         }
@@ -2553,7 +2597,7 @@ private struct AnalyticsSessionCardView: View {
         HStack(alignment: .firstTextBaseline, spacing: 16) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(leftLabel)
-                    .foregroundColor(AppGlassStyle.textSecondary)
+                    .foregroundColor(skin.subTextColor)
                 Text(leftValue)
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundColor(leftValueColor)
@@ -2564,7 +2608,7 @@ private struct AnalyticsSessionCardView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(rightLabel)
-                    .foregroundColor(AppGlassStyle.textSecondary)
+                    .foregroundColor(skin.subTextColor)
                 Text(rightValue)
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundColor(rightValueColor)
@@ -2578,12 +2622,16 @@ private struct AnalyticsSessionCardView: View {
 
 /// 分析用セッション詳細（同一ファイル内で参照・実戦履歴詳細と同じ内容）
 private struct AnalyticsSessionDetailView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let session: GameSession
     let sessions: [GameSession]
     @Binding var bottomSegment: AnalyticsBottomSegment
     @Binding var selectedFilterLabel: String?
     @Binding var periodFilter: AnalyticsPeriodFilter
     @Binding var showPeriodSheet: Bool
+
+    private var ch: AnalyticsChartStyle { AnalyticsChartStyle(theme: themeManager.currentTheme) }
+    private var skin: any ApplicationTheme { themeManager.currentTheme }
 
     private var payoutCoefficient: Double {
         session.payoutCoefficient > 0 ? session.payoutCoefficient : PersistedDataSemantics.defaultPayoutCoefficientPtPerBall
@@ -2610,7 +2658,7 @@ private struct AnalyticsSessionDetailView: View {
             StaticHomeBackgroundView()
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    SessionSlumpChartForSessionView(session: session, height: 180, strokeTint: AppGlassStyle.accent)
+                    SessionSlumpChartForSessionView(session: session, height: 180, strokeTint: themeManager.currentTheme.accentColor)
                     sessionDetailPanel(title: "機種・店舗") {
                         sessionDetailLabeledRow("機種", session.machineName)
                         sessionDetailDivider()
@@ -2659,9 +2707,9 @@ private struct AnalyticsSessionDetailView: View {
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .foregroundColor(.black)
-                        .background(AppGlassStyle.accent)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(.black.opacity(0.88))
+                        .background(skin.accentColor)
+                        .clipShape(RoundedRectangle(cornerRadius: max(12, skin.cornerRadius * 0.75), style: .continuous))
                 }
                 .buttonStyle(AppMicroInteractions.PressableButtonStyle())
 
@@ -2674,16 +2722,15 @@ private struct AnalyticsSessionDetailView: View {
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
-                        .foregroundColor(AppGlassStyle.textPrimary)
-                        .background(Color.white.opacity(0.10))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .foregroundColor(skin.mainTextColor)
+                        .pstatsInputChrome(cornerRadius: 12)
                 }
                 .buttonStyle(AppMicroInteractions.PressableButtonStyle())
             }
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .padding(.bottom, 10)
-            .background(Color.black.opacity(0.55))
+            .background(ch.bottomScrim)
         }
     }
 
@@ -2691,7 +2738,7 @@ private struct AnalyticsSessionDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(AppTypography.panelHeading)
-                .foregroundColor(.white)
+                .foregroundColor(ch.theme.mainTextColor)
             content()
         }
         .padding(14)
@@ -2703,18 +2750,18 @@ private struct AnalyticsSessionDetailView: View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
                 .font(AppTypography.bodyRounded)
-                .foregroundStyle(Color.white.opacity(0.55))
+                .foregroundStyle(ch.theme.subTextColor.opacity(0.88))
             Spacer(minLength: 8)
             Text(value)
                 .font(AppTypography.bodyMonoSemibold)
-                .foregroundColor(.white.opacity(0.95))
+                .foregroundColor(ch.theme.mainTextColor.opacity(0.98))
                 .multilineTextAlignment(.trailing)
         }
     }
 
     private func sessionDetailDivider() -> some View {
         Rectangle()
-            .fill(Color.white.opacity(0.12))
+            .fill(ch.separator)
             .frame(height: 1)
             .padding(.vertical, 8)
     }
@@ -2782,6 +2829,7 @@ private struct AnalyticsDayDetailView: View {
 
 /// 分析対象の遊技履歴一覧（新しい順）。店舗/機種/メーカー別のセッション一覧（NavigationLink）用。メインの期間タブでは使用しない。
 struct AnalyticsSessionListView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let segment: AnalyticsSegment
     let groupLabel: String
     let sessions: [GameSession]
@@ -2790,6 +2838,8 @@ struct AnalyticsSessionListView: View {
     @Binding var periodFilter: AnalyticsPeriodFilter
     @Binding var showPeriodSheet: Bool
     let onSessionTap: (UUID) -> Void
+
+    private var ch: AnalyticsChartStyle { AnalyticsChartStyle(theme: themeManager.currentTheme) }
 
     private var listNavigationTitle: String {
         if groupLabel == "全体" { return "全般の遊技履歴" }
@@ -2832,11 +2882,11 @@ struct AnalyticsSessionListView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(JapaneseDateFormatters.yearMonthDay.string(from: group.day))
                                 .font(.subheadline.weight(.semibold))
-                                .foregroundColor(.white.opacity(0.95))
+                                .foregroundColor(ch.theme.mainTextColor.opacity(0.98))
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)
-                                .background(Color.black.opacity(0.58), in: Capsule())
-                                .overlay(Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1))
+                                .background(ch.datePillFill, in: Capsule())
+                                .overlay(Capsule().stroke(ch.datePillStroke, lineWidth: 1))
                                 .padding(.horizontal, 4)
                             ForEach(NativeAdListInterleaving.rowsForSessionGroup(daySessions: group.sessions, placementPrefix: "alist-\(groupLabel)-\(group.day.timeIntervalSince1970)"), id: \.id) { row in
                                 switch row {
@@ -2929,7 +2979,7 @@ private struct AnalyticsShopDetailView: View {
 
                     Text("この店舗の履歴")
                         .font(AppTypography.panelHeading)
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.currentTheme.mainTextColor)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 20)
                         .padding(.top, 8)
@@ -2948,7 +2998,7 @@ private struct AnalyticsShopDetailView: View {
                                             }
                                             .buttonStyle(.plain)
                                             Rectangle()
-                                                .fill(Color.white.opacity(0.12))
+                                                .fill(themeManager.currentTheme.analyticsSeparatorLineColor)
                                                 .frame(height: 1)
                                         }
                                     case .native(let placementKey):
@@ -3046,7 +3096,7 @@ private struct AnalyticsShopMachineCrossDetailView: View {
                     }
                     Text("この組み合わせの履歴")
                         .font(AppTypography.panelHeading)
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.currentTheme.mainTextColor)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 20)
                         .padding(.top, 8)
@@ -3064,7 +3114,7 @@ private struct AnalyticsShopMachineCrossDetailView: View {
                                             }
                                             .buttonStyle(.plain)
                                             Rectangle()
-                                                .fill(Color.white.opacity(0.12))
+                                                .fill(themeManager.currentTheme.analyticsSeparatorLineColor)
                                                 .frame(height: 1)
                                         }
                                     case .native(let placementKey):
@@ -3138,7 +3188,7 @@ private struct AnalyticsMachineDetailView: View {
                     }
                     Text("この機種の履歴")
                         .font(AppTypography.panelHeading)
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.currentTheme.mainTextColor)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 20)
                         .padding(.top, 8)
@@ -3156,7 +3206,7 @@ private struct AnalyticsMachineDetailView: View {
                                             }
                                             .buttonStyle(.plain)
                                             Rectangle()
-                                                .fill(Color.white.opacity(0.12))
+                                                .fill(themeManager.currentTheme.analyticsSeparatorLineColor)
                                                 .frame(height: 1)
                                         }
                                     case .native(let placementKey):
@@ -3238,7 +3288,7 @@ private struct AnalyticsManufacturerDetailView: View {
                     }
                     Text("このメーカーの履歴")
                         .font(AppTypography.panelHeading)
-                        .foregroundColor(.white)
+                        .foregroundColor(themeManager.currentTheme.mainTextColor)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 20)
                         .padding(.top, 8)
@@ -3256,7 +3306,7 @@ private struct AnalyticsManufacturerDetailView: View {
                                             }
                                             .buttonStyle(.plain)
                                             Rectangle()
-                                                .fill(Color.white.opacity(0.12))
+                                                .fill(themeManager.currentTheme.analyticsSeparatorLineColor)
                                                 .frame(height: 1)
                                         }
                                     case .native(let placementKey):
@@ -3280,18 +3330,19 @@ private struct AnalyticsManufacturerDetailView: View {
 
 /// 分析1行をグラスカードでラップ（実戦履歴UIと統一）
 struct AnalyticsGroupCard: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let group: AnalyticsGroup
     let accent: Color
     /// 店舗・機種・メーカー一覧のコンパクト行：このグループに属するセッション（nil なら従来の詳細レイアウト）
     var compactListSessions: [GameSession]? = nil
     var machinesByNameForCompact: [String: Machine]? = nil
 
-    private var lossColor: Color { Color.orange }
-    private var neutralLabel: Color { Color.white.opacity(0.92) }
+    private var lossColor: Color { themeManager.currentTheme.chartLossBarColor }
+    private var neutralLabel: Color { themeManager.currentTheme.mainTextColor.opacity(0.95) }
 
     /// 店舗一覧以外：プラスはアクセント、マイナスはオレンジ
     private var effectiveAccent: Color { accent }
-    private var effectiveLossColor: Color { Color.orange }
+    private var effectiveLossColor: Color { themeManager.currentTheme.chartLossBarColor }
 
     private var useCompactLayout: Bool { compactListSessions != nil }
 
@@ -3323,7 +3374,7 @@ struct AnalyticsGroupCard: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(AppTypography.bodyRounded)
-                .foregroundStyle(Color.white.opacity(0.55))
+                .foregroundStyle(themeManager.currentTheme.subTextColor.opacity(0.88))
                 .lineLimit(2)
                 .minimumScaleFactor(0.85)
             Text(value)
@@ -3347,7 +3398,7 @@ struct AnalyticsGroupCard: View {
         return VStack(alignment: .leading, spacing: 0) {
             Text(group.label)
                 .font(AppTypography.panelHeading)
-                .foregroundColor(.white)
+                .foregroundColor(themeManager.currentTheme.mainTextColor)
                 .padding(.bottom, 6)
             HStack(alignment: .top, spacing: 12) {
                 shopMetricColumn(title: "通算成績", value: signedPt(m.totalPerformance), valueColor: m.totalPerformance >= 0 ? accent : lossColor, valueFont: metricValueFont)
@@ -3369,7 +3420,7 @@ struct AnalyticsGroupCard: View {
     /// `OverviewTotalSummaryPanel.summaryDivider` と同じ（1px・白12%・縦余白5）
     private func compactRowDivider() -> some View {
         Rectangle()
-            .fill(Color.white.opacity(0.12))
+            .fill(themeManager.currentTheme.analyticsSeparatorLineColor)
             .frame(height: 1)
             .padding(.vertical, 5)
     }
@@ -3381,14 +3432,14 @@ struct AnalyticsGroupCard: View {
                     HStack(spacing: 6) {
                         Text(group.label)
                             .font(AppTypography.panelHeading)
-                            .foregroundColor(.white)
+                            .foregroundColor(themeManager.currentTheme.mainTextColor)
                         Text("（遊技回数：\(group.sessionCount)回）")
                             .font(.caption2)
-                            .foregroundColor(.white.opacity(0.65))
+                            .foregroundColor(themeManager.currentTheme.subTextColor.opacity(0.9))
                     }
                     Text(secondLineText)
                         .font(AppTypography.bodyRounded)
-                        .foregroundColor(.white.opacity(0.7))
+                        .foregroundColor(themeManager.currentTheme.subTextColor.opacity(0.92))
                 }
                 Spacer()
             }
@@ -3396,7 +3447,7 @@ struct AnalyticsGroupCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("実成績")
                         .font(AppTypography.sectionSubheading)
-                        .foregroundColor(.white.opacity(0.8))
+                        .foregroundColor(themeManager.currentTheme.mainTextColor.opacity(0.92))
                     Text("\(group.totalProfit >= 0 ? "+" : "")\(group.totalProfit.formattedPtWithUnit)")
                         .font(AppTypography.bodyMonoSemibold)
                         .monospacedDigit()
@@ -3405,16 +3456,16 @@ struct AnalyticsGroupCard: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("期待値")
                         .font(AppTypography.sectionSubheading)
-                        .foregroundColor(.white.opacity(0.8))
+                        .foregroundColor(themeManager.currentTheme.mainTextColor.opacity(0.92))
                     Text("\(group.totalTheoreticalProfit >= 0 ? "+" : "")\(group.totalTheoreticalProfit)")
                         .font(AppTypography.bodyMonoSemibold)
                         .monospacedDigit()
-                        .foregroundColor(.white.opacity(0.85))
+                        .foregroundColor(themeManager.currentTheme.mainTextColor.opacity(0.9))
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text("期待比")
                         .font(AppTypography.sectionSubheading)
-                        .foregroundColor(.white.opacity(0.8))
+                        .foregroundColor(themeManager.currentTheme.mainTextColor.opacity(0.92))
                     Text("\(group.totalDeficitSurplus >= 0 ? "+" : "")\(group.totalDeficitSurplus.formattedPtWithUnit)")
                         .font(AppTypography.bodyMonoSemibold)
                         .monospacedDigit()
@@ -3423,7 +3474,7 @@ struct AnalyticsGroupCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("期待値との差")
                         .font(AppTypography.bodyRounded)
-                        .foregroundColor(.white.opacity(0.55))
+                        .foregroundColor(themeManager.currentTheme.subTextColor.opacity(0.88))
                     DeficitSurplusBarView(
                         deficitSurplus: group.totalDeficitSurplus,
                         accent: effectiveAccent,
@@ -3457,15 +3508,20 @@ struct AnalyticsGroupCard: View {
 // - 案B: 期待値を100%とする達成率バー（期待値0や負のときは要工夫）
 // 採用: 差だけ表示＝「期待値よりどれだけ出た/損したか」がひと目で分かる
 struct DeficitSurplusBarView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     let deficitSurplus: Int
     let accent: Color
-    var lossColor: Color = Color.orange
+    /// nil のとき `ThemeManager.currentTheme.chartLossBarColor`
+    var lossColor: Color?
     /// 店舗分析時のみ指定。実成績がマイナスなら右伸びの棒も lossColor に（「期待値よりマシだが実成績は赤字」と分かる）
     var barColorByActualProfit: Int? = nil
 
+    private var resolvedLoss: Color { lossColor ?? themeManager.currentTheme.chartLossBarColor }
+    private var zeroLineColor: Color { themeManager.currentTheme.chartZeroBaselineColor }
+
     /// 右方向の棒（期待値との差プラス）の色。実成績マイナスならマゼンタ
     private var rightBarColor: Color {
-        if let actual = barColorByActualProfit, actual < 0 { return lossColor }
+        if let actual = barColorByActualProfit, actual < 0 { return resolvedLoss }
         return accent
     }
 
@@ -3479,7 +3535,7 @@ struct DeficitSurplusBarView: View {
             ZStack(alignment: .center) {
                 // 中央のゼロ線
                 RoundedRectangle(cornerRadius: 1)
-                    .fill(Color.white.opacity(0.35))
+                    .fill(zeroLineColor)
                     .frame(width: 2)
                 if deficitSurplus > 0 {
                     // 余剰: 中央から右へ（実成績マイナスならマゼンタで「期待値よりマシだがまだ赤字」）
@@ -3491,7 +3547,7 @@ struct DeficitSurplusBarView: View {
                 } else if deficitSurplus < 0 {
                     // 欠損: 中央から左へ
                     RoundedRectangle(cornerRadius: 3)
-                        .fill(lossColor.opacity(0.9))
+                        .fill(resolvedLoss.opacity(0.9))
                         .frame(width: max(4, barW), height: 14)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .padding(.trailing, half)

@@ -61,13 +61,14 @@ struct SettingsTabView: View {
 
     @ViewBuilder
     private func sectionHeader(_ title: String) -> some View {
+        let skin = themeManager.currentTheme
         HStack {
             Text(title)
                 .font(.caption.weight(.semibold))
-                .foregroundColor(AppGlassStyle.textPrimary.opacity(0.92))
+                .foregroundColor(skin.subTextColor.opacity(0.92))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color.black.opacity(0.28), in: Capsule())
+                .background(skin.surfaceSecondary, in: Capsule())
             Spacer()
         }
         .padding(.top, 6)
@@ -108,24 +109,6 @@ struct SettingsTabView: View {
                                     .tint(cyan)
                                 }
                             }
-                        }
-                    }
-
-                    settingsCard(title: "アプリのスキン", icon: "paintpalette.fill") {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("ホーム・分析・パネル枠などの見ためを切り替えます。")
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.65))
-                            Picker("スキン", selection: Binding(
-                                get: { themeManager.selectedSkin },
-                                set: { themeManager.applySkin($0) }
-                            )) {
-                                ForEach(PStatsSkin.allCases) { skin in
-                                    Text(skin.title).tag(skin)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                            .tint(cyan)
                         }
                     }
 
@@ -251,8 +234,7 @@ struct SettingsTabView: View {
                                     .frame(width: 64)
                                     .padding(.vertical, 6)
                                     .padding(.horizontal, 10)
-                                    .background(Color.white.opacity(0.12))
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .background(themeManager.currentTheme.inputFieldBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                             }
                             HStack {
                                 Text("貸玉料金（500ptあたりの玉数）")
@@ -271,8 +253,7 @@ struct SettingsTabView: View {
                                     .frame(width: 64)
                                     .padding(.vertical, 6)
                                     .padding(.horizontal, 10)
-                                    .background(Color.white.opacity(0.12))
-                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .background(themeManager.currentTheme.inputFieldBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                             }
                         }
                     }
@@ -622,8 +603,7 @@ struct SettingsTabView: View {
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 10)
                                         .foregroundColor(.white)
-                                        .background(Color.white.opacity(0.12))
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        .background(themeManager.currentTheme.panelSecondaryBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                                     }
                                     .disabled(rewardedBusy)
                                 }
@@ -652,7 +632,7 @@ struct SettingsTabView: View {
                             #if DEBUG
                             VStack(alignment: .leading, spacing: 10) {
                                 Divider()
-                                    .background(Color.white.opacity(0.18))
+                                    .background(themeManager.currentTheme.hairlineDividerColor)
                                 HStack(spacing: 6) {
                                     Image(systemName: "ladybug.fill")
                                         .foregroundColor(cyan)
@@ -722,12 +702,11 @@ struct SettingsTabView: View {
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 12)
                                         .foregroundColor(.white)
-                                        .background(Color.white.opacity(0.14))
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        .background(themeManager.currentTheme.panelSecondaryBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                                 }
                                 .buttonStyle(.plain)
                             }
-                            Divider().background(Color.white.opacity(0.15))
+                            Divider().background(themeManager.currentTheme.hairlineDividerColor)
                             Text("書き出した「sessions」CSV や、指定の列だけ揃えた表から実戦履歴を追加できます。機種・店舗名は表記が違っても、取り込み画面で登録済みの機種・店舗に紐づけられます。列が足りない行は帳簿向け（回転・期待値の集計から外れる保存）になります。")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.68))
@@ -934,12 +913,7 @@ struct SettingsTabView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(AppGlassStyle.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
+        .pstatsPanelStyle()
     }
 
     private func saveSelectedPhoto(_ item: PhotosPickerItem?) async {

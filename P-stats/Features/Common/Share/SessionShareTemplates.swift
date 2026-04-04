@@ -18,6 +18,54 @@ enum SessionShareTemplate: String, CaseIterable, Identifiable {
     }
 }
 
+/// 共有画像テンプレ用パレット。数値は `DesignTokens.ShareCard` に集約。
+private enum SharePalette {
+    private typealias S = DesignTokens.ShareCard
+
+    private static func c(_ r: Double, _ g: Double, _ b: Double, _ opacity: Double = 1.0) -> Color {
+        Color(red: r, green: g, blue: b).opacity(opacity)
+    }
+
+    static var simpleGradientEnd: Color { c(S.simpleGradientEndR, S.simpleGradientEndG, S.simpleGradientEndB) }
+    static var profitGoldStrong: Color { c(S.profitGoldStrongR, S.profitGoldStrongG, S.profitGoldStrongB) }
+    static var profitSky: Color { c(S.profitSkyR, S.profitSkyG, S.profitSkyB) }
+    static var profitLoss: Color { c(S.profitLossR, S.profitLossG, S.profitLossB) }
+
+    static var keijiBgDeep: Color { c(S.keijiBgDeepR, S.keijiBgDeepG, S.keijiBgDeepB) }
+    static var keijiBgPaper: Color { c(S.keijiBgPaperR, S.keijiBgPaperG, S.keijiBgPaperB) }
+    static var keijiBgShadow: Color { c(S.keijiBgShadowR, S.keijiBgShadowG, S.keijiBgShadowB) }
+
+    static var evaBgMid: Color { c(S.evaBgMidR, S.evaBgMidG, S.evaBgMidB) }
+
+    static var keijiBorderGold: Color { c(S.keijiBorderGoldR, S.keijiBorderGoldG, S.keijiBorderGoldB) }
+    static var evaBorderMagenta: Color { c(S.evaBorderMagentaR, S.evaBorderMagentaG, S.evaBorderMagentaB) }
+    static var evaBorderGreen: Color { c(S.evaBorderGreenR, S.evaBorderGreenG, S.evaBorderGreenB) }
+
+    static var borderDiffPositiveSimple: Color { c(S.borderDiffPositiveSimpleR, S.borderDiffPositiveSimpleG, S.borderDiffPositiveSimpleB) }
+    static var borderDiffPositiveDark: Color { c(S.borderDiffPositiveDarkR, S.borderDiffPositiveDarkG, S.borderDiffPositiveDarkB) }
+    static var borderDiffNegativeCoral: Color { c(S.borderDiffNegativeCoralR, S.borderDiffNegativeCoralG, S.borderDiffNegativeCoralB) }
+
+    static var keijiProfitGold: Color { c(S.keijiProfitGoldR, S.keijiProfitGoldG, S.keijiProfitGoldB) }
+    static var keijiProfitLoss: Color { c(S.keijiProfitLossR, S.keijiProfitLossG, S.keijiProfitLossB) }
+    static var simpleBigProfit: Color { c(S.simpleBigProfitR, S.simpleBigProfitG, S.simpleBigProfitB) }
+    static var simpleBigLoss: Color { c(S.simpleBigLossR, S.simpleBigLossG, S.simpleBigLossB) }
+
+    static var evaGlowPositive: Color { c(S.evaGlowPositiveR, S.evaGlowPositiveG, S.evaGlowPositiveB) }
+    static var evaGlowNegative: Color { c(S.evaGlowNegativeR, S.evaGlowNegativeG, S.evaGlowNegativeB) }
+
+    static var keijiSakuraPetal: Color { c(S.keijiSakuraR, S.keijiSakuraG, S.keijiSakuraB, 0.55) }
+    static var keijiFoilStop1: Color { c(S.keijiFoil1R, S.keijiFoil1G, S.keijiFoil1B, 0.35) }
+    static var keijiFoilStop2: Color { c(S.keijiFoil2R, S.keijiFoil2G, S.keijiFoil2B, 0.12) }
+    static var keijiFoilStop3: Color { c(S.keijiFoil3R, S.keijiFoil3G, S.keijiFoil3B, 0.22) }
+
+    static var evaTraceCyan: Color { c(S.evaTraceCyanR, S.evaTraceCyanG, S.evaTraceCyanB, 0.55) }
+    static var evaTraceBlue: Color { c(S.evaTraceBlueR, S.evaTraceBlueG, S.evaTraceBlueB, 0.45) }
+    static var evaTraceYellow: Color { c(S.evaTraceYellowR, S.evaTraceYellowG, S.evaTraceYellowB, 0.35) }
+
+    static var evaNeonPurpleGlow: Color { c(S.evaNeonPurpleR, S.evaNeonPurpleG, S.evaNeonPurpleB, 0.45) }
+    static var evaNeonGreenGlow: Color { c(S.evaNeonGreenR, S.evaNeonGreenG, S.evaNeonGreenB, 0.38) }
+}
+
 struct SessionShareCardView: View {
     let snapshot: SessionShareSnapshot
     let showShopName: Bool
@@ -57,30 +105,40 @@ struct SessionShareCardView: View {
     private var profitColor: Color {
         if profitPt > 0 {
             // 「金/青」指定：強い+は金寄り、軽い+は青寄り
-            return profitPt >= 10_000 ? Color(red: 0.98, green: 0.84, blue: 0.28) : Color(red: 0.30, green: 0.74, blue: 1.00)
+            return profitPt >= 10_000 ? SharePalette.profitGoldStrong : SharePalette.profitSky
         }
-        if profitPt < 0 { return Color(red: 1.00, green: 0.30, blue: 0.30) }
-        return .white.opacity(0.9)
+        if profitPt < 0 { return SharePalette.profitLoss }
+        return Color.white.opacity(DesignTokens.ShareCard.TemplateForeground.profitNeutralOnLight)
     }
 
     private var baseTextColor: Color {
-        template == .simple ? Color.black.opacity(0.92) : Color.white.opacity(0.95)
+        template == .simple
+            ? Color.black.opacity(DesignTokens.ShareCard.TemplateForeground.simplePrimary)
+            : Color.white.opacity(DesignTokens.ShareCard.TemplateForeground.decoratedPrimary)
     }
 
     private var subTextColor: Color {
-        template == .simple ? Color.black.opacity(0.62) : Color.white.opacity(0.72)
+        template == .simple
+            ? Color.black.opacity(DesignTokens.ShareCard.TemplateForeground.simpleSecondary)
+            : Color.white.opacity(DesignTokens.ShareCard.TemplateForeground.decoratedSecondary)
     }
 
     private var cardInnerPanelBackground: Color {
-        template == .simple ? Color.white.opacity(0.72) : Color.black.opacity(0.55)
+        template == .simple
+            ? Color.white.opacity(DesignTokens.ShareCard.TemplateForeground.simplePanelBody)
+            : Color.black.opacity(DesignTokens.ShareCard.TemplateForeground.decoratedPanelBody)
     }
 
     private var innerPanelStroke: Color {
-        template == .simple ? Color.black.opacity(0.10) : Color.white.opacity(0.12)
+        template == .simple
+            ? Color.black.opacity(DesignTokens.ShareCard.TemplateForeground.simpleInnerStroke)
+            : Color.white.opacity(DesignTokens.ShareCard.TemplateForeground.decoratedInnerStroke)
     }
 
     private var logoCircleBackground: Color {
-        template == .simple ? Color.black.opacity(0.06) : Color.white.opacity(0.12)
+        template == .simple
+            ? Color.black.opacity(DesignTokens.ShareCard.TemplateForeground.simpleLogoCircle)
+            : Color.white.opacity(DesignTokens.ShareCard.TemplateForeground.decoratedLogoCircle)
     }
 
     private func titleFont(size: CGFloat, weight: Font.Weight) -> Font {
@@ -211,9 +269,9 @@ struct SessionShareCardView: View {
         switch template {
         case .simple:
             ZStack {
-                LinearGradient(colors: [Color.white, Color(red: 0.96, green: 0.97, blue: 0.99)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                LinearGradient(colors: [Color.white, SharePalette.simpleGradientEnd], startPoint: .topLeading, endPoint: .bottomTrailing)
                 RadialGradient(
-                    colors: [Color.black.opacity(0.06), .clear],
+                    colors: [Color.black.opacity(DesignTokens.ShareCard.TemplateChrome.simpleRadialVignette), .clear],
                     center: .bottomTrailing,
                     startRadius: 10,
                     endRadius: 720
@@ -224,7 +282,7 @@ struct SessionShareCardView: View {
             ZStack {
                 // 紅白＋金箔
                 LinearGradient(
-                    colors: [Color(red: 0.32, green: 0.02, blue: 0.06), Color(red: 0.92, green: 0.92, blue: 0.90), Color(red: 0.20, green: 0.02, blue: 0.05)],
+                    colors: [SharePalette.keijiBgDeep, SharePalette.keijiBgPaper, SharePalette.keijiBgShadow],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -237,7 +295,7 @@ struct SessionShareCardView: View {
         case .eva:
             ZStack {
                 LinearGradient(
-                    colors: [Color.black, Color(red: 0.02, green: 0.06, blue: 0.16), Color.black],
+                    colors: [Color.black, SharePalette.evaBgMid, Color.black],
                     startPoint: .top,
                     endPoint: .bottom
                 )
@@ -259,7 +317,11 @@ struct SessionShareCardView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: w * 0.52)
-                .foregroundStyle(template == .simple ? Color.black.opacity(0.08) : Color.white.opacity(0.08))
+                .foregroundStyle(
+                    template == .simple
+                        ? Color.black.opacity(DesignTokens.ShareCard.TemplateChrome.rocketWatermarkSimple)
+                        : Color.white.opacity(DesignTokens.ShareCard.TemplateChrome.rocketWatermarkDecorated)
+                )
                 .rotationEffect(.degrees(-18))
                 .position(x: w * 0.78, y: h * 0.38)
         }
@@ -274,7 +336,7 @@ struct SessionShareCardView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: w * 0.11)
-                .foregroundStyle(Color.black.opacity(0.08))
+                .foregroundStyle(Color.black.opacity(DesignTokens.ShareCard.TemplateChrome.sparklesGlyph))
                 .position(x: w * 0.86, y: h * 0.22)
         }
         .allowsHitTesting(false)
@@ -283,11 +345,25 @@ struct SessionShareCardView: View {
     private var borderStroke: LinearGradient {
         switch template {
         case .simple:
-            return LinearGradient(colors: [Color.black.opacity(0.16), Color.black.opacity(0.06)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(
+                colors: [
+                    Color.black.opacity(DesignTokens.ShareCard.TemplateChrome.outerBorderDarkStrong),
+                    Color.black.opacity(DesignTokens.ShareCard.TemplateChrome.outerBorderDarkSoft)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         case .keiji:
-            return LinearGradient(colors: [Color(red: 0.98, green: 0.86, blue: 0.35).opacity(0.9), .white.opacity(0.12)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(
+                colors: [
+                    SharePalette.keijiBorderGold.opacity(0.9),
+                    Color.white.opacity(DesignTokens.ShareCard.TemplateChrome.keijiBorderSecondaryWhite)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
         case .eva:
-            return LinearGradient(colors: [Color(red: 0.75, green: 0.25, blue: 1.0).opacity(0.85), Color(red: 0.35, green: 1.0, blue: 0.55).opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
+            return LinearGradient(colors: [SharePalette.evaBorderMagenta.opacity(0.85), SharePalette.evaBorderGreen.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
         }
     }
 
@@ -341,7 +417,12 @@ struct SessionShareCardView: View {
                         guard d.isValidForNumericDisplay else { return nil }
                         return "\(d >= 0 ? "+" : "")\(d.displayFormat("%.1f")) 回/1k"
                     } ?? "—",
-                    valueColor: borderDiff.map { $0 >= 0 ? (template == .simple ? Color(red: 0.10, green: 0.50, blue: 0.90) : Color(red: 0.38, green: 0.95, blue: 0.70)) : Color(red: 1.00, green: 0.42, blue: 0.42) } ?? subTextColor,
+                    valueColor: borderDiff.map { d in
+                        if d >= 0 {
+                            return template == .simple ? SharePalette.borderDiffPositiveSimple : SharePalette.borderDiffPositiveDark
+                        }
+                        return SharePalette.borderDiffNegativeCoral
+                    } ?? subTextColor,
                     valueMinScale: 0.76,
                     titleSize: 32,
                     valueSize: 72
@@ -355,9 +436,9 @@ struct SessionShareCardView: View {
         case .eva:
             return AnyView(EvaProfitIndicatorBox(title: "", signedNumber: profitDisplayWithUnit, profit: profitPt, bigFontSize: 124))
         case .keiji:
-            return AnyView(bigMetricBox(title: "", value: profitDisplayWithUnit, valueColor: profitPt >= 0 ? Color(red: 0.88, green: 0.72, blue: 0.22) : Color(red: 0.75, green: 0.10, blue: 0.10)))
+            return AnyView(bigMetricBox(title: "", value: profitDisplayWithUnit, valueColor: profitPt >= 0 ? SharePalette.keijiProfitGold : SharePalette.keijiProfitLoss))
         case .simple:
-            return AnyView(bigMetricBox(title: "", value: profitDisplayWithUnit, valueColor: profitPt >= 0 ? Color(red: 0.05, green: 0.35, blue: 0.90) : Color(red: 0.90, green: 0.10, blue: 0.10)))
+            return AnyView(bigMetricBox(title: "", value: profitDisplayWithUnit, valueColor: profitPt >= 0 ? SharePalette.simpleBigProfit : SharePalette.simpleBigLoss))
         }
     }
 
@@ -437,18 +518,18 @@ private struct EvaProfitIndicatorBox: View {
     let profit: Int
     let bigFontSize: CGFloat
 
-    private var glow: Color { profit >= 0 ? Color(red: 0.35, green: 0.95, blue: 1.0) : Color(red: 1.0, green: 0.42, blue: 0.42) }
+    private var glow: Color { profit >= 0 ? SharePalette.evaGlowPositive : SharePalette.evaGlowNegative }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text(title)
                     .font(.system(size: 32, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.72))
+                    .foregroundStyle(Color.white.opacity(DesignTokens.ShareCard.TemplateForeground.decoratedSecondary))
             }
             Text(signedNumber)
                 .font(.system(size: bigFontSize, weight: .heavy, design: .monospaced))
-                .foregroundStyle(.white.opacity(0.95))
+                .foregroundStyle(Color.white.opacity(DesignTokens.ShareCard.TemplateForeground.decoratedPrimary))
                 .tracking(1.0)
                 .shadow(color: glow.opacity(0.75), radius: 14, x: 0, y: 0)
                 .lineLimit(1)
@@ -456,9 +537,14 @@ private struct EvaProfitIndicatorBox: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.black.opacity(0.55))
+        .background(Color.black.opacity(DesignTokens.ShareCard.TemplateChrome.statPanelBackdrop))
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.white.opacity(0.12), lineWidth: 1))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22).stroke(
+                Color.white.opacity(DesignTokens.ShareCard.TemplateChrome.statPanelStroke),
+                lineWidth: DesignTokens.Thickness.hairline
+            )
+        )
     }
 }
 
@@ -475,7 +561,7 @@ private struct KeijiSakuraConfetti: View {
                 let y = size.height * CGFloat(((t * 571).truncatingRemainder(dividingBy: 1)))
                 let r = CGFloat(4 + (t * 10).truncatingRemainder(dividingBy: 6))
                 let p = Path(ellipseIn: CGRect(x: x, y: y, width: r * 1.6, height: r))
-                let c = Color(red: 1.0, green: 0.75, blue: 0.88).opacity(0.55)
+                let c = SharePalette.keijiSakuraPetal
                 ctx.fill(p, with: .color(c))
             }
         }
@@ -486,9 +572,9 @@ private struct KeijiGoldFoil: View {
     var body: some View {
         LinearGradient(
             colors: [
-                Color(red: 1.0, green: 0.88, blue: 0.35).opacity(0.35),
-                Color(red: 0.95, green: 0.70, blue: 0.18).opacity(0.12),
-                Color(red: 1.0, green: 0.92, blue: 0.55).opacity(0.22)
+                SharePalette.keijiFoilStop1,
+                SharePalette.keijiFoilStop2,
+                SharePalette.keijiFoilStop3
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
@@ -505,10 +591,10 @@ private struct EvaCircuitBoard: View {
             }
 
             let colors: [Color] = [
-                Color(red: 0.45, green: 0.90, blue: 1.00).opacity(0.55), // 水色
-                Color(red: 0.20, green: 0.65, blue: 1.00).opacity(0.45), // 青
-                Color(red: 1.00, green: 0.90, blue: 0.25).opacity(0.35), // 黄
-                Color.white.opacity(0.22)
+                SharePalette.evaTraceCyan,
+                SharePalette.evaTraceBlue,
+                SharePalette.evaTraceYellow,
+                Color.white.opacity(DesignTokens.ShareCard.TemplateChrome.evaTraceWhiteMix)
             ]
 
             // 幹線（回路）
@@ -553,13 +639,13 @@ private struct EvaNeonGlow: View {
     var body: some View {
         ZStack {
             RadialGradient(
-                colors: [Color(red: 0.75, green: 0.25, blue: 1.0).opacity(0.45), .clear],
+                colors: [SharePalette.evaNeonPurpleGlow, .clear],
                 center: .topLeading,
                 startRadius: 10,
                 endRadius: 700
             )
             RadialGradient(
-                colors: [Color(red: 0.35, green: 1.0, blue: 0.55).opacity(0.38), .clear],
+                colors: [SharePalette.evaNeonGreenGlow, .clear],
                 center: .bottomTrailing,
                 startRadius: 10,
                 endRadius: 760
@@ -571,3 +657,27 @@ private struct EvaNeonGlow: View {
 
 // ゴールド系テンプレは一旦削除（必要なら復活）
 
+#Preview("共有カード・シンプル") {
+    ThemePreview {
+        SessionShareCardView(
+            snapshot: SessionShareSnapshot(
+                date: Date(),
+                machineName: "試験機種",
+                shopName: "試験店舗",
+                totalInvestmentPt: 5000,
+                totalRecoveryBalls: 1200,
+                profitPt: 800,
+                normalRotations: 820,
+                rushWinCount: 2,
+                normalWinCount: 6,
+                averageFirstHitOdds: 102.5,
+                realRatePer1k: 18.2,
+                effectiveBorderPer1k: 17.0
+            ),
+            showShopName: true,
+            template: .simple
+        )
+        .scaleEffect(0.22)
+        .frame(width: 420, height: 260)
+    }
+}

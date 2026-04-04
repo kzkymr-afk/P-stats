@@ -18,6 +18,7 @@ private struct PhaseDraft: Identifiable, Equatable {
 struct GameSessionEditView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var themeManager: ThemeManager
 
     @Query private var machines: [Machine]
     @Query private var shops: [Shop]
@@ -44,7 +45,8 @@ struct GameSessionEditView: View {
     @State private var simpleInvestPadTrigger = 0
     @State private var simpleRecoveryPadTrigger = 0
 
-    private var cyan: Color { AppGlassStyle.accent }
+    private var skin: any ApplicationTheme { themeManager.currentTheme }
+    private var accent: Color { skin.accentColor }
 
     init(sessionToEdit: GameSession? = nil, isSimpleInput: Bool? = nil) {
         self.sessionToEdit = sessionToEdit
@@ -186,11 +188,11 @@ struct GameSessionEditView: View {
                         simpleInputCardHeader(title: "実戦日", systemImage: "calendar") {
                             Text(JapaneseDateFormatters.yearMonthDay.string(from: date))
                                 .font(AppTypography.bodyRounded)
-                                .foregroundColor(AppGlassStyle.textPrimary)
+                                .foregroundColor(skin.mainTextColor)
                             DatePicker("", selection: $date, displayedComponents: .date)
                                 .datePickerStyle(.graphical)
                                 .labelsHidden()
-                                .tint(cyan)
+                                .tint(accent)
                         }
                         .id("simpleDate")
 
@@ -199,7 +201,7 @@ struct GameSessionEditView: View {
                                 HStack {
                                     Text("機種")
                                         .font(AppTypography.sectionSubheading)
-                                        .foregroundColor(AppGlassStyle.textPrimary)
+                                        .foregroundColor(skin.mainTextColor)
                                     Spacer(minLength: 8)
                                     Picker("", selection: $selectedMachine) {
                                         Text("未選択").tag(Machine?(nil))
@@ -208,12 +210,12 @@ struct GameSessionEditView: View {
                                         }
                                     }
                                     .labelsHidden()
-                                    .tint(cyan)
+                                    .tint(accent)
                                 }
                                 HStack {
                                     Text("店舗")
                                         .font(AppTypography.sectionSubheading)
-                                        .foregroundColor(AppGlassStyle.textPrimary)
+                                        .foregroundColor(skin.mainTextColor)
                                     Spacer(minLength: 8)
                                     Picker("", selection: $selectedShop) {
                                         Text("未選択").tag(Shop?(nil))
@@ -222,7 +224,7 @@ struct GameSessionEditView: View {
                                         }
                                     }
                                     .labelsHidden()
-                                    .tint(cyan)
+                                    .tint(accent)
                                 }
                             }
                         }
@@ -249,7 +251,7 @@ struct GameSessionEditView: View {
 
                         Text("回収額を保存するには、店舗に払出係数（pt/玉）が設定されている必要があります。")
                             .font(.caption)
-                            .foregroundColor(AppGlassStyle.textSecondary)
+                            .foregroundColor(skin.subTextColor)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 4)
                     }
@@ -285,21 +287,16 @@ struct GameSessionEditView: View {
             HStack(spacing: 8) {
                 Image(systemName: systemImage)
                     .font(.system(size: 14))
-                    .foregroundColor(cyan)
+                    .foregroundColor(accent)
                 Text(title)
                     .font(AppTypography.panelHeading)
-                    .foregroundColor(AppGlassStyle.textPrimary)
+                    .foregroundColor(skin.mainTextColor)
             }
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(AppGlassStyle.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
+        .pstatsPanelStyle()
     }
 
     private func simpleAmountInputPanel(
@@ -315,10 +312,10 @@ struct GameSessionEditView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
                     .font(AppTypography.sectionSubheading)
-                    .foregroundColor(AppGlassStyle.textPrimary)
+                    .foregroundColor(skin.mainTextColor)
                 Text(caption)
                     .font(.caption)
-                    .foregroundColor(AppGlassStyle.textSecondary)
+                    .foregroundColor(skin.subTextColor)
                     .fixedSize(horizontal: false, vertical: true)
             }
             .frame(width: 168, alignment: .leading)
@@ -328,8 +325,8 @@ struct GameSessionEditView: View {
                 placeholder: "0",
                 maxDigits: 9,
                 font: .systemFont(ofSize: 22, weight: .semibold),
-                textColor: .white,
-                accentColor: UIColor(cyan),
+                textColor: UIColor(skin.mainTextColor),
+                accentColor: UIColor(accent),
                 focusTrigger: padTrigger.wrappedValue,
                 adjustsFontSizeToFitWidth: true,
                 minimumFontSize: 14,
@@ -339,13 +336,8 @@ struct GameSessionEditView: View {
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .trailing)
         }
         .padding(16)
-        .background(AppGlassStyle.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
-        .contentShape(RoundedRectangle(cornerRadius: 14))
+        .pstatsPanelStyle()
+        .contentShape(RoundedRectangle(cornerRadius: skin.cornerRadius, style: .continuous))
         .onTapGesture {
             padTrigger.wrappedValue += 1
         }
@@ -360,11 +352,11 @@ struct GameSessionEditView: View {
                     editDetailCard(title: "実戦日", systemImage: "calendar") {
                         Text(JapaneseDateFormatters.yearMonthDay.string(from: date))
                             .font(AppTypography.bodyRounded)
-                            .foregroundColor(AppGlassStyle.textPrimary)
+                            .foregroundColor(skin.mainTextColor)
                         DatePicker("", selection: $date, displayedComponents: .date)
                             .datePickerStyle(.graphical)
                             .labelsHidden()
-                            .tint(cyan)
+                            .tint(accent)
                     }
 
                     editDetailCard(title: "基本情報", systemImage: "dice.fill") {
@@ -376,7 +368,7 @@ struct GameSessionEditView: View {
                                 }
                             }
                             .labelsHidden()
-                            .tint(cyan)
+                            .tint(accent)
                         }
                         editDetailPickerRow(label: "店舗") {
                             Picker("", selection: $selectedShop) {
@@ -386,14 +378,14 @@ struct GameSessionEditView: View {
                                 }
                             }
                             .labelsHidden()
-                            .tint(cyan)
+                            .tint(accent)
                         }
                     }
 
                     editDetailCard(title: "区間ごとの内訳", systemImage: "square.stack.3d.up.fill") {
                         Text("各区間＝その初当たりまで。RUSH 当選回数は各区間の「大当たり」を合算して保存します。")
                             .font(.caption)
-                            .foregroundColor(AppGlassStyle.textSecondary)
+                            .foregroundColor(skin.subTextColor)
                             .fixedSize(horizontal: false, vertical: true)
                         ForEach($phases) { $phase in
                             phaseEditorCard(
@@ -407,7 +399,7 @@ struct GameSessionEditView: View {
                             } label: {
                                 Label("区間を追加", systemImage: "plus.circle.fill")
                                     .font(.subheadline.weight(.semibold))
-                                    .foregroundColor(cyan)
+                                    .foregroundColor(accent)
                             }
                             .buttonStyle(.plain)
                             Spacer()
@@ -417,7 +409,7 @@ struct GameSessionEditView: View {
                     editDetailCard(title: "総回転数（保存）", systemImage: "arrow.triangle.2.circlepath") {
                         Text("空欄なら各区間の回転の合計。保存する総回転と合計が異なるとき、投資（pt・持ち玉）と実質投資は回転比でスケールして誤差を吸収します。")
                             .font(.caption)
-                            .foregroundColor(AppGlassStyle.textSecondary)
+                            .foregroundColor(skin.subTextColor)
                             .fixedSize(horizontal: false, vertical: true)
                         editDetailNumberRow(label: "総回転数（通常）", placeholder: "空欄＝区間合計", text: $totalRotationsOverride, maxDigits: 7)
                     }
@@ -425,7 +417,7 @@ struct GameSessionEditView: View {
                     editDetailCard(title: "最終の総回収出玉", systemImage: "circle.grid.cross.fill") {
                         Text("この実戦記録全体の回収出玉の確定値を入力します（区間ごとの回収とは別に扱います）。")
                             .font(.caption)
-                            .foregroundColor(AppGlassStyle.textSecondary)
+                            .foregroundColor(skin.subTextColor)
                             .fixedSize(horizontal: false, vertical: true)
                         editDetailNumberRow(label: "総回収出玉（玉）", placeholder: "0", text: $totalHoldings, maxDigits: 9)
                     }
@@ -459,28 +451,23 @@ struct GameSessionEditView: View {
             HStack(spacing: 8) {
                 Image(systemName: systemImage)
                     .font(.system(size: 14))
-                    .foregroundColor(cyan)
+                    .foregroundColor(accent)
                 Text(title)
                     .font(AppTypography.panelHeading)
-                    .foregroundColor(AppGlassStyle.textPrimary)
+                    .foregroundColor(skin.mainTextColor)
             }
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(AppGlassStyle.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-        )
+        .pstatsPanelStyle()
     }
 
     private func editDetailPickerRow<Content: View>(label: String, @ViewBuilder trailing: () -> Content) -> some View {
         HStack(alignment: .center, spacing: 12) {
             Text(label)
                 .font(AppTypography.sectionSubheading)
-                .foregroundColor(.white.opacity(0.88))
+                .foregroundColor(skin.mainTextColor.opacity(0.88))
                 .frame(minWidth: 100, alignment: .leading)
             Spacer(minLength: 8)
             trailing()
@@ -492,7 +479,7 @@ struct GameSessionEditView: View {
         HStack(alignment: .center, spacing: 12) {
             Text(label)
                 .font(AppTypography.sectionSubheading)
-                .foregroundColor(.white.opacity(0.88))
+                .foregroundColor(skin.mainTextColor.opacity(0.88))
                 .frame(minWidth: 148, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 4)
@@ -501,8 +488,8 @@ struct GameSessionEditView: View {
                 placeholder: placeholder,
                 maxDigits: maxDigits,
                 font: .systemFont(ofSize: 18, weight: .semibold),
-                textColor: .white,
-                accentColor: UIColor(cyan),
+                textColor: UIColor(skin.mainTextColor),
+                accentColor: UIColor(accent),
                 focusTrigger: 0,
                 adjustsFontSizeToFitWidth: true,
                 minimumFontSize: 12,
@@ -519,7 +506,7 @@ struct GameSessionEditView: View {
             HStack {
                 Text("\(ordinal) 回目の区間（初当たりまで）")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.white.opacity(0.92))
+                    .foregroundColor(skin.mainTextColor.opacity(0.92))
                 Spacer()
                 if phases.count > 1 {
                     Button(role: .destructive) {
@@ -535,7 +522,7 @@ struct GameSessionEditView: View {
                 }
             }
             Rectangle()
-                .fill(Color.white.opacity(0.12))
+                .fill(skin.hairlineDividerColor.opacity(0.9))
                 .frame(height: 1)
             editDetailNumberRow(label: "初当たりまでの回転数", placeholder: "0", text: phase.rotationsUntilFirstHit, maxDigits: 7)
             editDetailNumberRow(label: "初当たりまでの投資（pt）", placeholder: "0", text: phase.investmentCashPt, maxDigits: 9)
@@ -544,8 +531,7 @@ struct GameSessionEditView: View {
             editDetailNumberRow(label: "この区間の回収出玉", placeholder: "0", text: phase.recoveryHoldingsBalls, maxDigits: 9)
         }
         .padding(12)
-        .background(Color.white.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(skin.panelSecondaryBackground, in: RoundedRectangle(cornerRadius: max(12, skin.cornerRadius * 0.85), style: .continuous))
     }
 
     @ViewBuilder
@@ -553,32 +539,32 @@ struct GameSessionEditView: View {
         VStack(alignment: .leading, spacing: 8) {
             if let m = SessionSettlementMode(rawValue: rec.settlementModeRaw) {
                 HStack {
-                    Text("区分").foregroundColor(.white.opacity(0.65))
+                    Text("区分").foregroundColor(skin.subTextColor.opacity(0.92))
                     Spacer()
-                    Text(m.displayName).foregroundColor(.white.opacity(0.95))
+                    Text(m.displayName).foregroundColor(skin.mainTextColor)
                 }
                 .font(AppTypography.bodyRounded)
             } else if !rec.settlementModeRaw.isEmpty {
                 HStack {
-                    Text("区分").foregroundColor(.white.opacity(0.65))
+                    Text("区分").foregroundColor(skin.subTextColor.opacity(0.92))
                     Spacer()
-                    Text(rec.settlementModeRaw).foregroundColor(.white.opacity(0.95))
+                    Text(rec.settlementModeRaw).foregroundColor(skin.mainTextColor)
                 }
                 .font(AppTypography.bodyRounded)
             }
             if rec.exchangeCashProceedsPt > 0 {
                 HStack {
-                    Text("換金（500pt刻み）").foregroundColor(.white.opacity(0.65))
+                    Text("換金（500pt刻み）").foregroundColor(skin.subTextColor.opacity(0.92))
                     Spacer()
-                    Text("\(rec.exchangeCashProceedsPt) pt").foregroundColor(.white.opacity(0.95))
+                    Text("\(rec.exchangeCashProceedsPt) pt").foregroundColor(skin.mainTextColor)
                 }
                 .font(AppTypography.bodyRounded)
             }
             if rec.chodamaBalanceDeltaBalls > 0 {
                 HStack {
-                    Text("貯玉へ加算").foregroundColor(.white.opacity(0.65))
+                    Text("貯玉へ加算").foregroundColor(skin.subTextColor.opacity(0.92))
                     Spacer()
-                    Text("\(rec.chodamaBalanceDeltaBalls) 玉").foregroundColor(.white.opacity(0.95))
+                    Text("\(rec.chodamaBalanceDeltaBalls) 玉").foregroundColor(skin.mainTextColor)
                 }
                 .font(AppTypography.bodyRounded)
             }

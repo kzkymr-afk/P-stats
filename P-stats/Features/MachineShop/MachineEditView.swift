@@ -52,6 +52,9 @@ struct MachineEditView: View, Equatable {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var themeManager: ThemeManager
+
+    private var t: any ApplicationTheme { themeManager.currentTheme }
 
     @Query(sort: \PresetMachine.name) private var allPresets: [PresetMachine]
     @State private var machineName: String = ""
@@ -125,7 +128,7 @@ struct MachineEditView: View, Equatable {
                                     .tint(accent)
                                 Text("ONにすると、他のユーザーがマスタから検索したときにあなたの機種データ（1R純増など）を参照できます。")
                                     .font(.caption)
-                                    .foregroundStyle(.white.opacity(0.7))
+                                    .foregroundStyle(t.subTextColor.opacity(0.88))
                             }
                         }
                         .padding(16)
@@ -267,14 +270,12 @@ struct MachineEditView: View, Equatable {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(AppTypography.panelHeading)
-                .foregroundColor(.white.opacity(0.95))
+                .foregroundColor(t.mainTextColor.opacity(0.95))
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(AppGlassStyle.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+        .pstatsPanelStyle()
     }
 
     private func editPanel<Trailing: View, Content: View>(title: String, @ViewBuilder trailing: () -> Trailing, @ViewBuilder content: () -> Content) -> some View {
@@ -282,7 +283,7 @@ struct MachineEditView: View, Equatable {
             HStack(alignment: .center) {
                 Text(title)
                     .font(AppTypography.panelHeading)
-                    .foregroundColor(.white.opacity(0.95))
+                    .foregroundColor(t.mainTextColor.opacity(0.95))
                 Spacer(minLength: 8)
                 trailing()
             }
@@ -290,9 +291,7 @@ struct MachineEditView: View, Equatable {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(AppGlassStyle.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+        .pstatsPanelStyle()
     }
 
     private func emptyPresetListMessage(keyEmpty: Bool, holderHasRows: Bool) -> String {
@@ -309,7 +308,7 @@ struct MachineEditView: View, Equatable {
     private var presetPanel: some View {
         let keyEmpty = presetSearchText.trimmingCharacters(in: .whitespaces).isEmpty
         let showListArea = showNewest20 || !keyEmpty || isLoadingPresets
-            editPanel(title: "機種を検索", trailing: { InfoIconView(explanation: "設定のマスターデータURLから取得した一覧を、マシン詳細マスタ（index.json）と突き合わせます。ステータスが「対象外」（導入から6年経過後など）の機種は表示しません。検索するか「新台から探す」で表示。選ぶと機種名・メーカー以下が自動入力されます。", tint: .white.opacity(0.6)) }) {
+            editPanel(title: "機種を検索", trailing: { InfoIconView(explanation: "設定のマスターデータURLから取得した一覧を、マシン詳細マスタ（index.json）と突き合わせます。ステータスが「対象外」（導入から6年経過後など）の機種は表示しません。検索するか「新台から探す」で表示。選ぶと機種名・メーカー以下が自動入力されます。", tint: t.subTextColor.opacity(0.65)) }) {
             HStack(spacing: 10) {
                 TextField("機種名で検索", text: $presetSearchText)
                     .textContentType(.none)
@@ -317,7 +316,7 @@ struct MachineEditView: View, Equatable {
                     .focused($isPresetSearchFocused)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 12)
-                    .background(Color.white.opacity(0.08))
+                    .background(AppGlassStyle.inputFieldBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 Button {
                     showNewest20 = true
@@ -352,7 +351,7 @@ struct MachineEditView: View, Equatable {
                     HStack(spacing: 8) {
                         ProgressView()
                             .scaleEffect(0.9)
-                            .tint(.white.opacity(0.8))
+                            .tint(t.mainTextColor.opacity(0.85))
                         Text("マスタを取得しています…")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -378,7 +377,7 @@ struct MachineEditView: View, Equatable {
                                                 .foregroundColor(isSelected ? accent : .primary)
                                             Text(item.displaySubtitle)
                                                 .font(.caption2)
-                                                .foregroundStyle(isSelected ? .white.opacity(0.85) : .secondary)
+                                                .foregroundStyle(isSelected ? t.mainTextColor.opacity(0.9) : .secondary)
                                         }
                                         Spacer()
                                         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
@@ -420,7 +419,7 @@ struct MachineEditView: View, Equatable {
             HStack {
                 Text("機種名")
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
+                    .foregroundColor(t.mainTextColor.opacity(0.92))
                     .frame(width: 100, alignment: .leading)
                 TextField("例: パチンコ〇〇", text: $machineName)
                     .textContentType(.none)
@@ -428,34 +427,34 @@ struct MachineEditView: View, Equatable {
                     .multilineTextAlignment(.trailing)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 12)
-                    .background(Color.white.opacity(0.12))
+                    .background(AppGlassStyle.panelElevatedSecondaryBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             HStack {
                 Text("メーカー")
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
+                    .foregroundColor(t.mainTextColor.opacity(0.92))
                     .frame(width: 100, alignment: .leading)
                 TextField("例: サミー", text: $manufacturerStr)
                     .keyboardType(.default)
                     .multilineTextAlignment(.trailing)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 12)
-                    .background(Color.white.opacity(0.12))
+                    .background(AppGlassStyle.panelElevatedSecondaryBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             HStack(alignment: .firstTextBaseline) {
                 HStack(spacing: 4) {
                     Text("通常時の当選確率")
                         .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.9))
-                    InfoIconView(explanation: "通常回転時の当選確率。1/399.5のように分母のみ入力。機種を検索で選ぶとマスターから入ります。", tint: .white.opacity(0.6))
+                        .foregroundColor(t.mainTextColor.opacity(0.92))
+                    InfoIconView(explanation: "通常回転時の当選確率。1/399.5のように分母のみ入力。機種を検索で選ぶとマスターから入ります。", tint: t.subTextColor.opacity(0.65))
                 }
                 Spacer(minLength: 12)
                 HStack(spacing: 0) {
                     Text("1／")
                         .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundColor(t.mainTextColor.opacity(0.92))
                     DecimalPadTextField(
                         text: Binding(
                             get: {
@@ -468,25 +467,25 @@ struct MachineEditView: View, Equatable {
                         maxIntegerDigits: 6,
                         maxFractionDigits: 3,
                         font: .preferredFont(forTextStyle: .body),
-                        textColor: UIColor.white,
+                        textColor: UIColor(t.mainTextColor),
                         accentColor: UIColor(accent)
                     )
                     .multilineTextAlignment(.trailing)
                     .frame(width: 72)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 10)
-                    .background(Color.white.opacity(0.12))
+                    .background(AppGlassStyle.panelElevatedSecondaryBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
             HStack(alignment: .top) {
                 Text("導入開始日")
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
+                    .foregroundColor(t.mainTextColor.opacity(0.92))
                     .frame(width: 100, alignment: .leading)
                 Text(introductionDateDisplay.trimmingCharacters(in: .whitespaces).isEmpty ? "—" : introductionDateDisplay)
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(introductionDateDisplay.trimmingCharacters(in: .whitespaces).isEmpty ? 0.5 : 0.95))
+                    .foregroundColor(introductionDateDisplay.trimmingCharacters(in: .whitespaces).isEmpty ? t.subTextColor.opacity(0.65) : t.mainTextColor.opacity(0.95))
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
             // DMM機種ID は裏で保持（機種を検索で選んだときに adoptPreset でセット）
@@ -512,7 +511,7 @@ struct MachineEditView: View, Equatable {
             HStack {
                 Text("回転/1000pt（必須）")
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.9))
+                    .foregroundColor(t.mainTextColor.opacity(0.92))
                 Spacer()
                 DecimalPadTextField(
                     text: $border,
@@ -520,19 +519,19 @@ struct MachineEditView: View, Equatable {
                     maxIntegerDigits: 3,
                     maxFractionDigits: 2,
                     font: .preferredFont(forTextStyle: .body),
-                    textColor: UIColor.white,
+                    textColor: UIColor(t.mainTextColor),
                     accentColor: UIColor(accent)
                 )
                     .multilineTextAlignment(.trailing)
                     .frame(width: 72)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 10)
-                    .background(Color.white.opacity(0.12))
+                    .background(AppGlassStyle.panelElevatedSecondaryBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             Text("分析のボーダー比・期待値の集計に使います。手入力で登録する場合は必ず入れてください。店舗の補正後ボーダーは店舗設定に基づき別途計算されます。")
                 .font(.caption)
-                .foregroundColor(.white.opacity(0.72))
+                .foregroundColor(t.subTextColor.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
 
             if dmmMachineURL != nil {
@@ -550,14 +549,14 @@ struct MachineEditView: View, Equatable {
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent.opacity(0.55), lineWidth: 1))
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(.white)
+                .foregroundColor(t.mainTextColor)
                 Text("アプリ内ブラウザで開きます。画面下の左端をタップすると、この登録フォームにすぐ戻れます。")
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.72))
+                    .foregroundColor(t.subTextColor.opacity(0.88))
             } else {
                 Text("マスタの「機種を検索」で機種ID付きのデータを選ぶと、ぱちタウンの公式ページを開けます。")
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.6))
+                    .foregroundStyle(t.subTextColor.opacity(0.72))
             }
         }
     }
@@ -805,7 +804,7 @@ struct MachineEditView: View, Equatable {
                         .fill(
                             !isDMMPanelExpanded
                                 ? accent.opacity(0.22)
-                                : Color.white.opacity(0.06)
+                                : t.formCanvasMutedBackground
                         )
                         .frame(width: edgeW + 8)
                         .padding(.leading, 6)
@@ -814,7 +813,7 @@ struct MachineEditView: View, Equatable {
                         .fill(
                             isDMMPanelExpanded && dmmMachineURL != nil
                                 ? accent.opacity(0.2)
-                                : (dmmMachineURL != nil ? Color.white.opacity(0.05) : Color.white.opacity(0.03))
+                                : (dmmMachineURL != nil ? t.formCanvasMidBackground : t.formCanvasDeepBackground)
                         )
                         .frame(width: edgeW + 8)
                         .padding(.trailing, 6)
@@ -831,13 +830,13 @@ struct MachineEditView: View, Equatable {
                 VStack(spacing: 3) {
                     Text(isDMMPanelExpanded ? "DMM ぱちタウン 表示中" : "機種の登録フォーム")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.92))
+                        .foregroundStyle(t.mainTextColor.opacity(0.95))
                     Text("左端・右端をタップ")
                         .font(.caption2.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.62))
+                        .foregroundStyle(t.subTextColor.opacity(0.9))
                     Text("または横スワイプ")
                         .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.48))
+                        .foregroundStyle(t.subTextColor.opacity(0.75))
                 }
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: max(120, w - edgeW * 2 - 20))
@@ -867,12 +866,7 @@ struct MachineEditView: View, Equatable {
                     }
                 }
         )
-        .background(Color.black.opacity(0.92))
-        .overlay(
-            RoundedRectangle(cornerRadius: 0)
-                .stroke(Color.white.opacity(0.35), lineWidth: 1)
-                .padding(1)
-        )
+        .pstatsChromeSheetBarStyle()
     }
 
     /// 左端：登録画面へ戻る（戻る＝左のメンタルモデルに合わせ chevron.left を手前に）
@@ -890,13 +884,13 @@ struct MachineEditView: View, Equatable {
                     Image(systemName: "doc.text.fill")
                         .font(.system(size: 14, weight: .semibold))
                 }
-                .foregroundStyle(.white.opacity(!isDMMPanelExpanded ? 1.0 : 0.75))
+                .foregroundStyle(t.mainTextColor.opacity(!isDMMPanelExpanded ? 1.0 : 0.78))
                 Text("登録画面")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(t.mainTextColor)
                 Text(!isDMMPanelExpanded ? "いま表示中" : "端をタップで戻る")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.58))
+                    .foregroundStyle(t.subTextColor.opacity(0.88))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.85)
@@ -910,7 +904,7 @@ struct MachineEditView: View, Equatable {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(!isDMMPanelExpanded ? 0.42 : 0.18),
+                                t.chromeSheetBorderColor.opacity(!isDMMPanelExpanded ? 1.0 : 0.55),
                                 accent.opacity(!isDMMPanelExpanded ? 0.35 : 0.12)
                             ],
                             startPoint: .topLeading,
@@ -943,17 +937,17 @@ struct MachineEditView: View, Equatable {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11, weight: .bold))
                 }
-                .foregroundStyle(.white.opacity(urlReady ? (isDMMPanelExpanded ? 1.0 : 0.88) : 0.38))
+                .foregroundStyle(t.mainTextColor.opacity(urlReady ? (isDMMPanelExpanded ? 1.0 : 0.9) : 0.42))
                 Text("DMM")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(urlReady ? 1.0 : 0.45))
+                    .foregroundStyle(t.mainTextColor.opacity(urlReady ? 1.0 : 0.5))
                 Text(
                     urlReady
                         ? (isDMMPanelExpanded ? "いま表示中" : "端をタップで開く")
                         : "先に機種を検索"
                 )
                     .font(.system(size: 10, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(urlReady ? 0.58 : 0.42))
+                    .foregroundStyle(t.subTextColor.opacity(urlReady ? 0.88 : 0.72))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.85)
@@ -968,7 +962,7 @@ struct MachineEditView: View, Equatable {
                         LinearGradient(
                             colors: [
                                 accent.opacity(urlReady && isDMMPanelExpanded ? 0.5 : 0.2),
-                                Color.white.opacity(urlReady ? 0.28 : 0.12)
+                                t.chromeSheetBorderColor.opacity(urlReady ? 0.85 : 0.4)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing

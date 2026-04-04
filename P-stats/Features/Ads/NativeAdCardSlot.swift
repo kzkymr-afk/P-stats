@@ -40,7 +40,12 @@ struct NativeAdCardSlot: UIViewRepresentable {
 
         func buildShellView() -> GADNativeAdView {
             let v = GADNativeAdView()
-            v.backgroundColor = UIColor(red: 0.11, green: 0.12, blue: 0.14, alpha: 0.95)
+            v.backgroundColor = UIColor.pstatsSRGB(
+                red: DesignTokens.Glass.dockBackgroundTopR,
+                green: DesignTokens.Glass.dockBackgroundTopG,
+                blue: DesignTokens.Glass.dockBackgroundTopB,
+                alpha: 0.95
+            )
             v.layer.cornerRadius = 14
             v.clipsToBounds = true
 
@@ -78,7 +83,12 @@ struct NativeAdCardSlot: UIViewRepresentable {
             let cta = UIButton(type: .system)
             var ctaConfig = UIButton.Configuration.plain()
             ctaConfig.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14)
-            ctaConfig.baseForegroundColor = UIColor(red: 0.25, green: 0.85, blue: 0.95, alpha: 1)
+            ctaConfig.baseForegroundColor = UIColor.pstatsSRGB(
+                red: DesignTokens.NativeAd.ctaForegroundR,
+                green: DesignTokens.NativeAd.ctaForegroundG,
+                blue: DesignTokens.NativeAd.ctaForegroundB,
+                alpha: 1
+            )
             ctaConfig.background.backgroundColor = UIColor.white.withAlphaComponent(0.1)
             ctaConfig.background.cornerRadius = 8
             ctaConfig.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in

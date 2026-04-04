@@ -8,6 +8,7 @@ enum AppPanelVariant {
 }
 
 struct AppGlassPanel<Content: View>: View {
+    @EnvironmentObject private var themeManager: ThemeManager
 
     var variant: AppPanelVariant = .card
     var padding: CGFloat? = nil
@@ -34,21 +35,16 @@ struct AppGlassPanel<Content: View>: View {
         cornerRadius ?? (variant == .row ? DesignTokens.CornerRadius.card : DesignTokens.CornerRadius.panel)
     }
 
-    private var background: Color {
-        switch variant {
-        case .card: return AppGlassStyle.cardBackground
-        case .row: return AppGlassStyle.rowBackground
-        }
-    }
+    private var rowBackground: Color { themeManager.currentTheme.listRowBackground }
 
     var body: some View {
-        content()
-            .padding(resolvedPadding)
-            .background(background, in: RoundedRectangle(cornerRadius: resolvedCornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: resolvedCornerRadius)
-                    .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-            )
+        let padded = content().padding(resolvedPadding)
+        switch variant {
+        case .card:
+            padded.pstatsPanelStyle()
+        case .row:
+            padded.background(rowBackground, in: RoundedRectangle(cornerRadius: resolvedCornerRadius, style: .continuous))
+        }
     }
 }
 
@@ -65,4 +61,3 @@ extension View {
         modifier(PStatsPanelModifier(variant: variant))
     }
 }
-

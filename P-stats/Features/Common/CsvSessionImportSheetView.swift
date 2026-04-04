@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 struct CsvSessionImportSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var themeManager: ThemeManager
     @Query(sort: \Machine.name) private var machines: [Machine]
     @Query(sort: \Shop.name) private var shops: [Shop]
     @Query(sort: \GameSession.date, order: .reverse) private var existingSessions: [GameSession]
@@ -214,7 +215,7 @@ struct CsvSessionImportSheetView: View {
             List {
                 ForEach(parsedRows) { row in
                     rowCell(row)
-                        .listRowBackground(Color.white.opacity(0.06))
+                        .listRowBackground(Color.white.opacity(DesignTokens.Surface.WhiteOnDark.low))
                 }
             }
             .listStyle(.plain)
@@ -243,27 +244,27 @@ struct CsvSessionImportSheetView: View {
                         .font(.caption2)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.orange.opacity(0.18))
-                        .foregroundColor(.orange.opacity(0.95))
+                        .background(themeManager.currentTheme.cautionForegroundColor.opacity(DesignTokens.Surface.AccentTint.warningPanelBackground))
+                        .foregroundColor(themeManager.currentTheme.cautionForegroundColor.opacity(0.95))
                         .clipShape(Capsule())
                 }
                 Spacer()
                 if !row.canImport {
                     Text("要確認")
                         .font(.caption2)
-                        .foregroundColor(.orange)
+                        .foregroundColor(themeManager.currentTheme.cautionForegroundColor)
                 }
             }
             if !row.csvMachineName.isEmpty || !row.csvShopName.isEmpty {
                 Text("CSV: \(row.csvMachineName) ／ \(row.csvShopName)")
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.55))
+                    .foregroundColor(Color.white.opacity(DesignTokens.Surface.WhiteOnDark.captionOnPanel))
             }
             if !row.issues.isEmpty {
                 ForEach(row.issues, id: \.self) { iss in
                     Text(iss)
                         .font(.caption2)
-                        .foregroundColor(.orange.opacity(0.95))
+                        .foregroundColor(themeManager.currentTheme.cautionForegroundColor.opacity(0.95))
                 }
             }
             if row.canImport {

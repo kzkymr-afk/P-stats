@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - プロモード（旧：省エネモードを全面改修）
 /// 上半分＝現金投資、下半分＝持ち玉投資。スワイプは左→右に統一。下部に大当たりボタン。ゲームカウントはタップで+1。
 struct ProModeView: View {
+    @EnvironmentObject private var themeManager: ThemeManager
     @Bindable var log: GameLog
     /// true＝右手操作、false＝左手操作（スワイプは左手モードでも左→右に統一）
     var rightHandMode: Bool = false
@@ -154,11 +155,7 @@ struct ProModeView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color.black.opacity(0.85), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(AppGlassStyle.strokeGradient, lineWidth: 1)
-                )
+                .pstatsPanelStyle()
             }
         }
         .padding(.horizontal, 12)
@@ -215,7 +212,7 @@ struct ProModeView: View {
             }
             .buttonStyle(.plain)
             .frame(width: rightW, height: rowH)
-            .background(Color.black.opacity(0.2))
+            .background(Color.black.opacity(DesignTokens.Surface.PowerSaving.surroundingDim))
             .overlay(RoundedRectangle(cornerRadius: 0).stroke(cyan.opacity(0.35), lineWidth: 1))
             .accessibilityLabel("前回当選から \(log.gamesSinceLastWin) ゲーム")
             .accessibilityHint("タップで1増やします")
@@ -269,7 +266,7 @@ struct ProModeView: View {
             .allowsHitTesting(false)
         }
         .frame(height: max(1, height))
-        .background(Color.black.opacity(0.2))
+        .background(Color.black.opacity(DesignTokens.Surface.PowerSaving.surroundingDim))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(cyan.opacity(0.35), lineWidth: 1.5)

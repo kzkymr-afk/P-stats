@@ -143,7 +143,8 @@ private struct HelpItemDetailView: View {
 
 private struct HelpTipBox: View {
     let markdown: String
-    private var cyan: Color { AppGlassStyle.accent }
+    @EnvironmentObject private var themeManager: ThemeManager
+    private var cyan: Color { themeManager.currentTheme.accentColor }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -152,17 +153,12 @@ private struct HelpTipBox: View {
                     .foregroundStyle(cyan)
                 Text("補足")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(AppGlassStyle.textPrimary)
+                    .foregroundStyle(themeManager.currentTheme.mainTextColor)
             }
             HelpMarkdownBlock(markdown: markdown)
         }
         .padding(12)
-        .background(AppGlassStyle.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(cyan.opacity(0.25), lineWidth: 1)
-        )
+        .pstatsPanelStyle()
     }
 }
 

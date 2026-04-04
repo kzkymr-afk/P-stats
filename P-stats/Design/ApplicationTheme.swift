@@ -3,17 +3,37 @@ import SwiftUI
 import UIKit
 #endif
 
+// MARK: - シャドウ仕様（テーマ駆動）
+
+/// インライン `.shadow(color:radius:x:y:)` を置き換えるための値束ね。
+struct ThemeShadowSpec: Equatable {
+    var color: Color
+    var radius: CGFloat
+    var x: CGFloat
+    var y: CGFloat
+
+    static let none = ThemeShadowSpec(color: .clear, radius: 0, x: 0, y: 0)
+}
+
+/// 実戦「スワイプで情報」バー上下の縁発光の見た目。スキンごとに切り替える。
+enum PlaySwipeHintEdgeGlowStyle: Equatable, Sendable {
+    /// グラス既定：アクセントに沿った適度な縁光
+    case standard
+    /// ネオン強調：半径・不透明度を上げる
+    case neon
+    /// 和風・筆跡向け：墨色の広いにじみ（将来スキン用）
+    case inkWash
+    /// 縁の発光なし
+    case minimal
+}
+
 // MARK: - スキン（見た目）の契約
-//
-// ご要望の「AppTheme プロトコル」に相当する型です。
-// 既に `Core/Models.swift` の `enum AppTheme`（表示モード設定）が存在するため、
-// プロトコル名は `ApplicationTheme` とし、ビルド衝突を避けています。
 
 /// どのスキンでも共通して定義しておく色・形状・フォント識別子。
 protocol ApplicationTheme {
     /// メインのアクセント色
     var accentColor: Color { get }
-    /// パネルやカードの背景色
+    /// パネルやカードの背景色（主面）
     var panelBackground: Color { get }
     /// 標準的な文字色
     var mainTextColor: Color { get }
@@ -26,13 +46,50 @@ protocol ApplicationTheme {
     /// メインで使用するフォント名（システムフォントの場合は識別用の論理名）
     var fontName: String { get }
 
-    // MARK: - 実戦・インサイト（セマンティック色）
+    // MARK: - サーフェス（白/黒インラインの置き換え）
 
-    /// 実戦の「通常」系カウント・状態表示（旧 `AppGlassStyle.normalColor`）
+    /// 主パネル上の二次面（旧 `Color.white.opacity(0.1)` 相当）
+    var panelSecondaryBackground: Color { get }
+    /// 数値入力・フォーム行の下地
+    var inputFieldBackground: Color { get }
+    /// `panelSecondaryBackground` より一段明るい帯（フォーム内区画など）
+    var panelElevatedSecondaryBackground: Color { get }
+    /// リスト行・インサイト行など（旧 `AppGlassStyle.rowBackground`）
+    var listRowBackground: Color { get }
+
+    /// 暗背景上の主オーバーレイ（`Color.white.opacity` の役割代替）
+    var surfacePrimary: Color { get }
+    /// 暗背景上の副オーバーレイ
+    var surfaceSecondary: Color { get }
+    /// 下帯・モーダル周りのスクリム
+    var overlayDark: Color { get }
+    /// 欠損・注意の前景（旧システムオレンジ相当）
+    var cautionForegroundColor: Color { get }
+    /// 強調シアン系（旧 `Color.cyan` 相当・薄塗りボタン等）
+    var highlightAccentColor: Color { get }
+
+    // MARK: - 線・区切り（グラス UI 共通）
+
+    var hairlineDividerColor: Color { get }
+    var gaugeLineColor: Color { get }
+    var chartGridLineColor: Color { get }
+
+    // MARK: - セマンティック（実戦・アクション）
+
+    /// 投資・支出側の強調（現金・持ち玉ゾーン等）
+    var investmentColor: Color { get }
+    /// 回収・プラス方向（金〜アンバー）
+    var recoveryColor: Color { get }
+    /// 当たり・大当たりのネオン的強調
+    var jackpotColor: Color { get }
+
+    // MARK: - 実戦・インサイト（既存セマンティック）
+
+    /// 実戦の「通常」系カウント・状態表示
     var playNormalAccent: Color { get }
-    /// RUSH 系の強調（旧 `AppGlassStyle.rushColor`）
+    /// RUSH 系の強調
     var playRushAccent: Color { get }
-    /// 投資ゾーン見出し（現金・持ち玉）
+    /// 投資ゾーン見出し（`investmentColor` と揃える想定）
     var playInvestmentHeadline: Color { get }
     /// 実戦カード類の枠線（単色）
     var playCardOutline: Color { get }
@@ -40,26 +97,246 @@ protocol ApplicationTheme {
     var insightDrawerBackdrop: Color { get }
     /// インサイト内の区画・行の面
     var insightSectionSurface: Color { get }
+
+    // MARK: - シャドウ（インライン `.shadow` の置き換え）
+
+    /// カード／立体的ボタン（実戦 `playButtonChrome` 等）
+    var cardShadow: ThemeShadowSpec { get }
+    /// グリッドボタン・インタラクティブ面（非押下）
+    var interactiveSurfaceShadowRest: ThemeShadowSpec { get }
+    /// グリッドボタン・インタラクティブ面（押下中）
+    var interactiveSurfaceShadowPressed: ThemeShadowSpec { get }
+    /// リスト行が選択中の外光
+    var listSelectionShadow: ThemeShadowSpec { get }
+    /// 履歴グラフのバー上ラベルなど
+    var compactLabelShadow: ThemeShadowSpec { get }
+    /// スライドレールなど軽い浮き
+    var railShadow: ThemeShadowSpec { get }
+    /// スワイプヒントバー縁の演出種別（`playSwipeHintLeadingShadow` / `Trailing` の解決に使う）
+    var playSwipeHintEdgeGlowStyle: PlaySwipeHintEdgeGlowStyle { get }
+
+    // MARK: - スプラッシュ（起動画面）
+
+    var splashTitleDepthShadow: ThemeShadowSpec { get }
+    var splashTitleGlowShadow: ThemeShadowSpec { get }
+    var splashSubtitleDepthShadow: ThemeShadowSpec { get }
+
+    // MARK: - 分析ダッシュボード・Swift Charts
+
+    var navigationBarBackdropColor: Color { get }
+    var bottomToolbarScrimColor: Color { get }
+    var analyticsAuxiliaryListRowColor: Color { get }
+    var chartRuleMarkMutedColor: Color { get }
+    var chartMajorGridColor: Color { get }
+    var chartMediumGridColor: Color { get }
+    var chartMinorGridColor: Color { get }
+    var chartFaintGridColor: Color { get }
+    var chartAxisTickColor: Color { get }
+    var chartZeroBaselineColor: Color { get }
+    var chartYAxisLabelColor: Color { get }
+    var chartYAxisLabelSoftColor: Color { get }
+    var chartXAxisLabelColor: Color { get }
+    var chartXAxisCaptionColor: Color { get }
+    var analyticsDatePillBackground: Color { get }
+    var analyticsSeparatorLineColor: Color { get }
+    var chartLossBarColor: Color { get }
+
+    // MARK: - フォーム・内蔵ブラウザ系の深い面
+
+    var formCanvasDeepBackground: Color { get }
+    var formCanvasMutedBackground: Color { get }
+    var chromeSheetBackdropColor: Color { get }
+    var chromeSheetBorderColor: Color { get }
+
+    /// フォーム深層面の中間（例: 0.05 相当）
+    var formCanvasMidBackground: Color { get }
+    /// 収支トレンドの「期待値」折れ線・棒の基調色
+    var chartTheoreticalAccentColor: Color { get }
+    /// 累計チャートの欠損側バンド
+    var analyticsTrendDeficitBandColor: Color { get }
 }
 
-/// 現行の `DesignTokens` / `AppGlassStyle` / `AppDesignSystem` と同じ値を束ねたデフォルトスキン。
-struct DefaultTheme: ApplicationTheme {
-    var accentColor: Color { AppGlassStyle.accent }
-    var panelBackground: Color { AppGlassStyle.cardBackground }
-    var mainTextColor: Color { AppGlassStyle.textPrimary }
-    var subTextColor: Color { AppGlassStyle.textSecondary }
-    var cornerRadius: CGFloat { DesignTokens.CornerRadius.panel }
-    var borderWidth: CGFloat { AppDesignSystem.CardStyle.strokeLineWidth }
+// MARK: - デフォルト（DesignTokens / AppDesignSystem がソース・AppGlassStyle はここ経由）
 
-    /// SF の Rounded デザイン（`Font.system(..., design: .rounded)` と整合）。カスタムフォント差し替え時は PostScript 名などに置き換え。
+struct DefaultTheme: ApplicationTheme {
+    var accentColor: Color { AppDesignSystem.Palette.accent }
+    var panelBackground: Color { Color.black.opacity(DesignTokens.Opacity.cardBackground) }
+    var mainTextColor: Color { AppDesignSystem.Palette.textPrimary }
+    var subTextColor: Color { AppDesignSystem.Palette.textSecondary }
+    var cornerRadius: CGFloat { DesignTokens.CornerRadius.panel }
+    var borderWidth: CGFloat { DesignTokens.Thickness.hairline }
+
     var fontName: String { "SF Pro Rounded" }
 
-    var playNormalAccent: Color { AppGlassStyle.normalColor }
-    var playRushAccent: Color { AppGlassStyle.rushColor }
-    var playInvestmentHeadline: Color { Color(red: 1.0, green: 0.35, blue: 0.32) }
-    var playCardOutline: Color { Color.white.opacity(0.14) }
-    var insightDrawerBackdrop: Color { AppGlassStyle.background }
-    var insightSectionSurface: Color { AppGlassStyle.rowBackground }
+    var surfacePrimary: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.medium) }
+    var surfaceSecondary: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.extraLow) }
+    var overlayDark: Color { Color.black.opacity(DesignTokens.Surface.BlackOverlay.bottomToolbar) }
+    var cautionForegroundColor: Color {
+        Color(
+            red: DesignTokens.Home.statusWarningR,
+            green: DesignTokens.Home.statusWarningG,
+            blue: DesignTokens.Home.statusWarningB
+        )
+    }
+    var highlightAccentColor: Color {
+        Color(
+            red: DesignTokens.Semantic.Standard.highlightAccentR,
+            green: DesignTokens.Semantic.Standard.highlightAccentG,
+            blue: DesignTokens.Semantic.Standard.highlightAccentB
+        )
+    }
+
+    var panelSecondaryBackground: Color { Color.white.opacity(DesignTokens.Opacity.panelSecondaryOverlay) }
+    var inputFieldBackground: Color { Color.white.opacity(DesignTokens.Opacity.inputFieldOverlay) }
+    var panelElevatedSecondaryBackground: Color { Color.white.opacity(DesignTokens.Opacity.panelElevatedOverlay) }
+    var listRowBackground: Color { Color.black.opacity(DesignTokens.Opacity.rowBackground) }
+
+    var hairlineDividerColor: Color { AppDesignSystem.Palette.divider }
+    var gaugeLineColor: Color { AppDesignSystem.Palette.gaugeLine }
+    var chartGridLineColor: Color { AppDesignSystem.Palette.chartGrid }
+
+    var investmentColor: Color {
+        Color(
+            red: DesignTokens.Semantic.Standard.investmentR,
+            green: DesignTokens.Semantic.Standard.investmentG,
+            blue: DesignTokens.Semantic.Standard.investmentB
+        )
+    }
+    var recoveryColor: Color {
+        Color(
+            red: DesignTokens.Semantic.Standard.recoveryR,
+            green: DesignTokens.Semantic.Standard.recoveryG,
+            blue: DesignTokens.Semantic.Standard.recoveryB
+        )
+    }
+    var jackpotColor: Color { AppDesignSystem.Palette.accent }
+
+    var playNormalAccent: Color { Color(hex: DesignTokens.Color.normalHex) }
+    var playRushAccent: Color { Color(hex: DesignTokens.Color.rushHex) }
+    var playInvestmentHeadline: Color { investmentColor }
+    var playCardOutline: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.outlineSubtle) }
+    var insightDrawerBackdrop: Color { AppDesignSystem.Palette.background }
+    var insightSectionSurface: Color { listRowBackground }
+
+    var cardShadow: ThemeShadowSpec {
+        ThemeShadowSpec(
+            color: Color.black.opacity(DesignTokens.Surface.BlackOverlay.shadowCard),
+            radius: DesignTokens.Elevation.shadowRadiusCard,
+            x: 0,
+            y: DesignTokens.Elevation.shadowYCard
+        )
+    }
+
+    var interactiveSurfaceShadowRest: ThemeShadowSpec {
+        ThemeShadowSpec(
+            color: Color.black.opacity(DesignTokens.Surface.BlackOverlay.shadowMedium),
+            radius: DesignTokens.Elevation.shadowRadiusInteractive,
+            x: 0,
+            y: DesignTokens.Elevation.shadowYCard
+        )
+    }
+
+    var interactiveSurfaceShadowPressed: ThemeShadowSpec {
+        ThemeShadowSpec(
+            color: Color.black.opacity(DesignTokens.Surface.BlackOverlay.shadowLight),
+            radius: DesignTokens.Elevation.shadowRadiusPressed,
+            x: 0,
+            y: DesignTokens.Elevation.shadowYPressed
+        )
+    }
+
+    var listSelectionShadow: ThemeShadowSpec {
+        ThemeShadowSpec(
+            color: accentColor.opacity(DesignTokens.Surface.AccentTint.listSelectionGlow),
+            radius: DesignTokens.Elevation.shadowRadiusListSelection,
+            x: 0,
+            y: 0
+        )
+    }
+
+    var compactLabelShadow: ThemeShadowSpec {
+        ThemeShadowSpec(
+            color: Color.black.opacity(DesignTokens.Surface.BlackOverlay.shadowCompact),
+            radius: DesignTokens.Elevation.shadowRadiusCompactLabel,
+            x: 0,
+            y: DesignTokens.Elevation.shadowYCompactLabel
+        )
+    }
+
+    var railShadow: ThemeShadowSpec {
+        ThemeShadowSpec(
+            color: Color.black.opacity(DesignTokens.Surface.BlackOverlay.shadowLight),
+            radius: DesignTokens.Elevation.shadowRadiusRail,
+            x: 0,
+            y: DesignTokens.Elevation.shadowYRail
+        )
+    }
+
+    var splashTitleDepthShadow: ThemeShadowSpec {
+        ThemeShadowSpec(
+            color: Color.black.opacity(DesignTokens.Surface.BlackOverlay.splashDepthStrong),
+            radius: DesignTokens.Elevation.shadowRadiusCompactLabel,
+            x: 0,
+            y: DesignTokens.Elevation.shadowYSplashDepth
+        )
+    }
+
+    var splashTitleGlowShadow: ThemeShadowSpec {
+        ThemeShadowSpec(
+            color: accentColor.opacity(DesignTokens.Surface.AccentTint.splashTitleGlow),
+            radius: DesignTokens.Elevation.shadowRadiusSplashTitle,
+            x: 0,
+            y: 0
+        )
+    }
+
+    var splashSubtitleDepthShadow: ThemeShadowSpec {
+        ThemeShadowSpec(
+            color: Color.black.opacity(DesignTokens.Surface.BlackOverlay.splashDepthWeak),
+            radius: DesignTokens.Elevation.shadowRadiusSplashSubtitle,
+            x: 0,
+            y: 0
+        )
+    }
+
+    var navigationBarBackdropColor: Color { Color.black.opacity(DesignTokens.Surface.BlackOverlay.navigationBar) }
+    var bottomToolbarScrimColor: Color { Color.black.opacity(DesignTokens.Surface.BlackOverlay.bottomToolbar) }
+    var analyticsAuxiliaryListRowColor: Color { Color.black.opacity(DesignTokens.Surface.BlackOverlay.auxiliaryRow) }
+    var chartRuleMarkMutedColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartRule) }
+    var chartMajorGridColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartMajor) }
+    var chartMediumGridColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartMedium) }
+    var chartMinorGridColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartMinor) }
+    var chartFaintGridColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartFaint) }
+    var chartAxisTickColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartAxis) }
+    var chartZeroBaselineColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartAxis) }
+    var chartYAxisLabelColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartLabelY) }
+    var chartYAxisLabelSoftColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartLabelYSoft) }
+    var chartXAxisLabelColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartLabelX) }
+    var chartXAxisCaptionColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartCaptionX) }
+    var analyticsDatePillBackground: Color { Color.black.opacity(DesignTokens.Surface.BlackOverlay.datePill) }
+    var analyticsSeparatorLineColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.separatorFaint) }
+    var chartLossBarColor: Color { AppDesignSystem.Palette.loss }
+
+    var formCanvasDeepBackground: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.formDeep) }
+    var formCanvasMutedBackground: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.formMuted) }
+    var chromeSheetBackdropColor: Color { Color.black.opacity(DesignTokens.Surface.BlackOverlay.chromeBackdrop) }
+    var chromeSheetBorderColor: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chromeBorder) }
+
+    var formCanvasMidBackground: Color { Color.white.opacity(DesignTokens.Surface.WhiteOnDark.formMid) }
+    var chartTheoreticalAccentColor: Color {
+        Color(
+            red: DesignTokens.Semantic.Standard.theoreticalAccentR,
+            green: DesignTokens.Semantic.Standard.theoreticalAccentG,
+            blue: DesignTokens.Semantic.Standard.theoreticalAccentB
+        )
+    }
+    var analyticsTrendDeficitBandColor: Color {
+        Color(
+            red: DesignTokens.Color.edgeGlowRedR,
+            green: DesignTokens.Color.edgeGlowRedG,
+            blue: DesignTokens.Color.edgeGlowRedB
+        ).opacity(0.22)
+    }
 }
 
 extension DefaultTheme {
@@ -88,7 +365,6 @@ extension ApplicationTheme {
     }
 
     /// PostScript 名など **実フォント名** を `fontName` にしたスキン用。バンドルに無い名前のときはシステム系へフォールバックし、黙って潰れるのを防ぐ。
-    /// - Note: カスタムフォント追加手順: フォントファイルをプロジェクトに追加 → Target Membership をオン → Info.plist の `UIAppFonts` にファイル名を列挙 → 実行時に `UIFont.familyNames` 等で実名を確認して `fontName` に設定。
     func themedFontResolvingCustomName(size: CGFloat, weight: Font.Weight = .regular, monospaced: Bool = false) -> Font {
         let n = fontName.trimmingCharacters(in: .whitespacesAndNewlines)
         let isLogicalToken = n.isEmpty
@@ -106,55 +382,91 @@ extension ApplicationTheme {
         #endif
         return themedFont(size: size, weight: weight, monospaced: monospaced)
     }
-}
 
-// MARK: - スキン識別子（設定の保存・Picker 用）
+    /// 選択中でないときは影なし、選択中は `listSelectionShadow`。
+    func listSelectionShadowSpec(isSelected: Bool) -> ThemeShadowSpec {
+        isSelected ? listSelectionShadow : .none
+    }
 
-enum PStatsSkin: String, CaseIterable, Identifiable, Hashable {
-    /// 現行のグラス／DesignTokens ベース
-    case standard = "standard"
-    /// 近未来・サイバーパンク（角ばり・ネオン枠）
-    case neonCyber = "neonCyber"
+    var playSwipeHintEdgeGlowStyle: PlaySwipeHintEdgeGlowStyle { .standard }
 
-    var id: String { rawValue }
-
-    static let storageKey = "pstatsApplicationSkin"
-
-    var title: String {
-        switch self {
-        case .standard: return "デフォルト（グラス）"
-        case .neonCyber: return "ネオンサイバー"
+    /// 実戦スワイプヒント左（通常系アクセント）の縁発光
+    var playSwipeHintLeadingShadow: ThemeShadowSpec {
+        switch playSwipeHintEdgeGlowStyle {
+        case .standard:
+            return ThemeShadowSpec(
+                color: playNormalAccent.opacity(0.7),
+                radius: DesignTokens.Elevation.swipeHintRadiusStandard,
+                x: 0,
+                y: 0
+            )
+        case .neon:
+            return ThemeShadowSpec(
+                color: playNormalAccent.opacity(0.9),
+                radius: DesignTokens.Elevation.swipeHintRadiusNeon,
+                x: 0,
+                y: 1
+            )
+        case .inkWash:
+            let ink = Color(
+                red: DesignTokens.PlaySessionChrome.swipeHintInkWashR,
+                green: DesignTokens.PlaySessionChrome.swipeHintInkWashG,
+                blue: DesignTokens.PlaySessionChrome.swipeHintInkWashB
+            )
+            return ThemeShadowSpec(color: ink.opacity(0.52), radius: DesignTokens.Elevation.swipeHintInkWashRadius, x: 0, y: 2)
+        case .minimal:
+            return .none
         }
     }
 
-    func resolveTheme() -> any ApplicationTheme {
-        switch self {
-        case .standard: return DefaultTheme.shared
-        case .neonCyber: return NeonCyberTheme.shared
+    /// 実戦スワイプヒント右（RUSH 系アクセント）の縁発光
+    var playSwipeHintTrailingShadow: ThemeShadowSpec {
+        switch playSwipeHintEdgeGlowStyle {
+        case .standard:
+            return ThemeShadowSpec(
+                color: playRushAccent.opacity(0.7),
+                radius: DesignTokens.Elevation.swipeHintRadiusStandard,
+                x: 0,
+                y: 0
+            )
+        case .neon:
+            return ThemeShadowSpec(
+                color: playRushAccent.opacity(0.88),
+                radius: DesignTokens.Elevation.swipeHintRadiusNeon,
+                x: 0,
+                y: -1
+            )
+        case .inkWash:
+            let warmInk = Color(
+                red: DesignTokens.PlaySessionChrome.swipeHintInkWashTrailingR,
+                green: DesignTokens.PlaySessionChrome.swipeHintInkWashTrailingG,
+                blue: DesignTokens.PlaySessionChrome.swipeHintInkWashTrailingB
+            )
+            return ThemeShadowSpec(color: warmInk.opacity(0.48), radius: 13, x: 0, y: -2)
+        case .minimal:
+            return .none
         }
     }
-}
 
-// MARK: - ネオンサイバー（別スキン）
+    /// スランプチャート枠のグラデーション（`strokeTint` は連チャン系アクセント）
+    func slumpChartBorderGradient(strokeTint: Color) -> LinearGradient {
+        LinearGradient(
+            colors: [
+                Color.white.opacity(0.46),
+                strokeTint.opacity(0.35),
+                Color.white.opacity(0.09)
+            ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
 
-struct NeonCyberTheme: ApplicationTheme {
-    var accentColor: Color { Color(red: 191 / 255, green: 0, blue: 1) }
-    var panelBackground: Color { .black }
-    var mainTextColor: Color { Color(red: 0.94, green: 0.96, blue: 1) }
-    var subTextColor: Color { Color(red: 0.55, green: 0.48, blue: 0.82) }
-    var cornerRadius: CGFloat { 0 }
-    var borderWidth: CGFloat { 2 }
-    /// システムの標準サンセリフ（カスタム PostScript 名に依存しない）
-    var fontName: String { "system.default" }
-
-    var playNormalAccent: Color { Color(hex: "00FFFF") }
-    var playRushAccent: Color { Color(red: 191 / 255, green: 0, blue: 1) }
-    var playInvestmentHeadline: Color { Color(red: 1.0, green: 0.42, blue: 0.38) }
-    var playCardOutline: Color { Color(red: 191 / 255, green: 0, blue: 1).opacity(0.72) }
-    var insightDrawerBackdrop: Color { Color.black }
-    var insightSectionSurface: Color { Color.white.opacity(0.07) }
-}
-
-extension NeonCyberTheme {
-    static let shared = NeonCyberTheme()
+    /// スランプチャートのゼロ線（`chartZeroBaselineColor` よりやや弱い見た目に寄せる場合は調整）
+    var slumpChartZeroLineColor: Color { chartZeroBaselineColor }
+    var slumpChartTitleColor: Color { mainTextColor }
+    var slumpChartAxisLabelStrongColor: Color { subTextColor.opacity(0.88) }
+    var slumpChartAxisLabelMidColor: Color { subTextColor.opacity(0.74) }
+    var slumpChartXEndLabelColor: Color { subTextColor.opacity(0.74) }
+    /// 一覧行用の薄い面ではなく、カードパネルと同じ主面に揃える。
+    var slumpChartPanelFillColor: Color { panelBackground }
 }

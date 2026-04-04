@@ -410,7 +410,11 @@ enum LaunchAppearance {
         blue: DesignTokens.Color.accentB
     )
     /// グラデーション終了・黒
-    static let launchEndColor = Color(red: 28/255, green: 28/255, blue: 30/255)
+    static let launchEndColor = Color(
+        red: DesignTokens.System.rootBackgroundR,
+        green: DesignTokens.System.rootBackgroundG,
+        blue: DesignTokens.System.rootBackgroundB
+    )
     /// 従来の単色用（他で参照されている場合）
     static let iconBackgroundColor = launchEndColor
 }
@@ -439,11 +443,19 @@ enum AppTheme: String, CaseIterable, Codable {
     }
 
     var backgroundColor: Color {
-        Color(red: 0.02, green: 0.02, blue: 0.05)
+        Color(
+            red: DesignTokens.System.appChromeBackgroundR,
+            green: DesignTokens.System.appChromeBackgroundG,
+            blue: DesignTokens.System.appChromeBackgroundB
+        )
     }
 
     var accentColor: Color {
-        .cyan
+        Color(
+            red: DesignTokens.Semantic.Standard.highlightAccentR,
+            green: DesignTokens.Semantic.Standard.highlightAccentG,
+            blue: DesignTokens.Semantic.Standard.highlightAccentB
+        )
     }
 
     var textColor: Color {
@@ -461,12 +473,12 @@ enum AppTheme: String, CaseIterable, Codable {
     }
 
     var playPanelBackground: Color {
-        Color.black.opacity(0.93)
+        Color.black.opacity(DesignTokens.Surface.BlackOverlay.playLogPanelFill)
     }
 
     /// ドロワー背後のスクリーム
     var playDrawerScrim: Color {
-        Color.black.opacity(0.35)
+        Color.black.opacity(DesignTokens.Surface.BlackOverlay.playIntegerPadWell)
     }
 
     /// 実戦ヘッダー・パネル上の主テキスト
@@ -475,11 +487,11 @@ enum AppTheme: String, CaseIterable, Codable {
     }
 
     var playLabelSecondary: Color {
-        .white.opacity(0.75)
+        Color.white.opacity(DesignTokens.Surface.WhiteOnDark.playSecondaryText)
     }
 
     var playMutedIcon: Color {
-        .white.opacity(0.35)
+        Color.white.opacity(DesignTokens.Surface.WhiteOnDark.playMutedGlyph)
     }
 }
 
@@ -523,6 +535,13 @@ final class GameSession {
     var isCashflowOnlyRecord: Bool = false
     /// 詳細編集の「初当たりブロック」JSON（空＝未使用・旧フォーム相当）
     var editSessionPhasesJSON: String = ""
+    /// 履歴スランプグラフ用：保存時点の `WinRecord` / `LendingRecord`（ISO8601 JSON）。空＝旧データはフェーズ／2点近似
+    var slumpChartWinRecordsJSON: String = ""
+    var slumpChartLendingRecordsJSON: String = ""
+    var slumpChartInitialHoldings: Int = 0
+    var slumpChartInitialDisplayRotation: Int = 0
+    /// 0 のときは `SessionSlumpChartForSessionView` 側で 125 を仮定
+    var slumpChartHoldingsBallsPerTap: Int = 0
 
     init(machineName: String, shopName: String, manufacturerName: String = "", inputCash: Int, totalHoldings: Int, normalRotations: Int, totalUsedBalls: Int, payoutCoefficient: Double, totalRealCost: Double = 0, expectationRatioAtSave: Double = 0, rushWinCount: Int = 0, normalWinCount: Int = 0, formulaBorderPer1k: Double = 0) {
         self.machineName = machineName
@@ -608,6 +627,19 @@ extension GameSession {
 
     /// 実戦で記録した当選回数の合計（通常・RUSH）
     var totalRecordedWinCount: Int { rushWinCount + normalWinCount }
+
+    /// 履歴スランプ用に保存した当たり・投資ログをデコード（失敗時は空）。
+    func decodedSlumpWinsAndLendings() -> ([WinRecord], [LendingRecord]) {
+        let wins: [WinRecord] = Self.decodeSlumpJSON(slumpChartWinRecordsJSON, as: [WinRecord].self) ?? []
+        let lendings: [LendingRecord] = Self.decodeSlumpJSON(slumpChartLendingRecordsJSON, as: [LendingRecord].self) ?? []
+        return (wins, lendings)
+    }
+
+    private static func decodeSlumpJSON<T: Decodable>(_ json: String, as: T.Type) -> T? {
+        guard !json.isEmpty, let data = json.data(using: .utf8) else { return nil }
+        if let v = try? JSONDecoder.slumpChart.decode(T.self, from: data) { return v }
+        return try? JSONDecoder.slumpChartLenient.decode(T.self, from: data)
+    }
 
     /// 加重回転率・グループ平均回転率に含める
     var participatesInRotationRateAnalytics: Bool { !excludesFromRotationExpectationAnalytics }

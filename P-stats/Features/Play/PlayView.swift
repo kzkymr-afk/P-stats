@@ -249,8 +249,11 @@ struct PlayView: View {
     private var focusBg: Color { theme.playScreenBase }
     /// `ThemeManager` のスキンアクセント（枠・強調の基準色）
     private var focusAccent: Color { themeManager.currentTheme.accentColor }
-    /// 表示のみのパネル（タップ不可）— 背景を濃くしてカスタム壁紙上でも文字を読みやすくする
-    private var playPanelBackground: Color { theme.playPanelBackground }
+    /// ホームの `pstatsPanelStyle` と同じ主面（`DefaultTheme.panelBackground`）
+    private var playCardBackground: Color { skin.panelBackground }
+    /// ホームパネルと同じ角丸・枠太さ
+    private var playCardCorner: CGFloat { max(0, panelRadius) }
+    private var playCardBorderWidth: CGFloat { max(panelStrokeWidth, 1) }
     private let playPanelTintOverlayOpacity: Double = 0.06
     /// 角丸・枠線は `ApplicationTheme` に集約
     private var skin: any ApplicationTheme { themeManager.currentTheme }
@@ -443,9 +446,11 @@ struct PlayView: View {
         )
         .padding(6)
         .frame(maxWidth: .infinity)
-        .background(playPanelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: panelRadius))
-        .overlay(RoundedRectangle(cornerRadius: panelRadius).stroke(glassStroke(tint: focusAccent), lineWidth: panelStrokeWidth))
+        .background(playCardBackground, in: RoundedRectangle(cornerRadius: playCardCorner, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: playCardCorner, style: .continuous)
+                .stroke(focusAccent, lineWidth: playCardBorderWidth)
+        )
         .padding(.horizontal, contentHorizontalPadding)
         Spacer().frame(height: sectionGap)
 
@@ -483,7 +488,7 @@ struct PlayView: View {
             records: Array(log.winRecordsForChartDisplay().suffix(winRecordsDisplayLimit)),
             maxHeight: metrics.hHistBig,
             accentStroke: bigHitChainUsesRainbow(log.bigHitChainCount)
-                ? Color.white.opacity(0.92)
+                ? Color.white.opacity(DesignTokens.Surface.WhiteOnDark.winHistoryAccentStroke)
                 : bigHitChainPrimaryColor(log.bigHitChainCount),
             chainBarColor: bigHitChainUsesRainbow(log.bigHitChainCount)
                 ? nil
@@ -498,9 +503,8 @@ struct PlayView: View {
         )
         .padding(6)
         .frame(maxWidth: .infinity)
-        .background(playPanelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: panelRadius))
-        .overlay(bigHitThemedStroke(cornerRadius: panelRadius, chainCount: log.bigHitChainCount))
+        .background(playCardBackground, in: RoundedRectangle(cornerRadius: playCardCorner, style: .continuous))
+        .overlay(bigHitThemedStroke(cornerRadius: playCardCorner, chainCount: log.bigHitChainCount))
         .animation(.easeInOut(duration: 0.28), value: log.bigHitChainCount)
         .padding(.horizontal, contentHorizontalPadding)
         Spacer().frame(height: sectionGap)
@@ -976,9 +980,11 @@ struct PlayView: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
         .padding(.horizontal, 16)
-        .background(playPanelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: panelRadius))
-        .overlay(RoundedRectangle(cornerRadius: panelRadius).stroke(glassStroke(tint: focusAccent), lineWidth: panelStrokeWidth))
+        .background(playCardBackground, in: RoundedRectangle(cornerRadius: playCardCorner, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: playCardCorner, style: .continuous)
+                .stroke(focusAccent, lineWidth: playCardBorderWidth)
+        )
         .padding(.horizontal, infoPanelHorizontalMargin)
         .frame(height: height)
         .frame(maxWidth: .infinity)
@@ -1015,9 +1021,11 @@ struct PlayView: View {
             .id("\(log.normalRotations)-\(log.totalInput)-\(log.holdingsInvestedBalls)-\(gaugeRefreshId)")
             .frame(width: gaugeWidth, height: height)
             .clipped()
-            .background(playPanelBackground)
-            .clipShape(RoundedRectangle(cornerRadius: panelRadius))
-            .overlay(RoundedRectangle(cornerRadius: panelRadius).stroke(glassStroke(tint: a), lineWidth: panelStrokeWidth))
+            .background(playCardBackground, in: RoundedRectangle(cornerRadius: playCardCorner, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: playCardCorner, style: .continuous)
+                    .stroke(a, lineWidth: playCardBorderWidth)
+            )
 
             infoStatPanel(strokeTint: a) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -1174,23 +1182,11 @@ struct PlayView: View {
     private func infoStatPanel<Content: View>(strokeTint: Color, @ViewBuilder content: () -> Content) -> some View {
         content()
             .frame(maxWidth: .infinity)
-            .background(playPanelBackground)
-            .clipShape(RoundedRectangle(cornerRadius: panelRadius))
-            .overlay(RoundedRectangle(cornerRadius: panelRadius).stroke(glassStroke(tint: strokeTint), lineWidth: panelStrokeWidth))
-    }
-
-    /// トップページ風：半透明＋角丸＋角度で変わる枠線（パネル用・読みやすさ優先）
-    private func glassStroke(tint: Color) -> LinearGradient {
-        let o: Double = 0.93
-        return LinearGradient(
-            colors: [
-                Color.white.opacity(o * 0.5),
-                tint.opacity(o * 0.35),
-                Color.white.opacity(o * 0.1)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+            .background(playCardBackground, in: RoundedRectangle(cornerRadius: playCardCorner, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: playCardCorner, style: .continuous)
+                    .stroke(strokeTint, lineWidth: playCardBorderWidth)
+            )
     }
 
     /// タップ可能なボタン用：グラデーション＋影でパネルより少し立体的に見せる
@@ -1201,9 +1197,9 @@ struct PlayView: View {
                 .fill(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.12),
-                            Color.black.opacity(0.74),
-                            Color.black.opacity(0.88)
+                            Color.white.opacity(DesignTokens.Surface.WhiteOnDark.elevated),
+                            Color.black.opacity(DesignTokens.Surface.Play.ButtonMetal.radialGrayMid),
+                            Color.black.opacity(DesignTokens.Surface.Play.ButtonMetal.radialGrayEdge)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -1212,15 +1208,15 @@ struct PlayView: View {
             RoundedRectangle(cornerRadius: cornerRadius)
                 .fill(tint.opacity(playPanelTintOverlayOpacity))
         }
-        .shadow(color: .black.opacity(0.55), radius: 5, x: 0, y: 3)
+        .themeShadow(skin.cardShadow)
         .overlay(
             RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.38),
-                            tint.opacity(0.42),
-                            Color.white.opacity(0.1)
+                            Color.white.opacity(DesignTokens.Surface.Play.GlassChrome.rimLit),
+                            tint.opacity(DesignTokens.Surface.AccentTint.chromeTintMid),
+                            Color.white.opacity(DesignTokens.Surface.Play.GlassChrome.rimDim)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -1233,8 +1229,8 @@ struct PlayView: View {
     /// 現金・持ち玉・カウント・RUSH・通常・実戦終了まわりで統一
     private let buttonGap: CGFloat = 8
     private let buttonCornerRadius: CGFloat = 16
-    /// 投資ボタン見出し（赤系・視認性優先）
-    private let investmentSubTextColor = Color(red: 1.0, green: 0.48, blue: 0.44)
+    /// 投資ボタン補助文（`investmentColor` ベース）
+    private var investmentSubTextColor: Color { skin.investmentColor.opacity(0.92) }
     /// 下部「大当たり」スライドのアクセント（テーマに合わせる）
     private var bigHitBarTitleColor: Color { themeManager.currentTheme.accentColor }
     /// 中央・下部ボタン・大当たり履歴の左右余白を統一（端を揃える）
@@ -1718,6 +1714,17 @@ struct PlayView: View {
         session.exchangeCashProceedsPt = exchangePt
         session.chodamaBalanceDeltaBalls = chodamaDelta
         session.isCashflowOnlyRecord = false
+        session.slumpChartInitialHoldings = log.initialHoldings
+        session.slumpChartInitialDisplayRotation = log.initialDisplayRotation
+        session.slumpChartHoldingsBallsPerTap = max(1, log.selectedShop.interpretedHoldingsBallsPerTap)
+        if let winData = try? JSONEncoder.slumpChart.encode(log.winRecords),
+           let winStr = String(data: winData, encoding: .utf8) {
+            session.slumpChartWinRecordsJSON = winStr
+        }
+        if let lendData = try? JSONEncoder.slumpChart.encode(log.lendingRecords),
+           let lendStr = String(data: lendData, encoding: .utf8) {
+            session.slumpChartLendingRecordsJSON = lendStr
+        }
         modelContext.insert(session)
         do {
             try modelContext.save()
@@ -1754,25 +1761,14 @@ struct PlayView: View {
                     let cx = 0.5 + 0.45 * cos(t * 0.9)
                     let cy = 0.5 + 0.45 * sin(t * 0.9)
                     LinearGradient(
-                        colors: [
-                            Color(red: 0.98, green: 0.32, blue: 0.38).opacity(0.28),
-                            Color(red: 1.0, green: 0.72, blue: 0.18).opacity(0.24),
-                            Color(red: 0.42, green: 0.95, blue: 0.48).opacity(0.22),
-                            Color(red: 0.32, green: 0.72, blue: 1.0).opacity(0.26),
-                            Color(red: 0.82, green: 0.42, blue: 1.0).opacity(0.24),
-                            Color(red: 0.98, green: 0.32, blue: 0.38).opacity(0.26)
-                        ],
+                        colors: DesignTokens.PlayCelebration.rainbowAtmosphereColors,
                         startPoint: UnitPoint(x: cx, y: cy),
                         endPoint: UnitPoint(x: 1 - cx, y: 1 - cy)
                     )
                 }
             } else if chainCount >= 5 {
                 LinearGradient(
-                    colors: [
-                        Color(red: 1.0, green: 0.78, blue: 0.22).opacity(0.34),
-                        Color(red: 0.92, green: 0.62, blue: 0.08).opacity(0.22),
-                        Color(red: 0.55, green: 0.38, blue: 0.06).opacity(0.12)
-                    ],
+                    colors: DesignTokens.PlayCelebration.jackpotAtmosphereColors,
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -1780,7 +1776,7 @@ struct PlayView: View {
                 LinearGradient(
                     colors: [
                         skin.playRushAccent.opacity(0.32),
-                        Color.red.opacity(0.2),
+                        skin.playRushAccent.opacity(DesignTokens.Surface.AccentTint.rushWash),
                         skin.playRushAccent.opacity(0.14)
                     ],
                     startPoint: .top,
@@ -1788,11 +1784,7 @@ struct PlayView: View {
                 )
             } else {
                 LinearGradient(
-                    colors: [
-                        Color(red: 0.35, green: 0.58, blue: 0.96).opacity(0.4),
-                        Color(red: 0.22, green: 0.45, blue: 0.88).opacity(0.24),
-                        Color(red: 0.15, green: 0.35, blue: 0.72).opacity(0.14)
-                    ],
+                    colors: DesignTokens.PlayCelebration.firstHitAtmosphereColors,
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -1804,30 +1796,19 @@ struct PlayView: View {
 
     /// 突入1回=青、連チャンが増えるほど赤→金→レインボー
     private var bigHitRainbowForeground: LinearGradient {
-        LinearGradient(
-            colors: [
-                Color(red: 0.98, green: 0.32, blue: 0.38),
-                Color(red: 1.0, green: 0.72, blue: 0.18),
-                Color(red: 0.42, green: 0.95, blue: 0.48),
-                Color(red: 0.32, green: 0.72, blue: 1.0),
-                Color(red: 0.82, green: 0.42, blue: 1.0),
-                Color(red: 0.98, green: 0.32, blue: 0.38)
-            ],
-            startPoint: .leading,
-            endPoint: .trailing
-        )
+        DesignTokens.PlayCelebration.rainbowForegroundGradient
     }
 
     private func bigHitChainPrimaryColor(_ n: Int) -> Color {
         switch n {
         case 1:
-            return Color(red: 0.45, green: 0.72, blue: 0.98)
+            return DesignTokens.PlayCelebration.chainPrimaryBlue
         case 2 ..< 5:
             return skin.playRushAccent
         case 5 ..< 10:
-            return Color(red: 1.0, green: 0.78, blue: 0.22)
+            return DesignTokens.PlayCelebration.chainPrimaryGold
         default:
-            return Color(red: 0.85, green: 0.45, blue: 0.98)
+            return DesignTokens.PlayCelebration.chainPrimaryRainbowViolet
         }
     }
 
@@ -1835,17 +1816,19 @@ struct PlayView: View {
 
     /// 折れ線・ゲージ等に渡す単色（レインボー帯は代表色）
     private func bigHitChainLineTint(_ n: Int) -> Color {
-        bigHitChainUsesRainbow(n) ? Color(red: 0.75, green: 0.4, blue: 0.95) : bigHitChainPrimaryColor(n)
+        bigHitChainUsesRainbow(n) ? DesignTokens.PlayCelebration.lineTintRainbowRepresentative : bigHitChainPrimaryColor(n)
     }
 
     @ViewBuilder
     private func bigHitThemedStroke(cornerRadius: CGFloat, chainCount: Int) -> some View {
+        let r = max(0, cornerRadius)
+        let w = playCardBorderWidth
         if bigHitChainUsesRainbow(chainCount) {
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .stroke(bigHitRainbowForeground, lineWidth: panelStrokeWidth)
+            RoundedRectangle(cornerRadius: r, style: .continuous)
+                .stroke(bigHitRainbowForeground, lineWidth: w)
         } else {
-            RoundedRectangle(cornerRadius: cornerRadius)
-                .stroke(glassStroke(tint: bigHitChainPrimaryColor(chainCount)), lineWidth: panelStrokeWidth)
+            RoundedRectangle(cornerRadius: r, style: .continuous)
+                .stroke(bigHitChainPrimaryColor(chainCount), lineWidth: w)
         }
     }
 
@@ -1864,12 +1847,12 @@ struct PlayView: View {
     private func bigHitExitSheetView() -> some View {
         NavigationStack {
             ZStack {
-                Color.black.opacity(0.97).ignoresSafeArea()
+                Color.black.opacity(DesignTokens.Surface.BlackOverlay.playSheetBackdrop).ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         Text("該当しない項目は 0 と入力してください。テンキー欄の矢印で移動できます。")
                             .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.88))
+                            .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.sheetIntro))
                             .fixedSize(horizontal: false, vertical: true)
 
                         bigHitExitInputPanel(
@@ -1918,16 +1901,16 @@ struct PlayView: View {
                         }
                         .buttonStyle(.plain)
                         .foregroundColor(.white)
-                        .background(Color.cyan.opacity(0.28))
+                        .background(skin.playNormalAccent.opacity(DesignTokens.Surface.AccentTint.subtleFill))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(focusAccent.opacity(0.55), lineWidth: 1.2))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(focusAccent.opacity(DesignTokens.Surface.AccentTint.primarySheetButtonStroke), lineWidth: DesignTokens.Thickness.primarySheetButtonStroke))
                         .disabled(!bigHitExitFormValid)
                         .opacity(bigHitExitFormValid ? 1 : 0.45)
 
                         VStack(alignment: .leading, spacing: 10) {
                             Text("誤って大当たりモードに入った場合など、当たり区間を記録せず実戦画面に戻れます。")
                                 .font(.caption)
-                                .foregroundColor(.white.opacity(0.55))
+                                .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.captionOnPanel))
                                 .fixedSize(horizontal: false, vertical: true)
 
                             Button { showBigHitAbandonConfirm = true } label: {
@@ -1937,10 +1920,15 @@ struct PlayView: View {
                                     .padding(.vertical, 14)
                             }
                             .buttonStyle(.plain)
-                            .foregroundColor(.white.opacity(0.95))
-                            .background(Color(red: 0.52, green: 0.14, blue: 0.16))
+                            .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.nearOpaqueLabel))
+                            .background(DesignTokens.PlayCelebration.bigHitAbandonBackground)
                             .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.red.opacity(0.45), lineWidth: 1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12).stroke(
+                                    skin.playRushAccent.opacity(DesignTokens.Surface.AccentTint.rushStroke),
+                                    lineWidth: DesignTokens.Thickness.hairline
+                                )
+                            )
                         }
                         .padding(.top, 4)
                     }
@@ -1950,7 +1938,7 @@ struct PlayView: View {
             }
             .navigationTitle("大当たりを確定")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.black.opacity(0.95), for: .navigationBar)
+            .toolbarBackground(Color.black.opacity(DesignTokens.Surface.BlackOverlay.playToolbarBackground), for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -2002,13 +1990,13 @@ struct PlayView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(title)
                         .font(playThemedFont(15, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.92))
+                        .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.textPrimary))
                         .multilineTextAlignment(.leading)
                         .lineLimit(3)
                         .minimumScaleFactor(0.82)
                     Text("（必須）")
                         .font(.caption.weight(.semibold))
-                        .foregroundColor(Color(red: 1.0, green: 0.38, blue: 0.38))
+                        .foregroundColor(DesignTokens.PlayCelebration.bigHitRequiredLabel)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 IntegerPadTextField(
@@ -2023,22 +2011,24 @@ struct PlayView: View {
                     onNextField: { padNav(1) }
                 )
                 .frame(width: 100, height: 44, alignment: .trailing)
-                .background(Color.black.opacity(0.35))
+                .background(Color.black.opacity(DesignTokens.Surface.BlackOverlay.playIntegerPadWell))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.18), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(DesignTokens.Surface.WhiteOnDark.strokeInputWell), lineWidth: DesignTokens.Thickness.hairline))
             }
             if let footnote, !footnote.isEmpty {
                 Text(footnote)
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.72))
+                    .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.footnoteOnSheet))
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(playPanelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: panelRadius))
-        .overlay(RoundedRectangle(cornerRadius: panelRadius).stroke(glassStroke(tint: focusAccent), lineWidth: panelStrokeWidth))
+        .background(playCardBackground, in: RoundedRectangle(cornerRadius: playCardCorner, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: playCardCorner, style: .continuous)
+                .stroke(focusAccent, lineWidth: playCardBorderWidth)
+        )
     }
 
     private var bigHitEntryFormValid: Bool {
@@ -2071,17 +2061,17 @@ struct PlayView: View {
         return VStack(alignment: .leading, spacing: 10) {
             Text(requiresHoldings ? "持ち玉（必須）" : "持ち玉（任意）")
                 .font(playThemedFont(15, weight: .semibold))
-                .foregroundColor(.white.opacity(inputEnabled ? 0.92 : 0.6))
+                .foregroundColor(.white.opacity(inputEnabled ? DesignTokens.Surface.WhiteOnDark.textPrimary : DesignTokens.Surface.WhiteOnDark.disabled))
 
             if !requiresHoldings {
                 Toggle(isOn: $bigHitEntryEnableHoldingsInput) {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("持ち玉投資を手入力する")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundColor(.white.opacity(0.92))
+                            .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.textPrimary))
                         Text("アプリ上の累計が0でも、実際に持ち玉を使用している場合")
                             .font(.caption2)
-                            .foregroundColor(.white.opacity(0.62))
+                            .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.supportingLabel))
                     }
                 }
                 .tint(focusAccent)
@@ -2119,7 +2109,7 @@ struct PlayView: View {
             HStack(alignment: .center, spacing: 12) {
                 Text(bigHitEntryHoldingsKind.sheetFieldTitle)
                     .font(playThemedFont(15, weight: .semibold))
-                    .foregroundColor(.white.opacity(inputEnabled ? 0.92 : 0.55))
+                    .foregroundColor(.white.opacity(inputEnabled ? DesignTokens.Surface.WhiteOnDark.textPrimary : DesignTokens.Surface.WhiteOnDark.captionOnPanel))
                     .frame(maxWidth: .infinity, alignment: .leading)
                 IntegerPadTextField(
                     text: $bigHitEntryHoldingsValue,
@@ -2134,21 +2124,23 @@ struct PlayView: View {
                     isEnabled: inputEnabled
                 )
                 .frame(width: 100, height: 44, alignment: .trailing)
-                .background(Color.black.opacity(0.35))
+                .background(Color.black.opacity(DesignTokens.Surface.BlackOverlay.playIntegerPadWell))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.18), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(DesignTokens.Surface.WhiteOnDark.strokeInputWell), lineWidth: DesignTokens.Thickness.hairline))
             }
 
             Text(inputEnabled ? bigHitEntryHoldingsKind.sheetFootnote : "この実戦で持ち玉投資が無い想定のため、持ち玉は入力不要です。必要なら上のトグルをオンにしてください。")
                 .font(.caption2)
-                .foregroundColor(.white.opacity(0.58))
+                .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.metaHint))
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(playPanelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: panelRadius))
-        .overlay(RoundedRectangle(cornerRadius: panelRadius).stroke(glassStroke(tint: focusAccent), lineWidth: panelStrokeWidth))
+        .background(playCardBackground, in: RoundedRectangle(cornerRadius: playCardCorner, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: playCardCorner, style: .continuous)
+                .stroke(focusAccent, lineWidth: playCardBorderWidth)
+        )
         .opacity((requiresHoldings || bigHitEntryEnableHoldingsInput) ? 1 : 0.9)
         .accessibilityElement(children: .contain)
         .accessibilityHint(requiresHoldings ? "持ち玉投資があるため、この欄の入力が必要です。" : "アプリに未反映の持ち玉投資を入力する場合にオンにします。")
@@ -2158,12 +2150,12 @@ struct PlayView: View {
     private func bigHitEntrySheetView() -> some View {
         NavigationStack {
             ZStack {
-                Color.black.opacity(0.97).ignoresSafeArea()
+                Color.black.opacity(DesignTokens.Surface.BlackOverlay.playSheetBackdrop).ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         Text("当選時点の通常回転・投資を入力して大当たり記録を開始します。この実戦ですでに持ち玉投資している場合は、下の持ち玉欄も必須です（切替と値はアプリが把握している数で初期表示されます）。持ち玉投資が一度もない場合はその欄は使えません。初期の切替は設定から変更できます。")
                             .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.88))
+                            .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.sheetIntro))
                             .fixedSize(horizontal: false, vertical: true)
 
                         bigHitEntryInputPanel(
@@ -2209,9 +2201,9 @@ struct PlayView: View {
                         }
                         .buttonStyle(.plain)
                         .foregroundColor(.white)
-                        .background(Color.cyan.opacity(0.28))
+                        .background(skin.playNormalAccent.opacity(DesignTokens.Surface.AccentTint.subtleFill))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(focusAccent.opacity(0.55), lineWidth: 1.2))
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(focusAccent.opacity(DesignTokens.Surface.AccentTint.primarySheetButtonStroke), lineWidth: DesignTokens.Thickness.primarySheetButtonStroke))
                         .disabled(!bigHitEntryFormValid)
                         .opacity(bigHitEntryFormValid ? 1 : 0.45)
                     }
@@ -2221,7 +2213,7 @@ struct PlayView: View {
             }
             .navigationTitle("大当たり突入")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.black.opacity(0.95), for: .navigationBar)
+            .toolbarBackground(Color.black.opacity(DesignTokens.Surface.BlackOverlay.playToolbarBackground), for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -2260,7 +2252,7 @@ struct PlayView: View {
             HStack(alignment: .center, spacing: 12) {
                 Text(title)
                     .font(playThemedFont(15, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.92))
+                    .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.textPrimary))
                     .frame(maxWidth: .infinity, alignment: .leading)
                 IntegerPadTextField(
                     text: text,
@@ -2274,22 +2266,24 @@ struct PlayView: View {
                     onNextField: { padNav(1) }
                 )
                 .frame(width: 100, height: 44, alignment: .trailing)
-                .background(Color.black.opacity(0.35))
+                .background(Color.black.opacity(DesignTokens.Surface.BlackOverlay.playIntegerPadWell))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.18), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(DesignTokens.Surface.WhiteOnDark.strokeInputWell), lineWidth: DesignTokens.Thickness.hairline))
             }
             if let footnote, !footnote.isEmpty {
                 Text(footnote)
                     .font(.caption2)
-                    .foregroundColor(.white.opacity(0.58))
+                    .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.metaHint))
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(playPanelBackground)
-        .clipShape(RoundedRectangle(cornerRadius: panelRadius))
-        .overlay(RoundedRectangle(cornerRadius: panelRadius).stroke(glassStroke(tint: focusAccent), lineWidth: panelStrokeWidth))
+        .background(playCardBackground, in: RoundedRectangle(cornerRadius: playCardCorner, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: playCardCorner, style: .continuous)
+                .stroke(focusAccent, lineWidth: playCardBorderWidth)
+        )
     }
 
     /// 中央：ホームと同じカード＋押下（連チャン追加）
@@ -2304,7 +2298,7 @@ struct PlayView: View {
             HapticUtil.bigHitChainIncrement()
         } label: {
             ZStack {
-                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius)
+                HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius, includeBorder: false)
                 VStack(spacing: 6) {
                     Text("\(n)連チャン")
                         .font(.system(size: titleSize, weight: .black, design: .rounded))
@@ -2313,7 +2307,7 @@ struct PlayView: View {
                         .modifier(BigHitThemedForeground(isRainbow: rainbow, solid: c))
                     Text("タップで＋1")
                         .font(.system(size: subtitleSize, weight: .semibold, design: .rounded))
-                        .foregroundColor(rainbow ? .white.opacity(0.82) : c.opacity(0.85))
+                        .foregroundColor(rainbow ? .white.opacity(DesignTokens.Surface.WhiteOnDark.rainbowSubtitle) : c.opacity(0.85))
                 }
             }
         }
@@ -2344,7 +2338,7 @@ struct PlayView: View {
                 showBigHitExitSheet = true
             } label: {
                 ZStack {
-                    HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius)
+                    HomeStylePlayCardBackground(cornerRadius: buttonCornerRadius, includeBorder: false)
                     Text("通常へ")
                         .font(.system(size: normalFont, weight: .bold, design: .monospaced))
                         .modifier(BigHitThemedForeground(isRainbow: rainbow, solid: c))
@@ -2370,19 +2364,7 @@ private struct BigHitThemedForeground: ViewModifier {
 
     func body(content: Content) -> some View {
         if isRainbow {
-            content.foregroundStyle(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.98, green: 0.32, blue: 0.38),
-                        Color(red: 1.0, green: 0.72, blue: 0.18),
-                        Color(red: 0.42, green: 0.95, blue: 0.48),
-                        Color(red: 0.32, green: 0.72, blue: 1.0),
-                        Color(red: 0.82, green: 0.42, blue: 1.0)
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
+            content.foregroundStyle(DesignTokens.PlayCelebration.rainbowTextForegroundGradient)
         } else {
             content.foregroundColor(solid)
         }
@@ -2470,16 +2452,9 @@ struct BorderMeterView: View {
     /// マーカー色：負→赤、0→白、正→青を線形補間
     private var markerColor: Color {
         if gaugeEnabled && !metricsTrusted {
-            return Color.white.opacity(0.55)
+            return Color.white.opacity(DesignTokens.Surface.WhiteOnDark.borderMeterMuted)
         }
-        let d = min(max(snappedDiff, -5), 5)
-        if d <= 0 {
-            let t = (d + 5) / 5
-            return Color(red: 1 * (1 - t) + 1 * t, green: 0.25 * (1 - t) + 1 * t, blue: 0.25 * (1 - t) + 1 * t)
-        } else {
-            let t = d / 5
-            return Color(red: 1 * (1 - t) + 0.2 * t, green: 1 * (1 - t) + 0.5 * t, blue: 1 * (1 - t) + 1 * t)
-        }
+        return DesignTokens.PlayCelebration.borderMeterMarkerColor(snappedDiff: snappedDiff)
     }
 
     private let valueFontSize: CGFloat = 14
@@ -2513,7 +2488,7 @@ struct BorderMeterView: View {
                         Spacer(minLength: 0)
                         Text("等価ボーダー")
                             .font(.system(size: compactLabelFontSize, weight: .regular))
-                            .foregroundColor(.white.opacity(0.92))
+                            .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.textPrimary))
                             .lineLimit(1)
                             .minimumScaleFactor(0.65)
                         Text(formulaBorderRaw > 0 ? formulaBorderRaw.displayFormat("%.1f") : "—")
@@ -2529,7 +2504,7 @@ struct BorderMeterView: View {
                         Spacer(minLength: 0)
                         Text("実質ボーダー")
                             .font(themeManager.currentTheme.themedFont(size: 15, weight: .semibold))
-                            .foregroundColor(.white.opacity(0.92))
+                            .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.textPrimary))
                             .lineLimit(1)
                             .minimumScaleFactor(0.65)
                         Text(formulaBorderLabel)
@@ -2557,10 +2532,10 @@ struct BorderMeterView: View {
                             // バートラック：左右パディングで barW を確保（Spacer+固定幅は提案幅と食い違うと負寸法になり得る）
                             HStack(spacing: 0) {
                                 RoundedRectangle(cornerRadius: 6)
-                                    .fill(Color.white.opacity(0.08))
+                                    .fill(Color.white.opacity(DesignTokens.Surface.WhiteOnDark.borderMeterTrack))
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 6)
-                                            .strokeBorder(Color.white.opacity(0.22), lineWidth: 1)
+                                            .strokeBorder(Color.white.opacity(DesignTokens.Surface.WhiteOnDark.borderMeterTrackBorder), lineWidth: DesignTokens.Thickness.borderMeterTrackStroke)
                                     )
                                     .frame(width: max(0, barW), height: barHeight)
                             }
@@ -2568,7 +2543,7 @@ struct BorderMeterView: View {
                             .padding(.horizontal, effectivePad)
                             // 中央±0の縦線（座標は barGeo 幅内で barX0 + barW/2）
                             Rectangle()
-                                .fill(Color.white.opacity(0.5))
+                                .fill(Color.white.opacity(DesignTokens.Surface.WhiteOnDark.borderMeterCenterLine))
                                 .frame(width: 1, height: barHeight + tickHeight)
                                 .position(x: barX0 + barW / 2, y: barHeight / 2 + tickHeight / 2)
                             // 目盛線
@@ -2577,14 +2552,14 @@ struct BorderMeterView: View {
                                 let xVal = barX0 + CGFloat((val + 5) / 10) * barW
                                 let isZero = (v == 0)
                                 Rectangle()
-                                    .fill(isZero ? Color.white.opacity(0.45) : Color.white.opacity(0.25))
-                                    .frame(width: max(0, isZero ? 1.2 : 0.8), height: tickHeight)
+                                    .fill(isZero ? Color.white.opacity(DesignTokens.Surface.WhiteOnDark.borderMeterTickStrong) : Color.white.opacity(DesignTokens.Surface.WhiteOnDark.borderMeterTickWeak))
+                                    .frame(width: max(0, isZero ? DesignTokens.Thickness.borderMeterTickMajor : DesignTokens.Thickness.borderMeterTickMinor), height: tickHeight)
                                     .position(x: xVal, y: barHeight + tickHeight / 2)
                             }
                             // マーカー
                             DownTriangle()
                                 .fill(markerColor)
-                                .overlay(DownTriangle().stroke(Color.white.opacity(0.4), lineWidth: 0.8))
+                                .overlay(DownTriangle().stroke(Color.white.opacity(DesignTokens.Surface.WhiteOnDark.borderMeterMarkerHalo), lineWidth: DesignTokens.Thickness.borderMeterMarkerOutline))
                                 .frame(width: 12, height: 16)
                                 .position(x: barX0 + CGFloat((clampedDiffForMarker + 5) / 10) * barW, y: barHeight / 2 + 1)
                         }
@@ -2593,7 +2568,7 @@ struct BorderMeterView: View {
                         HStack(spacing: 0) {
                             Text("-5")
                                 .font(.system(size: 9, weight: .medium, design: .monospaced))
-                                .foregroundColor(.red.opacity(0.9))
+                                .foregroundColor(.red.opacity(DesignTokens.Surface.Play.BorderGauge.axisLabelOpacity))
                                 .frame(width: max(0, barW / 10), alignment: .leading)
                             Spacer(minLength: 0)
                             Text("±0")
@@ -2602,7 +2577,7 @@ struct BorderMeterView: View {
                             Spacer(minLength: 0)
                             Text("+5")
                                 .font(.system(size: 9, weight: .medium, design: .monospaced))
-                                .foregroundColor(.blue.opacity(0.9))
+                                .foregroundColor(.blue.opacity(DesignTokens.Surface.Play.BorderGauge.axisLabelOpacity))
                                 .frame(width: max(0, barW / 10), alignment: .trailing)
                         }
                         .frame(maxWidth: .infinity)
@@ -2621,7 +2596,7 @@ struct BorderMeterView: View {
                             Spacer(minLength: 0)
                             Text("実質回転率")
                                 .font(themeManager.currentTheme.themedFont(size: 15, weight: .semibold))
-                                .foregroundColor(.white.opacity(0.92))
+                                .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.textPrimary))
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.65)
                             Text(realRateDisplay)
@@ -2632,7 +2607,7 @@ struct BorderMeterView: View {
                         if gaugeEnabled && !metricsTrusted, case .untrusted(let hint) = metricsTrust {
                             Text(hint)
                                 .font(.system(size: 8, weight: .medium))
-                                .foregroundColor(.orange.opacity(0.85))
+                                .foregroundColor(.orange.opacity(DesignTokens.Surface.Play.BorderGauge.untrustedHintOpacity))
                                 .lineLimit(2)
                                 .minimumScaleFactor(0.8)
                         }
@@ -2645,7 +2620,7 @@ struct BorderMeterView: View {
                         Spacer(minLength: 0)
                         Text("表面回転率")
                             .font(.system(size: compactLabelFontSize, weight: .regular))
-                            .foregroundColor(.white.opacity(0.92))
+                            .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.textPrimary))
                             .lineLimit(1)
                             .minimumScaleFactor(0.65)
                         Text(surfaceRateDisplay)
@@ -2670,7 +2645,7 @@ struct BorderMeterView: View {
                 } label: {
                     Image(systemName: "info.circle")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white.opacity(0.72))
+                        .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.footnoteOnSheet))
                 }
                 .buttonStyle(.plain)
                 .padding(.top, 4)
@@ -2832,7 +2807,7 @@ struct WinHistoryBarChartView: View {
                 .padding(.bottom, 4)
                 .overlay(alignment: .bottom) {
                     Rectangle()
-                        .fill(Color.white.opacity(0.18))
+                        .fill(Color.white.opacity(DesignTokens.Surface.WhiteOnDark.chartBarBaseline))
                         .frame(height: 1)
                         .padding(.bottom, labelRowHeight + 2)
                         .padding(.horizontal, 4)
@@ -3069,11 +3044,13 @@ private struct PlayResumableAutosaveHook: View {
 }
 
 #Preview("SyncInputView") {
-    SyncInputView(title: "ゲーム数同期", label: "データランプの現在表示数", val: .constant("1234")) {}
-        .environmentObject(ThemeManager.shared)
+    ThemePreview {
+        SyncInputView(title: "ゲーム数同期", label: "データランプの現在表示数", val: .constant("1234")) {}
+    }
 }
 
 #Preview("WinCountCorrectView") {
-    WinCountCorrectView(rushCount: .constant("2"), normalCount: .constant("5")) {}
-        .environmentObject(ThemeManager.shared)
+    ThemePreview {
+        WinCountCorrectView(rushCount: .constant("2"), normalCount: .constant("5")) {}
+    }
 }

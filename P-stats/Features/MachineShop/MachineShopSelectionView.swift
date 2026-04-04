@@ -14,6 +14,9 @@ struct MachineShopSelectionView: View {
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var themeManager: ThemeManager
+
+    private var t: any ApplicationTheme { themeManager.currentTheme }
 
     @Query(sort: \Machine.name) private var savedMachines: [Machine]
     @Query(sort: \Shop.name) private var savedShops: [Shop]
@@ -93,8 +96,7 @@ struct MachineShopSelectionView: View {
         )
     }
 
-    private var accent: Color { AppGlassStyle.accent }
-    private var cardBackground: Color { AppGlassStyle.cardBackground }
+    private var accent: Color { t.accentColor }
 
     /// 実戦で最近使った順の機種（新しい順）
     private var sortedMachines: [Machine] {
@@ -129,7 +131,7 @@ struct MachineShopSelectionView: View {
     private func sectionTitle(_ text: String) -> some View {
         Text(text)
             .font(AppTypography.panelHeading)
-            .foregroundColor(.white.opacity(0.95))
+            .foregroundColor(t.mainTextColor.opacity(0.96))
     }
 
     /// パネル共通：グラスカード（インサイト・収支パネルと同じスタイル）
@@ -147,7 +149,7 @@ struct MachineShopSelectionView: View {
             HStack(alignment: .center, spacing: 10) {
                 Text(title)
                     .font(AppTypography.bodyRounded)
-                    .foregroundColor(.white)
+                    .foregroundColor(t.mainTextColor)
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -159,8 +161,8 @@ struct MachineShopSelectionView: View {
             }
             .padding(.vertical, 14)
             .padding(.horizontal, 16)
-            .background(isSelected ? accent.opacity(0.18) : Color.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(isSelected ? accent.opacity(0.5) : Color.white.opacity(0.12), lineWidth: isSelected ? 1.5 : 1))
+            .background(isSelected ? accent.opacity(0.18) : t.formCanvasMutedBackground, in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(isSelected ? accent.opacity(0.5) : t.hairlineDividerColor, lineWidth: isSelected ? 1.5 : 1))
         }
         .buttonStyle(.plain)
     }
@@ -220,7 +222,7 @@ struct MachineShopSelectionView: View {
                     HStack {
                         Text("機種がありません")
                             .font(AppTypography.bodyRounded)
-                            .foregroundColor(.white.opacity(0.9))
+                            .foregroundColor(t.mainTextColor.opacity(0.92))
                         Spacer()
                         Button(action: { showNewMachineSheet = true }) {
                             HStack(spacing: 6) {
@@ -280,7 +282,7 @@ struct MachineShopSelectionView: View {
                     HStack {
                         Text("店舗がありません")
                             .font(AppTypography.bodyRounded)
-                            .foregroundColor(.white.opacity(0.9))
+                            .foregroundColor(t.mainTextColor.opacity(0.92))
                         Spacer()
                         Button(action: { showNewShopSheet = true }) {
                             HStack(spacing: 6) {
@@ -327,7 +329,7 @@ struct MachineShopSelectionView: View {
             } label: {
                 HStack(spacing: 4) {
                     Text("開始時の回転数")
-                        .foregroundColor(.white.opacity(0.95))
+                        .foregroundColor(t.mainTextColor.opacity(0.96))
                     Text("（必須）")
                         .foregroundColor(.red)
                         .fixedSize(horizontal: true, vertical: false)
@@ -348,7 +350,7 @@ struct MachineShopSelectionView: View {
                 placeholder: "",
                 maxDigits: 4,
                 font: .monospacedSystemFont(ofSize: 16, weight: .semibold),
-                textColor: .white,
+                textColor: UIColor(t.mainTextColor),
                 accentColor: UIColor(accent),
                 focusTrigger: rotationFieldFocusTrigger,
                 adjustsFontSizeToFitWidth: true,
@@ -370,7 +372,7 @@ struct MachineShopSelectionView: View {
         HStack(alignment: .center, spacing: 6) {
             Text("開始時の持ち玉")
                 .font(.subheadline.weight(.semibold))
-                .foregroundColor(.white.opacity(0.95))
+                .foregroundColor(t.mainTextColor.opacity(0.96))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
                 .layoutPriority(1)
@@ -380,7 +382,7 @@ struct MachineShopSelectionView: View {
                 placeholder: "",
                 maxDigits: 5,
                 font: .monospacedSystemFont(ofSize: 17, weight: .semibold),
-                textColor: .white,
+                textColor: UIColor(t.mainTextColor),
                 accentColor: UIColor(accent)
             )
             .frame(width: 88, alignment: .trailing)
@@ -415,7 +417,7 @@ struct MachineShopSelectionView: View {
         } label: {
             Text("遊技開始")
                 .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+                .foregroundColor(t.mainTextColor)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding(.horizontal, 8)
                 .background(
@@ -427,9 +429,9 @@ struct MachineShopSelectionView: View {
                         .stroke(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(canStart ? 0.4 : 0.2),
+                                    t.chromeSheetBorderColor.opacity(canStart ? 1.0 : 0.55),
                                     accent.opacity(canStart ? 0.3 : 0.15),
-                                    Color.white.opacity(0.06)
+                                    t.formCanvasMutedBackground
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -507,14 +509,14 @@ struct MachineShopSelectionView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(t.mainTextColor)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
             } header: {
                 Text("機種")
                     .font(AppTypography.panelHeading)
-                    .foregroundColor(.white.opacity(0.95))
+                    .foregroundColor(t.mainTextColor.opacity(0.96))
             }
 
             Section {
@@ -568,21 +570,21 @@ struct MachineShopSelectionView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                     }
-                    .foregroundColor(.white)
+                    .foregroundColor(t.mainTextColor)
                 }
                 .listRowBackground(AppGlassStyle.rowBackground)
                 .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
             } header: {
                 Text("店舗")
                     .font(AppTypography.panelHeading)
-                    .foregroundColor(.white.opacity(0.95))
+                    .foregroundColor(t.mainTextColor.opacity(0.96))
             }
 
             Section {
                 Button("この設定で開始") { dismiss() }
                     .frame(maxWidth: .infinity)
                     .fontWeight(.semibold)
-                    .foregroundColor(.white)
+                    .foregroundColor(t.mainTextColor)
                     .listRowBackground(accent.opacity(0.3))
             }
         }
@@ -606,7 +608,7 @@ struct MachineShopSelectionView: View {
             .navigationTitle(gateMode ? "新規遊技" : "マイリスト")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarBackground(Color.black, for: .navigationBar)
+            .toolbarBackground(t.navigationBarBackdropColor, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
             /// 回転数・持ち玉は `NumberPadTextField` の inputAccessoryView で「完了」を表示（フルスクリーンでも確実に閉じられる）
@@ -622,7 +624,7 @@ struct MachineShopSelectionView: View {
                                 Text("キャンセル")
                             }
                         }
-                        .foregroundColor(.white)
+                        .foregroundColor(t.mainTextColor)
                     }
                 } else if presentedFromPlaySession {
                     ToolbarItem(placement: .cancellationAction) {
@@ -631,7 +633,7 @@ struct MachineShopSelectionView: View {
                         } label: {
                             Text("＜　実戦へ戻る")
                         }
-                        .foregroundColor(.white)
+                        .foregroundColor(t.mainTextColor)
                     }
                 }
             }
@@ -689,6 +691,7 @@ struct MyListMachinesView: View {
     @Bindable var log: GameLog
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var themeManager: ThemeManager
     @Query(sort: \Machine.name) private var savedMachines: [Machine]
     @Query(sort: \GameSession.date, order: .reverse) private var recentSessions: [GameSession]
     @State private var machineToEdit: Machine?
@@ -720,7 +723,7 @@ struct MyListMachinesView: View {
                         } label: {
                             HStack {
                                 Text(m.name)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(themeManager.currentTheme.mainTextColor)
                                 if log.selectedMachine.persistentModelID == m.persistentModelID {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(.subheadline)
@@ -772,10 +775,10 @@ struct MyListMachinesView: View {
         .navigationTitle("登録済み機種")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarBackground(Color.black, for: .navigationBar)
+        .toolbarBackground(themeManager.currentTheme.navigationBarBackdropColor, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
-        .tint(.white)
+        .tint(themeManager.currentTheme.mainTextColor)
         .sheet(item: $machineToEdit, onDismiss: { machineToEdit = nil }) { m in
             MachineEditView(editing: m)
                 .equatable()
@@ -794,6 +797,7 @@ struct MyListShopsView: View {
     @Bindable var log: GameLog
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var themeManager: ThemeManager
     @Query(sort: \Shop.name) private var savedShops: [Shop]
     @Query(sort: \GameSession.date, order: .reverse) private var recentSessions: [GameSession]
     @State private var shopToEdit: Shop?
@@ -825,11 +829,11 @@ struct MyListShopsView: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(s.name)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(themeManager.currentTheme.mainTextColor)
                                 if s.supportsChodamaService || s.chodamaBalanceBalls > 0 {
                                     Text("貯玉 \(s.chodamaBalanceBalls)玉")
                                         .font(.caption2)
-                                        .foregroundStyle(.white.opacity(0.72))
+                                        .foregroundStyle(themeManager.currentTheme.subTextColor.opacity(0.88))
                                 }
                             }
                         }
@@ -877,10 +881,10 @@ struct MyListShopsView: View {
         .navigationTitle("登録済み店舗")
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.visible, for: .navigationBar)
-        .toolbarBackground(Color.black, for: .navigationBar)
+        .toolbarBackground(themeManager.currentTheme.navigationBarBackdropColor, for: .navigationBar)
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
-        .tint(.white)
+        .tint(themeManager.currentTheme.mainTextColor)
         .sheet(item: $shopToEdit, onDismiss: { shopToEdit = nil }) { s in
             ShopEditView(shop: s) { shopToEdit = nil }
                 .presentationDetents([.medium, .large])
@@ -944,6 +948,10 @@ struct ShopEditView: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var themeManager: ThemeManager
+
+    private var t: any ApplicationTheme { themeManager.currentTheme }
+
     @State private var name: String = ""
     @State private var address: String = ""
     @State private var placeID: String?
@@ -1014,11 +1022,11 @@ struct ShopEditView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(candidate.name)
                         .font(.subheadline.weight(.medium))
-                        .foregroundColor(.white)
+                        .foregroundColor(t.mainTextColor)
                     if !candidate.address.isEmpty {
                         Text(candidate.address)
                             .font(.caption)
-                            .foregroundColor(.white.opacity(0.7))
+                            .foregroundColor(t.subTextColor.opacity(0.88))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1030,7 +1038,7 @@ struct ShopEditView: View {
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white.opacity(0.06))
+            .background(t.formCanvasMutedBackground)
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
@@ -1054,14 +1062,12 @@ struct ShopEditView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(AppTypography.panelHeading)
-                .foregroundColor(.white.opacity(0.95))
+                .foregroundColor(t.mainTextColor.opacity(0.96))
             content()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(AppGlassStyle.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+        .pstatsPanelStyle()
     }
 
     private func shopEditPanel<Trailing: View, Content: View>(title: String, @ViewBuilder trailing: () -> Trailing, @ViewBuilder content: () -> Content) -> some View {
@@ -1069,7 +1075,7 @@ struct ShopEditView: View {
             HStack(alignment: .center) {
                 Text(title)
                     .font(AppTypography.panelHeading)
-                    .foregroundColor(.white.opacity(0.95))
+                    .foregroundColor(t.mainTextColor.opacity(0.96))
                 Spacer(minLength: 8)
                 trailing()
             }
@@ -1077,9 +1083,7 @@ struct ShopEditView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(AppGlassStyle.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(AppGlassStyle.strokeGradient, lineWidth: 1))
+        .pstatsPanelStyle()
     }
 
     var body: some View {
@@ -1088,10 +1092,10 @@ struct ShopEditView: View {
                 AppGlassStyle.background.ignoresSafeArea()
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
-                        shopEditPanel(title: "店舗選択", trailing: { InfoIconView(explanation: "店名・チェーン名で検索するか、「現在地周辺から探す」で近くのホールを表示します。候補をタップすると店舗名と住所が自動で入ります。", tint: .white.opacity(0.7)) }) {
+                        shopEditPanel(title: "店舗選択", trailing: { InfoIconView(explanation: "店名・チェーン名で検索するか、「現在地周辺から探す」で近くのホールを表示します。候補をタップすると店舗名と住所が自動で入ります。", tint: t.subTextColor.opacity(0.72)) }) {
                             TextField("店名・チェーン名で検索", text: $name)
                                 .textContentType(.none)
-                                .foregroundColor(.white)
+                                .foregroundColor(t.mainTextColor)
                                 .onChange(of: name) { _, newValue in
                                     placeSearchService.searchText = newValue
                                 }
@@ -1101,7 +1105,7 @@ struct ShopEditView: View {
                                         .foregroundColor(.orange.opacity(0.9))
                                     Text("Google Places APIキーが未設定です。Info.plist の GooglePlacesAPIKey にキーを設定すると実際の店舗検索が利用できます。")
                                         .font(.caption)
-                                        .foregroundColor(.white.opacity(0.8))
+                                        .foregroundColor(t.subTextColor.opacity(0.92))
                                 }
                             }
                             if placeSearchService.isLocationDenied {
@@ -1110,7 +1114,7 @@ struct ShopEditView: View {
                                         .foregroundColor(.orange.opacity(0.9))
                                     Text("設定から位置情報をオンにすると、現在地周辺のホールを表示できます。")
                                         .font(.caption)
-                                        .foregroundColor(.white.opacity(0.7))
+                                        .foregroundColor(t.subTextColor.opacity(0.88))
                                 }
                             } else if name.trimmingCharacters(in: .whitespaces).isEmpty && placeSearchService.canUseLocation {
                                 Button {
@@ -1159,7 +1163,7 @@ struct ShopEditView: View {
                                         .tint(accent)
                                     Text("検索中...")
                                         .font(.caption)
-                                        .foregroundColor(.white.opacity(0.7))
+                                        .foregroundColor(t.subTextColor.opacity(0.88))
                                 }
                             }
                             if placeSearchService.hasNextPage && !placeSearchService.isSearching {
@@ -1180,10 +1184,10 @@ struct ShopEditView: View {
                                 .disabled(placeSearchService.isLoadingMore)
                             }
                         }
-                        shopEditPanel(title: "レート設定", trailing: { InfoIconView(explanation: "貸玉数は 500pt あたりの玉数。交換率は 1 玉あたりの換金（pt）。メニューでよくある組み合わせを選ぶか「その他」で自由入力。玉/100pt と pt/玉は連動します。", tint: .white.opacity(0.7)) }) {
+                        shopEditPanel(title: "レート設定", trailing: { InfoIconView(explanation: "貸玉数は 500pt あたりの玉数。交換率は 1 玉あたりの換金（pt）。メニューでよくある組み合わせを選ぶか「その他」で自由入力。玉/100pt と pt/玉は連動します。", tint: t.subTextColor.opacity(0.72)) }) {
                             HStack {
                                 Text("貸玉数（500ptあたり）")
-                                    .foregroundColor(.white.opacity(0.9))
+                                    .foregroundColor(t.mainTextColor.opacity(0.92))
                                     .fixedSize(horizontal: true, vertical: false)
                                 Spacer()
                                 IntegerPadTextField(
@@ -1191,7 +1195,7 @@ struct ShopEditView: View {
                                     placeholder: "125",
                                     maxDigits: 4,
                                     font: .preferredFont(forTextStyle: .body),
-                                    textColor: UIColor.white,
+                                    textColor: UIColor(t.mainTextColor),
                                     accentColor: UIColor(accent)
                                 )
                                     .multilineTextAlignment(.trailing)
@@ -1199,10 +1203,10 @@ struct ShopEditView: View {
                             HStack(alignment: .top, spacing: 10) {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("持ち玉1回（玉）")
-                                        .foregroundColor(.white.opacity(0.9))
+                                        .foregroundColor(t.mainTextColor.opacity(0.92))
                                     Text("空欄または0＝貸玉と同じ。コンパクト機などで1タップの減り玉が貸玉と違うときに入力。")
                                         .font(.caption2)
-                                        .foregroundColor(.white.opacity(0.58))
+                                        .foregroundColor(t.subTextColor.opacity(0.78))
                                 }
                                 Spacer(minLength: 8)
                                 IntegerPadTextField(
@@ -1210,7 +1214,7 @@ struct ShopEditView: View {
                                     placeholder: "同左",
                                     maxDigits: 4,
                                     font: .preferredFont(forTextStyle: .body),
-                                    textColor: UIColor.white,
+                                    textColor: UIColor(t.mainTextColor),
                                     accentColor: UIColor(accent)
                                 )
                                     .multilineTextAlignment(.trailing)
@@ -1219,7 +1223,7 @@ struct ShopEditView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 HStack(alignment: .center, spacing: 10) {
                                     Text("交換率")
-                                        .foregroundColor(.white.opacity(0.9))
+                                        .foregroundColor(t.mainTextColor.opacity(0.92))
                                         .lineLimit(1)
                                     Spacer(minLength: 8)
                                     Picker("交換率", selection: $exchangeRatePreset) {
@@ -1234,7 +1238,7 @@ struct ShopEditView: View {
                                 }
                                 Text(exchangeRatePreset == .other ? "その他（下の欄で入力）" : exchangeRatePreset.rawValue)
                                     .font(.caption.weight(.medium))
-                                    .foregroundColor(.white.opacity(0.72))
+                                    .foregroundColor(t.subTextColor.opacity(0.88))
                                     .multilineTextAlignment(.leading)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -1244,14 +1248,14 @@ struct ShopEditView: View {
                             if exchangeRatePreset == .other {
                                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                                     Text("玉/100pt")
-                                        .foregroundColor(.white.opacity(0.85))
+                                        .foregroundColor(t.mainTextColor.opacity(0.88))
                                     DecimalPadTextField(
                                         text: $customBallsPer100YenStr,
                                         placeholder: "25.0",
                                         maxIntegerDigits: 4,
                                         maxFractionDigits: 3,
                                         font: .preferredFont(forTextStyle: .body),
-                                        textColor: UIColor.white,
+                                        textColor: UIColor(t.mainTextColor),
                                         accentColor: UIColor(accent)
                                     )
                                         .multilineTextAlignment(.trailing)
@@ -1268,14 +1272,14 @@ struct ShopEditView: View {
                                 }
                                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                                     Text("pt交換")
-                                        .foregroundColor(.white.opacity(0.85))
+                                        .foregroundColor(t.mainTextColor.opacity(0.88))
                                     DecimalPadTextField(
                                         text: $customYenPerBallStr,
                                         placeholder: "4.00",
                                         maxIntegerDigits: 4,
                                         maxFractionDigits: 4,
                                         font: .preferredFont(forTextStyle: .body),
-                                        textColor: UIColor.white,
+                                        textColor: UIColor(t.mainTextColor),
                                         accentColor: UIColor(accent)
                                     )
                                         .multilineTextAlignment(.trailing)
@@ -1292,34 +1296,34 @@ struct ShopEditView: View {
                                 }
                             }
                         }
-                        shopEditPanel(title: "貯玉", trailing: { InfoIconView(explanation: "貯玉（カウンター預かり）に対応している店だけオンにしてください。オンにすると実戦終了時に「貯玉」精算が選べ、換金時の端数玉を残高へ自動加算できます。残高は手入力で合わせたり、精算のたびに増えます。", tint: .white.opacity(0.7)) }) {
+                        shopEditPanel(title: "貯玉", trailing: { InfoIconView(explanation: "貯玉（カウンター預かり）に対応している店だけオンにしてください。オンにすると実戦終了時に「貯玉」精算が選べ、換金時の端数玉を残高へ自動加算できます。残高は手入力で合わせたり、精算のたびに増えます。", tint: t.subTextColor.opacity(0.72)) }) {
                             Toggle("貯玉サービスを利用する", isOn: $supportsChodamaService)
-                                .foregroundColor(.white.opacity(0.92))
+                                .foregroundColor(t.mainTextColor.opacity(0.94))
                             HStack {
                                 Text("貯玉残高（玉）")
-                                    .foregroundColor(.white.opacity(0.9))
+                                    .foregroundColor(t.mainTextColor.opacity(0.92))
                                 Spacer()
                                 IntegerPadTextField(
                                     text: $chodamaBalanceStr,
                                     placeholder: "0",
                                     maxDigits: 9,
                                     font: .preferredFont(forTextStyle: .body),
-                                    textColor: UIColor.white,
+                                    textColor: UIColor(t.mainTextColor),
                                     accentColor: UIColor(accent)
                                 )
                                     .multilineTextAlignment(.trailing)
                             }
                         }
-                        shopEditPanel(title: "特定日ルール（分析で使用・最大4つ）", trailing: { InfoIconView(explanation: "種類で「毎月N日」か「Nのつく日」を選び、右のN欄に数字を入力。個別店舗分析の「特定日傾向」に追加順で表示されます。", tint: .white.opacity(0.7)) }) {
+                        shopEditPanel(title: "特定日ルール（分析で使用・最大4つ）", trailing: { InfoIconView(explanation: "種類で「毎月N日」か「Nのつく日」を選び、右のN欄に数字を入力。個別店舗分析の「特定日傾向」に追加順で表示されます。", tint: t.subTextColor.opacity(0.72)) }) {
                             VStack(alignment: .leading, spacing: 12) {
                                 HStack(spacing: 6) {
                                     Text("種類")
                                         .font(.caption)
-                                        .foregroundColor(.white.opacity(0.7))
+                                        .foregroundColor(t.subTextColor.opacity(0.88))
                                         .frame(width: 36, alignment: .leading)
                                     Text("N")
                                         .font(.caption)
-                                        .foregroundColor(.white.opacity(0.7))
+                                        .foregroundColor(t.subTextColor.opacity(0.88))
                                         .frame(width: 28, alignment: .center)
                                 }
                                 .padding(.leading, 28)
@@ -1327,7 +1331,7 @@ struct ShopEditView: View {
                                     HStack(spacing: 8) {
                                         Text(["①", "②", "③", "④"][i])
                                             .font(.subheadline.weight(.medium))
-                                            .foregroundColor(.white.opacity(0.9))
+                                            .foregroundColor(t.mainTextColor.opacity(0.92))
                                             .frame(width: 20, alignment: .center)
                                         Picker("", selection: Binding(
                                             get: { specificDayEntries[i].type },
@@ -1357,7 +1361,7 @@ struct ShopEditView: View {
                                             placeholder: specificDayEntries[i].type == .monthDay ? "1〜31" : "0〜9",
                                             maxDigits: 2,
                                             font: .preferredFont(forTextStyle: .body),
-                                            textColor: UIColor.white,
+                                            textColor: UIColor(t.mainTextColor),
                                             accentColor: UIColor(accent)
                                         )
                                         .multilineTextAlignment(.center)
@@ -1365,7 +1369,7 @@ struct ShopEditView: View {
                                         if !displayLabel(for: i).isEmpty {
                                             Text(displayLabel(for: i))
                                                 .font(.caption)
-                                                .foregroundColor(.white.opacity(0.7))
+                                                .foregroundColor(t.subTextColor.opacity(0.88))
                                                 .lineLimit(1)
                                         }
                                     }
@@ -1395,7 +1399,7 @@ struct ShopEditView: View {
             .navigationBarTitleDisplayMode(.inline)
             .keyboardDismissToolbar()
             .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarBackground(Color.black, for: .navigationBar)
+            .toolbarBackground(t.navigationBarBackdropColor, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .preferredColorScheme(.dark)
             .tint(accent)
@@ -1492,7 +1496,7 @@ struct ShopEditView: View {
                         .fill(
                             !isShopBrowserExpanded
                                 ? accent.opacity(0.22)
-                                : Color.white.opacity(0.06)
+                                : t.formCanvasMutedBackground
                         )
                         .frame(width: edgeW + 8)
                         .padding(.leading, 6)
@@ -1501,7 +1505,7 @@ struct ShopEditView: View {
                         .fill(
                             isShopBrowserExpanded && urlReady
                                 ? accent.opacity(0.2)
-                                : (urlReady ? Color.white.opacity(0.05) : Color.white.opacity(0.03))
+                                : (urlReady ? t.formCanvasMidBackground : t.formCanvasDeepBackground)
                         )
                         .frame(width: edgeW + 8)
                         .padding(.trailing, 6)
@@ -1517,13 +1521,13 @@ struct ShopEditView: View {
                 VStack(spacing: 3) {
                     Text(isShopBrowserExpanded ? "Google 検索 表示中" : "店舗の登録")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.white.opacity(0.92))
+                        .foregroundStyle(t.mainTextColor.opacity(0.95))
                     Text("左端・右端をタップ")
                         .font(.caption2.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.62))
+                        .foregroundStyle(t.subTextColor.opacity(0.9))
                     Text(queryHint)
                         .font(.caption2)
-                        .foregroundStyle(.white.opacity(0.48))
+                        .foregroundStyle(t.subTextColor.opacity(0.75))
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
                 }
@@ -1554,12 +1558,7 @@ struct ShopEditView: View {
                     }
                 }
         )
-        .background(Color.black.opacity(0.92))
-        .overlay(
-            RoundedRectangle(cornerRadius: 0)
-                .stroke(Color.white.opacity(0.35), lineWidth: 1)
-                .padding(1)
-        )
+        .pstatsChromeSheetBarStyle()
     }
 
     private func shopBrowserRegisterEdge(width: CGFloat, stripCorner: CGFloat) -> some View {
@@ -1576,13 +1575,13 @@ struct ShopEditView: View {
                     Image(systemName: "doc.text.fill")
                         .font(.system(size: 14, weight: .semibold))
                 }
-                .foregroundStyle(.white.opacity(!isShopBrowserExpanded ? 1.0 : 0.75))
+                .foregroundStyle(t.mainTextColor.opacity(!isShopBrowserExpanded ? 1.0 : 0.78))
                 Text("登録画面")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(t.mainTextColor)
                 Text(!isShopBrowserExpanded ? "いま表示中" : "端をタップで戻る")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(0.58))
+                    .foregroundStyle(t.subTextColor.opacity(0.88))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.85)
@@ -1596,7 +1595,7 @@ struct ShopEditView: View {
                     .stroke(
                         LinearGradient(
                             colors: [
-                                Color.white.opacity(!isShopBrowserExpanded ? 0.42 : 0.18),
+                                t.chromeSheetBorderColor.opacity(!isShopBrowserExpanded ? 1.0 : 0.55),
                                 accent.opacity(!isShopBrowserExpanded ? 0.35 : 0.12)
                             ],
                             startPoint: .topLeading,
@@ -1628,17 +1627,17 @@ struct ShopEditView: View {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11, weight: .bold))
                 }
-                .foregroundStyle(.white.opacity(urlReady ? (isShopBrowserExpanded ? 1.0 : 0.88) : 0.38))
+                .foregroundStyle(t.mainTextColor.opacity(urlReady ? (isShopBrowserExpanded ? 1.0 : 0.9) : 0.42))
                 Text("検索")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white.opacity(urlReady ? 1.0 : 0.45))
+                    .foregroundStyle(t.mainTextColor.opacity(urlReady ? 1.0 : 0.5))
                 Text(
                     urlReady
                         ? (isShopBrowserExpanded ? "いま表示中" : "端をタップで開く")
                         : "先に店名を入力"
                 )
                     .font(.system(size: 10, weight: .medium, design: .rounded))
-                    .foregroundStyle(.white.opacity(urlReady ? 0.58 : 0.42))
+                    .foregroundStyle(t.subTextColor.opacity(urlReady ? 0.88 : 0.72))
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.85)
@@ -1653,7 +1652,7 @@ struct ShopEditView: View {
                         LinearGradient(
                             colors: [
                                 accent.opacity(urlReady && isShopBrowserExpanded ? 0.5 : 0.2),
-                                Color.white.opacity(urlReady ? 0.28 : 0.12)
+                                t.chromeSheetBorderColor.opacity(urlReady ? 0.85 : 0.4)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
