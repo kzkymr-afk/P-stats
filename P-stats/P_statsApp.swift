@@ -32,6 +32,9 @@ struct P_statsApp: App {
             AppBootstrapView()
                 .environment(\.locale, Locale(identifier: "ja_JP"))
                 .environmentObject(ThemeManager.shared)
+                .onAppear {
+                    AdTrackingManager.requestPermission()
+                }
         }
     }
 }

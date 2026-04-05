@@ -339,6 +339,12 @@ struct WinRecord: Identifiable, Codable {
     var normalPhaseHoldingsReconcileBalls: Int? = nil
     /// この当たり区間（大当たりモード／赤残）中に同機能で積算した調整（玉）。旧データは nil
     var bonusPhaseHoldingsReconcileBalls: Int? = nil
+
+    /// その区間の大当たり回数（連チャン含む）。`bonusSessionHitCount` 未保存の旧データは RUSH→2・通常→1 とみなす。
+    var resolvedBonusHitCount: Int {
+        if let c = bonusSessionHitCount, c >= 1 { return c }
+        return type == .rush ? 2 : 1
+    }
 }
 
 struct LendingRecord: Identifiable, Codable {
@@ -378,6 +384,8 @@ struct ResumableState: Codable {
     /// 実戦開始時刻（「続きから」復元用）。旧データは nil
     var sessionStartedAt: Date? = nil
     var initialHoldings: Int
+    /// スランプ用：遊技開始時の貯玉持ち込み玉数。旧 JSON は nil（0 扱い）
+    var slumpChartChodamaCarryInBalls: Int? = nil
     var totalRotations: Int
     var normalRotations: Int
     var initialDisplayRotation: Int
@@ -557,6 +565,8 @@ final class GameSession {
     var slumpChartInitialDisplayRotation: Int = 0
     /// 0 のときは `SessionSlumpChartForSessionView` 側で 125 を仮定
     var slumpChartHoldingsBallsPerTap: Int = 0
+    /// スランプ：開始時貯玉持ち込み（今回遊技の収支に含めない）。旧データは 0
+    var slumpChartChodamaCarryInBalls: Int = 0
     /// `GameSessionSnapshot` を JSON エンコードしたバイト列。nil＝未保存の旧データ。
     var snapshotData: Data? = nil
     /// シンプル入力の「通常時／セッション」タイムライン（JSON）。空＝未使用・旧データ

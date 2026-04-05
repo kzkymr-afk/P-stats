@@ -31,6 +31,18 @@ struct SessionSlumpChartForSessionView: View {
                 sessionStart: session.startedAt,
                 timelineEnd: session.endedAt ?? session.date
             )
+            let endFifo = SessionSlumpLiveChartPoints.terminalProfitPtWithChodamaFIFO(
+                wins: wins,
+                lendings: lendings,
+                initialHoldings: session.slumpChartInitialHoldings,
+                initialDisplayRotation: session.slumpChartInitialDisplayRotation,
+                normalRotationsEnd: session.normalRotations,
+                dynamicBorder: dynamicBorderForSlump,
+                payoutCoefficient: payoutCoefficient,
+                holdingsBallsPerTap: holdingsBallsPerTapResolved,
+                chodamaCarryInBalls: session.slumpChartChodamaCarryInBalls,
+                timeline: timeline
+            )
             return SessionSlumpLiveChartPoints.build(
                 wins: wins,
                 lendings: lendings,
@@ -40,7 +52,8 @@ struct SessionSlumpChartForSessionView: View {
                 dynamicBorder: dynamicBorderForSlump,
                 payoutCoefficient: payoutCoefficient,
                 holdingsBallsPerTap: holdingsBallsPerTapResolved,
-                finalProfitPt: Double(session.performance),
+                finalProfitPt: endFifo,
+                chodamaCarryInBalls: session.slumpChartChodamaCarryInBalls,
                 timeline: timeline
             )
         }

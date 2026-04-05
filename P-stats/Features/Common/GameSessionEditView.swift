@@ -612,7 +612,7 @@ struct GameSessionEditView: View {
                     }
 
                     if let rec = sessionToEdit,
-                       !rec.settlementModeRaw.isEmpty || rec.exchangeCashProceedsPt > 0 || rec.chodamaBalanceDeltaBalls > 0 {
+                       !rec.settlementModeRaw.isEmpty || rec.exchangeCashProceedsPt > 0 || rec.chodamaBalanceDeltaBalls != 0 {
                         editDetailCard(title: "精算（記録・参照のみ）", systemImage: "doc.plaintext") {
                             settlementReadonlyContent(rec)
                         }
@@ -745,11 +745,12 @@ struct GameSessionEditView: View {
                 }
                 .font(AppTypography.bodyRounded)
             }
-            if rec.chodamaBalanceDeltaBalls > 0 {
+            if rec.chodamaBalanceDeltaBalls != 0 {
                 HStack {
-                    Text("貯玉へ加算").foregroundColor(skin.subTextColor.opacity(0.92))
+                    Text(rec.chodamaBalanceDeltaBalls > 0 ? "貯玉残高の増加" : "貯玉残高の減少")
+                        .foregroundColor(skin.subTextColor.opacity(0.92))
                     Spacer()
-                    Text("\(rec.chodamaBalanceDeltaBalls) 玉").foregroundColor(skin.mainTextColor)
+                    Text("\(abs(rec.chodamaBalanceDeltaBalls)) 玉").foregroundColor(skin.mainTextColor)
                 }
                 .font(AppTypography.bodyRounded)
             }

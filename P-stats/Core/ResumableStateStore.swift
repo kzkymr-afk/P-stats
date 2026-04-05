@@ -33,6 +33,7 @@ enum ResumableStateStore {
             shopName: log.selectedShop.name,
             sessionStartedAt: log.sessionStartedAt,
             initialHoldings: log.initialHoldings,
+            slumpChartChodamaCarryInBalls: log.slumpChartChodamaCarryInBalls,
             totalRotations: log.totalRotations,
             normalRotations: log.normalRotations,
             initialDisplayRotation: log.initialDisplayRotation,

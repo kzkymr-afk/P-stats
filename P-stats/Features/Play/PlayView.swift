@@ -218,7 +218,7 @@ struct PlayView: View {
         }
     }
 
-    /// 実戦終了シート：回収出玉・終了時通常回転の両方が有効な整数で埋まっているか
+    /// 実戦終了シート：今回の獲得出玉・終了時通常回転の両方が有効な整数で埋まっているか
     private var finalSessionEndFormValid: Bool {
         let hTrim = finalHoldingsInput.trimmingCharacters(in: .whitespaces)
         let rTrim = finalDisplayRotationsInput.trimmingCharacters(in: .whitespaces)
@@ -234,7 +234,7 @@ struct PlayView: View {
         guard let finalBalls = Int(hTrim), finalBalls >= 0,
               let finalDisplay = Int(rTrim), finalDisplay >= 0
         else {
-            errorMessage = "流した球・終了時の回転数は 0 以上の整数で入力してください。"
+            errorMessage = "今回の獲得出玉・終了時の回転数は 0 以上の整数で入力してください。"
             showErrorAlert = true
             return
         }
@@ -244,7 +244,7 @@ struct PlayView: View {
         if log.totalHoldings > 0 {
             showSettlementSheet = true
         } else {
-            if saveCurrentSession(settlementMode: nil) {
+            if saveCurrentSession(settlement: nil) {
                 dismissPlayAfterSaveFlow()
             }
         }
@@ -560,6 +560,8 @@ struct PlayView: View {
 
     @ViewBuilder
     private func playBigHitModeMainColumn(geo: GeometryProxy, metrics: PlaySessionLayoutMetrics) -> some View {
+        winCountPanel(height: metrics.hWinCount)
+        Spacer().frame(height: 3)
         SessionSlumpLineChartView(log: log, height: metrics.hSlumpBig, strokeTint: bigHitChainLineTint(log.bigHitChainCount))
             .padding(.horizontal, infoPanelHorizontalMargin)
             .animation(.easeInOut(duration: 0.28), value: log.bigHitChainCount)
@@ -1011,13 +1013,13 @@ struct PlayView: View {
             Text("RUSH")
                 .font(playThemedFont(15, weight: .semibold))
                 .foregroundColor(skin.playRushAccent.opacity(0.95))
-            Text("\(log.rushWinCount)回")
+            Text("\(log.displayedRushBonusHitCountForPanel)回")
                 .font(playThemedFont(17, weight: .bold, monospaced: true))
                 .foregroundColor(focusAccent)
             Text("通常")
                 .font(playThemedFont(15, weight: .semibold))
                 .foregroundColor(skin.playNormalAccent.opacity(0.95))
-            Text("\(log.normalWinCount)回")
+            Text("\(log.displayedNormalBonusHitCountForPanel)回")
                 .font(playThemedFont(17, weight: .bold, monospaced: true))
                 .foregroundColor(focusAccent)
         }
@@ -1493,12 +1495,12 @@ struct PlayView: View {
         .sheet(isPresented: $showFinalHoldingsInput) {
             NavigationStack {
                 VStack(alignment: .leading, spacing: 18) {
-                    Text("実際に流した玉数（回収出玉）と、やめた時点の台の回転数を入力してください。どちらも必須です（0 なら 0 と入力）。流した玉はアプリ上の持ち玉（\(log.totalHoldings)玉）との差分を自動調整します。\n\n終了時の回転数は、前回の実戦を終えてから今回やめるまでのあいだに、台やデータランプに表示される回転数の終わりの値です。電サポや時短で消化した回転もランプに乗るタイプなら、その見た目の累積に合わせてください（アプリの「通常回転」だけの数と違うことがあります）。")
+                    Text("今回の獲得出玉と、やめた時点の台の回転数を入力してください。どちらも必須です（0 なら 0 と入力）。今回の獲得出玉はアプリ上の持ち玉（\(log.totalHoldings)玉）との差分を自動調整します。\n\n終了時の回転数は、前回の実戦を終えてから今回やめるまでのあいだに、台やデータランプに表示される回転数の終わりの値です。電サポや時短で消化した回転もランプに乗るタイプなら、その見た目の累積に合わせてください（アプリの「通常回転」だけの数と違うことがあります）。")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("流した球（回収出玉）")
+                        Text("今回の獲得出玉")
                             .font(.subheadline)
                             .fontWeight(.semibold)
                         IntegerPadTextField(
@@ -1564,20 +1566,21 @@ struct PlayView: View {
                 Text(String(r.dropFirst(7)))
             }
         }
-        .sheet(isPresented: $showSettlementSheet) {
+        .fullScreenCover(isPresented: $showSettlementSheet) {
             SessionSettlementSheet(
                 recoveryBalls: log.totalHoldings,
+                chodamaBalanceBefore: log.selectedShop.chodamaBalanceBalls,
                 payoutCoefficient: log.selectedShop.payoutCoefficient,
                 supportsChodama: log.selectedShop.supportsChodamaService,
                 onCancel: { showSettlementSheet = false },
-                onConfirm: { mode in
+                onConfirm: { outcome in
                     showSettlementSheet = false
-                    if saveCurrentSession(settlementMode: mode) {
+                    if saveCurrentSession(settlement: outcome) {
                         dismissPlayAfterSaveFlow()
                     }
                 }
             )
-            .presentationDetents([.medium, .large])
+            .environmentObject(themeManager)
         }
         .overlay(alignment: .top) {
             EmptyView()
@@ -1694,9 +1697,9 @@ struct PlayView: View {
         }) ?? matches.first
     }
 
-    /// - Parameter settlementMode: 回収玉が 1 玉以上のとき実戦フローで選択。`nil` は未精算（旧挙動・回収 0）
+    /// - Parameter settlement: 回収玉が 1 玉以上のとき実戦フローで選択。`nil` は未精算（回収 0）
     @discardableResult
-    private func saveCurrentSession(settlementMode: SessionSettlementMode?) -> Bool {
+    private func saveCurrentSession(settlement: SessionSettlementOutcome?) -> Bool {
         guard !isSavingSession else { return false }
         isSavingSession = true
         defer { isSavingSession = false }
@@ -1706,23 +1709,12 @@ struct PlayView: View {
         var settlementRaw = ""
         var exchangePt = 0
         var chodamaDelta = 0
-        if let mode = settlementMode {
-            settlementRaw = mode.rawValue
-            let balls = log.totalHoldings
-            let rate = refShop.payoutCoefficient
-            switch mode {
-            case .chodama:
-                if let shop = persistedShop, shop.supportsChodamaService {
-                    chodamaDelta = balls
-                    shop.chodamaBalanceBalls += balls
-                }
-            case .exchange:
-                let bd = ChodamaSettlement.exchangeBreakdown(balls: balls, yenPerBall: rate)
-                exchangePt = bd.cashProceedsPt
-                if let shop = persistedShop, shop.supportsChodamaService {
-                    chodamaDelta = bd.remainderBalls
-                    shop.chodamaBalanceBalls += bd.remainderBalls
-                }
+        if let s = settlement {
+            settlementRaw = s.mode.rawValue
+            exchangePt = s.exchangeCashProceedsPt
+            chodamaDelta = s.chodamaBalanceDeltaBalls
+            if let shop = persistedShop, shop.supportsChodamaService {
+                shop.chodamaBalanceBalls += chodamaDelta
             }
         }
         // 期待値計算用：実質投資が0の場合は現金＋持ち玉円換算で補正（記録漏れ対策）
@@ -1760,6 +1752,7 @@ struct PlayView: View {
         session.isCashflowOnlyRecord = false
         session.slumpChartInitialHoldings = log.initialHoldings
         session.slumpChartInitialDisplayRotation = log.initialDisplayRotation
+        session.slumpChartChodamaCarryInBalls = log.slumpChartChodamaCarryInBalls
         session.slumpChartHoldingsBallsPerTap = max(1, log.selectedShop.interpretedHoldingsBallsPerTap)
         if let winData = try? JSONEncoder.slumpChart.encode(log.winRecords),
            let winStr = String(data: winData, encoding: .utf8) {

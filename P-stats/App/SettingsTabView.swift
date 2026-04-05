@@ -813,6 +813,44 @@ struct SettingsTabView: View {
                             }
                         }
                     }
+
+                    #if DEBUG
+                    sectionHeader("デモデータ注入")
+                    settingsCard(title: "デモデータ注入", icon: "testtube.2") {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("実戦履歴（GameSession）のみを対象にします。機種・店舗マスタは消しません。")
+                                .font(AppTypography.annotationSmall)
+                                .foregroundColor(.white.opacity(0.55))
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button {
+                                DataGenerator.deleteAllSessions(context: modelContext)
+                                try? modelContext.save()
+                            } label: {
+                                Label("全データを削除", systemImage: "trash.fill")
+                                    .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .foregroundColor(.white)
+                                    .background(Color.red.opacity(DesignTokens.Surface.BlackOverlay.shadowCard))
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                            .buttonStyle(.plain)
+                            Button {
+                                DataGenerator.generateDummyData(context: modelContext)
+                                try? modelContext.save()
+                            } label: {
+                                Label("3ヶ月分のデモデータを生成", systemImage: "wand.and.stars")
+                                    .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .foregroundColor(.black)
+                                    .background(cyan.opacity(0.92))
+                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    #endif
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 12)

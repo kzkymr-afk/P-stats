@@ -18,6 +18,8 @@ final class GameLog {
     
     /// 初期持ち玉（syncHoldings/syncToSnapshot で調整され、totalHoldings 計算のベースになる）
     var initialHoldings: Int = 0
+    /// 遊技開始時に台へ載せた貯玉（店のカウンター持ち込み分）。スランプ・`chartProfitPt` では今回遊技の収支に含めず、撃ち・持ち玉タップは先にこの分から FIFO で消費する。非貯玉店は 0。
+    var slumpChartChodamaCarryInBalls: Int = 0
     var totalRotations: Int = 0
     var normalRotations: Int = 0
     /// 新規開始時に設定した台表示数（表示合わせのみ・あとから修正用）
@@ -425,10 +427,30 @@ final class GameLog {
 
     // 計算用
     var totalInput: Int { lendingRecords.filter { $0.type == .cash }.count * 500 }
-    /// RUSH 当選回数
+    /// RUSH **区間**の数（1セッション＝1件として数える）。保存の `rushWinCount` 等に使用
     var rushWinCount: Int { winRecords.filter { $0.type == .rush }.count }
-    /// 通常当選回数
+    /// 通常当選**区間**の数
     var normalWinCount: Int { winRecords.filter { $0.type == .normal }.count }
+
+    /// 確定済み RUSH 区間の大当たり回数の累計（各区間の連チャン本数の合計）
+    var cumulativeRushBonusHitCount: Int {
+        winRecords.filter { $0.type == .rush }.reduce(0) { $0 + $1.resolvedBonusHitCount }
+    }
+    /// 確定済み通常当たりの回数の累計
+    var cumulativeNormalBonusHitCount: Int {
+        winRecords.filter { $0.type == .normal }.reduce(0) { $0 + $1.resolvedBonusHitCount }
+    }
+    /// RUSH／通常パネル表示：上記累計に、大当たりモード中の未確定分を加算（連チャン2以上→RUSH、1→通常）
+    var displayedRushBonusHitCountForPanel: Int {
+        var v = cumulativeRushBonusHitCount
+        if isBigHitMode, bigHitChainCount >= 2 { v += bigHitChainCount }
+        return v
+    }
+    var displayedNormalBonusHitCountForPanel: Int {
+        var v = cumulativeNormalBonusHitCount
+        if isBigHitMode, bigHitChainCount == 1 { v += 1 }
+        return v
+    }
 
     /// 現在の RUSH 連チャン回数（直近から遡って連続する .rush の件数）。.normal で終わっていれば 0。
     var currentRushChainCount: Int {
@@ -491,12 +513,21 @@ final class GameLog {
     /// 今回の成績（pt）。回収 − 投入
     var balancePt: Int { incomePt500Step - totalInput }
 
-    /// 現在の損益（pt）。投資＋持ち玉投資（払出係数でpt換算）に対する、現在の持ち玉（払出係数でpt換算）の差。正＝黒字側
+    /// 現在の損益（pt）。投資＋**今回遊技に帰す持ち玉投資**（払出係数でpt換算）に対する、**今回遊技の持ち玉**（出玉由来・貯玉持ち込み分は FIFO で先に撃ち消費）の価値との差。正＝黒字側
     var chartProfitPt: Double {
         let rate = selectedShop.interpretedPayoutCoefficientPtPerBall
-        let currentValue = Double(totalHoldings) * rate
-        let cost = Double(totalInput) + Double(holdingsInvestedBalls) * rate
-        return currentValue - cost
+        return SessionSlumpLiveChartPoints.terminalProfitPtWithChodamaFIFO(
+            wins: winRecords,
+            lendings: lendingRecords,
+            initialHoldings: initialHoldings,
+            initialDisplayRotation: initialDisplayRotation,
+            normalRotationsEnd: normalRotations,
+            dynamicBorder: dynamicBorder,
+            payoutCoefficient: rate,
+            holdingsBallsPerTap: holdingsBallsPerTap,
+            chodamaCarryInBalls: slumpChartChodamaCarryInBalls,
+            timeline: SlumpChartTimelineContext(sessionStart: sessionStartedAt, timelineEnd: Date())
+        )
     }
 
     /// 遊技中の時給（pt/h）。`basis` が期待値のときは理論損益（実費×(期待値比−1)）を時間で割った値。
@@ -533,6 +564,7 @@ final class GameLog {
             payoutCoefficient: selectedShop.interpretedPayoutCoefficientPtPerBall,
             holdingsBallsPerTap: holdingsBallsPerTap,
             finalProfitPt: chartProfitPt,
+            chodamaCarryInBalls: slumpChartChodamaCarryInBalls,
             timeline: SlumpChartTimelineContext(sessionStart: sessionStartedAt, timelineEnd: Date())
         )
         _cachedLiveChartPoints = points
@@ -560,6 +592,7 @@ final class GameLog {
         hasher.combine(totalRotations)
         hasher.combine(selectedShop.interpretedPayoutCoefficientPtPerBall)
         hasher.combine(initialHoldings)
+        hasher.combine(slumpChartChodamaCarryInBalls)
         hasher.combine(initialDisplayRotation)
         hasher.combine(dynamicBorder)
         return hasher.finalize()
@@ -1145,6 +1178,7 @@ final class GameLog {
         undoStack = []
         sessionStartedAt = nil
         initialHoldings = 0
+        slumpChartChodamaCarryInBalls = 0
         initialDisplayRotation = 0
         totalRotations = 0
         normalRotations = 0
@@ -1172,6 +1206,7 @@ final class GameLog {
         selectedShop = shop
         sessionStartedAt = state.sessionStartedAt
         initialHoldings = state.initialHoldings
+        slumpChartChodamaCarryInBalls = state.slumpChartChodamaCarryInBalls ?? 0
         totalRotations = state.totalRotations
         normalRotations = state.normalRotations
         initialDisplayRotation = state.initialDisplayRotation

@@ -1,16 +1,41 @@
 import Foundation
 
-/// 実戦終了時の精算（換金 / 貯玉）
+/// 実戦終了時の精算（履歴 `settlementModeRaw` に保存する識別子）
 enum SessionSettlementMode: String, CaseIterable {
+    /// 旧版：今回の出玉を換金（端数は貯玉対応店のみ貯玉へ）
     case exchange
+    /// 旧版：今回の出玉をすべて貯玉へ
     case chodama
+    /// 今回の獲得出玉をすべて貯玉へ（新式の記録）
+    case winningDepositChodama
+    /// 今回の獲得出玉を換金し、端数 pt を貯玉へ戻す
+    case winningExchangeRemainderChodama
+    /// 今回の獲得出玉を換金し、端数は貯玉に入れない（放棄扱い）
+    case winningExchangeRemainderAbandon
+    /// 今回の出玉を貯玉に預けたあと、貯玉の一部を換金
+    case chodamaPartialExchange
+    /// 今回の出玉を含めた貯玉をすべて換金
+    case chodamaFullExchange
 
     var displayName: String {
         switch self {
-        case .exchange: return "換金"
-        case .chodama: return "貯玉"
+        case .exchange: return "換金（旧）"
+        case .chodama: return "貯玉（旧）"
+        case .winningDepositChodama: return "今回の獲得出玉を貯玉へ"
+        case .winningExchangeRemainderChodama: return "今回の出玉を換金（端数→貯玉）"
+        case .winningExchangeRemainderAbandon: return "今回の出玉を換金（端数なし）"
+        case .chodamaPartialExchange: return "貯玉の一部換金"
+        case .chodamaFullExchange: return "貯玉の全額換金"
         }
     }
+}
+
+/// 精算シート確定時に `saveCurrentSession` へ渡すペイロード（店の貯玉・換金 pt を確定）
+struct SessionSettlementOutcome: Equatable {
+    var mode: SessionSettlementMode
+    var exchangeCashProceedsPt: Int
+    /// `shop.chodamaBalanceBalls` への増減（この保存処理内で加算）
+    var chodamaBalanceDeltaBalls: Int
 }
 
 /// 換金時の内訳（払出係数＝pt/玉 を換金レートとして使用）

@@ -9,6 +9,7 @@ struct SlumpChartTimelineContext: Equatable, Sendable {
 
 /// 実戦中 `GameLog.liveChartPoints` と履歴用デコードデータで共有するスランプ折れ線のプロット生成。
 enum SessionSlumpLiveChartPoints {
+    /// - Parameter chodamaCarryInBalls: 遊技開始時に台に載せた**貯玉**（カウンター持ち込み分）。今回遊技の収支には含めず、撃ち・持ち玉タップでは先にこのプールから消費する（FIFO）。非貯玉店・旧データは 0。
     static func build(
         wins: [WinRecord],
         lendings: [LendingRecord],
@@ -19,6 +20,7 @@ enum SessionSlumpLiveChartPoints {
         payoutCoefficient: Double,
         holdingsBallsPerTap: Int,
         finalProfitPt: Double,
+        chodamaCarryInBalls: Int = 0,
         timeline: SlumpChartTimelineContext? = nil
     ) -> [(Int, Double)] {
         guard payoutCoefficient > 0, payoutCoefficient.isFinite else {
@@ -28,6 +30,7 @@ enum SessionSlumpLiveChartPoints {
         let hTap = max(1, holdingsBallsPerTap)
         let winsOrdered = winsSortedForSlump(wins)
         let lendingsOrdered = lendings.sorted { $0.timestamp < $1.timestamp }
+        let chodama = max(0, chodamaCarryInBalls)
 
         if timeline != nil {
             return buildWithTimeline(
@@ -40,6 +43,7 @@ enum SessionSlumpLiveChartPoints {
                 payoutCoefficient: payoutCoefficient,
                 holdingsBallsPerTap: hTap,
                 finalProfitPt: finalProfitPt,
+                chodamaCarryInBalls: chodama,
                 context: timeline!
             )
         }
@@ -53,7 +57,53 @@ enum SessionSlumpLiveChartPoints {
             dynamicBorder: dynamicBorder,
             payoutCoefficient: payoutCoefficient,
             holdingsBallsPerTap: hTap,
-            finalProfitPt: finalProfitPt
+            finalProfitPt: finalProfitPt,
+            chodamaCarryInBalls: chodama
+        )
+    }
+
+    /// 貯玉 FIFO を反映した終端損益（pt）。`GameLog.chartProfitPt` 用。
+    static func terminalProfitPtWithChodamaFIFO(
+        wins: [WinRecord],
+        lendings: [LendingRecord],
+        initialHoldings: Int,
+        initialDisplayRotation: Int,
+        normalRotationsEnd: Int,
+        dynamicBorder: Double,
+        payoutCoefficient: Double,
+        holdingsBallsPerTap: Int,
+        chodamaCarryInBalls: Int,
+        timeline: SlumpChartTimelineContext?
+    ) -> Double {
+        guard payoutCoefficient > 0, payoutCoefficient.isFinite else { return 0 }
+        let hTap = max(1, holdingsBallsPerTap)
+        let winsOrdered = winsSortedForSlump(wins)
+        let lendingsOrdered = lendings.sorted { $0.timestamp < $1.timestamp }
+        let chodama = max(0, chodamaCarryInBalls)
+        if let context = timeline {
+            return fifoProfitAtEnd(
+                winsOrdered: winsOrdered,
+                lendingsOrdered: lendingsOrdered,
+                initialHoldings: initialHoldings,
+                initialDisplayRotation: initialDisplayRotation,
+                normalRotationsEnd: normalRotationsEnd,
+                dynamicBorder: dynamicBorder,
+                payoutCoefficient: payoutCoefficient,
+                holdingsBallsPerTap: hTap,
+                chodamaCarryInBalls: chodama,
+                context: context
+            )
+        }
+        return fifoProfitAtEndLegacy(
+            winsOrdered: winsOrdered,
+            lendingsOrdered: lendingsOrdered,
+            initialHoldings: initialHoldings,
+            initialDisplayRotation: initialDisplayRotation,
+            normalRotationsEnd: normalRotationsEnd,
+            dynamicBorder: dynamicBorder,
+            payoutCoefficient: payoutCoefficient,
+            holdingsBallsPerTap: hTap,
+            chodamaCarryInBalls: chodama
         )
     }
 
@@ -69,6 +119,7 @@ enum SessionSlumpLiveChartPoints {
         payoutCoefficient: Double,
         holdingsBallsPerTap: Int,
         finalProfitPt: Double,
+        chodamaCarryInBalls: Int,
         context: SlumpChartTimelineContext
     ) -> [(Int, Double)] {
         let anchors = rotationTimeAnchors(
@@ -101,9 +152,11 @@ enum SessionSlumpLiveChartPoints {
         }
 
         var points: [(Int, Double)] = [(0, 0)]
-        var cumulativePrize = 0
+        let fifoInit = fifoPoolsInitial(initialHoldings: initialHoldings, chodamaCarryInBalls: chodamaCarryInBalls)
+        var chodamaRemaining = fifoInit.chodamaRemaining
+        var sessionTray = fifoInit.sessionTray
         var runningInvYen = 0
-        var runningHoldBalls = 0
+        var cumConsumedProcessed = 0
 
         func appendPoint(x rawX: Int, y: Double) {
             let xPrev = points.last?.0 ?? 0
@@ -116,33 +169,34 @@ enum SessionSlumpLiveChartPoints {
             }
         }
 
+        /// 持ち玉は `sessionTray` から既に減っているため、投資分を再度 `×交換率` すると二重計上になる。現金投資のみコスト側に加算。
+        func profitNow() -> Double {
+            Double(sessionTray) * payoutCoefficient - Double(runningInvYen)
+        }
+
         for (_, step) in steps {
             switch step {
             case .lend(let l):
+                let xRaw = normalRotation(at: l.timestamp, anchors: anchors)
+                let cTarget = consumedBallsAtNormalRotation(xRaw, dynamicBorder: dynamicBorder)
+                let spinDelta = max(0, cTarget - cumConsumedProcessed)
+                spendBallsFromPools(spinDelta, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
+                cumConsumedProcessed = cTarget
                 if l.type == .cash {
                     runningInvYen += 500
                 } else {
-                    runningHoldBalls += l.balls ?? holdingsBallsPerTap
+                    let b = l.balls ?? holdingsBallsPerTap
+                    spendBallsFromPools(b, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
                 }
-                let xRaw = normalRotation(at: l.timestamp, anchors: anchors)
-                let y = profitAt(
-                    normalRotations: xRaw,
-                    initialHoldings: initialHoldings,
-                    cumulativePrize: cumulativePrize,
-                    runningHoldBalls: runningHoldBalls,
-                    runningInvYen: runningInvYen,
-                    payoutCoefficient: payoutCoefficient,
-                    dynamicBorder: dynamicBorder
-                )
-                appendPoint(x: xRaw, y: y)
+                appendPoint(x: xRaw, y: profitNow())
             case .win(let win):
-                cumulativePrize += win.prize ?? 0
-                let consumedAtWin = consumedBalls(for: win, dynamicBorder: dynamicBorder, initialDisplayRotation: initialDisplayRotation)
-                let holdingsAtWin = initialHoldings + cumulativePrize - runningHoldBalls - consumedAtWin
-                let cost = Double(runningInvYen) + Double(runningHoldBalls) * payoutCoefficient
-                let profit = Double(max(0, holdingsAtWin)) * payoutCoefficient - cost
                 let xRot = max(0, win.normalRotationsAtWin ?? win.rotationAtWin)
-                appendPoint(x: xRot, y: profit)
+                let cTarget = consumedBalls(for: win, dynamicBorder: dynamicBorder, initialDisplayRotation: initialDisplayRotation)
+                let spinDelta = max(0, cTarget - cumConsumedProcessed)
+                spendBallsFromPools(spinDelta, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
+                cumConsumedProcessed = cTarget
+                sessionTray += win.prize ?? 0
+                appendPoint(x: xRot, y: profitNow())
             }
         }
 
@@ -238,19 +292,143 @@ enum SessionSlumpLiveChartPoints {
         return last.1
     }
 
-    private static func profitAt(
-        normalRotations: Int,
+    // MARK: - 貯玉 FIFO（スランプ・chartProfitPt 共通）
+
+    private static func fifoPoolsInitial(initialHoldings: Int, chodamaCarryInBalls: Int) -> (chodamaRemaining: Int, sessionTray: Int) {
+        let i = max(0, initialHoldings)
+        let cap = min(max(0, chodamaCarryInBalls), i)
+        return (cap, i - cap)
+    }
+
+    /// 台から `balls` 玉減らす。先に貯玉プール、残りは今回遊技の持ち玉（`sessionTray`）。
+    private static func spendBallsFromPools(
+        _ balls: Int,
+        chodamaRemaining: inout Int,
+        sessionTray: inout Int
+    ) {
+        guard balls > 0 else { return }
+        let fromChod = min(balls, chodamaRemaining)
+        chodamaRemaining -= fromChod
+        let fromSession = balls - fromChod
+        guard fromSession > 0 else { return }
+        sessionTray = max(0, sessionTray - fromSession)
+    }
+
+    private static func fifoProfitAtEnd(
+        winsOrdered: [WinRecord],
+        lendingsOrdered: [LendingRecord],
         initialHoldings: Int,
-        cumulativePrize: Int,
-        runningHoldBalls: Int,
-        runningInvYen: Int,
+        initialDisplayRotation: Int,
+        normalRotationsEnd: Int,
+        dynamicBorder: Double,
         payoutCoefficient: Double,
-        dynamicBorder: Double
+        holdingsBallsPerTap: Int,
+        chodamaCarryInBalls: Int,
+        context: SlumpChartTimelineContext
     ) -> Double {
-        let consumed = consumedBallsAtNormalRotation(normalRotations, dynamicBorder: dynamicBorder)
-        let holdingsAt = initialHoldings + cumulativePrize - runningHoldBalls - consumed
-        let cost = Double(runningInvYen) + Double(runningHoldBalls) * payoutCoefficient
-        return Double(max(0, holdingsAt)) * payoutCoefficient - cost
+        let anchors = rotationTimeAnchors(
+            winsOrdered: winsOrdered,
+            lendingsOrdered: lendingsOrdered,
+            normalRotationsEnd: normalRotationsEnd,
+            context: context
+        )
+        enum Merged { case lend(LendingRecord); case win(WinRecord) }
+        var steps: [(Date, Merged)] = []
+        let winTimes = effectiveWinDates(winsOrdered: winsOrdered, lendingsOrdered: lendingsOrdered, context: context)
+        for l in lendingsOrdered { steps.append((l.timestamp, .lend(l))) }
+        for w in winsOrdered {
+            steps.append((winTimes[w.id] ?? context.timelineEnd, .win(w)))
+        }
+        steps.sort { a, b in
+            if a.0 != b.0 { return a.0 < b.0 }
+            switch (a.1, b.1) {
+            case (.lend, .win): return true
+            case (.win, .lend): return false
+            default: return false
+            }
+        }
+        let fifoInit = fifoPoolsInitial(initialHoldings: initialHoldings, chodamaCarryInBalls: chodamaCarryInBalls)
+        var chodamaRemaining = fifoInit.chodamaRemaining
+        var sessionTray = fifoInit.sessionTray
+        var runningInvYen = 0
+        var cumConsumedProcessed = 0
+        for (_, step) in steps {
+            switch step {
+            case .lend(let l):
+                let xRaw = normalRotation(at: l.timestamp, anchors: anchors)
+                let cTarget = consumedBallsAtNormalRotation(xRaw, dynamicBorder: dynamicBorder)
+                let spinDelta = max(0, cTarget - cumConsumedProcessed)
+                spendBallsFromPools(spinDelta, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
+                cumConsumedProcessed = cTarget
+                if l.type == .cash {
+                    runningInvYen += 500
+                } else {
+                    let b = l.balls ?? holdingsBallsPerTap
+                    spendBallsFromPools(b, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
+                }
+            case .win(let win):
+                let cTarget = consumedBalls(for: win, dynamicBorder: dynamicBorder, initialDisplayRotation: initialDisplayRotation)
+                let spinDelta = max(0, cTarget - cumConsumedProcessed)
+                spendBallsFromPools(spinDelta, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
+                cumConsumedProcessed = cTarget
+                sessionTray += win.prize ?? 0
+            }
+        }
+        let cEnd = consumedBallsAtNormalRotation(max(0, normalRotationsEnd), dynamicBorder: dynamicBorder)
+        let spinToEnd = max(0, cEnd - cumConsumedProcessed)
+        spendBallsFromPools(spinToEnd, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
+        return Double(sessionTray) * payoutCoefficient - Double(runningInvYen)
+    }
+
+    private static func fifoProfitAtEndLegacy(
+        winsOrdered: [WinRecord],
+        lendingsOrdered: [LendingRecord],
+        initialHoldings: Int,
+        initialDisplayRotation: Int,
+        normalRotationsEnd: Int,
+        dynamicBorder: Double,
+        payoutCoefficient: Double,
+        holdingsBallsPerTap: Int,
+        chodamaCarryInBalls: Int
+    ) -> Double {
+        let fifoInit = fifoPoolsInitial(initialHoldings: initialHoldings, chodamaCarryInBalls: chodamaCarryInBalls)
+        var chodamaRemaining = fifoInit.chodamaRemaining
+        var sessionTray = fifoInit.sessionTray
+        var runningInvYen = 0
+        var cumConsumedProcessed = 0
+        var currentLendingIndex = 0
+        for win in winsOrdered {
+            let t = win.timestamp ?? .distantPast
+            while currentLendingIndex < lendingsOrdered.count && lendingsOrdered[currentLendingIndex].timestamp < t {
+                let l = lendingsOrdered[currentLendingIndex]
+                if l.type == .cash {
+                    runningInvYen += 500
+                } else {
+                    let b = l.balls ?? holdingsBallsPerTap
+                    spendBallsFromPools(b, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
+                }
+                currentLendingIndex += 1
+            }
+            let cTarget = consumedBalls(for: win, dynamicBorder: dynamicBorder, initialDisplayRotation: initialDisplayRotation)
+            let spinDelta = max(0, cTarget - cumConsumedProcessed)
+            spendBallsFromPools(spinDelta, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
+            cumConsumedProcessed = cTarget
+            sessionTray += win.prize ?? 0
+        }
+        while currentLendingIndex < lendingsOrdered.count {
+            let l = lendingsOrdered[currentLendingIndex]
+            if l.type == .cash {
+                runningInvYen += 500
+            } else {
+                let b = l.balls ?? holdingsBallsPerTap
+                spendBallsFromPools(b, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
+            }
+            currentLendingIndex += 1
+        }
+        let cEnd = consumedBallsAtNormalRotation(max(0, normalRotationsEnd), dynamicBorder: dynamicBorder)
+        let spinToEnd = max(0, cEnd - cumConsumedProcessed)
+        spendBallsFromPools(spinToEnd, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
+        return Double(sessionTray) * payoutCoefficient - Double(runningInvYen)
     }
 
     // MARK: - 従来ルート（timeline なし・互換）
@@ -264,14 +442,17 @@ enum SessionSlumpLiveChartPoints {
         dynamicBorder: Double,
         payoutCoefficient: Double,
         holdingsBallsPerTap: Int,
-        finalProfitPt: Double
+        finalProfitPt: Double,
+        chodamaCarryInBalls: Int
     ) -> [(Int, Double)] {
         var points: [(Int, Double)] = [(0, 0)]
 
-        var cumulativePrize = 0
-        var currentLendingIndex = 0
+        let fifoInit = fifoPoolsInitial(initialHoldings: initialHoldings, chodamaCarryInBalls: chodamaCarryInBalls)
+        var chodamaRemaining = fifoInit.chodamaRemaining
+        var sessionTray = fifoInit.sessionTray
         var runningInvYen = 0
-        var runningHoldBalls = 0
+        var cumConsumedProcessed = 0
+        var currentLendingIndex = 0
 
         for win in winsOrdered {
             let t = win.timestamp ?? .distantPast
@@ -281,18 +462,31 @@ enum SessionSlumpLiveChartPoints {
                 if l.type == .cash {
                     runningInvYen += 500
                 } else {
-                    runningHoldBalls += l.balls ?? holdingsBallsPerTap
+                    let b = l.balls ?? holdingsBallsPerTap
+                    spendBallsFromPools(b, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
                 }
                 currentLendingIndex += 1
             }
 
-            cumulativePrize += win.prize ?? 0
-            let consumedAtWin = consumedBalls(for: win, dynamicBorder: dynamicBorder, initialDisplayRotation: initialDisplayRotation)
-            let holdingsAtWin = initialHoldings + cumulativePrize - runningHoldBalls - consumedAtWin
-            let cost = Double(runningInvYen) + Double(runningHoldBalls) * payoutCoefficient
-            let profit = Double(max(0, holdingsAtWin)) * payoutCoefficient - cost
+            let cTarget = consumedBalls(for: win, dynamicBorder: dynamicBorder, initialDisplayRotation: initialDisplayRotation)
+            let spinDelta = max(0, cTarget - cumConsumedProcessed)
+            spendBallsFromPools(spinDelta, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
+            cumConsumedProcessed = cTarget
+            sessionTray += win.prize ?? 0
+            let profit = Double(sessionTray) * payoutCoefficient - Double(runningInvYen)
             let xRot = win.normalRotationsAtWin ?? win.rotationAtWin
             points.append((xRot, profit))
+        }
+
+        while currentLendingIndex < lendingsOrdered.count {
+            let l = lendingsOrdered[currentLendingIndex]
+            if l.type == .cash {
+                runningInvYen += 500
+            } else {
+                let b = l.balls ?? holdingsBallsPerTap
+                spendBallsFromPools(b, chodamaRemaining: &chodamaRemaining, sessionTray: &sessionTray)
+            }
+            currentLendingIndex += 1
         }
 
         closeWithFinalPoint(

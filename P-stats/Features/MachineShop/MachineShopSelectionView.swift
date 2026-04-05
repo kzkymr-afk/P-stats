@@ -468,6 +468,7 @@ struct MachineShopSelectionView: View {
                     return
                 }
                 log.initialHoldings = max(0, holdings)
+                log.slumpChartChodamaCarryInBalls = log.selectedShop.supportsChodamaService ? max(0, holdings) : 0
                 onGateStart?()
             } label: {
                 Text("遊技開始")
