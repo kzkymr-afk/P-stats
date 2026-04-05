@@ -1,0 +1,5258 @@
+[
+  {
+    "machine_id": "4993",
+    "name": "eまわるん超ワープ ギンギラパラダイス VIVA FESTA",
+    "manufacturer": "サンスリー",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4980",
+    "name": "Pクイーンズブレイド奈落ナナエル79Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/79.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/05/11",
+    "status": ""
+  },
+  {
+    "machine_id": "4995",
+    "name": "PフィーバークィーンⅡ",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/05/11",
+    "status": ""
+  },
+  {
+    "machine_id": "4999",
+    "name": "eルパン三世VSキャッツ・アイ 157ver. 極限突破ブッた斬り 7500",
+    "manufacturer": "アムテックス",
+    "probability": "1/157.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/05/11",
+    "status": ""
+  },
+  {
+    "machine_id": "5004",
+    "name": "eカケグルイ 7500ver",
+    "manufacturer": "D-light",
+    "probability": "1/204",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/05/11",
+    "status": ""
+  },
+  {
+    "machine_id": "5005",
+    "name": "eカケグルイ 219ver",
+    "manufacturer": "D-light",
+    "probability": "1/219",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/05/11",
+    "status": ""
+  },
+  {
+    "machine_id": "5006",
+    "name": "eひきこまり吸血姫の悶々",
+    "manufacturer": "藤商事",
+    "probability": "1/129",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/05/11",
+    "status": ""
+  },
+  {
+    "machine_id": "4994",
+    "name": "eリング 最恐領域",
+    "manufacturer": "オレンジ",
+    "probability": "1/399",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/04/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4985",
+    "name": "e86-エイティシックス-",
+    "manufacturer": "アムテックス",
+    "probability": "1/239.1",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/04/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4958",
+    "name": "eフィーバーキン肉マン",
+    "manufacturer": "SANKYO",
+    "probability": "1/399.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/04/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4982",
+    "name": "eリコリス・リコイル",
+    "manufacturer": "ニューギン",
+    "probability": "1/259.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/04/06",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4990",
+    "name": "e転生したらスライムだった件2",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/399.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/04/06",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4991",
+    "name": "P ウルトラマンメビウス デカヘソ319",
+    "manufacturer": "OK!!",
+    "probability": "1/319.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/04/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4990",
+    "name": "e転生したらスライムだった件2",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/399.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/04/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4989",
+    "name": "PAコマコマ倶楽部 with 坂本冬美 89確変ループ10ラウンド極",
+    "manufacturer": "豊丸",
+    "probability": "1/89.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/04/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4988",
+    "name": "P にゃんこ大戦争 多様性のネコ 神さまにおまかせ 88ver.",
+    "manufacturer": "京楽",
+    "probability": "1/88.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/04/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4963",
+    "name": "e 終末のワルキューレ",
+    "manufacturer": "サミー",
+    "probability": "1/219.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/04/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4962",
+    "name": "eラグナドール 妖しき皇帝と終焉の夜叉姫",
+    "manufacturer": "メーシー",
+    "probability": "1/239.5",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/04/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4978",
+    "name": "スマパチ SSSS.GRIDMAN メガSTART 159ver.",
+    "manufacturer": "七匠",
+    "probability": "1/159.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/16",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4976",
+    "name": "e 乃木坂46 Ⅱ SWEET Version",
+    "manufacturer": "京楽",
+    "probability": "1/129.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/16",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4975",
+    "name": "P モモキュンソード 速撃99ver.",
+    "manufacturer": "ソフィア",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/16",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4942",
+    "name": "Pえとたま2 神祭 干支甘",
+    "manufacturer": "メーシー",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/16",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4977",
+    "name": "PキングモンスターRUSH 67Ver.",
+    "manufacturer": "竹屋",
+    "probability": "1/67.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/16",
+    "status": ""
+  },
+  {
+    "machine_id": "4979",
+    "name": "PA戦国乙女7 終焉の関ヶ原 ときめき78バージョン",
+    "manufacturer": "アムテックス アムテックス",
+    "probability": "1/78.21",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4972",
+    "name": "P Re:ゼロから始める異世界生活 season2 249ver.",
+    "manufacturer": "大都技研",
+    "probability": "1/249.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4971",
+    "name": "P Re:ゼロから始める異世界生活 season2 129ver.",
+    "manufacturer": "大都技研",
+    "probability": "1/129.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4969",
+    "name": "eワンパンマン2～正義執行",
+    "manufacturer": "ニューギン",
+    "probability": "1/179.55",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4968",
+    "name": "e牙狼11〜冴島大河〜魔戒BURST Ver.",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/349.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4967",
+    "name": "P攻殻機動隊SAC_2045 LT99ver.",
+    "manufacturer": "D-light",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4966",
+    "name": "e 魔法少女まどか☆マギカ3 時間遡行〜始まりの願い〜",
+    "manufacturer": "京楽",
+    "probability": "1/319.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4957",
+    "name": "P痛いのは嫌なので防御力に極振りしたいと思います。 極振り129ver",
+    "manufacturer": "藤商事",
+    "probability": "1/129",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4955",
+    "name": "P戦国乙女7 終焉の関ヶ原 99ver.",
+    "manufacturer": "アムテックス",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4954",
+    "name": "eアクダマドライブ",
+    "manufacturer": "三洋",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4946",
+    "name": "eフィーバーダンベル何キロ持てる？2",
+    "manufacturer": "SANKYO",
+    "probability": "1/149.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4935",
+    "name": "e 甲鉄城のカバネリ2 咲かせや燦然",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/03/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4947",
+    "name": "e異世界でチート能力を手にした俺は現実世界をも無双する 〜レベルアップは人生を変えた〜",
+    "manufacturer": "藤商事",
+    "probability": "1/179",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/02/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4927",
+    "name": "e 真・北斗無双 第5章 夢幻闘双",
+    "manufacturer": "サミー",
+    "probability": "1/159.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/02/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4923",
+    "name": "eフィーバーBASTARD!! -暗黒の破壊神-",
+    "manufacturer": "SANKYO",
+    "probability": "1/399.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/02/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4960",
+    "name": "PA乗物娘 WITH CYBER JAPAN DANCERS 2nd season 59ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/59.95",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/02/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4959",
+    "name": "e AぷらねっとアポロGO",
+    "manufacturer": "豊丸×ごらく",
+    "probability": "1/99",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/02/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4953",
+    "name": "P冴えない彼女の育てかた 99ver.",
+    "manufacturer": "大都技研",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/02/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4952",
+    "name": "P 俺の妹がこんなに可愛いわけがない。攻略!!スキップ159ver.",
+    "manufacturer": "京楽",
+    "probability": "1/159.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/02/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4951",
+    "name": "PA乗物娘 WITH CYBER JAPAN DANCERS 2nd season 77ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/77.10",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/02/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4945",
+    "name": "P黄門ちゃま寿限無 99ver.",
+    "manufacturer": "平和",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/02/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4944",
+    "name": "P黄門ちゃま寿限無 LLサイズ 259ver.",
+    "manufacturer": "平和",
+    "probability": "1/259.0",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/02/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4933",
+    "name": "e範馬刃牙 199ver.",
+    "manufacturer": "アムテックス",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/19",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4949",
+    "name": "e ULTRAMAN 4500 超ライト",
+    "manufacturer": "OK!!",
+    "probability": "1/111.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4948",
+    "name": "P閃乱カグラ189大入りver.",
+    "manufacturer": "D-light",
+    "probability": "1/189.4",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4936",
+    "name": "eようこそ実力至上主義の教室へ",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/349.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/05",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4932",
+    "name": "e吉宗 極乗3000ver.",
+    "manufacturer": "大都技研",
+    "probability": "1/199.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/05",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4916",
+    "name": "Pフィーバー彼女、お借りします LT-Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/189.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/05",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4940",
+    "name": "e ソードアート・オンライン 閃光の軌跡 99Ver.",
+    "manufacturer": "京楽",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4939",
+    "name": "e ゴジラ対エヴァンゲリオン2 超デカゴールド",
+    "manufacturer": "ビスティ",
+    "probability": "1/299.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4938",
+    "name": "P ゴジラ対エヴァンゲリオン2 超デカシルバー",
+    "manufacturer": "ビスティ",
+    "probability": "1/174.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4937",
+    "name": "P リングにかけろ1 129ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/129.77",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4934",
+    "name": "P【超甘LT】華牌RR 1/49×99de遊タイム",
+    "manufacturer": "豊丸",
+    "probability": "1/49.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4919",
+    "name": "PA清流物語4 ウキウキ79ver.",
+    "manufacturer": "サンスリー",
+    "probability": "1/79.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4917",
+    "name": "Pフィーバーうたわれるもの LT-Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4910",
+    "name": "e盾の勇者の成り上がり アルティメット199ver.",
+    "manufacturer": "サミー",
+    "probability": "1/199",
+    "machine_type": "デジパチ",
+    "intro_start": "2026/01/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4894",
+    "name": "e 新世紀エヴァンゲリオン 〜はじまりの記憶〜",
+    "manufacturer": "ビスティ",
+    "probability": "1/399.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/12/22",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4915",
+    "name": "P少女☆歌劇 レヴュースタァライト 99 LT3000",
+    "manufacturer": "豊丸",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/12/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4905",
+    "name": "P沖ドキ！ドキドキ弾丸ツアー",
+    "manufacturer": "メーシー",
+    "probability": "1/22.2",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/12/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4920",
+    "name": "e地獄少女7500Ver.",
+    "manufacturer": "オレンジ",
+    "probability": "1/49",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/12/08",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4918",
+    "name": "e アズールレーン2 THE ANIMATION 超次元",
+    "manufacturer": "京楽",
+    "probability": "1/169.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/12/08",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4897",
+    "name": "e 北斗の拳11 暴凶星",
+    "manufacturer": "サミー",
+    "probability": "1/399.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/12/08",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4875",
+    "name": "Pフィーバーからくりサーカス2 Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/12/08",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4922",
+    "name": "PA野生の王国Ⅵ",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/12/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4914",
+    "name": "P【超甘LT】この素晴らしい世界に祝福を！最終クエスト1/49",
+    "manufacturer": "豊丸",
+    "probability": "1/49.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/12/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4908",
+    "name": "eうしおととら〜神のせSPEC〜399ver.",
+    "manufacturer": "D-light",
+    "probability": "1/399.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/12/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4907",
+    "name": "eうしおととら〜神のせSPEC〜150ver.",
+    "manufacturer": "D-light",
+    "probability": "1/150.31",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/12/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4899",
+    "name": "PA海物語 極JAPAN Withナギナミ",
+    "manufacturer": "三洋",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/12/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4882",
+    "name": "Pメイドインアビス 奈落の連環蝕",
+    "manufacturer": "メーシー",
+    "probability": "1/129.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/11/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4901",
+    "name": "P Re:ゼロから始める異世界生活 鬼がかり 99ver.",
+    "manufacturer": "大都技研",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/11/04",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4900",
+    "name": "e花の慶次〜黄金の一撃",
+    "manufacturer": "ニューギン",
+    "probability": "1/399.76",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/11/04",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4876",
+    "name": "eフィーバーもののがたり",
+    "manufacturer": "SANKYO",
+    "probability": "1/149.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/11/04",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4863",
+    "name": "eノーゲーム・ノーライフ 199Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/11/04",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4902",
+    "name": "P Re:ゼロから始める異世界生活 鬼がかり 199ver.",
+    "manufacturer": "大都技研",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/11/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4890",
+    "name": "P転生したらスライムだった件129ver.",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/129.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/11/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4889",
+    "name": "e 仮面ライダー電王 デカヘソ239",
+    "manufacturer": "京楽",
+    "probability": "1/239.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/11/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4887",
+    "name": "eルパン三世VSキャッツ・アイ",
+    "manufacturer": "平和",
+    "probability": "1/257.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/11/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4884",
+    "name": "PA GoGo富士山",
+    "manufacturer": "A-gon",
+    "probability": "-",
+    "machine_type": "羽根モノ",
+    "intro_start": "2025/11/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4879",
+    "name": "e源外伝 EPISODE OF -大龍-",
+    "manufacturer": "三洋",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/11/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4872",
+    "name": "P いくさの子 戦極最強ドデカ199ver.",
+    "manufacturer": "サミー",
+    "probability": "1/199",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/11/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4862",
+    "name": "eノーゲーム・ノーライフ 319Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/11/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4888",
+    "name": "Pゴッドイーター199ゴッドトリガーVER.",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/199.5",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/10/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4878",
+    "name": "Pはねものファインプレー",
+    "manufacturer": "マルホン",
+    "probability": "-",
+    "machine_type": "羽根モノ",
+    "intro_start": "2025/10/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4874",
+    "name": "eとある科学の超電磁砲 PHASE NEXT",
+    "manufacturer": "オレンジ",
+    "probability": "1/169.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/10/06",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4857",
+    "name": "Pスーパー海物語IN沖縄6",
+    "manufacturer": "三洋",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/10/06",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4886",
+    "name": "デカスタPシュタインズ・ゲート ゼロ まゆしぃば〜じょん",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/10/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4883",
+    "name": "P 冬のソナタ My Memory SWEET Version",
+    "manufacturer": "京楽",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/10/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4881",
+    "name": "e ベルセルク無双 第2章",
+    "manufacturer": "ニューギン",
+    "probability": "1/399.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/10/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4871",
+    "name": "PA義風堂々!!〜兼続と慶次〜3 99ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/10/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4869",
+    "name": "eガールズ＆パンツァー 最終章",
+    "manufacturer": "平和",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/10/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4859",
+    "name": "e 聖戦士ダンバイン 3 ZEROSONIC",
+    "manufacturer": "サミー",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/10/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4858",
+    "name": "Pフィーバーダンジョンに出会いを求めるのは間違っているだろうか2 LT-Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/10/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4870",
+    "name": "〜廻るヘソワイド〜PホワイトシャカRUSH",
+    "manufacturer": "マルホン",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/09/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4852",
+    "name": "Pルパン三世 ONE COLLECTION 100ver.",
+    "manufacturer": "平和",
+    "probability": "1/100.1",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/09/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4837",
+    "name": "eフィーバーブルーロック",
+    "manufacturer": "SANKYO",
+    "probability": "1/399.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/09/08",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4868",
+    "name": "デカスタPデビルマン THE FINAL 179ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/179.55",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/09/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4867",
+    "name": "P真・座頭市物語 LT99ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/09/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4866",
+    "name": "P FAIRY TAIL 超一夜Ver.",
+    "manufacturer": "藤商事",
+    "probability": "1/319",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/09/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4865",
+    "name": "ぱちんこ シン・エヴァンゲリオン PREMIUM MODEL",
+    "manufacturer": "ビスティ",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/09/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4864",
+    "name": "P アズールレーン THE ANIMATION 異次元トリガー 79ver.",
+    "manufacturer": "京楽",
+    "probability": "1/79.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/09/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4861",
+    "name": "eパリピ孔明",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/199",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/09/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4856",
+    "name": "P戦国乙女7 終焉の関ヶ原 LLサイズ 299ver.",
+    "manufacturer": "アムテックス",
+    "probability": "1/299.2",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/09/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4851",
+    "name": "デジハネP頭文字D せかんど",
+    "manufacturer": "サミー",
+    "probability": "1/99",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/09/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4848",
+    "name": "e女神のカフェテラス",
+    "manufacturer": "JFJ",
+    "probability": "1/399",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/08/18",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4838",
+    "name": "eGODZILLA7 TYPE-CRASH",
+    "manufacturer": "ニューギン",
+    "probability": "1/229.95",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/08/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4832",
+    "name": "P【超甘LT】豊丸のとあるパチンコにしみけん参戦 感度UP1/39",
+    "manufacturer": "豊丸",
+    "probability": "1/39.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/08/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4846",
+    "name": "e牙狼12黄金騎士極限",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/349.99",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/08/04",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4845",
+    "name": "e真・一騎当千〜軍神覚醒〜396ver.",
+    "manufacturer": "D-light",
+    "probability": "1/396.1",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/08/04",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4844",
+    "name": "e真・一騎当千〜軍神覚醒〜319大入りver.",
+    "manufacturer": "D-light",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/08/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4835",
+    "name": "e黄門ちゃま寿限無 LLサイズ",
+    "manufacturer": "平和",
+    "probability": "1/399.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/08/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4827",
+    "name": "Pフィーバー戦姫絶唱シンフォギア4 LT-Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/08/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4826",
+    "name": "Pフィーバー戦姫絶唱シンフォギア4 Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/08/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4823",
+    "name": "Pクイーンズブレイド奈落5400",
+    "manufacturer": "高尾",
+    "probability": "1/319.2",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/08/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4820",
+    "name": "eシャーマンキング でっけぇえなver.",
+    "manufacturer": "メーシー",
+    "probability": "1/349.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/08/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4819",
+    "name": "eシャーマンキング",
+    "manufacturer": "メーシー",
+    "probability": "1/349.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/08/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4840",
+    "name": "Pワイの佐野ラーメン",
+    "manufacturer": "A-gon",
+    "probability": "1/24.3",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/28",
+    "status": ""
+  },
+  {
+    "machine_id": "4839",
+    "name": "PAコマコマ倶楽部 with 坂本冬美 89STver.",
+    "manufacturer": "豊丸",
+    "probability": "1/89.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4836",
+    "name": "e マギアレコード 魔法少女まどか☆マギカ外伝",
+    "manufacturer": "京楽",
+    "probability": "1/399",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4822",
+    "name": "デカスタe花の慶次〜傾奇一転",
+    "manufacturer": "ニューギン",
+    "probability": "1/348.60",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4811",
+    "name": "eフィーバー炎炎ノ消防隊2 紅丸ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/399.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/07",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4796",
+    "name": "e東京リベンジャーズ",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/07",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4829",
+    "name": "P CYBORG009 RULE OF SACRIFICE LT99ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4828",
+    "name": "e 犬夜叉3.0",
+    "manufacturer": "D-light",
+    "probability": "1/399.2",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4825",
+    "name": "Pフィーバー機動戦士ガンダムユニコーン再来 99ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4816",
+    "name": "e一方通行 とある魔術の禁書目録",
+    "manufacturer": "JFJ",
+    "probability": "1/539",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4815",
+    "name": "e冒険島",
+    "manufacturer": "三洋",
+    "probability": "1/155.2",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4810",
+    "name": "eフィーバー炎炎ノ消防隊2 シンラver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/399.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4802",
+    "name": "Pドラムだ!金ドン 花火外伝99ver.",
+    "manufacturer": "ミズホ",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/07/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4818",
+    "name": "PLT激デジ ジューシーハニー極嬢",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/77.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/06/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4817",
+    "name": "e 新・必殺仕置人 超斬撃99",
+    "manufacturer": "京楽",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/06/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4809",
+    "name": "デジハネPモンスターハンターライズ",
+    "manufacturer": "サミー",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/06/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4808",
+    "name": "e冴えない彼女の育てかた",
+    "manufacturer": "大都技研",
+    "probability": "1/179.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/06/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4804",
+    "name": "e範馬刃牙",
+    "manufacturer": "アムテックス",
+    "probability": "1/499.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/06/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4798",
+    "name": "P緋弾のアリア～緋緋神降臨～88Ver.",
+    "manufacturer": "藤商事",
+    "probability": "1/88.2",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/06/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4795",
+    "name": "PA海物語3R3",
+    "manufacturer": "三洋",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/06/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4787",
+    "name": "デカスタP戦国無双",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.68",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/06/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4786",
+    "name": "P DD北斗の拳3 百突99ver.",
+    "manufacturer": "高尾",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/06/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4785",
+    "name": "eフィーバー彼女、お借りします",
+    "manufacturer": "SANKYO",
+    "probability": "1/349.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/06/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4784",
+    "name": "Pフィーバーマクロスフロンティア5 LT-Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/06/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4781",
+    "name": "〜回るヘソワイド〜Pファンキードクター 11000ver.",
+    "manufacturer": "マルホン",
+    "probability": "1/79.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4780",
+    "name": "〜回るヘソワイド〜Pファンキードクター 7200ループver.",
+    "manufacturer": "マルホン",
+    "probability": "1/69.4",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4794",
+    "name": "P 宇宙戦艦ヤマト2202 超波動 森雪 199LT ver.",
+    "manufacturer": "ビスティ",
+    "probability": "1/199.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4793",
+    "name": "e 仮面ライダーBLACK",
+    "manufacturer": "京楽",
+    "probability": "1/349.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4792",
+    "name": "P攻殻機動隊SAC_2045 大入りLTver",
+    "manufacturer": "D-light",
+    "probability": "1/189.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4779",
+    "name": "P ToLOVEるダークネス 100ver.",
+    "manufacturer": "平和",
+    "probability": "1/100.0",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4775",
+    "name": "P乗物娘 WITH CYBER JAPAN DANCERS 2nd season",
+    "manufacturer": "ニューギン",
+    "probability": "1/199.80",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4773",
+    "name": "P【超甘LT】江頭2:50inナナシー 奇跡の99%",
+    "manufacturer": "豊丸",
+    "probability": "1/33.3",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4772",
+    "name": "デジハネP北斗の拳 慈母",
+    "manufacturer": "サミー",
+    "probability": "1/79.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4769",
+    "name": "PLT世界でいちばん強くなりたい！2",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/199.5",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4766",
+    "name": "Pフィーバー機動戦士ガンダムユニコーン再来 129ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/129.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4762",
+    "name": "P織田信奈の野望 下剋上",
+    "manufacturer": "高尾",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4759",
+    "name": "P海物語 極JAPAN",
+    "manufacturer": "三洋",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4782",
+    "name": "e 東京喰種",
+    "manufacturer": "ビスティ",
+    "probability": "1/399",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/04/21",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4765",
+    "name": "P痛いのは嫌なので防御力に極振りしたいと思います。",
+    "manufacturer": "藤商事",
+    "probability": "1/399.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/04/21",
+    "status": ""
+  },
+  {
+    "machine_id": "4764",
+    "name": "Pゾンビランドサガ",
+    "manufacturer": "サミー",
+    "probability": "1/159.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/04/21",
+    "status": ""
+  },
+  {
+    "machine_id": "4774",
+    "name": "PA異世界魔王と召喚少女の奴隷魔術 敏感99Ver",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/04/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4771",
+    "name": "e牙狼神速神撃3000LT",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/199.5",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/04/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4767",
+    "name": "e シン・ウルトラマン",
+    "manufacturer": "OK!!",
+    "probability": "1/199.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/04/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4750",
+    "name": "P少女☆歌劇 レヴュースタァライト ラッキートリガー4500",
+    "manufacturer": "豊丸",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/04/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4747",
+    "name": "Pフィーバーうたわれるもの 199ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/199.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/04/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4746",
+    "name": "eフィーバーうたわれるもの",
+    "manufacturer": "SANKYO",
+    "probability": "1/399.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/04/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4743",
+    "name": "Pアナザーゴッドハーデス-獄炎-",
+    "manufacturer": "メーシー",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/04/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4768",
+    "name": "P モモキュンソード 速撃3000+",
+    "manufacturer": "ソフィア",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2025/03/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4761",
+    "name": "PAひぐらしのなく頃に 輪廻転生99ver.",
+    "manufacturer": "D-light",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/03/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4758",
+    "name": "e真・北斗無双 第5章 ドデカSTART",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/03/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4748",
+    "name": "Pうまい棒2",
+    "manufacturer": "アムテックス",
+    "probability": "1/38.4",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/03/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4738",
+    "name": "PA魔王学院の不適合者 魔王再臨 99Ver",
+    "manufacturer": "藤商事",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/03/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4760",
+    "name": "Pうる星やつら〜Eternal Love Song〜129ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/129.77",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/03/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4755",
+    "name": "P リングにかけろ1",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/03/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4740",
+    "name": "P FAIRY TAIL 89Ver.",
+    "manufacturer": "藤商事",
+    "probability": "1/89",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/03/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4735",
+    "name": "PA大海物語5ブラックLT99ver.",
+    "manufacturer": "三洋",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/03/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4726",
+    "name": "Pバンドリ！ Light ver.",
+    "manufacturer": "平和",
+    "probability": "1/119.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/03/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4723",
+    "name": "eフィーバーダンジョンに出会いを求めるのは間違っているだろうか2",
+    "manufacturer": "SANKYO",
+    "probability": "1/399.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2025/03/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4722",
+    "name": "Pフィーバーダンジョンに出会いを求めるのは間違っているだろうか2",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2025/03/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4721",
+    "name": "P 俺の妹がこんなに可愛いわけがない。",
+    "manufacturer": "京楽",
+    "probability": "1/199.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/03/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4739",
+    "name": "P緋弾のアリア～緋緋神降臨～199Ver.",
+    "manufacturer": "藤商事",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/02/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4737",
+    "name": "Pこの素晴らしい世界に祝福を！ラッキートリガー129緊急クエスト",
+    "manufacturer": "豊丸",
+    "probability": "1/129.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/02/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4733",
+    "name": "Pデビルマン THE FINAL",
+    "manufacturer": "ニューギン",
+    "probability": "1/129.77",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/02/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4711",
+    "name": "Pクイーンズブレイド4 ナナエルver.",
+    "manufacturer": "高尾",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2025/02/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4749",
+    "name": "PAシン・エヴァンゲリオン 99 遊タイム付 ごらくver.",
+    "manufacturer": "ビスティ×ごらく",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/02/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4744",
+    "name": "P冬のソナタ My Memory Sweet GORAKU Version",
+    "manufacturer": "京楽×ごらく",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/02/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4736",
+    "name": "ぱちんこ シン・エヴァンゲリオン 129 LT ver.",
+    "manufacturer": "ビスティ",
+    "probability": "1/129.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/02/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4732",
+    "name": "P 冬のソナタ My Memory",
+    "manufacturer": "京楽",
+    "probability": "1/315.1",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/02/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4731",
+    "name": "PLT OVERLORD魔導王光臨129ver.",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/129.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/02/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4729",
+    "name": "e閃乱カグラ",
+    "manufacturer": "D-light",
+    "probability": "1/399",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/02/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4728",
+    "name": "Pとある魔術の禁書目録2 Light PREMIUM 2000 ver.",
+    "manufacturer": "JFJ",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/02/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4720",
+    "name": "P愛の不時着",
+    "manufacturer": "メーシー",
+    "probability": "1/319.68",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2025/02/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4713",
+    "name": "eルパン三世 ONE COLLECTION 超ブチヌキLTver.",
+    "manufacturer": "平和",
+    "probability": "1/399.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/02/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4707",
+    "name": "e蒼天の拳 羅龍",
+    "manufacturer": "サミー",
+    "probability": "1/399.1",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/02/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4692",
+    "name": "Pフィーバー戦姫絶唱シンフォギア4 199ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/199.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2025/02/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4725",
+    "name": "Pゲゲゲの鬼太郎 獅子奮迅99Ver.",
+    "manufacturer": "オレンジ",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/01/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4705",
+    "name": "P花の慶次 裂 蓮極129ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/129.77",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/01/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4704",
+    "name": "PA花の慶次 裂 99ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/01/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4693",
+    "name": "Pハネモノ ファミリースタジアム",
+    "manufacturer": "ミズホ",
+    "probability": "-",
+    "machine_type": "羽根モノ",
+    "intro_start": "2025/01/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4688",
+    "name": "Pブラックラグーン4 EXTRA BULLET 129ver.",
+    "manufacturer": "サミー",
+    "probability": "1/129.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2025/01/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4714",
+    "name": "eぱちんこ押忍！番長 漢の頂",
+    "manufacturer": "大都技研",
+    "probability": "1/179.5",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/01/06",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4716",
+    "name": "e ULTRAMAN 2400★80",
+    "manufacturer": "OK!!",
+    "probability": "1/318.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/01/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4710",
+    "name": "PLTジューシーハニー極嬢",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2025/01/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4703",
+    "name": "P世紀末・天才バカボン〜神SPEC 凱旋〜99ver.",
+    "manufacturer": "D-light",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/01/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4700",
+    "name": "P世界最高の暗殺者、異世界貴族に転生する",
+    "manufacturer": "JFJ",
+    "probability": "1/319.5",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2025/01/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4699",
+    "name": "P清流物語4 ヌシを求めて4000匹",
+    "manufacturer": "サンスリー",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2025/01/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4685",
+    "name": "P戦国乙女7 終焉の関ヶ原",
+    "manufacturer": "アムテックス",
+    "probability": "1/399.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/01/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4684",
+    "name": "eフィーバー戦姫絶唱シンフォギア4 キャロルver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/399.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2025/01/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4695",
+    "name": "e ゴジラ対エヴァンゲリオン セカンドインパクト G 破壊神覚醒",
+    "manufacturer": "ビスティ",
+    "probability": "1/499.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/12/16",
+    "status": ""
+  },
+  {
+    "machine_id": "4687",
+    "name": "e ソードアート・オンライン 閃光の軌跡",
+    "manufacturer": "京楽",
+    "probability": "1/199.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/12/16",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4708",
+    "name": "eA夏色日記GO",
+    "manufacturer": "豊丸×ごらく",
+    "probability": "1/89.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/12/16",
+    "status": ""
+  },
+  {
+    "machine_id": "4698",
+    "name": "Pネオモンスターハウス99Ver.",
+    "manufacturer": "竹屋",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/12/16",
+    "status": ""
+  },
+  {
+    "machine_id": "4697",
+    "name": "Pネオモンスターハウス199Ver.",
+    "manufacturer": "竹屋",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/12/16",
+    "status": ""
+  },
+  {
+    "machine_id": "4659",
+    "name": "Pシュタインズ・ゲート ゼロ",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.68",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/12/16",
+    "status": ""
+  },
+  {
+    "machine_id": "4691",
+    "name": "P真・一騎当千～桃園の誓い～199LTver.",
+    "manufacturer": "D-light",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/12/02",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4696",
+    "name": "P GO!GO!郷 豪遊の5",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/12/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4694",
+    "name": "P ゴジラ対エヴァンゲリオン セカンドインパクト G",
+    "manufacturer": "ビスティ",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/12/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4691",
+    "name": "P真・一騎当千～桃園の誓い～199LTver.",
+    "manufacturer": "D-light",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/12/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4679",
+    "name": "PシャカRUSH Z",
+    "manufacturer": "マルホン",
+    "probability": "1/197.4",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/12/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4677",
+    "name": "e大工の源さん超韋駄天2 フルスイングLT",
+    "manufacturer": "三洋",
+    "probability": "1/487.3",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/12/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4672",
+    "name": "P盾の勇者の成り上がり",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/12/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4671",
+    "name": "Pえとたま2 神祭",
+    "manufacturer": "メーシー",
+    "probability": "1/199.80",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/12/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4670",
+    "name": "P ToLOVEるダークネス 199ver.",
+    "manufacturer": "平和",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/12/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4664",
+    "name": "Pフィーバー機動戦士ガンダムSEED LT-Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/129.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/12/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4657",
+    "name": "P にゃんこ大戦争 多様性のネコ",
+    "manufacturer": "京楽",
+    "probability": "1/155",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/11/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4649",
+    "name": "eフィーバーからくりサーカス2 魔王ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/399.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/11/05",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4682",
+    "name": "PAナナシー〜お江戸77ver.〜",
+    "manufacturer": "豊丸",
+    "probability": "1/77.4",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/11/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4667",
+    "name": "スマパチ SSSS.GRIDMAN",
+    "manufacturer": "七匠 七匠",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/11/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4663",
+    "name": "Pリング 呪いの7日間3 甘デジver.",
+    "manufacturer": "JFJ",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/11/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4662",
+    "name": "P転生したらスライムだった件",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/11/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4661",
+    "name": "P銀河英雄伝説 Die Neue These",
+    "manufacturer": "ニューギン",
+    "probability": "1/318.13",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/11/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4660",
+    "name": "PA銀河英雄伝説 Die Neue These 89ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/89.77",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/11/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4656",
+    "name": "Pモンスターハンターライズ",
+    "manufacturer": "サミー",
+    "probability": "1/259.0",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/11/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4655",
+    "name": "P義風堂々!!〜兼続と慶次〜3 199ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/11/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4648",
+    "name": "Pフィーバーからくりサーカス2 運命ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/11/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4646",
+    "name": "P大海物語5スペシャル",
+    "manufacturer": "三洋",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/11/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4645",
+    "name": "e大海物語5スペシャル",
+    "manufacturer": "三洋",
+    "probability": "1/348.5",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/11/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4644",
+    "name": "Pラブ嬢 〜極嬢のハーレム体験〜 129ver.",
+    "manufacturer": "アムテックス",
+    "probability": "1/129.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/11/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4637",
+    "name": "P江頭2:50inナナシーLT",
+    "manufacturer": "豊丸",
+    "probability": "1/129.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/10/21",
+    "status": ""
+  },
+  {
+    "machine_id": "4630",
+    "name": "P弾球黙示録カイジ沼5 ざわっ…79Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/79.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/10/21",
+    "status": ""
+  },
+  {
+    "machine_id": "4665",
+    "name": "P中森明菜・歌姫伝説〜BLACK DIVA楽〜80〜89ver.",
+    "manufacturer": "D-light×ごらく",
+    "probability": "1/89.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/10/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4654",
+    "name": "P宇宙戦艦ヤマト2202 超波動",
+    "manufacturer": "ビスティ",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/10/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4652",
+    "name": "P中森明菜・歌姫伝説〜BLACK DIVA愛〜",
+    "manufacturer": "D-light",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/10/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4642",
+    "name": "P CYBORG009 RULE OF SACRIFICE VS SCARL BODY EDITION 199",
+    "manufacturer": "ニューギン",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/10/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4638",
+    "name": "Pフィーバー革命機ヴァルヴレイヴ3 Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/10/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4636",
+    "name": "e 乃木坂46 Ⅱ",
+    "manufacturer": "京楽",
+    "probability": "1/239.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/10/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4629",
+    "name": "Pルパン三世 ONE COLLECTION",
+    "manufacturer": "平和",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/10/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4627",
+    "name": "PAわんわんパラダイスCELEBRATION",
+    "manufacturer": "サンスリー",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/10/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4651",
+    "name": "Pバイオハザード RE:2 ごらくバージョン",
+    "manufacturer": "アムテックス×ごらく",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/09/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4632",
+    "name": "P攻殻機動隊SAC_2045 199LTver.",
+    "manufacturer": "D-light",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/09/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4624",
+    "name": "Pメイドインアビス 虹の黄金域",
+    "manufacturer": "メーシー",
+    "probability": "1/319.69",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/09/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4619",
+    "name": "Pいくさの子 織田三郎信長伝",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/09/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4634",
+    "name": "PAワンパンマン99ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/09/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4633",
+    "name": "e 仮面ライダー電王",
+    "manufacturer": "京楽",
+    "probability": "1/319.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/09/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4628",
+    "name": "Pとある科学の超電磁砲2",
+    "manufacturer": "JFJ",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/09/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4625",
+    "name": "eゴッドイーター TRIPLE BURST",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/539.2",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/09/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4621",
+    "name": "eキョンシー ライトミドル 新CタイムVer.",
+    "manufacturer": "ニューギン",
+    "probability": "1/199.50",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/09/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4620",
+    "name": "Pフィーバーかぐや様は告らせたい Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/09/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4612",
+    "name": "Pルパン三世 銭形からの招待状 77Sweet Ver.",
+    "manufacturer": "平和",
+    "probability": "1/77.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/09/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4608",
+    "name": "P DD北斗の拳3",
+    "manufacturer": "高尾",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/09/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4626",
+    "name": "Pリング 呪いの7日間3 ラッキートリガーVer.",
+    "manufacturer": "JFJ",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/08/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4605",
+    "name": "PAコマコマ倶楽部 with 坂本冬美 99確変ループver.",
+    "manufacturer": "豊丸",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/08/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4598",
+    "name": "デジハネP交響詩篇エウレカセブン ANEMONE 99ver.",
+    "manufacturer": "サミー",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/08/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4596",
+    "name": "Pバンドリ！",
+    "manufacturer": "平和",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/08/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4594",
+    "name": "Pドラムだ！金ドン 花火外伝",
+    "manufacturer": "ミズホ",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/08/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4590",
+    "name": "P七つの美徳 ゴールデンエンジェルタイム スイート99Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/08/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4622",
+    "name": "P 百花繚乱 ご奉仕129ver.",
+    "manufacturer": "D-light",
+    "probability": "1/129.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/08/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4615",
+    "name": "eフィーバー機動戦士ガンダムユニコーン 再来-白き一角獣と黒き獅子-",
+    "manufacturer": "SANKYO",
+    "probability": "1/349.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/08/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4591",
+    "name": "Pフィーバー機動戦士ガンダムユニコーン 再来-白き一角獣と黒き獅子-",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/08/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4587",
+    "name": "PAスーパー海物語IN地中海2",
+    "manufacturer": "三洋",
+    "probability": "1/89.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/08/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4567",
+    "name": "e北斗の拳10",
+    "manufacturer": "サミー",
+    "probability": "1/348.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/08/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4585",
+    "name": "PAこの素晴らしい世界に祝福を！「このゆる甘99に祝福を！」",
+    "manufacturer": "豊丸",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/07/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4599",
+    "name": "P アズールレーン THE ANIMATION 異次元トリガー",
+    "manufacturer": "京楽",
+    "probability": "1/199",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/07/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4593",
+    "name": "e花の慶次〜傾奇一転",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/07/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4592",
+    "name": "P花の慶次〜傾奇一転",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/07/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4586",
+    "name": "P貞子",
+    "manufacturer": "藤商事",
+    "probability": "1/201",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/07/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4573",
+    "name": "P ドリームクルーン ULTIMATE",
+    "manufacturer": "オーイズミ",
+    "probability": "1/1",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/07/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4562",
+    "name": "Pフィーバーありふれた職業で世界最強 Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.902",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/07/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4589",
+    "name": "Pファンキードクター 天使ver.",
+    "manufacturer": "マルホン",
+    "probability": "1/69.4",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/06/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4580",
+    "name": "Pうる星やつら〜Eternal Love Song〜",
+    "manufacturer": "ニューギン",
+    "probability": "1/319",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/06/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4578",
+    "name": "P魔王学院の不適合者",
+    "manufacturer": "藤商事",
+    "probability": "1/399.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/06/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4576",
+    "name": "P魔法少女まどか☆マギカ3",
+    "manufacturer": "京楽",
+    "probability": "1/199.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/06/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4574",
+    "name": "Pギルティクラウン2 プレミアムライブチケット",
+    "manufacturer": "メーシー",
+    "probability": "1/129.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/06/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4570",
+    "name": "P ToLOVEるダークネス",
+    "manufacturer": "平和",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/06/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4569",
+    "name": "P保4のガチャバスター",
+    "manufacturer": "A-gon",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/06/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4568",
+    "name": "P頭文字D 2nd",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/06/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4561",
+    "name": "Pフィーバー三国戦騎7500",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.741",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/06/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4559",
+    "name": "Pクイーンズブレイド4 UNLIMITED",
+    "manufacturer": "高尾",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/06/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4564",
+    "name": "ぱちんこ水戸黄門 超極上 らいとばーじょん",
+    "manufacturer": "京楽",
+    "probability": "1/99.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4558",
+    "name": "Pゴブリンスレイヤー ラッキートリガーVer",
+    "manufacturer": "JFJ",
+    "probability": "1/129.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4549",
+    "name": "Pラブ嬢 〜極嬢のハーレム体験〜",
+    "manufacturer": "アムテックス",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4546",
+    "name": "P GO!GO!郷 革命の5",
+    "manufacturer": "ニューギン",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4543",
+    "name": "Pフィーバー炎炎ノ消防隊Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/129.969",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4542",
+    "name": "P七つの大罪2 神千斬りVER.",
+    "manufacturer": "サミー",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/05/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4557",
+    "name": "P牙狼11〜冴島大河〜XX",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/04/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4551",
+    "name": "e新・必殺仕置人 超斬撃199",
+    "manufacturer": "京楽",
+    "probability": "1/199.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/04/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4548",
+    "name": "P FAIRY TAIL これが七炎竜の力だ",
+    "manufacturer": "藤商事",
+    "probability": "1/399.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/04/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4541",
+    "name": "PAハイスクール・フリート オールスター すい〜とでハッピー!2400",
+    "manufacturer": "メーシー",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/04/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4534",
+    "name": "P弾球黙示録カイジ沼5 超欲望129×87％Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/129.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/04/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4531",
+    "name": "eフィーバーマクロスフロンティア5",
+    "manufacturer": "SANKYO",
+    "probability": "1/349.939",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/04/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4528",
+    "name": "Pフィーバーマクロスフロンティア5",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.741",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/04/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4545",
+    "name": "ぱちんこ GANTZ 覚醒 Sweet2000",
+    "manufacturer": "OK!!",
+    "probability": "1/129.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/04/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4544",
+    "name": "Pひぐらしのなく頃に 輪廻転生",
+    "manufacturer": "D-light",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/04/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4537",
+    "name": "Pバイオハザード RE:2 LTver.",
+    "manufacturer": "アムテックス",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/04/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4532",
+    "name": "P大工の源さん超韋駄天2極源LighT",
+    "manufacturer": "三洋",
+    "probability": "1/129.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/04/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4519",
+    "name": "P化物語 199ver.",
+    "manufacturer": "サミー",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/04/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4518",
+    "name": "P化物語 319ver.",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/04/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4529",
+    "name": "P sin 七つの大罪 強甘 2400Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/129.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/03/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4520",
+    "name": "Pファンキードクター 悪魔12000ver.",
+    "manufacturer": "マルホン",
+    "probability": "1/69.4",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/03/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4507",
+    "name": "P咲-Saki-全国編 テンパイ即リーver.",
+    "manufacturer": "三洋",
+    "probability": "1/119.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/03/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4533",
+    "name": "PA満開昔ばなし 天まで届け100ver. GO",
+    "manufacturer": "豊丸×ごらく",
+    "probability": "1/66.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/03/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4526",
+    "name": "P真・座頭市物語",
+    "manufacturer": "ニューギン",
+    "probability": "1/319",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/03/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4524",
+    "name": "P世紀末・天才バカボン〜福神SPEC〜",
+    "manufacturer": "D-light",
+    "probability": "1/129.99",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/03/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4523",
+    "name": "Pコードギアス 反逆のルルーシュ Rebellion to Re;surrectionライトver.",
+    "manufacturer": "ビスティ",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/03/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4522",
+    "name": "スマパチ シン・エヴァンゲリオン Type ゲンドウ",
+    "manufacturer": "ビスティ",
+    "probability": "1/349.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/03/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4514",
+    "name": "P緋弾のアリア～緋緋神降臨～ラッキートリガーVer.",
+    "manufacturer": "藤商事",
+    "probability": "1/399.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/03/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4509",
+    "name": "Pフィーバーパワフル",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.98",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/03/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4508",
+    "name": "Pわんニャンアドベンチャー119ver.",
+    "manufacturer": "サンスリー",
+    "probability": "1/119.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/03/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4506",
+    "name": "Pこの素晴らしい世界に祝福を！199LT「このラッキートリガーに祝福を！」",
+    "manufacturer": "豊丸",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/03/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4505",
+    "name": "PLT OVERLORD魔導王光臨",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/329.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/03/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4503",
+    "name": "P北斗の拳 強敵 LT",
+    "manufacturer": "サミー",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/03/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4502",
+    "name": "ぱちんこGⅠ優駿倶楽部2 ラッキートリガーver",
+    "manufacturer": "コナミアミューズメント",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/03/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4521",
+    "name": "PAルパン三世 THE FIRST 不二子89ver.",
+    "manufacturer": "平和×ごらく",
+    "probability": "1/89.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/02/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4489",
+    "name": "Pルパン三世 THE FIRST 99ver.",
+    "manufacturer": "平和",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/02/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4498",
+    "name": "P新世紀エヴァンゲリオン〜未来への咆哮〜PREMIUM MODEL",
+    "manufacturer": "ビスティ",
+    "probability": "1/129.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/02/05",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4513",
+    "name": "PニュートキオGREEN",
+    "manufacturer": "アムテックス",
+    "probability": "-",
+    "machine_type": "羽根モノ",
+    "intro_start": "2024/02/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4499",
+    "name": "P真・一騎当千～桃園の誓い～129ver",
+    "manufacturer": "D-light",
+    "probability": "1/129.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/02/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4497",
+    "name": "Pサラリーマン金太郎 159をなめんじゃねぇver.",
+    "manufacturer": "藤商事",
+    "probability": "1/159.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/02/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4496",
+    "name": "PストリートファイターⅤ K.O.RUSH LIGHT EDITION",
+    "manufacturer": "藤商事",
+    "probability": "1/135.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/02/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4492",
+    "name": "P異世界魔王と召喚少女の奴隷魔術",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.68",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/02/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4491",
+    "name": "PA Go!Go!郷 comeback stage 77ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/77.92",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/02/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4483",
+    "name": "Pフィーバーダンベル何キロ持てる？ Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.902",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/02/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4481",
+    "name": "デジハネP聖戦士ダンバイン2 ZEROSONIC",
+    "manufacturer": "サミー",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/02/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4474",
+    "name": "P弾球黙示録カイジ沼5",
+    "manufacturer": "高尾",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/01/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4469",
+    "name": "P真・花の慶次3 99ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/01/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4495",
+    "name": "Pビッグポップコーン SWEET VER.",
+    "manufacturer": "A-gon",
+    "probability": "1/318",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/01/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4485",
+    "name": "Pとある魔術の禁書目録2",
+    "manufacturer": "JFJ",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/01/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4484",
+    "name": "PA激デジ牙狼 月虹ノ旅人",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/77.74",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/01/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4482",
+    "name": "Pやじきた道中記 甘味ver.",
+    "manufacturer": "メーシー",
+    "probability": "1/89.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/01/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4480",
+    "name": "P中森明菜・歌姫伝説〜BLACK DIVA極〜",
+    "manufacturer": "D-light",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/01/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4473",
+    "name": "e CYBORG009 RULE OF SACRIFICE",
+    "manufacturer": "ニューギン",
+    "probability": "1/348.59",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/01/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4472",
+    "name": "P CYBORG009 RULE OF SACRIFICE",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.68",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/01/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4470",
+    "name": "Pドラム花火の源さん",
+    "manufacturer": "サンスリー",
+    "probability": "1/239.18",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2024/01/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4467",
+    "name": "Pポチッと一発！おだてブタ2",
+    "manufacturer": "アムテックス",
+    "probability": "1/3",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/01/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4461",
+    "name": "Pフィーバー革命機ヴァルヴレイヴ3",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.741",
+    "machine_type": "デジパチ",
+    "intro_start": "2024/01/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4452",
+    "name": "ぱちんこ シン・エヴァンゲリオン Type レイ",
+    "manufacturer": "ビスティ",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/12/18",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4475",
+    "name": "P真・一騎当千 Light Ver.",
+    "manufacturer": "Daiichi",
+    "probability": "1/129.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/12/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4451",
+    "name": "スマパチ シン・エヴァンゲリオン Type カヲル",
+    "manufacturer": "ビスティ",
+    "probability": "1/349.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/12/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4465",
+    "name": "P天龍∞ SEVEN Light Ver.",
+    "manufacturer": "マルホン",
+    "probability": "1/19.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/12/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4463",
+    "name": "P天龍∞ SEVEN Blue Ver.",
+    "manufacturer": "マルホン",
+    "probability": "1/39.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/12/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4462",
+    "name": "P yes！高須クリニック～超整形PINK～",
+    "manufacturer": "豊丸",
+    "probability": "1/9.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/12/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4444",
+    "name": "P大海物語5 ブラック",
+    "manufacturer": "三洋",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/12/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4441",
+    "name": "P交響詩篇エウレカセブン ANEMONE",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/12/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4437",
+    "name": "Pワンパンマン 199ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/199.80",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/12/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4430",
+    "name": "PフィーバーからくりサーカスLight ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/12/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4457",
+    "name": "e Re:ゼロから始める異世界生活 season2",
+    "manufacturer": "大都技研",
+    "probability": "1/349.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/11/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4438",
+    "name": "PA豊丸ととある企業の最新作2 SOD 99ver.",
+    "manufacturer": "豊丸",
+    "probability": "1/99.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/11/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4435",
+    "name": "eルパン三世 銭形からの招待状",
+    "manufacturer": "平和",
+    "probability": "1/349.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/11/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4448",
+    "name": "ぱちんこ 水戸黄門 超極上",
+    "manufacturer": "京楽",
+    "probability": "1/319.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/11/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4443",
+    "name": "Pゲゲゲの鬼太郎 獅子奮迅",
+    "manufacturer": "オレンジ",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/11/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4442",
+    "name": "スマパチゲゲゲの鬼太郎 獅子奮迅SP",
+    "manufacturer": "JFJ",
+    "probability": "1/349.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/11/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4436",
+    "name": "P覇穹 封神演義",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.68",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/11/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4431",
+    "name": "Pベルセルク無双 119ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/119.80",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/11/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4429",
+    "name": "Pフィーバーありふれた職業で世界最強",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/11/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4427",
+    "name": "P真・北斗無双 第4章 下剋上闘",
+    "manufacturer": "サミー",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/11/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4432",
+    "name": "Pゴジラ対エヴァンゲリオン〜G細胞覚醒〜 PREMIUM MODEL",
+    "manufacturer": "ビスティ",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/10/16",
+    "status": ""
+  },
+  {
+    "machine_id": "4424",
+    "name": "PストリートファイターⅤ K.O.RUSH",
+    "manufacturer": "藤商事",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/10/16",
+    "status": ""
+  },
+  {
+    "machine_id": "4421",
+    "name": "Pギルティクラウン2",
+    "manufacturer": "メーシー",
+    "probability": "1/239.1",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/10/16",
+    "status": ""
+  },
+  {
+    "machine_id": "4439",
+    "name": "PA満開爛漫 GO",
+    "manufacturer": "豊丸×ごらく",
+    "probability": "1/77.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/10/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4426",
+    "name": "Pプロゴルファー猿 強甘119ver.",
+    "manufacturer": "豊丸",
+    "probability": "1/119.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/10/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4425",
+    "name": "ぱちんこ GANTZ 覚醒 RUSH180",
+    "manufacturer": "OK!!",
+    "probability": "1/199.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/10/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4422",
+    "name": "PA激デジ ジューシーハニーハーレム",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/77.74",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/10/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4417",
+    "name": "P世紀末・天才バカボン〜神SPEC 凱旋〜",
+    "manufacturer": "D-light",
+    "probability": "1/319.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/10/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4416",
+    "name": "Pフィーバーかぐや様は告らせたい",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/10/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4413",
+    "name": "e新海物語349",
+    "manufacturer": "三洋",
+    "probability": "1/348.5",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/10/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4411",
+    "name": "P頭文字D Non-Stop 3000Edition",
+    "manufacturer": "サミー",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/10/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4408",
+    "name": "e義風堂々!!〜兼続と慶次〜3",
+    "manufacturer": "ニューギン",
+    "probability": "1/348.59",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/10/02",
+    "status": ""
+  },
+  {
+    "machine_id": "4418",
+    "name": "P新世紀エヴァンゲリオン〜未来への咆哮〜SPECIAL EDITION",
+    "manufacturer": "ビスティ",
+    "probability": "1/199.2",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/09/19",
+    "status": "完了"
+  },
+  {
+    "machine_id": "4412",
+    "name": "ぱちんこ戦国コレクション 天魔99",
+    "manufacturer": "コナミアミューズメント",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/09/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4407",
+    "name": "Pリング 呪いの7日間3",
+    "manufacturer": "JFJ",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/09/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4399",
+    "name": "Pフィーバー戦姫絶唱シンフォギア3黄金絶唱Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/09/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4397",
+    "name": "Pルパン三世 消されたルパン2022 99ver.",
+    "manufacturer": "平和",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/09/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4415",
+    "name": "スマートぱちんこ ソードアート・オンライン",
+    "manufacturer": "京楽",
+    "probability": "1/319.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/09/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4398",
+    "name": "P咲-Saki-全国編",
+    "manufacturer": "三洋",
+    "probability": "1/319.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/09/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4396",
+    "name": "P 百花繚乱",
+    "manufacturer": "D-light",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/09/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4394",
+    "name": "Pハイスクール・フリート オールスター",
+    "manufacturer": "メーシー",
+    "probability": "1/229.95",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/09/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4400",
+    "name": "P七つの美徳 ゴールデンエンジェルタイム",
+    "manufacturer": "高尾",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/08/21",
+    "status": ""
+  },
+  {
+    "machine_id": "4389",
+    "name": "Pシティーハンター 俺の心を震わせた日 凄ライトミドル",
+    "manufacturer": "アムテックス",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/08/21",
+    "status": ""
+  },
+  {
+    "machine_id": "4385",
+    "name": "P聖闘士星矢 超流星LIGHT",
+    "manufacturer": "三洋",
+    "probability": "1/129.5",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/08/21",
+    "status": ""
+  },
+  {
+    "machine_id": "4392",
+    "name": "Pデビルマン黄金黙示録",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/08/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4388",
+    "name": "P真・一騎当千～桃園の誓い～",
+    "manufacturer": "D-light",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/08/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4384",
+    "name": "P GO!GO!マリン 3000",
+    "manufacturer": "サンスリー",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/08/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4381",
+    "name": "Pフィーバー機動戦士ガンダムSEED",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/08/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4379",
+    "name": "Pビッグドリーム3 77ver.",
+    "manufacturer": "サミー",
+    "probability": "1/77.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/08/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4364",
+    "name": "PフィーバークィーンⅡ 30th ANNIVERSARY EDITION",
+    "manufacturer": "ジェイビー",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/07/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4380",
+    "name": "スマパチ RAVE 覚聖ループ",
+    "manufacturer": "JFJ",
+    "probability": "1/299",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/07/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4373",
+    "name": "eキャッツ・アイ",
+    "manufacturer": "平和",
+    "probability": "1/349.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/07/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4371",
+    "name": "Pアナザーゴッドハーデス-狂乱-",
+    "manufacturer": "メーシー",
+    "probability": "1/319.68",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/07/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4370",
+    "name": "P貞子3D3",
+    "manufacturer": "高尾",
+    "probability": "1/57.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/07/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4363",
+    "name": "e花の慶次 裂 一刀両断",
+    "manufacturer": "ニューギン",
+    "probability": "1/348.59",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/07/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4359",
+    "name": "Pブラックラグーン4",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/07/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4358",
+    "name": "PA大海物語5 Withアグネス・ラム",
+    "manufacturer": "三洋",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/07/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4377",
+    "name": "ぱちんこ 乃木坂46 キュンキュンLIGHT ver.",
+    "manufacturer": "京楽",
+    "probability": "1/129.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/06/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4376",
+    "name": "P ベルセルク無双 冥府魔道ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.68",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/06/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4353",
+    "name": "P銀河鉄道999 Next Journey 1/100ver.",
+    "manufacturer": "アムテックス",
+    "probability": "1/100.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/06/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4368",
+    "name": "ぱちんこ ウルトラマンティガ ウルトラ超光ライトver.",
+    "manufacturer": "OK!!",
+    "probability": "1/129.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/06/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4362",
+    "name": "P地獄少女 Light",
+    "manufacturer": "藤商事",
+    "probability": "1/129.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/06/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4354",
+    "name": "Pわんニャンアドベンチャー",
+    "manufacturer": "サンスリー",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/06/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4350",
+    "name": "Pフィーバースプラッシュ×スプラッシュ",
+    "manufacturer": "SANKYO",
+    "probability": "1/199.805",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/06/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4349",
+    "name": "P yes！高須クリニック青天 はじまりは4500",
+    "manufacturer": "豊丸",
+    "probability": "1/38.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/06/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4345",
+    "name": "P甲鉄城のカバネリ ～4,000連激ver.～",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/06/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4330",
+    "name": "Pフィーバー蒼穹のファフナー3 EXODUS 織姫Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/69.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/06/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4357",
+    "name": "P大線香花火",
+    "manufacturer": "A-gon",
+    "probability": "1/72",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/05/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4339",
+    "name": "Pやじきた道中記",
+    "manufacturer": "メーシー",
+    "probability": "1/159.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/05/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4331",
+    "name": "Pフィーバー 機動戦士ガンダムユニコーン LIGHT ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/05/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4351",
+    "name": "P コードギアス 反逆のルルーシュ Rebellion to Re;surrection",
+    "manufacturer": "ビスティ",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/05/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4346",
+    "name": "P哲也",
+    "manufacturer": "D-light",
+    "probability": "1/197.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/05/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4344",
+    "name": "Pジューシーハニーハーレム",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/319.68",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/05/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4343",
+    "name": "P新・遠山の金さん 77Ver.",
+    "manufacturer": "JFJ",
+    "probability": "1/77.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/05/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4338",
+    "name": "PA真・怪獣王ゴジラ2",
+    "manufacturer": "ニューギン",
+    "probability": "1/78.86",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/05/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4337",
+    "name": "Pゴブリンスレイヤー",
+    "manufacturer": "JFJ",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/05/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4336",
+    "name": "PA元祖ギンギラパラダイス 強99ver.",
+    "manufacturer": "サンスリー",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/05/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4334",
+    "name": "Pバイオハザード RE:2",
+    "manufacturer": "アムテックス",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/05/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4332",
+    "name": "P北斗の拳 暴凶星",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/05/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4348",
+    "name": "ぱちんこ 新・必殺仕置人S",
+    "manufacturer": "京楽",
+    "probability": "1/349.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/04/24",
+    "status": ""
+  },
+  {
+    "machine_id": "4324",
+    "name": "eルパン三世 THE FIRST",
+    "manufacturer": "平和",
+    "probability": "1/349.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/04/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4322",
+    "name": "Pフィーバー炎炎ノ消防隊",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/04/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4317",
+    "name": "P天龍∞ SEVEN",
+    "manufacturer": "マルホン",
+    "probability": "1/39.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/04/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4323",
+    "name": "e聖闘士星矢 超流星CliMAX349",
+    "manufacturer": "三洋",
+    "probability": "1/348.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/04/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4318",
+    "name": "P Go!Go!郷 comeback stage",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.68",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/04/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4315",
+    "name": "P銭形平次3 お静99",
+    "manufacturer": "高尾",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/04/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4313",
+    "name": "Pプロゴルファー猿 EMPEROR MODEL",
+    "manufacturer": "豊丸",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/04/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4312",
+    "name": "P聖戦士ダンバイン2 -ZEROLIMIT HYPER-",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/04/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4319",
+    "name": "Pとある科学の超電磁砲 最強御坂ver.",
+    "manufacturer": "オレンジ",
+    "probability": "1/119",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/03/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4314",
+    "name": "Pバベル5000",
+    "manufacturer": "ミズホ",
+    "probability": "1/1.0",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/03/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4320",
+    "name": "ぱちんこ 乃木坂46 トレジャースペック",
+    "manufacturer": "京楽",
+    "probability": "1/319.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/03/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4307",
+    "name": "P009 RE:CYBORG ACCELERATOR EDITION 99ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/03/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4303",
+    "name": "P真・北斗無双 第3章 覚醒闘舞",
+    "manufacturer": "サミー",
+    "probability": "1/129.3",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/03/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4300",
+    "name": "Pフィーバーアクエリオン極合体",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/03/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4290",
+    "name": "P麻雀物語4 77ver.",
+    "manufacturer": "平和",
+    "probability": "1/77.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/03/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4289",
+    "name": "Pルパン三世 2000カラットの涙 129ver.",
+    "manufacturer": "平和",
+    "probability": "1/129.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/03/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4287",
+    "name": "Psin 七つの大罪 X-TREME",
+    "manufacturer": "高尾",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/03/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4284",
+    "name": "Pルパン三世 THE FIRST",
+    "manufacturer": "平和",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/03/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4297",
+    "name": "P地獄少女覚醒3000Ver.",
+    "manufacturer": "藤商事",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/02/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4325",
+    "name": "PA祭2",
+    "manufacturer": "APS APS",
+    "probability": "-",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/02/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4316",
+    "name": "PA戦国乙女レジェンドバトル ときめき89バージョン",
+    "manufacturer": "アムテックス×ごらく",
+    "probability": "1/89.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/02/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4309",
+    "name": "P宇宙戦艦ヤマト2202 -ONLY ONE- LIGHT Ver.",
+    "manufacturer": "ビスティ",
+    "probability": "1/89.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/02/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4308",
+    "name": "P神・天才バカボン〜甘神SPEC〜",
+    "manufacturer": "Daiichi",
+    "probability": "1/129.77",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/02/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4306",
+    "name": "Pだるまっしゅ2 119ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/119.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/02/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4305",
+    "name": "P真速のガッチャマン",
+    "manufacturer": "七匠",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/02/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4293",
+    "name": "P大海物語5",
+    "manufacturer": "三洋",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/02/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4291",
+    "name": "P真バジリスク～甲賀忍法帖～豪塊W319ver.",
+    "manufacturer": "メーシー",
+    "probability": "1/319.68",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/02/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4286",
+    "name": "P真・北斗無双 第4章",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/02/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4285",
+    "name": "Pフィーバーダンベル何キロ持てる？",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/02/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4269",
+    "name": "P戦国乙女 LEGEND BATTLE 99ver.",
+    "manufacturer": "アムテックス",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/02/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4295",
+    "name": "P牙狼GOLD IMPACT",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/319.68",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/01/23",
+    "status": ""
+  },
+  {
+    "machine_id": "4281",
+    "name": "P桃剣閃撃 極",
+    "manufacturer": "西陣",
+    "probability": "1/319.69",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/01/23",
+    "status": ""
+  },
+  {
+    "machine_id": "4261",
+    "name": "P真・花の慶次3 -黄金一閃-",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.68",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/01/23",
+    "status": ""
+  },
+  {
+    "machine_id": "4282",
+    "name": "PA SUPER電役ナナシーSPECIAL66 Ver2.0",
+    "manufacturer": "豊丸",
+    "probability": "1/66.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/01/10",
+    "status": ""
+  },
+  {
+    "machine_id": "4280",
+    "name": "PA緋弾のアリア～緋弾覚醒編～甘デジver. FRA",
+    "manufacturer": "藤商事",
+    "probability": "1/99",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/01/10",
+    "status": ""
+  },
+  {
+    "machine_id": "4278",
+    "name": "PハイスクールD×D 真紅GCA",
+    "manufacturer": "西陣",
+    "probability": "1/99.90",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/01/10",
+    "status": ""
+  },
+  {
+    "machine_id": "4276",
+    "name": "Pビッグドリーム3",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/01/10",
+    "status": ""
+  },
+  {
+    "machine_id": "4271",
+    "name": "Pシティーハンター 俺の心を震わせた日",
+    "manufacturer": "アムテックス",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/01/10",
+    "status": ""
+  },
+  {
+    "machine_id": "4270",
+    "name": "PAスーパー海物語 IN 沖縄5 夜桜超旋風 99ver.",
+    "manufacturer": "三洋",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2023/01/10",
+    "status": ""
+  },
+  {
+    "machine_id": "4262",
+    "name": "P大開王",
+    "manufacturer": "ジェイビー",
+    "probability": "1/319.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2023/01/10",
+    "status": ""
+  },
+  {
+    "machine_id": "4267",
+    "name": "P TIGER ＆ BUNNY ～完全無欠WILDスペック～",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/12/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4266",
+    "name": "Pゴッドイーター神がかりVer.",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/319.68",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/12/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4257",
+    "name": "Pゴジラ対エヴァンゲリオン〜G細胞覚醒〜",
+    "manufacturer": "ビスティ",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/12/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4288",
+    "name": "PAコマコマ倶楽部 with 坂本冬美 ごらくバージョン",
+    "manufacturer": "豊丸×ごらく",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/12/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4277",
+    "name": "Pネオモンスターハウス MXL",
+    "manufacturer": "竹屋",
+    "probability": "1/319.69",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/12/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4274",
+    "name": "Pダイナマイトキング～無敵SPEC～",
+    "manufacturer": "Daiichi",
+    "probability": "1/304.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/12/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4273",
+    "name": "ぱちんこ アズールレーン THE ANIMATION",
+    "manufacturer": "京楽",
+    "probability": "1/46.0",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/12/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4260",
+    "name": "Pもっとあぶない刑事",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.68",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/12/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4251",
+    "name": "P聖闘士星矢 超流星 女神ゴールドver.1500",
+    "manufacturer": "三洋",
+    "probability": "1/318.13",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/12/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4250",
+    "name": "P聖闘士星矢 超流星 星矢ゴールドver.92％",
+    "manufacturer": "三洋",
+    "probability": "1/318.13",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/12/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4249",
+    "name": "P銀河鉄道999 Next Journey",
+    "manufacturer": "アムテックス",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/12/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4265",
+    "name": "PAゴールデン鳳凰∞Jr.99",
+    "manufacturer": "マルホン",
+    "probability": "1/98.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4263",
+    "name": "P華牌RRwith清水あいり ごらくバージョン",
+    "manufacturer": "豊丸×ごらく",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4256",
+    "name": "PA獅子王Jr.99",
+    "manufacturer": "マルホン",
+    "probability": "1/98.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4255",
+    "name": "PバーストエンジェルEX 99Ver.",
+    "manufacturer": "豊丸",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4248",
+    "name": "P10カウントチャージ絶狼 神撃135Ver.",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/135.96",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4245",
+    "name": "P新・遠山の金さん",
+    "manufacturer": "JFJ",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4243",
+    "name": "P弾球黙示録カイジ5 ざわっ…Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/89.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4240",
+    "name": "P七つの大罪2",
+    "manufacturer": "サミー",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4239",
+    "name": "Pターミネーター2 TYPE7500",
+    "manufacturer": "アムテックス",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4238",
+    "name": "P GO!GO!マリン超連撃BATTLE",
+    "manufacturer": "サンスリー",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4235",
+    "name": "ぱちんこGⅠ優駿倶楽部2 超限界突破",
+    "manufacturer": "コナミアミューズメント",
+    "probability": "1/219.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4234",
+    "name": "Pワンパンマン",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.68",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4231",
+    "name": "PフィーバークィーンRUSH",
+    "manufacturer": "ジェイビー",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4227",
+    "name": "PモンキーターンⅥ超抜ZDa",
+    "manufacturer": "西陣",
+    "probability": "1/319.69",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/11/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4233",
+    "name": "P緋弾のアリア～緋弾覚醒編～319ver. JMZ",
+    "manufacturer": "JFJ",
+    "probability": "1/319",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/10/17",
+    "status": ""
+  },
+  {
+    "machine_id": "4232",
+    "name": "ぱちんこ ウルトラマンティガ 1500×84",
+    "manufacturer": "OK!!",
+    "probability": "1/319.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/10/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4226",
+    "name": "P真・牙狼2",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/319.68",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/10/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4221",
+    "name": "Pルパン三世 消されたルパン2022",
+    "manufacturer": "平和",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/10/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4220",
+    "name": "Pデビルマン疾風迅雷 129ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/129.77",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/10/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4219",
+    "name": "Pストライクウィッチーズ2 129ver.",
+    "manufacturer": "三洋",
+    "probability": "1/129.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/10/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4198",
+    "name": "PAフィーバーマクロスフロンティア4 88ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/88.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/10/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4197",
+    "name": "Pうしおととら～超獣SPEC～",
+    "manufacturer": "D-light",
+    "probability": "1/319.69",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/10/03",
+    "status": ""
+  },
+  {
+    "machine_id": "4206",
+    "name": "P華牌RRwith清水あいり 150de遊タイム",
+    "manufacturer": "豊丸",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/09/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4228",
+    "name": "P宇宙戦艦ヤマト2202 愛の戦士たち Light ver.",
+    "manufacturer": "ビスティ",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/09/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4224",
+    "name": "ぱちんこキン肉マン3 キン肉星王位争奪編 特盛ミートくんver.",
+    "manufacturer": "京楽",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/09/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4218",
+    "name": "P野生の王国 GO 199ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/199.80",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/09/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4214",
+    "name": "P犬夜叉2",
+    "manufacturer": "D-light",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/09/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4213",
+    "name": "Pシンデレラブレイド",
+    "manufacturer": "JFJ JFJ",
+    "probability": "1/141.1",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/09/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4208",
+    "name": "P銭形平次3 DENKOUSEKKA 平次Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/09/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4207",
+    "name": "P牙狼MUSEUM",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/319.68",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/09/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4204",
+    "name": "Pバジリスク 〜桜花忍法帖〜早咲き桜99ver.",
+    "manufacturer": "メーシー",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/09/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4200",
+    "name": "PA元祖大工の源さん2",
+    "manufacturer": "三洋",
+    "probability": "1/89.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/09/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4195",
+    "name": "Pフィーバー戦姫絶唱シンフォギア3黄金絶唱",
+    "manufacturer": "SANKYO",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/09/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4187",
+    "name": "Pモモキュンソード閃撃GCA",
+    "manufacturer": "西陣",
+    "probability": "1/99.90",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/09/05",
+    "status": ""
+  },
+  {
+    "machine_id": "4216",
+    "name": "Pひぐらしのなく頃に〜蕾〜",
+    "manufacturer": "Daiichi",
+    "probability": "1/129.77",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/08/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4185",
+    "name": "P刀使ノ巫女 GCAa［甘デジver.］",
+    "manufacturer": "西陣",
+    "probability": "1/99.90",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/08/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4184",
+    "name": "P刀使ノ巫女 ZCa［319ver.］",
+    "manufacturer": "西陣",
+    "probability": "1/319.69",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/08/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4177",
+    "name": "PA新海物語",
+    "manufacturer": "三洋",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/08/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4170",
+    "name": "Pフィーバーからくりサーカス",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/08/08",
+    "status": ""
+  },
+  {
+    "machine_id": "4199",
+    "name": "P真・怪獣王ゴジラ2",
+    "manufacturer": "ニューギン",
+    "probability": "1/319.68",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/08/01",
+    "status": ""
+  },
+  {
+    "machine_id": "4194",
+    "name": "ぱちんこ GANTZ:3 LAST BATTLE",
+    "manufacturer": "OK!! OK!!",
+    "probability": "1/319.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/08/01",
+    "status": ""
+  },
+  {
+    "machine_id": "4190",
+    "name": "Pサラリーマン金太郎",
+    "manufacturer": "藤商事",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/08/01",
+    "status": ""
+  },
+  {
+    "machine_id": "4189",
+    "name": "P激デジ真・牙狼",
+    "manufacturer": "サンセイR＆D サンセイR＆D",
+    "probability": "1/77.74",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/08/01",
+    "status": ""
+  },
+  {
+    "machine_id": "4186",
+    "name": "P黄門ちゃま 神盛2",
+    "manufacturer": "平和",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/08/01",
+    "status": ""
+  },
+  {
+    "machine_id": "4180",
+    "name": "P ANOTHER WILD RODEO～スギちゃんっス～",
+    "manufacturer": "豊丸",
+    "probability": "1/38.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/08/01",
+    "status": ""
+  },
+  {
+    "machine_id": "4172",
+    "name": "Pモンスターハンターダブルクロス 連続狩猟ver.",
+    "manufacturer": "サミー",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/08/01",
+    "status": ""
+  },
+  {
+    "machine_id": "4168",
+    "name": "PAアニマルマンション GO",
+    "manufacturer": "豊丸×ごらく 豊丸×ごらく",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/08/01",
+    "status": ""
+  },
+  {
+    "machine_id": "4165",
+    "name": "Pあっぱれ！夏物語 ドカン!!と一発7000Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/27.3",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/07/25",
+    "status": ""
+  },
+  {
+    "machine_id": "4179",
+    "name": "P宇宙戦艦ヤマト2202 -ONLY ONE-",
+    "manufacturer": "ビスティ",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/07/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4176",
+    "name": "P結城友奈は勇者であるALLRUSH GCAa",
+    "manufacturer": "西陣",
+    "probability": "1/77.74",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/07/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4175",
+    "name": "Pゴールデン鳳凰∞",
+    "manufacturer": "マルホン",
+    "probability": "1/312.5",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/07/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4159",
+    "name": "Pルパン三世～復活のマモー～ 甘デジ",
+    "manufacturer": "平和",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/07/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4142",
+    "name": "Pスーパー海物語 IN 沖縄5 夜桜超旋風",
+    "manufacturer": "三洋",
+    "probability": "1/319.68",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/07/19",
+    "status": ""
+  },
+  {
+    "machine_id": "4169",
+    "name": "P世界でいちばん強くなりたい！ W悶STAR Ver",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/119.80",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/07/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4167",
+    "name": "PAビビッドレッドオペレーション Sweetもも99ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/07/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4166",
+    "name": "Pだるまっしゅ2",
+    "manufacturer": "ニューギン",
+    "probability": "1/225.98",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/07/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4158",
+    "name": "P戦国乙女 LEGEND BATTLE",
+    "manufacturer": "アムテックス",
+    "probability": "1/222.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/07/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4152",
+    "name": "P真・一騎当千",
+    "manufacturer": "Daiichi",
+    "probability": "1/319.7",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/07/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4181",
+    "name": "P真シャカRUSH Jr. 遊タイムなしver.",
+    "manufacturer": "マルホン",
+    "probability": "1/117.2",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/06/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4174",
+    "name": "P真シャカRUSH Jr.",
+    "manufacturer": "マルホン",
+    "probability": "1/117.2",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/06/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4149",
+    "name": "Pめぞん一刻～Wedding Story～ 甘デジ",
+    "manufacturer": "アムテックス",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/06/20",
+    "status": ""
+  },
+  {
+    "machine_id": "4161",
+    "name": "Pリアル鬼ごっこ2 全力疾走チャージ王様Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/06/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4155",
+    "name": "Pジューシーハニー3 てんこ盛り連写RUSH",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/319.68",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/06/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4153",
+    "name": "PストリートファイターⅤ",
+    "manufacturer": "藤商事",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/06/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4151",
+    "name": "Pあぶない刑事 129ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/129.77",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/06/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4148",
+    "name": "P麻雀物語4",
+    "manufacturer": "平和",
+    "probability": "1/219.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/06/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4147",
+    "name": "デジハネPA火曜サスペンス劇場 最後の推理",
+    "manufacturer": "サミー",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/06/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4144",
+    "name": "Pコマコマ倶楽部 with 坂本冬美 199ver.",
+    "manufacturer": "豊丸",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/06/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4143",
+    "name": "PAコマコマ倶楽部 with 坂本冬美 99ver.",
+    "manufacturer": "豊丸",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/06/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4141",
+    "name": "P真バジリスク～甲賀忍法帖～",
+    "manufacturer": "メーシー",
+    "probability": "1/199.80",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/06/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4138",
+    "name": "P中森明菜・歌姫伝説～THE BEST LEGEND～199ver",
+    "manufacturer": "D-light",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/06/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4136",
+    "name": "Pフィーバー蒼穹のファフナー3 EXODUS 超蒼穹3800ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/06/06",
+    "status": ""
+  },
+  {
+    "machine_id": "4139",
+    "name": "Pらんま1/2 熱血格闘遊戯 99Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/05/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4135",
+    "name": "Pキャプテン翼 若林甘えんなよ！Ver.",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/99.90",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/05/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4133",
+    "name": "PA真・暴れん坊将軍 99Ver.",
+    "manufacturer": "藤商事",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/05/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4130",
+    "name": "Pはぐれ刑事純情派",
+    "manufacturer": "ニューギン",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/05/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4126",
+    "name": "Pフィーバーダンジョンに出会いを求めるのは間違っているだろうか",
+    "manufacturer": "SANKYO",
+    "probability": "1/319.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/05/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4124",
+    "name": "P頭文字D",
+    "manufacturer": "サミー",
+    "probability": "1/256.0",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/05/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4123",
+    "name": "P元祖ギンギラパラダイス",
+    "manufacturer": "サンスリー",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/05/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4121",
+    "name": "Pミリオンゴッド-一撃-",
+    "manufacturer": "ミズホ ミズホ",
+    "probability": "1/5",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/05/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4110",
+    "name": "Pフィーバー アイドルマスター ミリオンライブ！ Light ver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/05/09",
+    "status": ""
+  },
+  {
+    "machine_id": "4154",
+    "name": "P牙狼 月虹ノ旅人 58％の衝撃Ver.",
+    "manufacturer": "サンセイR＆D サンセイR＆D",
+    "probability": "1/319.68",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/04/25",
+    "status": ""
+  },
+  {
+    "machine_id": "4118",
+    "name": "P獅子王",
+    "manufacturer": "マルホン",
+    "probability": "1/220.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/04/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4115",
+    "name": "P結城友奈は勇者であるALLRUSH",
+    "manufacturer": "西陣",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/04/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4112",
+    "name": "デジハネP蒼天の拳 双龍",
+    "manufacturer": "サミー",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/04/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4109",
+    "name": "Pフィーバー アイドルマスター ミリオンライブ！ 39フェスver.",
+    "manufacturer": "SANKYO",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/04/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4106",
+    "name": "P一球魂GOLDピラミッ伝",
+    "manufacturer": "高尾",
+    "probability": "1/179.5",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/04/18",
+    "status": ""
+  },
+  {
+    "machine_id": "4125",
+    "name": "ぱちんこ 仮面ライダー 闇のライダーver.",
+    "manufacturer": "京楽",
+    "probability": "1/319.6",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/04/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4113",
+    "name": "PA巨人の星 明子2000Ver.",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/04/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4111",
+    "name": "Pアレジン プレミアム",
+    "manufacturer": "藤商事",
+    "probability": "1/319",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/04/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4103",
+    "name": "P花満開 月光 THE FINAL GCA",
+    "manufacturer": "西陣",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/04/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4094",
+    "name": "PA真・花の慶次2〜漆黒の衝撃 99ver.",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/04/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4077",
+    "name": "P大工の源さん 超韋駄天 BLACK",
+    "manufacturer": "三洋",
+    "probability": "1/318.13",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/04/04",
+    "status": ""
+  },
+  {
+    "machine_id": "4104",
+    "name": "PA激デジ 笑ゥせぇるすまん最後の忠告",
+    "manufacturer": "サンセイR＆D",
+    "probability": "1/77.74",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/03/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4091",
+    "name": "Pどないやねん",
+    "manufacturer": "藤商事",
+    "probability": "1/39.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/03/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4086",
+    "name": "ぱちんこ戦国コレクションBLACK",
+    "manufacturer": "コナミアミューズメント",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/03/22",
+    "status": ""
+  },
+  {
+    "machine_id": "4108",
+    "name": "Pコードギアス 反逆のルルーシュ Light ver.",
+    "manufacturer": "ビスティ",
+    "probability": "1/89.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4102",
+    "name": "ぱちんこキン肉マン3 キン肉星王位争奪編 友情シルバー",
+    "manufacturer": "京楽",
+    "probability": "1/229.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4101",
+    "name": "ぱちんこキン肉マン3 キン肉星王位争奪編 火事場ゴールド",
+    "manufacturer": "京楽",
+    "probability": "1/319.6",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4099",
+    "name": "P満開まつり GO1",
+    "manufacturer": "豊丸×ごらく",
+    "probability": "1/199.8",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4096",
+    "name": "P野生の王国どらむサファリS-K1 YT470",
+    "manufacturer": "ニューギン",
+    "probability": "1/159.84",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4095",
+    "name": "PA野生の王国どらむサファリN-K1 YT299",
+    "manufacturer": "ニューギン",
+    "probability": "1/99.90",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4090",
+    "name": "Cの衝撃!! P弾球黙示録カイジ5 電撃チャージ和也Ver.",
+    "manufacturer": "高尾",
+    "probability": "1/159.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4088",
+    "name": "P真・北斗無双 第3章 ジャギの逆襲",
+    "manufacturer": "サミー",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4087",
+    "name": "PハイスクールD×D 真紅",
+    "manufacturer": "西陣",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4082",
+    "name": "PAナムココレクション2 スイートゲームver.",
+    "manufacturer": "メーシー",
+    "probability": "1/99.9",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4081",
+    "name": "Pナムココレクション2",
+    "manufacturer": "メーシー",
+    "probability": "1/199.8",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4078",
+    "name": "Pストライクウィッチーズ2",
+    "manufacturer": "三洋",
+    "probability": "1/229.1",
+    "machine_type": "1種2種混合機",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4076",
+    "name": "P新鬼武者 DAWN OF DREAMS 甘デジ",
+    "manufacturer": "平和",
+    "probability": "1/99.9",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/03/07",
+    "status": ""
+  },
+  {
+    "machine_id": "4069",
+    "name": "Pとある魔術の禁書目録 Light PREMIUM ver.",
+    "manufacturer": "JFJ",
+    "probability": "1/129.7",
+    "machine_type": "デジパチ",
+    "intro_start": "2022/03/07",
+    "status": ""
+  }
+]
