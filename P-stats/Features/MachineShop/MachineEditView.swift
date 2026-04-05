@@ -45,6 +45,8 @@ enum PresetItem: Identifiable {
 struct MachineEditView: View, Equatable {
     /// 編集時は既存の機種を渡す。nil のときは新規登録。
     var editing: Machine? = nil
+    /// 新規登録保存直後に呼ぶ（遊技ゲートで即選択に使う）
+    var onNewMachineSaved: ((Machine) -> Void)? = nil
 
     static func == (lhs: MachineEditView, rhs: MachineEditView) -> Bool {
         lhs.editing?.persistentModelID == rhs.editing?.persistentModelID
@@ -127,7 +129,7 @@ struct MachineEditView: View, Equatable {
                                 Toggle("この機種データをみんなとシェアする", isOn: $shareWithEveryone)
                                     .tint(accent)
                                 Text("ONにすると、他のユーザーがマスタから検索したときにあなたの機種データ（1R純増など）を参照できます。")
-                                    .font(.caption)
+                                    .font(AppTypography.annotation)
                                     .foregroundStyle(t.subTextColor.opacity(0.88))
                             }
                         }
@@ -322,29 +324,29 @@ struct MachineEditView: View, Equatable {
                     showNewest20 = true
                 } label: {
                     Label("新台から探す", systemImage: "sparkles")
-                        .font(.caption.weight(.medium))
+                        .font(AppTypography.annotationMedium)
                 }
                 .foregroundColor(accent)
                 .buttonStyle(.bordered)
             }
             if serverPresetsHolder == nil && !isLoadingPresets {
                 Text("マスタを読み込めませんでした。設定のマスターデータURLを確認するか、機種名・メーカーを手入力してください。")
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundStyle(.orange.opacity(0.9))
             }
             if let holder = serverPresetsHolder, !holder.items.isEmpty, !registrationIndexLoadedOK, !isLoadingPresets {
                 Text("スペック一覧（index.json）を取得できませんでした。一覧のみの表示になります（対象外の除外ができません）。ネットワークとマシン詳細マスタのベースURLを確認するか、手入力してください。")
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundStyle(.orange.opacity(0.9))
             }
             if registrationIndexLoadedOK {
                 Text("※ index.json に載る機種のうち、ステータス「対象外」以外を表示しています。")
-                    .font(.caption2)
+                    .font(AppTypography.annotationSmall)
                     .foregroundStyle(.secondary)
             }
             if !showListArea {
                 Text("検索窓に文字を入力するか「新台から探す」をタップすると、該当機種を導入日が新しい順で表示します。")
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundStyle(.secondary)
             } else {
                 if isLoadingPresets && serverPresetsHolder == nil {
@@ -353,14 +355,14 @@ struct MachineEditView: View, Equatable {
                             .scaleEffect(0.9)
                             .tint(t.mainTextColor.opacity(0.85))
                         Text("マスタを取得しています…")
-                            .font(.caption)
+                            .font(AppTypography.annotation)
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                 } else if let holder = serverPresetsHolder, holder.items.isEmpty {
                     Text("マスタにデータがありません。設定のマスターデータURLを確認してください。")
-                        .font(.caption)
+                        .font(AppTypography.annotation)
                         .foregroundStyle(.secondary)
                 } else {
                     ScrollView(.vertical, showsIndicators: true) {
@@ -376,12 +378,12 @@ struct MachineEditView: View, Equatable {
                                             Text(item.displayName).font(.subheadline)
                                                 .foregroundColor(isSelected ? accent : .primary)
                                             Text(item.displaySubtitle)
-                                                .font(.caption2)
+                                                .font(AppTypography.annotationSmall)
                                                 .foregroundStyle(isSelected ? t.mainTextColor.opacity(0.9) : .secondary)
                                         }
                                         Spacer()
                                         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                            .font(.caption)
+                                            .font(AppTypography.annotation)
                                             .foregroundStyle(isSelected ? accent : .secondary)
                                     }
                                     .padding(.vertical, 8)
@@ -405,7 +407,7 @@ struct MachineEditView: View, Equatable {
                     if displayPresetsCache.isEmpty {
                         let holderHasRows = (serverPresetsHolder?.items.isEmpty == false)
                         Text(emptyPresetListMessage(keyEmpty: keyEmpty, holderHasRows: holderHasRows))
-                            .font(.caption)
+                            .font(AppTypography.annotation)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -530,7 +532,7 @@ struct MachineEditView: View, Equatable {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             Text("分析のボーダー比・期待値の集計に使います。手入力で登録する場合は必ず入れてください。店舗の補正後ボーダーは店舗設定に基づき別途計算されます。")
-                .font(.caption)
+                .font(AppTypography.annotation)
                 .foregroundColor(t.subTextColor.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -551,11 +553,11 @@ struct MachineEditView: View, Equatable {
                 .buttonStyle(.plain)
                 .foregroundColor(t.mainTextColor)
                 Text("アプリ内ブラウザで開きます。画面下の左端をタップすると、この登録フォームにすぐ戻れます。")
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundColor(t.subTextColor.opacity(0.88))
             } else {
                 Text("マスタの「機種を検索」で機種ID付きのデータを選ぶと、ぱちタウンの公式ページを開けます。")
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundStyle(t.subTextColor.opacity(0.72))
             }
         }
@@ -731,6 +733,7 @@ struct MachineEditView: View, Equatable {
                 mp.machine = machine
                 modelContext.insert(mp)
             }
+            onNewMachineSaved?(machine)
         }
         if shareWithEveryone {
             let manufacturer = manufacturerStr.trimmingCharacters(in: .whitespaces)
@@ -829,13 +832,13 @@ struct MachineEditView: View, Equatable {
                 // 中央はヒット不要（端操作への誤爆を減らす）
                 VStack(spacing: 3) {
                     Text(isDMMPanelExpanded ? "DMM ぱちタウン 表示中" : "機種の登録フォーム")
-                        .font(.caption.weight(.semibold))
+                        .font(AppTypography.annotationSemibold)
                         .foregroundStyle(t.mainTextColor.opacity(0.95))
                     Text("左端・右端をタップ")
-                        .font(.caption2.weight(.medium))
+                        .font(AppTypography.annotationSmallMedium)
                         .foregroundStyle(t.subTextColor.opacity(0.9))
                     Text("または横スワイプ")
-                        .font(.caption2)
+                        .font(AppTypography.annotationSmall)
                         .foregroundStyle(t.subTextColor.opacity(0.75))
                 }
                 .multilineTextAlignment(.center)
@@ -1014,7 +1017,7 @@ struct MachineMasterPickerSheet: View {
                                 .foregroundColor(.primary)
                             if let m = item.manufacturer, !m.isEmpty {
                                 Text(m)
-                                    .font(.caption)
+                                    .font(AppTypography.annotation)
                                     .foregroundStyle(.secondary)
                             }
                         }

@@ -117,12 +117,12 @@ struct AppLockScreenView: View {
                     .font(.headline)
                     .foregroundColor(.white)
                 Text("本体のパスコードまたは\(biometricCaption)で解除")
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundColor(.white.opacity(0.7))
                     .multilineTextAlignment(.center)
                 if let msg = errorMessage {
                     Text(msg)
-                        .font(.caption)
+                        .font(AppTypography.annotation)
                         .foregroundColor(.red)
                         .padding(.top, 4)
                 }

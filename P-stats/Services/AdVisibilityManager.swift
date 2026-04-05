@@ -9,8 +9,10 @@ final class AdVisibilityManager: ObservableObject {
     /// `EntitlementsStore.shouldShowAds` と同値
     @Published private(set) var shouldShowBanner: Bool = true
 
-    /// `AdaptiveBannerSlot` のレイアウト枠と同じ高さ（pt）
-    var bannerReserveHeight: CGFloat { shouldShowBanner ? AdaptiveBannerLayout.referenceSlotHeight() : 0 }
+    /// バナー枠＋タブドック直上の隙間（ホーム下端クロームと同じ積算）
+    var bannerReserveHeight: CGFloat {
+        AdaptiveBannerLayout.referenceBannerChromeTotalHeight(showBanner: shouldShowBanner)
+    }
 
     private init() {
         syncFromEntitlements()

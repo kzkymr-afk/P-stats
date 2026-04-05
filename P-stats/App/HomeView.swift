@@ -166,7 +166,7 @@ struct HomeView: View {
 
         /// ルート `safeAreaInset` に載せている下端クロームと同じ積算（自己文書化・将来の寸法変更時に `AdaptiveBannerSlot` / `MainTabDockChrome` と数を揃える）
         static func bottomChromeHeightForInset(width: CGFloat, showBanner: Bool, safeAreaBottomForHomeIndicator: CGFloat) -> CGFloat {
-            let bannerH = showBanner ? AdaptiveBannerLayout.slotHeight(forWidth: width) : 0
+            let bannerH = showBanner ? AdaptiveBannerLayout.bannerChromeTotalHeight(forWidth: width, showBanner: true) : 0
             let dockH = max(
                 AppGlassStyle.MainTabDock.selectedGlowSlotHeight,
                 AppGlassStyle.MainTabDock.paddingTopBelowGlare
@@ -313,7 +313,7 @@ struct HomeView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if !(selectedTab == .home && isHomeAnalyticsPresented) {
-                VStack(spacing: 0) {
+                VStack(spacing: adVisibility.shouldShowBanner ? DesignTokens.AdaptiveBannerChrome.gapAboveTabDock : 0) {
                     if adVisibility.shouldShowBanner {
                         AdaptiveBannerSlot(adUnitID: AdMobConfig.bannerUnitID)
                             .frame(maxWidth: .infinity)
@@ -496,7 +496,13 @@ struct HomeView: View {
     /// 情報パネル用の**固定スロット高**（表示セクションが変わってもレイアウト高はここで一定。溢れはパネル内スクロールのみ。ホーム全体はスクロールしない）。
     private func homePanelSlotHeight(containerHeight h: CGFloat, hasBanner: Bool) -> CGFloat {
         if hasBanner {
-            return min(278, max(196, h * 0.26))
+            return min(
+                DesignTokens.Home.IntegratedPanelSlotWithBanner.maxHeight,
+                max(
+                    DesignTokens.Home.IntegratedPanelSlotWithBanner.minHeight,
+                    h * DesignTokens.Home.IntegratedPanelSlotWithBanner.heightFractionOfContentBody
+                )
+            )
         }
         return min(400, max(232, h * 0.42))
     }

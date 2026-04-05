@@ -32,7 +32,7 @@ enum RewardedAdPresenter {
                     }
                     ad.present(fromRootViewController: root, userDidEarnRewardHandler: {
                         self.userEarnedReward = true
-                        RewardedAnalyticsTrialController.shared.grantAdditional24HoursFromReward()
+                        RewardedAnalyticsTrialController.shared.grantAdditionalTrialFromReward()
                     })
                 }
             }

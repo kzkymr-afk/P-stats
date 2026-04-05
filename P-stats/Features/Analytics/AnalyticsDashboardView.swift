@@ -599,7 +599,7 @@ struct AnalyticsDashboardBottomChrome: View {
                 VStack(spacing: 4) {
                     if let cap = model.periodFilter.dockDrumSelectionCaption(referenceDate: model.selectedPeriodDate) {
                         Text(cap)
-                            .font(.caption.weight(.semibold))
+                            .font(AppTypography.annotationSemibold)
                             .foregroundColor(themeManager.currentTheme.subTextColor.opacity(0.95))
                     }
                     AnalyticsPeriodReferencePicker(selectedDate: $model.selectedPeriodDate, filter: model.periodFilter)
@@ -1244,7 +1244,7 @@ struct AnalyticsDashboardView: View {
                 .foregroundColor(AppGlassStyle.textPrimary)
             Spacer()
             Image(systemName: "chevron.up.chevron.down")
-                .font(.caption.weight(.semibold))
+                .font(AppTypography.annotationSemibold)
                 .foregroundColor(themeAccent.opacity(0.9))
         }
         .padding(.horizontal, 12)
@@ -1497,7 +1497,7 @@ private struct CrossAnalysisPanelCore: View {
                 Button(action: openFull) {
                     HStack(spacing: 8) {
                         Image(systemName: "arrow.up.left.and.arrow.down.right")
-                            .font(.caption.weight(.semibold))
+                            .font(AppTypography.annotationSemibold)
                         Text("全画面で開く")
                             .font(.subheadline.weight(.semibold))
                         Spacer()
@@ -1511,7 +1511,7 @@ private struct CrossAnalysisPanelCore: View {
             }
 
             Text(periodCaption)
-                .font(.caption)
+                .font(AppTypography.annotation)
                 .foregroundColor(t.subTextColor.opacity(0.88))
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -1536,7 +1536,7 @@ private struct CrossAnalysisPanelCore: View {
                             .foregroundColor(t.mainTextColor.opacity(0.95))
                         Spacer()
                         Image(systemName: "chevron.up.chevron.down")
-                            .font(.caption.weight(.semibold))
+                            .font(AppTypography.annotationSemibold)
                             .foregroundColor(cyan.opacity(0.9))
                     }
                     .padding(.horizontal, 12)
@@ -1615,7 +1615,7 @@ private struct CrossAnalysisPanelCore: View {
                 ? "表示できる組み合わせがありません（同一店・同一機種の実戦を2件以上蓄えると表示されます）"
                 : "表示できる組み合わせがありません（同一店・同一メーカー分類の実戦を2件以上蓄えると表示されます）"
         )
-        .font(.caption)
+        .font(AppTypography.annotation)
         .foregroundColor(t.subTextColor.opacity(0.9))
     }
 }
@@ -1716,7 +1716,7 @@ private struct CrossAnalysisPairRowCard: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(t.mainTextColor)
                 Image(systemName: "multiply")
-                    .font(.caption.weight(.light))
+                    .font(AppTypography.annotationLight)
                     .foregroundColor(t.subTextColor.opacity(0.75))
                 Text(counterpart)
                     .font(.subheadline.weight(.medium))
@@ -1726,14 +1726,14 @@ private struct CrossAnalysisPairRowCard: View {
                 Spacer(minLength: 6)
                 if showsDrillDownAffordance {
                     Text("詳細")
-                        .font(.caption.weight(.semibold))
+                        .font(AppTypography.annotationSemibold)
                         .foregroundColor(cyan.opacity(0.85))
                     Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
+                        .font(AppTypography.annotationSemibold)
                         .foregroundColor(cyan.opacity(0.75))
                 }
                 Text("実戦 \(sessionCount)件")
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundColor(t.subTextColor.opacity(0.85))
             }
             HStack(spacing: 14) {
@@ -2158,7 +2158,7 @@ private struct CumulativeProfitTrendSection: View {
                             .foregroundColor(ch.theme.mainTextColor)
                             .multilineTextAlignment(.leading)
                         Image(systemName: "arrow.triangle.2.circlepath")
-                            .font(.caption.weight(.semibold))
+                            .font(AppTypography.annotationSemibold)
                             .foregroundStyle(ch.theme.subTextColor.opacity(0.75))
                     }
                 }
@@ -2178,16 +2178,16 @@ private struct CumulativeProfitTrendSection: View {
                 legendLineSwatch(cyan, dashed: false, label: "累計・実質収支")
                 legendLineSwatch(theoreticalLineColor, dashed: true, label: "累計・期待値")
             }
-            .font(.caption)
+            .font(AppTypography.annotation)
             HStack(spacing: 14) {
                 legendBandSwatch(surplusBandColor, label: "帯・余剰側")
                 legendBandSwatch(deficitBandColor, label: "帯・欠損側")
             }
-            .font(.caption)
+            .font(AppTypography.annotation)
             HStack(spacing: 14) {
                 legendBarSwatch(barTheoreticalColor, label: "期待値（期間別）")
             }
-            .font(.caption)
+            .font(AppTypography.annotation)
             .foregroundColor(ch.theme.subTextColor.opacity(0.9))
         }
         .padding(14)
@@ -2580,7 +2580,7 @@ private struct AnalyticsSessionCardView: View {
                 pairBlock(leftLabel: "総回転数", leftValue: "\(session.normalRotations)回", leftValueColor: skin.mainTextColor,
                           rightLabel: "実質回転率", rightValue: rotationRateValue, rightValueColor: skin.mainTextColor)
             }
-            .font(.caption)
+            .font(AppTypography.annotation)
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -2599,7 +2599,7 @@ private struct AnalyticsSessionCardView: View {
                 Text(leftLabel)
                     .foregroundColor(skin.subTextColor)
                 Text(leftValue)
-                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .font(AppTypography.annotationMonospacedDigitSemibold)
                     .foregroundColor(leftValueColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -2610,7 +2610,7 @@ private struct AnalyticsSessionCardView: View {
                 Text(rightLabel)
                     .foregroundColor(skin.subTextColor)
                 Text(rightValue)
-                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .font(AppTypography.annotationMonospacedDigitSemibold)
                     .foregroundColor(rightValueColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -3434,7 +3434,7 @@ struct AnalyticsGroupCard: View {
                             .font(AppTypography.panelHeading)
                             .foregroundColor(themeManager.currentTheme.mainTextColor)
                         Text("（遊技回数：\(group.sessionCount)回）")
-                            .font(.caption2)
+                            .font(AppTypography.annotationSmall)
                             .foregroundColor(themeManager.currentTheme.subTextColor.opacity(0.9))
                     }
                     Text(secondLineText)

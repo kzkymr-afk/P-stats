@@ -114,7 +114,7 @@ struct SessionShareComposerSheet: View {
                             .font(.system(size: 28, weight: .semibold))
                             .foregroundStyle(.white.opacity(0.6))
                         Text("プレビューを生成します…")
-                            .font(.caption)
+                            .font(AppTypography.annotation)
                             .foregroundStyle(.white.opacity(0.6))
                     }
                 }
@@ -123,7 +123,7 @@ struct SessionShareComposerSheet: View {
             .frame(height: 340)
 
             Text("生成された画像を確認してから共有できます。")
-                .font(.caption)
+                .font(AppTypography.annotation)
                 .foregroundStyle(.white.opacity(0.65))
         }
     }

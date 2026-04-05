@@ -42,7 +42,7 @@ struct SessionSettlementSheet: View {
                             }
                         } else {
                             Text("この店舗は「貯玉サービス利用」がオフです。店舗編集でオンにすると貯玉精算と端数の自動反映が使えます。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundStyle(.white.opacity(0.7))
                                 .padding(12)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -62,12 +62,12 @@ struct SessionSettlementSheet: View {
 
                         if supportsChodama, breakdown.remainderPt > 0 {
                             Text("換金額は 500pt 刻みです。端数 \(breakdown.remainderPt) pt（約 \(breakdown.remainderBalls) 玉分）は貯玉残高へ加算します。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundStyle(.white.opacity(0.72))
                                 .fixedSize(horizontal: false, vertical: true)
                         } else if !supportsChodama, breakdown.remainderPt > 0 {
                             Text("換金額は 500pt 刻みです。端数は貯玉サービス未設定のため、アプリ上では残高に入れません。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundStyle(.orange.opacity(0.9))
                                 .fixedSize(horizontal: false, vertical: true)
                         }

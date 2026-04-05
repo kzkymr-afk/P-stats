@@ -15,7 +15,7 @@ struct AnalyticsUpgradeSheet: View {
                 AppGlassStyle.background.ignoresSafeArea()
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 20) {
-                        Text("無料版では「全般」の基本表示と、一部の分析に制限があります。プレミアムでは広告を非表示にし、店舗・機種・メーカー・クロス分析・ヒートマップ・期間フィルタなどすべて開きます。")
+                        Text("無料版では、データ分析機能に制限があります。\nプレミアムに登録すると、広告が非表示になり、全ての分析機能が解放されます。")
                             .font(AppTypography.bodyRounded)
                             .foregroundColor(.white.opacity(0.85))
 
@@ -25,7 +25,7 @@ struct AnalyticsUpgradeSheet: View {
                         } else {
                             if entitlements.hasAnalyticsFull {
                                 Label("リワード試用中はプレミアムと同じ内容です。継続は月額登録で確定できます。", systemImage: "gift.fill")
-                                    .font(.caption)
+                                    .font(AppTypography.annotation)
                                     .foregroundColor(cyan.opacity(0.95))
                             }
                             purchaseBlock(
@@ -37,7 +37,7 @@ struct AnalyticsUpgradeSheet: View {
 
                         if let err = entitlements.purchasesErrorMessage {
                             Text(err)
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.orange)
                         }
                     }
@@ -51,6 +51,14 @@ struct AnalyticsUpgradeSheet: View {
                     Button("閉じる") { dismiss() }
                         .foregroundColor(cyan)
                 }
+            }
+            .alert("購入完了", isPresented: Binding(
+                get: { entitlements.purchaseSuccessNotice != nil },
+                set: { if !$0 { entitlements.acknowledgePurchaseSuccessNotice() } }
+            )) {
+                Button("OK") { entitlements.acknowledgePurchaseSuccessNotice() }
+            } message: {
+                Text(entitlements.purchaseSuccessNotice ?? "")
             }
         }
     }
@@ -76,7 +84,7 @@ struct AnalyticsUpgradeSheet: View {
                 ProgressView()
                     .tint(cyan)
                 Text("価格情報を読み込み中…")
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundColor(.white.opacity(0.6))
             }
         }

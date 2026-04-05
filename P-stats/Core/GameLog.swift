@@ -1076,12 +1076,13 @@ final class GameLog {
 
     /// 実際の持ち玉数で同期（終了時や確変終了後など）。
     /// アプリ上の持ち玉(totalHoldings)との差分を計算し、差分を持ち玉投資として追加・相殺する。
-    /// 実戦終了確認で入力した「終了時点の通常回転数」へ揃える。`totalRotations` は同じ差分だけ追随し、`total` が `normal` 未満にならないよう抑える。
-    func applySessionEndNormalRotations(_ endNormal: Int) {
-        let n = max(0, endNormal)
-        let d = n - normalRotations
-        normalRotations = n
-        totalRotations = max(n, totalRotations + d)
+    /// 実戦終了確認で入力した「終了時点の台ランプ回転数（表面上の累積・電サポ消化分を含む）」へ揃える。
+    /// アプリ内の `totalRotations` を台の表示に合わせ、通常回転も同じ差分で追随する（ランプとアプリの差を一括補正）。
+    func applySessionEndDisplayRotations(_ endDisplay: Int) {
+        let end = max(0, endDisplay)
+        let d = end - totalRotations
+        totalRotations = end
+        normalRotations = max(0, normalRotations + d)
     }
 
     func syncHoldings(actualHoldings: Int) {

@@ -250,7 +250,7 @@ struct GameSessionEditView: View {
                         )
 
                         Text("回収額を保存するには、店舗に払出係数（pt/玉）が設定されている必要があります。")
-                            .font(.caption)
+                            .font(AppTypography.annotation)
                             .foregroundColor(skin.subTextColor)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 4)
@@ -314,7 +314,7 @@ struct GameSessionEditView: View {
                     .font(AppTypography.sectionSubheading)
                     .foregroundColor(skin.mainTextColor)
                 Text(caption)
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundColor(skin.subTextColor)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -384,7 +384,7 @@ struct GameSessionEditView: View {
 
                     editDetailCard(title: "区間ごとの内訳", systemImage: "square.stack.3d.up.fill") {
                         Text("各区間＝その初当たりまで。RUSH 当選回数は各区間の「大当たり」を合算して保存します。")
-                            .font(.caption)
+                            .font(AppTypography.annotation)
                             .foregroundColor(skin.subTextColor)
                             .fixedSize(horizontal: false, vertical: true)
                         ForEach($phases) { $phase in
@@ -408,7 +408,7 @@ struct GameSessionEditView: View {
 
                     editDetailCard(title: "総回転数（保存）", systemImage: "arrow.triangle.2.circlepath") {
                         Text("空欄なら各区間の回転の合計。保存する総回転と合計が異なるとき、投資（pt・持ち玉）と実質投資は回転比でスケールして誤差を吸収します。")
-                            .font(.caption)
+                            .font(AppTypography.annotation)
                             .foregroundColor(skin.subTextColor)
                             .fixedSize(horizontal: false, vertical: true)
                         editDetailNumberRow(label: "総回転数（通常）", placeholder: "空欄＝区間合計", text: $totalRotationsOverride, maxDigits: 7)
@@ -416,7 +416,7 @@ struct GameSessionEditView: View {
 
                     editDetailCard(title: "最終の総回収出玉", systemImage: "circle.grid.cross.fill") {
                         Text("この実戦記録全体の回収出玉の確定値を入力します（区間ごとの回収とは別に扱います）。")
-                            .font(.caption)
+                            .font(AppTypography.annotation)
                             .foregroundColor(skin.subTextColor)
                             .fixedSize(horizontal: false, vertical: true)
                         editDetailNumberRow(label: "総回収出玉（玉）", placeholder: "0", text: $totalHoldings, maxDigits: 9)

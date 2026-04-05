@@ -3,7 +3,7 @@ import UIKit
 
 /// `numberPad` / `decimalPad` 用のキーボード付属ツールバー（左：前へ・次へ、右：入力完了）。
 enum NumericPadInputAccessory {
-    /// 左矢印＝前の入力欄、右矢印＝次の入力欄、チェック＝キーボードを閉じる
+    /// 左＝前の入力欄、右＝次の入力欄、チェック＝キーボードを閉じる
     static func makeToolbar(
         accentColor: UIColor,
         target: AnyObject,
@@ -11,18 +11,47 @@ enum NumericPadInputAccessory {
         nextSelector: Selector?,
         doneSelector: Selector
     ) -> UIToolbar {
+        makeToolbar(
+            accentColor: accentColor,
+            target: target,
+            previousSelector: previousSelector,
+            nextSelector: nextSelector,
+            doneSelector: doneSelector,
+            previousEnabled: true,
+            nextEnabled: true,
+            useLineArrowsForNav: false
+        )
+    }
+
+    /// - Parameters:
+    ///   - previousEnabled / nextEnabled: 常に←→を出すモードで、無効な側はタップ不可にする
+    ///   - useLineArrowsForNav: true のとき `arrow.left` / `arrow.right`（カーソル移動のイメージ）。false は従来の chevron
+    static func makeToolbar(
+        accentColor: UIColor,
+        target: AnyObject,
+        previousSelector: Selector?,
+        nextSelector: Selector?,
+        doneSelector: Selector,
+        previousEnabled: Bool,
+        nextEnabled: Bool,
+        useLineArrowsForNav: Bool
+    ) -> UIToolbar {
         let bar = UIToolbar()
         bar.sizeToFit()
         bar.tintColor = accentColor
+        let prevName = useLineArrowsForNav ? "arrow.left" : "chevron.left"
+        let nextName = useLineArrowsForNav ? "arrow.right" : "chevron.right"
         var items: [UIBarButtonItem] = []
         if let sel = previousSelector {
-            let b = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain, target: target, action: sel)
+            let b = UIBarButtonItem(image: UIImage(systemName: prevName), style: .plain, target: target, action: sel)
             b.accessibilityLabel = "前の入力欄へ"
+            b.isEnabled = previousEnabled
             items.append(b)
         }
         if let sel = nextSelector {
-            let b = UIBarButtonItem(image: UIImage(systemName: "chevron.right"), style: .plain, target: target, action: sel)
+            let b = UIBarButtonItem(image: UIImage(systemName: nextName), style: .plain, target: target, action: sel)
             b.accessibilityLabel = "次の入力欄へ"
+            b.isEnabled = nextEnabled
             items.append(b)
         }
         items.append(UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil))
@@ -58,6 +87,12 @@ struct IntegerPadTextField: UIViewRepresentable {
     var nextFieldTitle: String = "次へ"
     /// フォームで無効化したいとき（灰色・入力不可）
     var isEnabled: Bool = true
+    /// true のときテンキー上の←→を常に表示し、`arrow.left` / `arrow.right` を使う（コールバックが無い側は `prevNavEnabled` / `nextNavEnabled` で無効化）
+    var fieldNavFixedArrows: Bool = false
+    /// `fieldNavFixedArrows` 時のみ参照。前の項目へ移動できるか（無効ならグレー）
+    var prevNavEnabled: Bool = true
+    /// `fieldNavFixedArrows` 時のみ参照。次の項目へ移動できるか
+    var nextNavEnabled: Bool = true
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, maxDigits: maxDigits)
@@ -106,6 +141,18 @@ struct IntegerPadTextField: UIViewRepresentable {
     }
 
     private func accessoryToolbar(coordinator: Coordinator) -> UIToolbar {
+        if fieldNavFixedArrows {
+            return NumericPadInputAccessory.makeToolbar(
+                accentColor: accentColor,
+                target: coordinator,
+                previousSelector: #selector(Coordinator.previousTapped),
+                nextSelector: #selector(Coordinator.nextTapped),
+                doneSelector: #selector(Coordinator.doneTapped),
+                previousEnabled: prevNavEnabled,
+                nextEnabled: nextNavEnabled,
+                useLineArrowsForNav: true
+            )
+        }
         let prevSel: Selector? = onPreviousField != nil ? #selector(Coordinator.previousTapped) : nil
         let nextSel: Selector? = onNextField != nil ? #selector(Coordinator.nextTapped) : nil
         return NumericPadInputAccessory.makeToolbar(

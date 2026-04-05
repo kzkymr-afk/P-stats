@@ -79,7 +79,7 @@ struct InsightPanelView: View {
                             }
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .font(.caption2)
+                                .font(AppTypography.annotationSmall)
                                 .foregroundColor(insightAccent.opacity(0.6))
                         }
                         .foregroundColor(insightAccent)
@@ -104,7 +104,7 @@ struct InsightPanelView: View {
                             }
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .font(.caption2)
+                                .font(AppTypography.annotationSmall)
                                 .foregroundColor(insightAccent.opacity(0.6))
                         }
                         .foregroundColor(insightAccent)
@@ -133,7 +133,7 @@ struct InsightPanelView: View {
                                     }
                                     Spacer()
                                     Image(systemName: "chevron.right")
-                                        .font(.caption2)
+                                        .font(AppTypography.annotationSmall)
                                         .foregroundColor(insightAccent.opacity(0.6))
                                 }
                                 .foregroundColor(insightAccent)
@@ -155,7 +155,7 @@ struct InsightPanelView: View {
                                     }
                                     Spacer()
                                     Image(systemName: "chevron.right")
-                                        .font(.caption2)
+                                        .font(AppTypography.annotationSmall)
                                         .foregroundColor(insightAccent.opacity(0.6))
                                 }
                                 .foregroundColor(insightAccent)
@@ -177,7 +177,7 @@ struct InsightPanelView: View {
                                     }
                                     Spacer()
                                     Image(systemName: "chevron.right")
-                                        .font(.caption2)
+                                        .font(AppTypography.annotationSmall)
                                         .foregroundColor(insightAccent.opacity(0.6))
                                 }
                                 .foregroundColor(insightAccent)
@@ -403,7 +403,7 @@ struct InsightPanelView: View {
                                 .foregroundColor(insightAccent)
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(.caption2)
+                                    .font(AppTypography.annotationSmall)
                                     .foregroundColor(insightAccent.opacity(0.6))
                             }
                             .padding(.vertical, 6)
@@ -424,7 +424,7 @@ struct InsightPanelView: View {
                                 .foregroundColor(insightAccent)
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(.caption2)
+                                    .font(AppTypography.annotationSmall)
                                     .foregroundColor(insightAccent.opacity(0.6))
                             }
                             .padding(.vertical, 6)
@@ -445,7 +445,7 @@ struct InsightPanelView: View {
                                 .foregroundColor(insightAccent)
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(.caption2)
+                                    .font(AppTypography.annotationSmall)
                                     .foregroundColor(insightAccent.opacity(0.6))
                             }
                             .padding(.vertical, 6)
@@ -466,7 +466,7 @@ struct InsightPanelView: View {
                                 .foregroundColor(insightAccent)
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(.caption2)
+                                    .font(AppTypography.annotationSmall)
                                     .foregroundColor(insightAccent.opacity(0.6))
                             }
                             .padding(.vertical, 6)

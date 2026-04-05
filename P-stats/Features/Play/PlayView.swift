@@ -22,8 +22,8 @@ struct PlayView: View {
     @State private var showFinalHoldingsInput = false
     @State private var finalHoldingsInput: String = ""
     @State private var finalHoldingsPadTrigger = 0
-    @State private var finalNormalRotationsInput: String = ""
-    @State private var finalNormalRotationsPadTrigger = 0
+    @State private var finalDisplayRotationsInput: String = ""
+    @State private var finalDisplayRotationsPadTrigger = 0
     /// 回収玉確認後、換金／貯玉の選択
     @State private var showSettlementSheet = false
     /// 保存結果（失敗時のみ）。成功は OK 段を挟まずにトースト／即戻りで処理する
@@ -47,7 +47,7 @@ struct PlayView: View {
     @State private var bigHitEntryNormalRotations = ""
     @State private var bigHitEntryCashPt = ""
     /// 大当たり突入フォーム：持ち玉は「投資」か「残り」のどちらで入力するか（設定のデフォルトで初期化）
-    @State private var bigHitEntryHoldingsKind: BigHitHoldingsEntryKind = .investedAtWin
+    @State private var bigHitEntryHoldingsKind: BigHitHoldingsEntryKind = .remainingAtWin
     @State private var bigHitEntryHoldingsValue = ""
     @State private var bigHitEntryEnableHoldingsInput = false
     @State private var showBigHitAbandonConfirm = false
@@ -183,7 +183,7 @@ struct PlayView: View {
     /// 実戦終了シート：回収出玉・終了時通常回転の両方が有効な整数で埋まっているか
     private var finalSessionEndFormValid: Bool {
         let hTrim = finalHoldingsInput.trimmingCharacters(in: .whitespaces)
-        let rTrim = finalNormalRotationsInput.trimmingCharacters(in: .whitespaces)
+        let rTrim = finalDisplayRotationsInput.trimmingCharacters(in: .whitespaces)
         guard !hTrim.isEmpty, let h = Int(hTrim), h >= 0 else { return false }
         guard !rTrim.isEmpty, let r = Int(rTrim), r >= 0 else { return false }
         return true
@@ -192,15 +192,15 @@ struct PlayView: View {
     private func confirmFinalHoldingsFlow() {
         guard finalSessionEndFormValid else { return }
         let hTrim = finalHoldingsInput.trimmingCharacters(in: .whitespaces)
-        let rTrim = finalNormalRotationsInput.trimmingCharacters(in: .whitespaces)
+        let rTrim = finalDisplayRotationsInput.trimmingCharacters(in: .whitespaces)
         guard let finalBalls = Int(hTrim), finalBalls >= 0,
-              let finalNorm = Int(rTrim), finalNorm >= 0
+              let finalDisplay = Int(rTrim), finalDisplay >= 0
         else {
-            errorMessage = "流した球・通常回転数は 0 以上の整数で入力してください。"
+            errorMessage = "流した球・終了時の回転数は 0 以上の整数で入力してください。"
             showErrorAlert = true
             return
         }
-        log.applySessionEndNormalRotations(finalNorm)
+        log.applySessionEndDisplayRotations(finalDisplay)
         log.syncHoldings(actualHoldings: finalBalls)
         showFinalHoldingsInput = false
         if log.totalHoldings > 0 {
@@ -1426,7 +1426,7 @@ struct PlayView: View {
                     showEmptySaveConfirm = true
                 } else {
                     finalHoldingsInput = "\(log.totalHoldings)"
-                    finalNormalRotationsInput = "\(log.normalRotations)"
+                    finalDisplayRotationsInput = "\(log.totalRotations)"
                     showFinalHoldingsInput = true
                 }
             }
@@ -1439,7 +1439,7 @@ struct PlayView: View {
             Button("保存する") {
                 showEmptySaveConfirm = false
                 finalHoldingsInput = "\(log.totalHoldings)"
-                finalNormalRotationsInput = "\(log.normalRotations)"
+                finalDisplayRotationsInput = "\(log.totalRotations)"
                 showFinalHoldingsInput = true
             }
             Button("キャンセル", role: .cancel) { showEmptySaveConfirm = false }
@@ -1449,7 +1449,7 @@ struct PlayView: View {
         .sheet(isPresented: $showFinalHoldingsInput) {
             NavigationStack {
                 VStack(alignment: .leading, spacing: 18) {
-                    Text("実際に流した玉数（回収出玉）と、やめた時点の通常回転数（時短・電サポ除く）を入力してください。どちらも必須です（0 なら 0 と入力）。流した玉はアプリ上の持ち玉（\(log.totalHoldings)玉）との差分を自動調整します。")
+                    Text("実際に流した玉数（回収出玉）と、やめた時点の台の回転数を入力してください。どちらも必須です（0 なら 0 と入力）。流した玉はアプリ上の持ち玉（\(log.totalHoldings)玉）との差分を自動調整します。\n\n終了時の回転数は、前回の実戦を終えてから今回やめるまでのあいだに、台やデータランプに表示される回転数の終わりの値です。電サポや時短で消化した回転もランプに乗るタイプなら、その見た目の累積に合わせてください（アプリの「通常回転」だけの数と違うことがあります）。")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -1465,22 +1465,22 @@ struct PlayView: View {
                             textColor: .label,
                             accentColor: UIColor(focusAccent),
                             focusTrigger: finalHoldingsPadTrigger,
-                            onNextField: { finalNormalRotationsPadTrigger += 1 }
+                            onNextField: { finalDisplayRotationsPadTrigger += 1 }
                         )
                         .frame(maxWidth: .infinity, minHeight: 48)
                     }
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("辞めた時点の通常回転数")
+                        Text("辞めた時点の台の回転数（ランプ表示）")
                             .font(.subheadline)
                             .fontWeight(.semibold)
                         IntegerPadTextField(
-                            text: $finalNormalRotationsInput,
+                            text: $finalDisplayRotationsInput,
                             placeholder: "必須",
                             maxDigits: 7,
                             font: .systemFont(ofSize: 24, weight: .semibold),
                             textColor: .label,
                             accentColor: UIColor(focusAccent),
-                            focusTrigger: finalNormalRotationsPadTrigger,
+                            focusTrigger: finalDisplayRotationsPadTrigger,
                             onPreviousField: { finalHoldingsPadTrigger += 1 }
                         )
                         .frame(maxWidth: .infinity, minHeight: 48)
@@ -1909,7 +1909,7 @@ struct PlayView: View {
 
                         VStack(alignment: .leading, spacing: 10) {
                             Text("誤って大当たりモードに入った場合など、当たり区間を記録せず実戦画面に戻れます。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.captionOnPanel))
                                 .fixedSize(horizontal: false, vertical: true)
 
@@ -1995,7 +1995,7 @@ struct PlayView: View {
                         .lineLimit(3)
                         .minimumScaleFactor(0.82)
                     Text("（必須）")
-                        .font(.caption.weight(.semibold))
+                        .font(AppTypography.annotationSemibold)
                         .foregroundColor(DesignTokens.PlayCelebration.bigHitRequiredLabel)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -2017,7 +2017,7 @@ struct PlayView: View {
             }
             if let footnote, !footnote.isEmpty {
                 Text(footnote)
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.footnoteOnSheet))
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -2070,14 +2070,14 @@ struct PlayView: View {
                             .font(.subheadline.weight(.semibold))
                             .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.textPrimary))
                         Text("アプリ上の累計が0でも、実際に持ち玉を使用している場合")
-                            .font(.caption2)
+                            .font(AppTypography.annotationSmall)
                             .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.supportingLabel))
                     }
                 }
                 .tint(focusAccent)
                 .onChange(of: bigHitEntryEnableHoldingsInput) { _, on in
                     if on {
-                        bigHitEntryHoldingsKind = .investedAtWin
+                        bigHitEntryHoldingsKind = BigHitHoldingsEntryKind(rawValue: bigHitHoldingsEntryDefaultRaw) ?? .remainingAtWin
                         if bigHitEntryHoldingsValue.trimmingCharacters(in: .whitespaces).isEmpty {
                             bigHitEntryHoldingsValue = "0"
                         }
@@ -2130,7 +2130,7 @@ struct PlayView: View {
             }
 
             Text(inputEnabled ? bigHitEntryHoldingsKind.sheetFootnote : "この実戦で持ち玉投資が無い想定のため、持ち玉は入力不要です。必要なら上のトグルをオンにしてください。")
-                .font(.caption2)
+                .font(AppTypography.annotationSmall)
                 .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.metaHint))
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -2153,7 +2153,7 @@ struct PlayView: View {
                 Color.black.opacity(DesignTokens.Surface.BlackOverlay.playSheetBackdrop).ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("当選時点の通常回転・投資を入力して大当たり記録を開始します。この実戦ですでに持ち玉投資している場合は、下の持ち玉欄も必須です（切替と値はアプリが把握している数で初期表示されます）。持ち玉投資が一度もない場合はその欄は使えません。初期の切替は設定から変更できます。")
+                        Text("当選時点の通常回転・投資を入力して大当たり記録を開始します。この実戦ですでに持ち玉投資している場合は、下の持ち玉欄も必須です（切替と値はアプリが把握している数で初期表示されます）。持ち玉投資が一度もない場合はその欄は使えません。持ち玉のセグメントは左が「当選時点の残り持ち玉」が既定です（設定から変更できます）。")
                             .font(.subheadline)
                             .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.sheetIntro))
                             .fixedSize(horizontal: false, vertical: true)
@@ -2222,7 +2222,7 @@ struct PlayView: View {
                 }
             }
             .onAppear {
-                bigHitEntryHoldingsKind = BigHitHoldingsEntryKind(rawValue: bigHitHoldingsEntryDefaultRaw) ?? .investedAtWin
+                bigHitEntryHoldingsKind = BigHitHoldingsEntryKind(rawValue: bigHitHoldingsEntryDefaultRaw) ?? .remainingAtWin
                 if log.holdingsInvestedBalls > 0 {
                     bigHitEntryEnableHoldingsInput = true
                     bigHitEntryHoldingsValue = bigHitEntryHoldingsKind == .investedAtWin
@@ -2272,7 +2272,7 @@ struct PlayView: View {
             }
             if let footnote, !footnote.isEmpty {
                 Text(footnote)
-                    .font(.caption2)
+                    .font(AppTypography.annotationSmall)
                     .foregroundColor(.white.opacity(DesignTokens.Surface.WhiteOnDark.metaHint))
                     .fixedSize(horizontal: false, vertical: true)
             }

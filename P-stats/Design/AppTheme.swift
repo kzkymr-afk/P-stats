@@ -76,6 +76,16 @@ enum AppDesignSystem {
         static let insightPanelTitle = Font.system(size: 13, weight: .semibold, design: .rounded)
         /// 数値（読みやすさ最優先）
         static let bodyMonoSemibold = Font.system(size: 14, weight: .semibold, design: .monospaced)
+        // MARK: 注釈（TextStyle の caption / caption2 相当を +1pt）
+        static let annotation = Font.system(size: 13, weight: .regular, design: .rounded)
+        static let annotationMedium = Font.system(size: 13, weight: .medium, design: .rounded)
+        static let annotationSemibold = Font.system(size: 13, weight: .semibold, design: .rounded)
+        static let annotationLight = Font.system(size: 13, weight: .light, design: .rounded)
+        static let annotationMonospacedDigitSemibold = Font.system(size: 13, weight: .semibold, design: .rounded).monospacedDigit()
+        static let annotationSmall = Font.system(size: 12, weight: .regular, design: .rounded)
+        static let annotationSmallMedium = Font.system(size: 12, weight: .medium, design: .rounded)
+        static let annotationSmallSemibold = Font.system(size: 12, weight: .semibold, design: .rounded)
+        static let annotationSmallMonospacedDigitSemibold = Font.system(size: 12, weight: .semibold, design: .rounded).monospacedDigit()
     }
 
     // MARK: - Shape / Shadow (Consistent geometry)

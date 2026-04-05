@@ -21,39 +21,68 @@ private enum IAPLegacyPremiumProductID: String {
 final class EntitlementsStore: ObservableObject {
     static let shared = EntitlementsStore()
 
-    #if DEBUG
-    @Published var debugFullAccess: Bool = false {
-        didSet { AdVisibilityManager.shared.syncFromEntitlements() }
-    }
-    #endif
-
     /// ストア上でプレミアム（広告オフ＋分析フル）が有効か。
     @Published private(set) var storedHasPremium = false
 
+    /// 購入完了後に一度だけ見せる日本語メッセージ（システムの英語ダイアログに代わる案内）。
+    @Published var purchaseSuccessNotice: String?
+
+    /// リワード試用が「権限」として有効か（DEBUG では開発者向け上書きあり）。
+    private var rewardTrialContributesToAccess: Bool {
+        #if DEBUG
+        switch DeveloperEntitlementDebugSettings.shared.rewardTrialMode {
+        case .forceActive: return true
+        case .forceInactive: return false
+        case .actual: return RewardedAnalyticsTrialController.shared.isTrialActive
+        }
+        #else
+        return RewardedAnalyticsTrialController.shared.isTrialActive
+        #endif
+    }
+
     /// 広告を表示しない（プレミアムまたはリワード試用中）。
     var hasRemoveAds: Bool {
-        #if DEBUG
-        if debugFullAccess { return true }
-        #endif
-        if RewardedAnalyticsTrialController.shared.isTrialActive { return true }
-        return storedHasPremium
+        if hasPurchasedPremium { return true }
+        if rewardTrialContributesToAccess { return true }
+        return false
     }
 
     /// ストアの課金のみ（試用・リワード除く）。UI の「ご利用中」等。
     var hasPurchasedPremium: Bool {
         #if DEBUG
-        if debugFullAccess { return true }
-        #endif
+        switch DeveloperEntitlementDebugSettings.shared.premiumMode {
+        case .forceSubscribed: return true
+        case .forceNotSubscribed: return false
+        case .useStoreKit: return storedHasPremium
+        }
+        #else
         return storedHasPremium
+        #endif
     }
 
     /// 分析フル相当（プレミアムまたはリワード試用）。
     var hasAnalyticsFull: Bool {
+        if hasPurchasedPremium { return true }
+        if rewardTrialContributesToAccess { return true }
+        return false
+    }
+
+    /// 設定などで「リワード試用中」と表示するか（DEBUG 上書きを反映）。
+    var isRewardTrialActiveForDisplay: Bool {
+        rewardTrialContributesToAccess
+    }
+
+    /// 試用期限の表示用。DEBUG で「試用中として扱う」かつ実際の試用がないときはダミー時刻。
+    var rewardTrialEndDateForDisplay: Date? {
+        guard rewardTrialContributesToAccess else { return nil }
+        let real = RewardedAnalyticsTrialController.shared.trialEndDate
         #if DEBUG
-        if debugFullAccess { return true }
+        if DeveloperEntitlementDebugSettings.shared.rewardTrialMode == .forceActive,
+           !RewardedAnalyticsTrialController.shared.isTrialActive {
+            return Date().addingTimeInterval(TimeInterval(RewardedAnalyticsTrialController.trialHoursPerReward) * 3600)
+        }
         #endif
-        if RewardedAnalyticsTrialController.shared.isTrialActive { return true }
-        return storedHasPremium
+        return real
     }
 
     /// `hasPurchasedAnalyticsFull` を置き換え（購読者コード互換）
@@ -124,7 +153,10 @@ final class EntitlementsStore: ObservableObject {
     }
 
     func purchase(_ id: IAPProductID) async {
-        await MainActor.run { purchasesErrorMessage = nil }
+        await MainActor.run {
+            purchasesErrorMessage = nil
+            purchaseSuccessNotice = nil
+        }
         var product: Product? = await MainActor.run { products.first { $0.id == id.rawValue } }
         if product == nil {
             await loadProducts()
@@ -143,6 +175,9 @@ final class EntitlementsStore: ObservableObject {
                 if case .verified(let transaction) = verification {
                     await transaction.finish()
                     await refreshEntitlements()
+                    await MainActor.run {
+                        self.purchaseSuccessNotice = "購入が完了しました。ありがとうございます。"
+                    }
                 } else {
                     await MainActor.run {
                         self.purchasesErrorMessage = "購入の確認に失敗しました。"
@@ -186,6 +221,10 @@ final class EntitlementsStore: ObservableObject {
     func notifyAnalyticsAccessChanged() {
         objectWillChange.send()
         AdVisibilityManager.shared.syncFromEntitlements()
+    }
+
+    func acknowledgePurchaseSuccessNotice() {
+        purchaseSuccessNotice = nil
     }
 
     /// 課金・リストアのエラーを日本語で表示（`localizedDescription` の英語を避ける）

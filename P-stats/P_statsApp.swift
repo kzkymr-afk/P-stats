@@ -24,6 +24,7 @@ struct P_statsApp: App {
             AppOpenAdPresenter.preload()
         }
         _ = EntitlementsStore.shared
+        InitialHoldingsGatePolicy.migrateFromLegacyIfNeeded()
     }
 
     var body: some Scene {

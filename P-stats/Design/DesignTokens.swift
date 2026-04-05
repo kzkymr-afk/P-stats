@@ -300,6 +300,11 @@ enum DesignTokens {
         static let xl: CGFloat = 32
     }
 
+    /// アダプティブバナー帯とタブドックのあいだ（ドック側の装飾・滲みで広告が欠けて見えないようにする）
+    enum AdaptiveBannerChrome {
+        static let gapAboveTabDock: CGFloat = 2
+    }
+
     enum CornerRadius {
         static let card: CGFloat = 12
         static let panel: CGFloat = 14
@@ -523,6 +528,14 @@ enum DesignTokens {
     // MARK: - ホーム UI（インフォパネル等）
 
     enum Home {
+        /// 広告バナー表示時のホーム統合パネル縦スロット。バナー・ボタン列の縦バランス用（ボタン最小高は `HomeMainColumnLayout` 側）。
+        enum IntegratedPanelSlotWithBanner {
+            static let maxHeight: CGFloat = 248
+            static let minHeight: CGFloat = 152
+            /// `contentBodyH` に対する比率（その後 min/max でクランプ）
+            static let heightFractionOfContentBody: CGFloat = 0.22
+        }
+
         /// 余剰・上昇コピーなどのポジティブ（ミント緑）
         static let statusPositiveR: Double = 0.35
         static let statusPositiveG: Double = 0.92

@@ -47,7 +47,7 @@ struct MasterMachineSearchView: View {
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.75))
                     Text("※ index.json に載る機種のうち、ステータス「対象外」（導入から6年超など）以外を表示します。詳細は machines.json 優先。")
-                        .font(.caption2)
+                        .font(AppTypography.annotationSmall)
                         .foregroundStyle(.white.opacity(0.55))
                 }
                     .multilineTextAlignment(.center)
@@ -109,7 +109,7 @@ struct MasterMachineSearchView: View {
                                         .font(.subheadline.weight(.semibold))
                                         .foregroundColor(.white)
                                     Text(item.displaySubtitle)
-                                        .font(.caption)
+                                        .font(AppTypography.annotation)
                                         .foregroundStyle(.white.opacity(0.7))
                                 }
                                 Spacer(minLength: 8)

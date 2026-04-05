@@ -61,7 +61,7 @@ struct PlaySessionSwipeHintBar: View {
                     .foregroundColor(skin.mainTextColor.opacity(0.5))
                 Spacer()
                 Text("スワイプで情報")
-                    .font(.caption2)
+                    .font(AppTypography.annotationSmall)
                     .fontWeight(.bold)
                     .foregroundColor(skin.mainTextColor.opacity(0.7))
                 Spacer()

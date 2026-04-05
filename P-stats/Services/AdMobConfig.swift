@@ -36,19 +36,19 @@ enum AdMobConfig {
 
     /// **リリース（Release）ビルド**で読み込む本番バナー広告ユニット ID。
     /// AdMob コンソールで作成した `ca-app-pub-…/…` に差し替えてください。空のままだと Release でもデモ ID にフォールバックします。
-    static let productionBannerAdUnitID = ""
+    static let productionBannerAdUnitID = "ca-app-pub-6247409434954317/1957626290"
 
     /// 本番インタースティシャル ID。空ならデモにフォールバック。
-    static let productionInterstitialAdUnitID = ""
+    static let productionInterstitialAdUnitID = "ca-app-pub-6247409434954317/8935969748"
 
     /// 本番アプリ起動広告 ID。空ならデモにフォールバック。
-    static let productionAppOpenAdUnitID = ""
+    static let productionAppOpenAdUnitID = "ca-app-pub-6247409434954317/7637328387"
 
     /// 本番ネイティブ広告 ID。空ならデモにフォールバック。
-    static let productionNativeAdUnitID = ""
+    static let productionNativeAdUnitID = "ca-app-pub-6247409434954317/8331462955"
 
     /// 本番リワード ID。空ならデモにフォールバック。
-    static let productionRewardedAdUnitID = ""
+    static let productionRewardedAdUnitID = "ca-app-pub-6247409434954317/7698909695"
 
     /// アプリが実際にリクエストするバナー広告ユニット ID。
     static var bannerUnitID: String {
@@ -56,11 +56,7 @@ enum AdMobConfig {
         googleDemoAdaptiveBannerAdUnitID
         #else
         let trimmed = productionBannerAdUnitID.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            googleDemoAdaptiveBannerAdUnitID
-        } else {
-            trimmed
-        }
+        return trimmed.isEmpty ? googleDemoAdaptiveBannerAdUnitID : trimmed
         #endif
     }
 
@@ -69,11 +65,7 @@ enum AdMobConfig {
         googleDemoInterstitialAdUnitID
         #else
         let trimmed = productionInterstitialAdUnitID.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            googleDemoInterstitialAdUnitID
-        } else {
-            trimmed
-        }
+        return trimmed.isEmpty ? googleDemoInterstitialAdUnitID : trimmed
         #endif
     }
 
@@ -82,11 +74,7 @@ enum AdMobConfig {
         googleDemoAppOpenAdUnitID
         #else
         let trimmed = productionAppOpenAdUnitID.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            googleDemoAppOpenAdUnitID
-        } else {
-            trimmed
-        }
+        return trimmed.isEmpty ? googleDemoAppOpenAdUnitID : trimmed
         #endif
     }
 
@@ -95,11 +83,7 @@ enum AdMobConfig {
         googleDemoNativeAdUnitID
         #else
         let trimmed = productionNativeAdUnitID.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            googleDemoNativeAdUnitID
-        } else {
-            trimmed
-        }
+        return trimmed.isEmpty ? googleDemoNativeAdUnitID : trimmed
         #endif
     }
 
@@ -108,11 +92,7 @@ enum AdMobConfig {
         googleDemoRewardedAdUnitID
         #else
         let trimmed = productionRewardedAdUnitID.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty {
-            googleDemoRewardedAdUnitID
-        } else {
-            trimmed
-        }
+        return trimmed.isEmpty ? googleDemoRewardedAdUnitID : trimmed
         #endif
     }
 }

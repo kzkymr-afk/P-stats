@@ -23,7 +23,7 @@ struct AnalyticsUpgradeHalfSheet: View {
                     .font(.title3.weight(.bold))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
-                Text("広告を非表示にし、店舗・機種・メーカー別の分析・クロス分析・ヒートマップ・期間フィルタまですべて利用できます。")
+                Text("無料版では、データ分析機能に制限があります。\nプレミアムに登録すると、広告が非表示になり、全ての分析機能が解放されます。")
                     .font(AppTypography.bodyRounded)
                     .foregroundColor(.white.opacity(0.82))
                     .multilineTextAlignment(.center)
@@ -32,12 +32,12 @@ struct AnalyticsUpgradeHalfSheet: View {
                     Label("プレミアムはご利用中です", systemImage: "checkmark.seal.fill")
                         .foregroundColor(cyan)
                 } else {
-                    if analyticsTrial.isTrialActive, let end = analyticsTrial.trialEndDate {
+                    if entitlements.isRewardTrialActiveForDisplay, let end = entitlements.rewardTrialEndDateForDisplay {
                         VStack(spacing: 6) {
                             Label("リワード試用中（プレミアム相当）", systemImage: "gift.fill")
                                 .foregroundColor(cyan)
                             Text("有効期限: \(formatted(date: end)) まで")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.75))
                         }
                     }
@@ -62,7 +62,7 @@ struct AnalyticsUpgradeHalfSheet: View {
                                 RewardedAdPresenter.presentForAnalyticsTrialReward { earned in
                                     rewardedBusy = false
                                     if earned {
-                                        rewardedMessage = "24時間、広告オフと分析フルが使えます。"
+                                        rewardedMessage = "\(RewardedAnalyticsTrialController.trialHoursPerReward)時間、広告オフと分析フルが使えます。"
                                     } else {
                                         rewardedMessage = "視聴が完了しなかったか、読み込みに失敗しました。"
                                     }
@@ -72,7 +72,7 @@ struct AnalyticsUpgradeHalfSheet: View {
                                     if rewardedBusy {
                                         ProgressView().tint(cyan)
                                     }
-                                    Text("動画広告を見て24時間試す（1日最大\(RewardedAnalyticsTrialController.maxRewardsPerCalendarDay)回）")
+                                    Text(RewardedAnalyticsTrialController.videoRewardUnlockButtonTitle(remainingToday: analyticsTrial.remainingRewardOffersToday))
                                         .fontWeight(.semibold)
                                         .multilineTextAlignment(.center)
                                 }
@@ -85,7 +85,7 @@ struct AnalyticsUpgradeHalfSheet: View {
                             .disabled(rewardedBusy)
                         } else {
                             Text("本日のリワード試用は上限に達しています。また明日お試しください。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.65))
                                 .multilineTextAlignment(.center)
                         }
@@ -93,21 +93,21 @@ struct AnalyticsUpgradeHalfSheet: View {
                         ProgressView()
                             .tint(cyan)
                         Text("価格情報を読み込み中…")
-                            .font(.caption)
+                            .font(AppTypography.annotation)
                             .foregroundColor(.white.opacity(0.6))
                     }
                 }
 
                 if let rewardedMessage {
                     Text(rewardedMessage)
-                        .font(.caption)
+                        .font(AppTypography.annotation)
                         .foregroundColor(.orange.opacity(0.95))
                         .multilineTextAlignment(.center)
                 }
 
                 if let err = entitlements.purchasesErrorMessage {
                     Text(err)
-                        .font(.caption)
+                        .font(AppTypography.annotation)
                         .foregroundColor(.orange)
                         .multilineTextAlignment(.center)
                 }
@@ -116,6 +116,14 @@ struct AnalyticsUpgradeHalfSheet: View {
             .padding(24)
         }
         .presentationDragIndicator(.visible)
+        .alert("購入完了", isPresented: Binding(
+            get: { entitlements.purchaseSuccessNotice != nil },
+            set: { if !$0 { entitlements.acknowledgePurchaseSuccessNotice() } }
+        )) {
+            Button("OK") { entitlements.acknowledgePurchaseSuccessNotice() }
+        } message: {
+            Text(entitlements.purchaseSuccessNotice ?? "")
+        }
         .onChange(of: entitlements.hasPurchasedPremium) { _, purchased in
             if purchased { dismiss() }
         }

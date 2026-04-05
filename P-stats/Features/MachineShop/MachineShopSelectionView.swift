@@ -33,9 +33,11 @@ struct MachineShopSelectionView: View {
     @State private var initialRotationText = ""
     /// 開始回転パネル全体タップでテンキーを出す
     @State private var rotationFieldFocusTrigger = 0
+    /// 持ち玉欄のテンキーを開く／前項目からのフォーカス移動用
+    @State private var holdingsFieldFocusTrigger = 0
     /// 新規開始時：貯玉で開始する場合の持ち玉数（ゲート時のみ使用）
     @State private var initialHoldingsText = ""
-    @AppStorage("startWithZeroHoldings") private var startWithZeroHoldings = false
+    @AppStorage("initialHoldingsGatePolicy") private var initialHoldingsGatePolicyRaw: String = InitialHoldingsGatePolicy.manual.rawValue
 
     /// 選択中の機種が登録一覧に含まれるか
     private var isSelectedMachineValid: Bool {
@@ -196,8 +198,21 @@ struct MachineShopSelectionView: View {
             .padding(.bottom, bottomPad)
         }
         .onAppear {
-            if startWithZeroHoldings { initialHoldingsText = "0" }
+            applyInitialHoldingsForGate()
         }
+        .onChange(of: log.selectedShop.persistentModelID) { _, _ in
+            applyInitialHoldingsForGate()
+        }
+    }
+
+    /// 設定に従い、開始時の持ち玉欄を埋める（店舗変更時も再適用）
+    private func applyInitialHoldingsForGate() {
+        InitialHoldingsGatePolicy.migrateFromLegacyIfNeeded()
+        guard let policy = InitialHoldingsGatePolicy(rawValue: initialHoldingsGatePolicyRaw) else {
+            initialHoldingsText = ""
+            return
+        }
+        initialHoldingsText = policy.initialText(for: log.selectedShop)
     }
 
     private func gateMachineSection(height: CGFloat) -> some View {
@@ -354,7 +369,12 @@ struct MachineShopSelectionView: View {
                 accentColor: UIColor(accent),
                 focusTrigger: rotationFieldFocusTrigger,
                 adjustsFontSizeToFitWidth: true,
-                minimumFontSize: 11
+                minimumFontSize: 11,
+                onPreviousField: nil,
+                onNextField: { holdingsFieldFocusTrigger += 1 },
+                fieldNavFixedArrows: true,
+                prevNavEnabled: false,
+                nextNavEnabled: true
             )
             .frame(width: rotationFieldWidth, alignment: .trailing)
             .layoutPriority(2)
@@ -383,10 +403,16 @@ struct MachineShopSelectionView: View {
                 maxDigits: 5,
                 font: .monospacedSystemFont(ofSize: 17, weight: .semibold),
                 textColor: UIColor(t.mainTextColor),
-                accentColor: UIColor(accent)
+                accentColor: UIColor(accent),
+                focusTrigger: holdingsFieldFocusTrigger,
+                onPreviousField: { rotationFieldFocusTrigger += 1 },
+                onNextField: nil,
+                fieldNavFixedArrows: true,
+                prevNavEnabled: true,
+                nextNavEnabled: false
             )
             .frame(width: 88, alignment: .trailing)
-            InfoIconView(explanation: "貯玉で始める場合は玉数を入力。未入力・0のときは持ち玉なしで開始。", tint: accent.opacity(0.6))
+            InfoIconView(explanation: "この実戦で手元に持ち込む玉数です。設定で「空欄」「常に0」「店の貯玉残高に合わせる」から選べます。貯玉サービスを使わない日は手入力か0にするとよいです。", tint: accent.opacity(0.6))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -398,50 +424,68 @@ struct MachineShopSelectionView: View {
 
     private func gateStartButtonArea(height: CGFloat) -> some View {
         let canStart = isSelectedMachineValid && isSelectedShopValid && hasValidInitialRotation && hasValidInitialHoldings
-        return Button {
-            let n = Int(initialRotationText.trimmingCharacters(in: .whitespaces)) ?? 0
-            if n < 0 {
-                errorMessage = "負の数は入力できません"
-                showErrorAlert = true
-                return
+        let gateDisabledReason: String? = {
+            if !isSelectedMachineValid { return "機種を選択してください" }
+            if !isSelectedShopValid { return "店舗を選択してください" }
+            if !hasValidInitialRotation { return "開始時の回転数を入力してください" }
+            if !hasValidInitialHoldings { return "持ち玉は0以上の数値で入力してください" }
+            return nil
+        }()
+        return VStack(spacing: 6) {
+            if !canStart, let reason = gateDisabledReason {
+                Text(reason)
+                    .font(AppTypography.annotationMedium)
+                    .foregroundColor(t.subTextColor.opacity(0.92))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
             }
-            log.setInitialDisplayRotation(max(0, n))
-            let holdings = Int(initialHoldingsText.trimmingCharacters(in: .whitespaces)) ?? 0
-            if holdings < 0 {
-                errorMessage = "負の数は入力できません"
-                showErrorAlert = true
-                return
+            Button {
+                let n = Int(initialRotationText.trimmingCharacters(in: .whitespaces)) ?? 0
+                if n < 0 {
+                    errorMessage = "負の数は入力できません"
+                    showErrorAlert = true
+                    return
+                }
+                log.setInitialDisplayRotation(max(0, n))
+                let holdings = Int(initialHoldingsText.trimmingCharacters(in: .whitespaces)) ?? 0
+                if holdings < 0 {
+                    errorMessage = "負の数は入力できません"
+                    showErrorAlert = true
+                    return
+                }
+                log.initialHoldings = max(0, holdings)
+                onGateStart?()
+            } label: {
+                Text("遊技開始")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundColor(t.mainTextColor)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .padding(.horizontal, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(canStart ? accent : accent.opacity(0.35))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        t.chromeSheetBorderColor.opacity(canStart ? 1.0 : 0.55),
+                                        accent.opacity(canStart ? 0.3 : 0.15),
+                                        t.formCanvasMutedBackground
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
+                    )
             }
-            log.initialHoldings = max(0, holdings)
-            onGateStart?()
-        } label: {
-            Text("遊技開始")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundColor(t.mainTextColor)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(.horizontal, 8)
-                .background(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(canStart ? accent : accent.opacity(0.35))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    t.chromeSheetBorderColor.opacity(canStart ? 1.0 : 0.55),
-                                    accent.opacity(canStart ? 0.3 : 0.15),
-                                    t.formCanvasMutedBackground
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                )
+            .disabled(!canStart)
+            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity)
+            .frame(maxHeight: .infinity)
         }
-        .disabled(!canStart)
-        .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
         .frame(height: height)
         .alert(isPresented: $showErrorAlert) {
@@ -646,7 +690,7 @@ struct MachineShopSelectionView: View {
                     .presentationDetents([.large])
             }
             .sheet(isPresented: $showNewMachineSheet) {
-                MachineEditView(editing: nil)
+                MachineEditView(editing: nil, onNewMachineSaved: { log.selectedMachine = $0 })
                     .equatable()
                     .presentationDetents([.large])
             }
@@ -659,7 +703,7 @@ struct MachineShopSelectionView: View {
             .sheet(isPresented: $showNewShopSheet) {
                 ShopEditView(shop: nil) {
                     showNewShopSheet = false
-                }
+                } onNewShopSaved: { log.selectedShop = $0 }
                 .presentationDetents([.large])
             }
             .onAppear {
@@ -694,9 +738,9 @@ private struct MyListSwipeHintBar: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "arrow.left.arrow.right")
-                .font(.caption2.weight(.semibold))
+                .font(AppTypography.annotationSmallSemibold)
             Text(text)
-                .font(.caption2)
+                .font(AppTypography.annotationSmall)
         }
         .foregroundColor(themeManager.currentTheme.accentColor.opacity(0.5))
         .frame(maxWidth: .infinity)
@@ -799,7 +843,7 @@ struct MyListMachinesView: View {
                 .presentationDetents([.large])
         }
         .sheet(isPresented: $showNewSheet) {
-            MachineEditView(editing: nil)
+            MachineEditView(editing: nil, onNewMachineSaved: { log.selectedMachine = $0 })
                 .equatable()
                 .presentationDetents([.large])
         }
@@ -847,7 +891,7 @@ struct MyListShopsView: View {
                                 .foregroundColor(themeManager.currentTheme.mainTextColor)
                             if s.supportsChodamaService || s.chodamaBalanceBalls > 0 {
                                 Text("貯玉 \(s.chodamaBalanceBalls)玉")
-                                    .font(.caption2)
+                                    .font(AppTypography.annotationSmall)
                                     .foregroundStyle(themeManager.currentTheme.subTextColor.opacity(0.88))
                             }
                         }
@@ -898,7 +942,7 @@ struct MyListShopsView: View {
                 .presentationDetents([.large])
         }
         .sheet(isPresented: $showNewSheet) {
-            ShopEditView(shop: nil) { showNewSheet = false }
+            ShopEditView(shop: nil) { showNewSheet = false } onNewShopSaved: { log.selectedShop = $0 }
                 .presentationDetents([.large])
         }
     }
@@ -953,6 +997,8 @@ struct ShopEditView: View {
     /// 編集時は既存の店舗を渡す。nil のときは新規登録。
     let shop: Shop?
     let onDismiss: () -> Void
+    /// 新規登録保存直後に呼ぶ（遊技ゲートで即選択に使う）
+    var onNewShopSaved: ((Shop) -> Void)? = nil
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -1033,14 +1079,14 @@ struct ShopEditView: View {
                         .foregroundColor(t.mainTextColor)
                     if !candidate.address.isEmpty {
                         Text(candidate.address)
-                            .font(.caption)
+                            .font(AppTypography.annotation)
                             .foregroundColor(t.subTextColor.opacity(0.88))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 if let distLabel = candidate.distanceLabel {
                     Text(distLabel)
-                        .font(.caption.weight(.medium))
+                        .font(AppTypography.annotationMedium)
                         .foregroundColor(accent.opacity(0.9))
                 }
             }
@@ -1050,6 +1096,15 @@ struct ShopEditView: View {
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
+    }
+
+    /// 店舗選択パネル内「現在地周辺から探す」：キーワード結果を閉じてから周辺検索へ切り替え
+    private func tapNearbyPachinkoSearchFromPanel() {
+        name = ""
+        placeSearchService.searchText = ""
+        placeSearchService.clearCandidates()
+        placeSearchService.requestLocation()
+        placeSearchService.fetchNearbyPachinkoIfNeeded()
     }
 
     private func displayLabel(for index: Int) -> String {
@@ -1100,53 +1155,63 @@ struct ShopEditView: View {
                 AppGlassStyle.background.ignoresSafeArea()
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
-                        shopEditPanel(title: "店舗選択", trailing: { InfoIconView(explanation: "店名・チェーン名で検索するか、「現在地周辺から探す」で近くのホールを表示します。候補をタップすると店舗名と住所が自動で入ります。", tint: t.subTextColor.opacity(0.72)) }) {
-                            TextField("店名・チェーン名で検索", text: $name)
-                                .textContentType(.none)
-                                .foregroundColor(t.mainTextColor)
-                                .onChange(of: name) { _, newValue in
-                                    placeSearchService.searchText = newValue
-                                }
+                        shopEditPanel(title: "店舗選択", trailing: { InfoIconView(explanation: "店名・チェーン名で検索するか、このパネル内の「現在地周辺から探す」で近くのホールを表示します。候補をタップすると店舗名と住所が自動で入ります。", tint: t.subTextColor.opacity(0.72)) }) {
                             if !placeSearchService.isApiKeyConfigured {
                                 HStack(spacing: 8) {
                                     Image(systemName: "exclamationmark.triangle.fill")
                                         .foregroundColor(.orange.opacity(0.9))
                                     Text("Google Places APIキーが未設定です。Info.plist の GooglePlacesAPIKey にキーを設定すると実際の店舗検索が利用できます。")
-                                        .font(.caption)
+                                        .font(AppTypography.annotation)
                                         .foregroundColor(t.subTextColor.opacity(0.92))
                                 }
                             }
-                            if placeSearchService.isLocationDenied {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "location.slash")
-                                        .foregroundColor(.orange.opacity(0.9))
-                                    Text("設定から位置情報をオンにすると、現在地周辺のホールを表示できます。")
-                                        .font(.caption)
-                                        .foregroundColor(t.subTextColor.opacity(0.88))
-                                }
-                            } else if name.trimmingCharacters(in: .whitespaces).isEmpty && placeSearchService.canUseLocation {
-                                Button {
-                                    placeSearchService.fetchNearbyPachinkoIfNeeded()
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        Image(systemName: "location.circle.fill")
-                                            .foregroundColor(accent)
-                                        Text("現在地周辺から探す")
-                                            .font(.subheadline.weight(.medium))
-                                            .foregroundColor(accent)
-                                        if placeSearchService.isFetchingNearby {
-                                            Spacer()
-                                            ProgressView()
-                                                .scaleEffect(0.8)
-                                                .tint(accent)
-                                        }
+                            // 検索欄と現在地周辺ボタンを同一パネル内にまとめる
+                            VStack(alignment: .leading, spacing: 10) {
+                                TextField("店名・チェーン名で検索", text: $name)
+                                    .textContentType(.none)
+                                    .foregroundColor(t.mainTextColor)
+                                    .onChange(of: name) { _, newValue in
+                                        placeSearchService.searchText = newValue
                                     }
-                                    .padding(.vertical, 8)
+                                if placeSearchService.isLocationDenied {
+                                    HStack(alignment: .top, spacing: 8) {
+                                        Image(systemName: "location.slash")
+                                            .foregroundColor(.orange.opacity(0.9))
+                                        Text("設定から位置情報をオンにすると、現在地周辺のホールを表示できます。")
+                                            .font(AppTypography.annotation)
+                                            .foregroundColor(t.subTextColor.opacity(0.88))
+                                    }
+                                } else {
+                                    Button {
+                                        tapNearbyPachinkoSearchFromPanel()
+                                    } label: {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "location.circle.fill")
+                                                .foregroundColor(accent)
+                                            Text("現在地周辺から探す")
+                                                .font(.subheadline.weight(.medium))
+                                                .foregroundColor(accent)
+                                            Spacer(minLength: 8)
+                                            if placeSearchService.isFetchingNearby {
+                                                ProgressView()
+                                                    .scaleEffect(0.8)
+                                                    .tint(accent)
+                                            }
+                                        }
+                                        .padding(.vertical, 4)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .disabled(placeSearchService.isFetchingNearby)
                                 }
                             }
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(t.formCanvasMutedBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
                             if !placeSearchService.nearbyCandidates.isEmpty && name.trimmingCharacters(in: .whitespaces).isEmpty {
                                 Text("現在地周辺のホール")
-                                    .font(.caption.weight(.semibold))
+                                    .font(AppTypography.annotationSemibold)
                                     .foregroundColor(accent.opacity(0.9))
                                 VStack(spacing: 8) {
                                     ForEach(placeSearchService.nearbyCandidates) { candidate in
@@ -1156,7 +1221,7 @@ struct ShopEditView: View {
                             }
                             if !placeSearchService.candidates.isEmpty {
                                 Text("検索結果")
-                                    .font(.caption.weight(.semibold))
+                                    .font(AppTypography.annotationSemibold)
                                     .foregroundColor(accent.opacity(0.9))
                                 VStack(spacing: 8) {
                                     ForEach(placeSearchService.candidates) { candidate in
@@ -1170,7 +1235,7 @@ struct ShopEditView: View {
                                         .scaleEffect(0.9)
                                         .tint(accent)
                                     Text("検索中...")
-                                        .font(.caption)
+                                        .font(AppTypography.annotation)
                                         .foregroundColor(t.subTextColor.opacity(0.88))
                                 }
                             }
@@ -1213,7 +1278,7 @@ struct ShopEditView: View {
                                     Text("持ち玉1回（玉）")
                                         .foregroundColor(t.mainTextColor.opacity(0.92))
                                     Text("空欄または0＝貸玉と同じ。コンパクト機などで1タップの減り玉が貸玉と違うときに入力。")
-                                        .font(.caption2)
+                                        .font(AppTypography.annotationSmall)
                                         .foregroundColor(t.subTextColor.opacity(0.78))
                                 }
                                 Spacer(minLength: 8)
@@ -1245,7 +1310,7 @@ struct ShopEditView: View {
                                     .tint(accent)
                                 }
                                 Text(exchangeRatePreset == .other ? "その他（下の欄で入力）" : exchangeRatePreset.rawValue)
-                                    .font(.caption.weight(.medium))
+                                    .font(AppTypography.annotationMedium)
                                     .foregroundColor(t.subTextColor.opacity(0.88))
                                     .multilineTextAlignment(.leading)
                                     .fixedSize(horizontal: false, vertical: true)
@@ -1274,7 +1339,7 @@ struct ShopEditView: View {
                                             DispatchQueue.main.async { isSyncingCustomRate = false }
                                         }
                                     Text(customYenPerBallFromBalls.map { "→ \($0.displayFormat("%.2f"))pt/玉" } ?? "→ — pt/玉")
-                                        .font(.caption)
+                                        .font(AppTypography.annotation)
                                         .foregroundStyle(.secondary)
                                         .lineLimit(1)
                                 }
@@ -1298,7 +1363,7 @@ struct ShopEditView: View {
                                             DispatchQueue.main.async { isSyncingCustomRate = false }
                                         }
                                     Text(customBallsPer100FromYen.map { "→ \($0.displayFormat("%.1f"))玉/100pt" } ?? "→ — 玉/100pt")
-                                        .font(.caption)
+                                        .font(AppTypography.annotation)
                                         .foregroundStyle(.secondary)
                                         .lineLimit(1)
                                 }
@@ -1326,11 +1391,11 @@ struct ShopEditView: View {
                             VStack(alignment: .leading, spacing: 12) {
                                 HStack(spacing: 6) {
                                     Text("種類")
-                                        .font(.caption)
+                                        .font(AppTypography.annotation)
                                         .foregroundColor(t.subTextColor.opacity(0.88))
                                         .frame(width: 36, alignment: .leading)
                                     Text("N")
-                                        .font(.caption)
+                                        .font(AppTypography.annotation)
                                         .foregroundColor(t.subTextColor.opacity(0.88))
                                         .frame(width: 28, alignment: .center)
                                 }
@@ -1376,7 +1441,7 @@ struct ShopEditView: View {
                                         .frame(width: 48)
                                         if !displayLabel(for: i).isEmpty {
                                             Text(displayLabel(for: i))
-                                                .font(.caption)
+                                                .font(AppTypography.annotation)
                                                 .foregroundColor(t.subTextColor.opacity(0.88))
                                                 .lineLimit(1)
                                         }
@@ -1528,13 +1593,13 @@ struct ShopEditView: View {
 
                 VStack(spacing: 3) {
                     Text(isShopBrowserExpanded ? "Google 検索 表示中" : "店舗の登録")
-                        .font(.caption.weight(.semibold))
+                        .font(AppTypography.annotationSemibold)
                         .foregroundStyle(t.mainTextColor.opacity(0.95))
                     Text("左端・右端をタップ")
-                        .font(.caption2.weight(.medium))
+                        .font(AppTypography.annotationSmallMedium)
                         .foregroundStyle(t.subTextColor.opacity(0.9))
                     Text(queryHint)
-                        .font(.caption2)
+                        .font(AppTypography.annotationSmall)
                         .foregroundStyle(t.subTextColor.opacity(0.75))
                         .lineLimit(1)
                         .minimumScaleFactor(0.75)
@@ -1777,6 +1842,7 @@ struct ShopEditView: View {
             newShop.supportsChodamaService = supportsChodamaService
             newShop.chodamaBalanceBalls = chodamaBal
             modelContext.insert(newShop)
+            onNewShopSaved?(newShop)
         }
         dismiss()
         onDismiss()

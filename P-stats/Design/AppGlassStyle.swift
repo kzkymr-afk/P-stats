@@ -308,6 +308,8 @@ enum AppGlassStyle {
                     DockTopEdgeHighlight(isLit: hasSelectionGlare)
                 }
                 .fixedSize(horizontal: false, vertical: true)
+                /// 選択グレア等の `blur` が上方向にはみ出し、直上のバナー広告を視覚的に欠ける原因になるためドックのレイアウト枠で切る。
+                .clipped()
                 .frame(maxWidth: .infinity)
                 .background {
                     MainTabDockBackground()

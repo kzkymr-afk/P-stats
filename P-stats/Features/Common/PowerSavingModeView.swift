@@ -110,7 +110,7 @@ struct ProModeView: View {
     private func headerView(geo: GeometryProxy, headerHeight: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("プロモード · \(log.stayModeDisplayName(machineMaster: machineMaster))")
-                .font(.caption.weight(.semibold))
+                .font(AppTypography.annotationSemibold)
                 .foregroundColor(AppGlassStyle.modeAccentColor(master: machineMaster, modeId: log.currentModeID))
                 .lineLimit(2)
                 .minimumScaleFactor(0.85)

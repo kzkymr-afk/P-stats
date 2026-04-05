@@ -2,15 +2,15 @@ import Foundation
 
 /// 大当たり突入フォームでの持ち玉入力モード（投資玉数か残り玉のどちらか一方を1フィールドで入力）
 enum BigHitHoldingsEntryKind: String, CaseIterable, Identifiable {
+    /// 当選時点の残り持ち玉（玉数）。セグメント左＝既定の意味に合わせるため先頭。
+    case remainingAtWin
     /// 当選までに使った持ち玉（玉数）
     case investedAtWin
-    /// 当選時点の残り持ち玉（玉数）
-    case remainingAtWin
 
     var id: String { rawValue }
 
-    /// `AppStorage` 用の既定rawValue
-    static let appStorageDefaultRawValue = investedAtWin.rawValue
+    /// `AppStorage` 用の既定rawValue（左＝残り持ち玉）
+    static let appStorageDefaultRawValue = remainingAtWin.rawValue
 
     var settingsLabel: String {
         switch self {

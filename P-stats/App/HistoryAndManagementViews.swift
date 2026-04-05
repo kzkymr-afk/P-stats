@@ -14,9 +14,9 @@ private struct ManagementSwipeHintBar: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "chevron.left")
-                .font(.caption2.weight(.semibold))
+                .font(AppTypography.annotationSmallSemibold)
             Text(text)
-                .font(.caption2)
+                .font(AppTypography.annotationSmall)
         }
         .foregroundColor(themeManager.currentTheme.accentColor.opacity(0.5))
         .frame(maxWidth: .infinity)
@@ -74,7 +74,7 @@ private struct MachineManagementCard: View {
             Spacer(minLength: 0)
             if isReorderMode {
                 Image(systemName: "line.3.horizontal")
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundColor(skin.accentColor.opacity(DesignTokens.Surface.AccentTint.chromeTintMid))
             }
         }
@@ -114,7 +114,7 @@ private struct ShopManagementCard: View {
             Spacer(minLength: 0)
             if isReorderMode {
                 Image(systemName: "line.3.horizontal")
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundColor(themeManager.currentTheme.accentColor.opacity(DesignTokens.Surface.AccentTint.chromeTintMid))
             }
         }
@@ -175,6 +175,34 @@ struct MachineManagementView: View {
         machineOrderStr = list.map(\.name).joined(separator: "|")
     }
 
+    private var machineRowsWithAds: [NativeAdListInterleaving.MachineManagementRow] {
+        NativeAdListInterleaving.machineManagementRows(machinesForList)
+    }
+
+    @ViewBuilder
+    private func machineListRow(for m: Machine) -> some View {
+        let st = ManagementSessionStats.machinePlayStats(machineName: m.name, sessions: recentSessions)
+        MachineManagementCard(
+            machine: m,
+            sessionCount: st.count,
+            winRatePercent: st.winRatePercent,
+            isReorderMode: isReorderMode
+        )
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .listRowSeparator(.hidden)
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button {
+                machineToEdit = m
+            } label: { Label("編集", systemImage: "pencil") }
+            .tint(cyan)
+            Button(role: .destructive) {
+                pendingDeleteMachine = m
+            } label: { Label("削除", systemImage: "trash") }
+        }
+        .moveDisabled(!isReorderMode)
+    }
+
     var body: some View {
         // bottomTrailing: フル画面の List がスクロール・スワイプを受け取る。FAB はドック直上の右下。
         // 行に listSelectionStyle() を付けない（DragGesture minimumDistance:0 が List の縦スクロール・swipeActions と競合するため）
@@ -183,34 +211,28 @@ struct MachineManagementView: View {
             VStack(spacing: 0) {
                 ManagementSwipeHintBar(text: "左にスワイプで編集・削除")
                 List {
-                ForEach(machinesForList) { m in
-                    let st = ManagementSessionStats.machinePlayStats(machineName: m.name, sessions: recentSessions)
-                    MachineManagementCard(
-                        machine: m,
-                        sessionCount: st.count,
-                        winRatePercent: st.winRatePercent,
-                        isReorderMode: isReorderMode
-                    )
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                    .listRowSeparator(.hidden)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button {
-                            machineToEdit = m
-                        } label: { Label("編集", systemImage: "pencil") }
-                        .tint(cyan)
-                        Button(role: .destructive) {
-                            pendingDeleteMachine = m
-                        } label: { Label("削除", systemImage: "trash") }
+                    if isReorderMode {
+                        ForEach(machinesForList) { m in
+                            machineListRow(for: m)
+                        }
+                        .onMove { from, to in
+                            var arr = orderedMachines
+                            arr.move(fromOffsets: from, toOffset: to)
+                            saveMachineOrder(arr)
+                        }
+                    } else {
+                        ForEach(machineRowsWithAds) { row in
+                            switch row {
+                            case .machine(let m):
+                                machineListRow(for: m)
+                            case .native(let placementKey):
+                                OptionalNativeAdCardSlot(placementID: placementKey)
+                                    .listRowBackground(Color.clear)
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                    .listRowSeparator(.hidden)
+                            }
+                        }
                     }
-                    .moveDisabled(!isReorderMode)
-                }
-                .onMove { from, to in
-                    guard isReorderMode else { return }
-                    var arr = orderedMachines
-                    arr.move(fromOffsets: from, toOffset: to)
-                    saveMachineOrder(arr)
-                }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .listStyle(.plain)
@@ -312,6 +334,34 @@ struct ShopManagementView: View {
         shopOrderStr = list.map(\.name).joined(separator: "|")
     }
 
+    private var shopRowsWithAds: [NativeAdListInterleaving.ShopManagementRow] {
+        NativeAdListInterleaving.shopManagementRows(orderedShops)
+    }
+
+    @ViewBuilder
+    private func shopListRow(for s: Shop) -> some View {
+        let st = ManagementSessionStats.shopPlayStats(shopName: s.name, sessions: allSessions)
+        ShopManagementCard(
+            shop: s,
+            sessionCount: st.count,
+            winRatePercent: st.winRatePercent,
+            isReorderMode: isReorderMode
+        )
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+        .listRowSeparator(.hidden)
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button(role: .destructive) {
+                pendingDeleteShop = s
+            } label: { Label("削除", systemImage: "trash") }
+            Button {
+                shopToEdit = s
+            } label: { Label("編集", systemImage: "pencil") }
+            .tint(cyan)
+        }
+        .moveDisabled(!isReorderMode)
+    }
+
     var body: some View {
         // 行に listSelectionStyle() を付けない（機種管理と同様、List のスクロール・swipeActions と競合するため）
         ZStack(alignment: .bottomTrailing) {
@@ -319,34 +369,28 @@ struct ShopManagementView: View {
             VStack(spacing: 0) {
                 ManagementSwipeHintBar(text: "左にスワイプで編集・削除")
                 List {
-                ForEach(orderedShops) { s in
-                    let st = ManagementSessionStats.shopPlayStats(shopName: s.name, sessions: allSessions)
-                    ShopManagementCard(
-                        shop: s,
-                        sessionCount: st.count,
-                        winRatePercent: st.winRatePercent,
-                        isReorderMode: isReorderMode
-                    )
-                    .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
-                    .listRowSeparator(.hidden)
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            pendingDeleteShop = s
-                        } label: { Label("削除", systemImage: "trash") }
-                        Button {
-                            shopToEdit = s
-                        } label: { Label("編集", systemImage: "pencil") }
-                        .tint(cyan)
+                    if isReorderMode {
+                        ForEach(orderedShops) { s in
+                            shopListRow(for: s)
+                        }
+                        .onMove { from, to in
+                            var arr = orderedShops
+                            arr.move(fromOffsets: from, toOffset: to)
+                            saveShopOrder(arr)
+                        }
+                    } else {
+                        ForEach(shopRowsWithAds) { row in
+                            switch row {
+                            case .shop(let s):
+                                shopListRow(for: s)
+                            case .native(let placementKey):
+                                OptionalNativeAdCardSlot(placementID: placementKey)
+                                    .listRowBackground(Color.clear)
+                                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                    .listRowSeparator(.hidden)
+                            }
+                        }
                     }
-                    .moveDisabled(!isReorderMode)
-                }
-                .onMove { from, to in
-                    guard isReorderMode else { return }
-                    var arr = orderedShops
-                    arr.move(fromOffsets: from, toOffset: to)
-                    saveShopOrder(arr)
-                }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .listStyle(.plain)
@@ -457,7 +501,7 @@ struct ContinuePlaySelectionView: View {
                         List {
                             Section {
                                 Text("再開したい遊技を選んでください。同じ機種・店舗で遊技を開始します。")
-                                    .font(.caption)
+                                    .font(AppTypography.annotation)
                                     .foregroundStyle(themeManager.currentTheme.subTextColor.opacity(0.88))
                                     .listRowBackground(themeManager.currentTheme.listRowBackground)
                             }
@@ -472,7 +516,7 @@ struct ContinuePlaySelectionView: View {
                                                 .foregroundColor(themeManager.currentTheme.mainTextColor)
                                             Spacer()
                                             Text(JapaneseDateFormatters.yearMonthDay.string(from: session.date))
-                                                .font(.caption)
+                                                .font(AppTypography.annotation)
                                                 .foregroundColor(themeManager.currentTheme.subTextColor)
                                                 .themeShadow(themeManager.currentTheme.compactLabelShadow)
                                         }
@@ -843,7 +887,7 @@ struct HistorySessionCard: View {
                 pairBlock(leftLabel: "総回転数", leftValue: "\(session.normalRotations)回", leftValueColor: skin.mainTextColor,
                           rightLabel: "実質回転率", rightValue: rotationRateValue, rightValueColor: skin.mainTextColor)
             }
-            .font(.caption)
+            .font(AppTypography.annotation)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
@@ -863,7 +907,7 @@ struct HistorySessionCard: View {
                 Text(leftLabel)
                     .foregroundColor(skin.subTextColor)
                 Text(leftValue)
-                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .font(AppTypography.annotationMonospacedDigitSemibold)
                     .foregroundColor(leftValueColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -874,7 +918,7 @@ struct HistorySessionCard: View {
                 Text(rightLabel)
                     .foregroundColor(skin.subTextColor)
                 Text(rightValue)
-                    .font(.caption.monospacedDigit().weight(.semibold))
+                    .font(AppTypography.annotationMonospacedDigitSemibold)
                     .foregroundColor(rightValueColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -915,7 +959,7 @@ struct SessionEditView: View {
                     .listRowBackground(themeManager.currentTheme.listRowBackground)
                 }
                 Text("一覧にない場合は下記で入力")
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundStyle(.white.opacity(0.7))
                     .listRowBackground(themeManager.currentTheme.listRowBackground)
                 TextField("機種名（手入力）", text: $session.machineName)
@@ -942,7 +986,7 @@ struct SessionEditView: View {
                     .listRowBackground(themeManager.currentTheme.listRowBackground)
                 }
                 Text("一覧にない場合は下記で入力")
-                    .font(.caption)
+                    .font(AppTypography.annotation)
                     .foregroundStyle(.white.opacity(0.7))
                     .listRowBackground(themeManager.currentTheme.listRowBackground)
                 TextField("店舗名（手入力）", text: $session.shopName)
@@ -1103,7 +1147,7 @@ struct SessionEditView: View {
                 .listRowBackground(themeManager.currentTheme.listRowBackground)
                 if session.expectationRatioAtSave == 0 || session.totalRealCost == 0 {
                     Text("期待値を出すには「実質投資」と「ボーダー比」を入力し、「期待値を再計算」をタップしてください。1.0＝基準、1.1＝10%上回り。")
-                        .font(.caption)
+                        .font(AppTypography.annotation)
                         .foregroundStyle(.white.opacity(0.7))
                         .listRowBackground(themeManager.currentTheme.listRowBackground)
                 }

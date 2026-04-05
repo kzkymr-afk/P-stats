@@ -13,4 +13,15 @@ enum AppTypography {
     static let insightPanelTitle = AppDesignSystem.Typography.insightPanelTitle
     /// 本文（数値・主文・モノスペース）
     static let bodyMonoSemibold = AppDesignSystem.Typography.bodyMonoSemibold
+    /// 注釈（caption +1pt）
+    static let annotation = AppDesignSystem.Typography.annotation
+    static let annotationMedium = AppDesignSystem.Typography.annotationMedium
+    static let annotationSemibold = AppDesignSystem.Typography.annotationSemibold
+    static let annotationLight = AppDesignSystem.Typography.annotationLight
+    static let annotationMonospacedDigitSemibold = AppDesignSystem.Typography.annotationMonospacedDigitSemibold
+    /// 小さめ注釈（caption2 +1pt）
+    static let annotationSmall = AppDesignSystem.Typography.annotationSmall
+    static let annotationSmallMedium = AppDesignSystem.Typography.annotationSmallMedium
+    static let annotationSmallSemibold = AppDesignSystem.Typography.annotationSmallSemibold
+    static let annotationSmallMonospacedDigitSemibold = AppDesignSystem.Typography.annotationSmallMonospacedDigitSemibold
 }

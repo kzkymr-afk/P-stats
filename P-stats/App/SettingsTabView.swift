@@ -10,6 +10,9 @@ struct SettingsTabView: View {
     @ObservedObject private var appLock = AppLockState.shared
     @ObservedObject private var entitlements = EntitlementsStore.shared
     @ObservedObject private var analyticsTrial = RewardedAnalyticsTrialController.shared
+    #if DEBUG
+    @ObservedObject private var devEntitlementDebug = DeveloperEntitlementDebugSettings.shared
+    #endif
     @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Machine.name) private var machines: [Machine]
@@ -30,7 +33,7 @@ struct SettingsTabView: View {
     @AppStorage("playDisableIdleTimerDuringPlay") private var playDisableIdleTimerDuringPlay = true
     /// 遊技中の時給の基準（実収支の損益 vs 期待値理論）
     @AppStorage(PlayInfoPanelSettings.hourlyWageBasisKey) private var playHourlyWageBasisRaw: String = PlayHourlyWageBasis.actual.rawValue
-    @AppStorage("startWithZeroHoldings") private var startWithZeroHoldings = false
+    @AppStorage("initialHoldingsGatePolicy") private var initialHoldingsGatePolicyRaw: String = InitialHoldingsGatePolicy.manual.rawValue
     @AppStorage("hapticEnabled") private var hapticEnabled = true
     @AppStorage("defaultExchangeRate") private var defaultExchangeRateStr = "4.0"  // 払出係数（pt/玉）文字列
     @AppStorage(UnitDisplaySettings.unitSuffixKey) private var unitDisplaySuffix: String = "pt"
@@ -46,6 +49,8 @@ struct SettingsTabView: View {
     @AppStorage(PlayInfoPanelSettings.hiddenKey) private var playInfoPanelHiddenRaw: String = ""
     @State private var panelOrderEdit: [Int] = []
     @State private var playInfoOrderEdit: [PlayInfoPanelRowID] = []
+    /// 実戦パネルで 6 個目をオンにしようとした行（この直下に赤字メッセージを出す）
+    @State private var playInfoPanelLimitErrorRowIndex: Int? = nil
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selectedPlayPhotoItem: PhotosPickerItem?
     @State private var isSavingPhoto = false
@@ -64,7 +69,7 @@ struct SettingsTabView: View {
         let skin = themeManager.currentTheme
         HStack {
             Text(title)
-                .font(.caption.weight(.semibold))
+                .font(AppTypography.annotationSemibold)
                 .foregroundColor(skin.subTextColor.opacity(0.92))
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
@@ -143,21 +148,23 @@ struct SettingsTabView: View {
                                 .labelsHidden()
                                 .tint(cyan)
                             }
-                            Toggle(isOn: $startWithZeroHoldings) {
-                                Text("新規遊技時の持ち玉数を常に０で始める")
-                                    .foregroundColor(.white.opacity(0.9))
+                            Picker("新規遊技開始時の持ち玉の初期表示", selection: $initialHoldingsGatePolicyRaw) {
+                                ForEach(InitialHoldingsGatePolicy.allCases) { p in
+                                    Text(p.settingsTitle).tag(p.rawValue)
+                                }
                             }
                             .tint(cyan)
-                            Text("オンにすると、新規遊技開始時の必須入力「開始時の持ち玉（貯玉）」に０が入力された状態になります。")
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.7))
+                            Text("・手入力：毎回空欄から（貯玉を使わない・同日に台移動して持ち玉だけ持ち込む等）\n・常に0：貯玉に頼らず毎回ゼロから\n・貯玉残高に合わせる：店舗マスタの貯玉が1玉以上ならその数を入れる（0なら0）。貯玉サービスで残高をアプリに合わせている場合向け")
+                                .font(AppTypography.annotation)
+                                .foregroundColor(.white.opacity(0.68))
+                                .fixedSize(horizontal: false, vertical: true)
                             Toggle(isOn: $alwaysShowBothInvestmentButtons) {
                                 Text("常に現金投資・持ち玉投資両方を表示")
                                     .foregroundColor(.white.opacity(0.9))
                             }
                             .tint(cyan)
                             Text("オフの場合、持ち玉0のときは現金投資のみ、持ち玉があるときは持ち玉投資のみを表示します（ボタンは2つ分の大きさ）。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.7))
                         }
                     }
@@ -167,7 +174,7 @@ struct SettingsTabView: View {
                     settingsCard(title: "遊技開始時の初期画面", icon: "speedometer") {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("遊技開始後、最初に表示する画面を選べます。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.7))
                             Picker("", selection: $playStartModeRaw) {
                                 Text("通常モード").tag("normal")
@@ -176,7 +183,7 @@ struct SettingsTabView: View {
                             .pickerStyle(.segmented)
                             .labelsHidden()
                             Text("プロモードは「期待値と時給だけ見たい」「片手で最短入力したい」人向けのミニマルUIです。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.65))
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("遊技中の時給の基準")
@@ -189,7 +196,7 @@ struct SettingsTabView: View {
                                 .pickerStyle(.segmented)
                                 .labelsHidden()
                                 Text("「実収支」は現在損益÷経過時間。「期待値」は実費×(期待値比−1)÷経過時間（ボーダーが取れているときのみ）。")
-                                    .font(.caption)
+                                    .font(AppTypography.annotation)
                                     .foregroundColor(.white.opacity(0.65))
                             }
                             Toggle(isOn: $playDisableIdleTimerDuringPlay) {
@@ -198,7 +205,7 @@ struct SettingsTabView: View {
                             }
                             .tint(cyan)
                             Text("オンにすると実戦画面を表示しているあいだ、端末の自動ロックまでの時間が経っても画面が暗くなりにくくなります。ホームや他タブに戻ると通常どおりスリープします。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.65))
                         }
                         .onAppear {
@@ -269,8 +276,8 @@ struct SettingsTabView: View {
 
                     settingsCard(title: "大当たり開始（スライド）", icon: "arrow.left.circle") {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("大当たり突入シートの「持ち玉」は入力欄1つです。最初にどちらの意味で入力するかのデフォルトです（シート内の切替でいつでも変更できます）。")
-                                .font(.caption)
+                            Text("大当たり突入シートの「持ち玉」は入力欄1つです。セグメントの左が「当選時点の残り持ち玉」、右が「当選までの投資（玉）」です。最初にどちらを意味するかのデフォルトを選べます（シート内の切替でいつでも変更できます）。")
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.68))
                                 .padding(.top, 4)
                             Picker("持ち玉入力のデフォルト", selection: $bigHitHoldingsEntryDefaultRaw) {
@@ -282,15 +289,11 @@ struct SettingsTabView: View {
                         }
                     }
 
-                    settingsCard(title: "実戦の情報パネル（右側）", icon: "list.bullet.rectangle") {
+                    settingsCard(title: "実戦の情報パネル", icon: "list.bullet.rectangle") {
                         VStack(alignment: .leading, spacing: 14) {
-                            Text("実戦画面のゲージ右側に出す情報（最大5行）を、表示/並び替えできます。")
-                                .font(.caption)
+                            Text("実戦画面に出す情報（最大5行）を、表示/並び替えできます。オンにできる項目は5個までです。")
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.68))
-
-                            Text("メイン（デフォルト）")
-                                .font(AppTypography.sectionSubheading)
-                                .foregroundColor(.white.opacity(0.88))
                             ForEach(0..<playInfoOrderEdit.count, id: \.self) { idx in
                                 let rid = playInfoOrderEdit[idx]
                                 if PlayInfoPanelSettings.settingsPrimaryRowIDs.contains(rid) {
@@ -322,11 +325,12 @@ struct SettingsTabView: View {
                             }
 
                             Text("※非表示が多い場合でも、実戦画面では上から最大5行まで表示します。")
-                                .font(.caption2)
+                                .font(AppTypography.annotationSmall)
                                 .foregroundColor(.white.opacity(0.58))
                         }
                         .onAppear {
                             playInfoOrderEdit = PlayInfoPanelSettings.normalizedOrder(from: playInfoPanelOrderRaw)
+                            clampPlayInfoPanelVisibleToMaxFive()
                         }
                         .onChange(of: playInfoPanelOrderRaw) { _, new in
                             playInfoOrderEdit = PlayInfoPanelSettings.normalizedOrder(from: new)
@@ -334,19 +338,10 @@ struct SettingsTabView: View {
                     }
 
                     sectionHeader("表示・デザイン")
-                    // 7. 配色（ライト撤去）
-                    settingsCard(title: "配色", icon: "circle.lefthalf.filled") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("配色（ライトモード）は一旦廃止し、ダーク固定にしています。")
-                                .font(.caption)
-                                .foregroundColor(.white.opacity(0.7))
-                        }
-                    }
-
                     settingsCard(title: "単位の設定", icon: "textformat.123") {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("アプリ内の表示上の「pt」の単位ラベルを変更できます（内部の計算・保存値は変わりません）。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.68))
                             HStack(spacing: 10) {
                                 Text("単位ラベル")
@@ -361,7 +356,7 @@ struct SettingsTabView: View {
                                     .frame(width: 160)
                             }
                             Text("例: pt / ポイント / p / 単位（空欄で単位なし）")
-                                .font(.caption2)
+                                .font(AppTypography.annotationSmall)
                                 .foregroundColor(.white.opacity(0.62))
                         }
                     }
@@ -369,8 +364,14 @@ struct SettingsTabView: View {
                     settingsCard(title: "ホームの情報パネル", icon: "rectangle.on.rectangle.angled") {
                         VStack(alignment: .leading, spacing: 14) {
                             Text("ホーム上部のガラスパネル表示の並びと出し分けです。広告が表示されているときは「収支」と「期待値の積み上げ」だけがパネルに出ます（バナー枠はパネル内）。広告オフ時はトグルに従い、⑥⑦は直近N日で集計します。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.68))
+                            if !entitlements.hasPurchasedPremium {
+                                Text("プレミアム未購入のときは、①収支・②期待値の積み上げ以外は鍵のためトグルと並び替えができません。")
+                                    .font(AppTypography.annotation)
+                                    .foregroundColor(.white.opacity(0.62))
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                             HStack {
                                 Text("直近N日（⑥⑦の集計）")
                                     .font(AppTypography.sectionSubheading)
@@ -390,18 +391,28 @@ struct SettingsTabView: View {
                                 .font(AppTypography.sectionSubheading)
                                 .foregroundColor(.white.opacity(0.9))
                             ForEach(Array(panelOrderEdit.enumerated()), id: \.element) { idx, sid in
+                                let homeRowLocked = homePanelSectionLocked(sid: sid)
                                 HStack(alignment: .center, spacing: 10) {
+                                    if homeRowLocked {
+                                        Image(systemName: "lock.fill")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(.white.opacity(0.45))
+                                            .frame(width: 18)
+                                    } else {
+                                        Color.clear.frame(width: 18)
+                                    }
                                     VStack(alignment: .leading, spacing: 2) {
                                         if let kind = HomeInfoPanelSectionID(rawValue: sid) {
                                             Text(kind.settingsLabel)
                                                 .font(.subheadline)
-                                                .foregroundColor(.white.opacity(0.92))
+                                                .foregroundColor(.white.opacity(homeRowLocked ? 0.55 : 0.92))
                                         }
                                     }
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     Toggle(isOn: Binding(
                                         get: { !HomeInfoPanelSettings.hiddenSet(from: homeInfoPanelHiddenRaw).contains(sid) },
                                         set: { on in
+                                            guard !homeRowLocked else { return }
                                             var h = HomeInfoPanelSettings.hiddenSet(from: homeInfoPanelHiddenRaw)
                                             if on { h.remove(sid) } else { h.insert(sid) }
                                             homeInfoPanelHiddenRaw = HomeInfoPanelSettings.persistHidden(h)
@@ -411,6 +422,7 @@ struct SettingsTabView: View {
                                     }
                                     .labelsHidden()
                                     .tint(cyan)
+                                    .disabled(homeRowLocked)
                                     VStack(spacing: 2) {
                                         Button {
                                             moveHomePanelSection(from: idx, direction: -1)
@@ -419,7 +431,7 @@ struct SettingsTabView: View {
                                                 .font(.system(size: 14, weight: .semibold))
                                         }
                                         .buttonStyle(.plain)
-                                        .disabled(idx == 0)
+                                        .disabled(homeRowLocked || idx == 0)
                                         Button {
                                             moveHomePanelSection(from: idx, direction: 1)
                                         } label: {
@@ -427,10 +439,10 @@ struct SettingsTabView: View {
                                                 .font(.system(size: 14, weight: .semibold))
                                         }
                                         .buttonStyle(.plain)
-                                        .disabled(idx >= panelOrderEdit.count - 1)
+                                        .disabled(homeRowLocked || idx >= panelOrderEdit.count - 1)
                                     }
                                     .foregroundColor(cyan)
-                                    .opacity(0.95)
+                                    .opacity(homeRowLocked ? 0.35 : 0.95)
                                 }
                                 .padding(.vertical, 4)
                             }
@@ -469,7 +481,7 @@ struct SettingsTabView: View {
                                                 .foregroundColor(.white)
                                             if homeBackgroundImagePath.isEmpty {
                                                 Text("壁紙として設定")
-                                                    .font(.caption)
+                                                    .font(AppTypography.annotation)
                                                     .foregroundColor(.white.opacity(0.6))
                                             }
                                         }
@@ -484,7 +496,7 @@ struct SettingsTabView: View {
                                             ProgressView()
                                                 .tint(.white)
                                             Text("保存中…")
-                                                .font(.caption)
+                                                .font(AppTypography.annotation)
                                                 .foregroundColor(.white.opacity(0.7))
                                         }
                                         .frame(maxWidth: .infinity)
@@ -522,7 +534,7 @@ struct SettingsTabView: View {
                                     if isSavingPlayPhoto {
                                         HStack {
                                             ProgressView().tint(.white)
-                                            Text("保存中…").font(.caption).foregroundColor(.white.opacity(0.7))
+                                            Text("保存中…").font(AppTypography.annotation).foregroundColor(.white.opacity(0.7))
                                         }
                                         .frame(maxWidth: .infinity)
                                     }
@@ -534,8 +546,8 @@ struct SettingsTabView: View {
                     sectionHeader("プレミアム")
                     settingsCard(title: "プレミアム", icon: "cart.fill") {
                         VStack(alignment: .leading, spacing: 14) {
-                            Text("月額サブスクリプションで、広告の非表示と分析機能のフル利用の両方が有効になります。解約・確認は「サブスクリプションの管理」から App Store で行えます。")
-                                .font(.caption)
+                            Text("無料版では、データ分析機能に制限があります。\nプレミアムに登録すると、広告が非表示になり、全ての分析機能が解放されます。")
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.7))
                             HStack {
                                 Text("プレミアム（広告オフ・分析フル）")
@@ -544,11 +556,11 @@ struct SettingsTabView: View {
                                 Spacer()
                                 if entitlements.hasPurchasedPremium {
                                     Text("利用中")
-                                        .font(.caption)
+                                        .font(AppTypography.annotation)
                                         .foregroundColor(cyan)
-                                } else if analyticsTrial.isTrialActive {
+                                } else if entitlements.isRewardTrialActiveForDisplay {
                                     Text("試用中")
-                                        .font(.caption)
+                                        .font(AppTypography.annotation)
                                         .foregroundColor(cyan.opacity(0.9))
                                 }
                             }
@@ -568,7 +580,7 @@ struct SettingsTabView: View {
                                 } else {
                                     ProgressView().tint(cyan)
                                     Text("価格を読み込み中…")
-                                        .font(.caption)
+                                        .font(AppTypography.annotation)
                                         .foregroundColor(.white.opacity(0.6))
                                 }
                                 Button { showAnalyticsUpgradeSheet = true } label: {
@@ -580,9 +592,9 @@ struct SettingsTabView: View {
                                         .background(cyan.opacity(0.85))
                                         .clipShape(RoundedRectangle(cornerRadius: 10))
                                 }
-                                if analyticsTrial.isTrialActive, let end = analyticsTrial.trialEndDate {
+                                if entitlements.isRewardTrialActiveForDisplay, let end = entitlements.rewardTrialEndDateForDisplay {
                                     Text("試用期限: \(analyticsTrialEndLabel(end))")
-                                        .font(.caption2)
+                                        .font(AppTypography.annotationSmall)
                                         .foregroundColor(.white.opacity(0.65))
                                 }
                                 if analyticsTrial.canOfferRewardToday() {
@@ -597,7 +609,7 @@ struct SettingsTabView: View {
                                             if rewardedBusy {
                                                 ProgressView().tint(.white)
                                             }
-                                            Text("動画で24時間試す残り \(RewardedAnalyticsTrialController.maxRewardsPerCalendarDay - analyticsTrial.rewardsUsedToday) 回")
+                                            Text(RewardedAnalyticsTrialController.videoRewardUnlockButtonTitle(remainingToday: analyticsTrial.remainingRewardOffersToday))
                                                 .fontWeight(.medium)
                                         }
                                         .frame(maxWidth: .infinity)
@@ -624,30 +636,51 @@ struct SettingsTabView: View {
                                     .foregroundColor(cyan)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
+                            Text("次に表示される画面は iOS の言語設定により英語になることがあります。解約やプラン変更はその画面で行えます。")
+                                .font(AppTypography.annotationSmall)
+                                .foregroundColor(.white.opacity(0.55))
                             if let err = entitlements.purchasesErrorMessage {
                                 Text(err)
-                                    .font(.caption)
+                                    .font(AppTypography.annotation)
                                     .foregroundColor(.orange)
                             }
                             #if DEBUG
-                            VStack(alignment: .leading, spacing: 10) {
+                            VStack(alignment: .leading, spacing: 12) {
                                 Divider()
                                     .background(themeManager.currentTheme.hairlineDividerColor)
                                 HStack(spacing: 6) {
                                     Image(systemName: "ladybug.fill")
                                         .foregroundColor(cyan)
                                     Text("開発者向け（デバッグ版でのみ表示）")
-                                        .font(.caption.weight(.semibold))
+                                        .font(AppTypography.annotationSemibold)
                                         .foregroundColor(cyan.opacity(0.95))
                                 }
-                                Toggle(isOn: $entitlements.debugFullAccess) {
-                                    Text("フルアクセスをシミュレート（広告オフ・分析フル解放）")
-                                        .font(.subheadline)
-                                        .foregroundColor(.white.opacity(0.9))
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("プレミアム（ストアの状態）")
+                                        .font(AppTypography.annotationSmall)
+                                        .foregroundColor(.white.opacity(0.65))
+                                    Picker("", selection: $devEntitlementDebug.premiumMode) {
+                                        ForEach(DebugPremiumEntitlementMode.allCases) { mode in
+                                            Text(mode.label).tag(mode)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                    .tint(cyan)
                                 }
-                                .tint(cyan)
-                                Text("Xcode で「Debug」構成から実行したアプリだけに出ます。TestFlight や App Store 版には含まれません。")
-                                    .font(.caption2)
+                                VStack(alignment: .leading, spacing: 6) {
+                                    Text("リワード試用の表示・権限")
+                                        .font(AppTypography.annotationSmall)
+                                        .foregroundColor(.white.opacity(0.65))
+                                    Picker("", selection: $devEntitlementDebug.rewardTrialMode) {
+                                        ForEach(DebugRewardTrialMode.allCases) { mode in
+                                            Text(mode.label).tag(mode)
+                                        }
+                                    }
+                                    .pickerStyle(.menu)
+                                    .tint(cyan)
+                                }
+                                Text("Xcode の Debug 構成でのみ表示。TestFlight / App Store 版には含まれません。ストアの実購入とは独立して UI と広告・分析のガードを切り替えられます。")
+                                    .font(AppTypography.annotationSmall)
                                     .foregroundColor(.white.opacity(0.62))
                             }
                             .padding(.top, 4)
@@ -660,11 +693,11 @@ struct SettingsTabView: View {
                     settingsCard(title: "データのバックアップ", icon: "doc.plaintext") {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("実戦履歴・登録機種・店舗・マイ機種プリセット・ボーナス種ライブラリを UTF-8（BOM 付き）の CSV に分割して書き出します。Numbers や Excel で開けます。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.72))
                             if canExportCsvBackup {
                                 Text("実戦 \(allSessions.count) 件 ／ 機種 \(machines.count) 件 ／ 店舗 \(shops.count) 件")
-                                    .font(.caption)
+                                    .font(AppTypography.annotation)
                                     .foregroundColor(.white.opacity(0.6))
                                 Button {
                                     do {
@@ -692,7 +725,7 @@ struct SettingsTabView: View {
                                 .buttonStyle(.plain)
                             } else {
                                 Text("この機能はプレミアム（有料登録）のみ利用できます。試用中・動画試用では書き出しできません。")
-                                    .font(.caption)
+                                    .font(AppTypography.annotation)
                                     .foregroundColor(.white.opacity(0.68))
                                 Button {
                                     showAnalyticsUpgradeSheet = true
@@ -708,7 +741,7 @@ struct SettingsTabView: View {
                             }
                             Divider().background(themeManager.currentTheme.hairlineDividerColor)
                             Text("書き出した「sessions」CSV や、指定の列だけ揃えた表から実戦履歴を追加できます。機種・店舗名は表記が違っても、取り込み画面で登録済みの機種・店舗に紐づけられます。列が足りない行は帳簿向け（回転・期待値の集計から外れる保存）になります。")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.68))
                             if canImportCsvSessions {
                                 Button {
@@ -725,7 +758,7 @@ struct SettingsTabView: View {
                                 .buttonStyle(.plain)
                             } else {
                                 Text("取り込みもプレミアム（有料登録）のみです。")
-                                    .font(.caption2)
+                                    .font(AppTypography.annotationSmall)
                                     .foregroundColor(.white.opacity(0.55))
                             }
                         }
@@ -745,7 +778,7 @@ struct SettingsTabView: View {
                                         .foregroundColor(cyan)
                                     Spacer()
                                     Image(systemName: "chevron.right")
-                                        .font(.caption)
+                                        .font(AppTypography.annotation)
                                         .foregroundColor(cyan.opacity(0.8))
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -786,6 +819,9 @@ struct SettingsTabView: View {
                 .padding(.bottom, 120)
                 }
         }
+        .onAppear {
+            InitialHoldingsGatePolicy.migrateFromLegacyIfNeeded()
+        }
         .keyboardDismissToolbar()
         .toolbarColorScheme(.dark, for: .navigationBar)
         .preferredColorScheme(.dark)
@@ -816,12 +852,23 @@ struct SettingsTabView: View {
         } message: {
             Text(csvExportErrorMessage ?? "")
         }
+        .alert("購入完了", isPresented: Binding(
+            get: { entitlements.purchaseSuccessNotice != nil },
+            set: { if !$0 { entitlements.acknowledgePurchaseSuccessNotice() } }
+        )) {
+            Button("OK") { entitlements.acknowledgePurchaseSuccessNotice() }
+        } message: {
+            Text(entitlements.purchaseSuccessNotice ?? "")
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 84) }
     }
 
     private func moveHomePanelSection(from index: Int, direction: Int) {
         let j = index + direction
         guard panelOrderEdit.indices.contains(j) else { return }
+        let a = panelOrderEdit[index]
+        let b = panelOrderEdit[j]
+        if homePanelSectionLocked(sid: a) || homePanelSectionLocked(sid: b) { return }
         panelOrderEdit.swapAt(index, j)
         homeInfoPanelOrderRaw = panelOrderEdit.map(String.init).joined(separator: ",")
     }
@@ -831,50 +878,100 @@ struct SettingsTabView: View {
         guard playInfoOrderEdit.indices.contains(j) else { return }
         playInfoOrderEdit.swapAt(index, j)
         playInfoPanelOrderRaw = playInfoOrderEdit.map { String($0.rawValue) }.joined(separator: ",")
+        playInfoPanelLimitErrorRowIndex = nil
+    }
+
+    /// 未課金時は ③〜⑦（初当たり平均〜回転率Top3）をロック
+    private func homePanelSectionLocked(sid: Int) -> Bool {
+        guard !entitlements.hasPurchasedPremium else { return false }
+        guard let k = HomeInfoPanelSectionID(rawValue: sid) else { return true }
+        switch k {
+        case .balance, .theoretical: return false
+        case .firstHitAvg, .last7Streak, .miniTrend, .affinityTop3, .rotationTop3: return true
+        }
+    }
+
+    /// 表示オンが 6 個以上ある状態を、並びの先頭から 5 個までに収める（既存データの矯正）
+    private func clampPlayInfoPanelVisibleToMaxFive() {
+        var h = PlayInfoPanelSettings.hiddenSet(from: playInfoPanelHiddenRaw)
+        var visibleCount = 0
+        for rid in playInfoOrderEdit {
+            if !h.contains(rid.rawValue) {
+                visibleCount += 1
+                if visibleCount > 5 {
+                    h.insert(rid.rawValue)
+                }
+            }
+        }
+        playInfoPanelHiddenRaw = PlayInfoPanelSettings.persistHidden(h)
+    }
+
+    private func playInfoToggleBinding(rid: PlayInfoPanelRowID, rowIndex idx: Int) -> Binding<Bool> {
+        Binding(
+            get: { !PlayInfoPanelSettings.hiddenSet(from: playInfoPanelHiddenRaw).contains(rid.rawValue) },
+            set: { on in
+                var h = PlayInfoPanelSettings.hiddenSet(from: playInfoPanelHiddenRaw)
+                if on {
+                    if h.contains(rid.rawValue) {
+                        let visibleCount = playInfoOrderEdit.filter { !h.contains($0.rawValue) }.count
+                        if visibleCount >= 5 {
+                            playInfoPanelLimitErrorRowIndex = idx
+                            return
+                        }
+                        h.remove(rid.rawValue)
+                    }
+                    playInfoPanelLimitErrorRowIndex = nil
+                } else {
+                    h.insert(rid.rawValue)
+                    playInfoPanelLimitErrorRowIndex = nil
+                }
+                playInfoPanelHiddenRaw = PlayInfoPanelSettings.persistHidden(h)
+            }
+        )
     }
 
     @ViewBuilder
     private func playInfoPanelSettingsRow(index idx: Int, rid: PlayInfoPanelRowID) -> some View {
-        HStack(alignment: .center, spacing: 10) {
-            Text(rid.settingsLabel(unitSuffix: unitDisplaySuffix))
-                .font(.subheadline)
-                .foregroundColor(.white.opacity(0.92))
-                .frame(maxWidth: .infinity, alignment: .leading)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 10) {
+                Text(rid.settingsLabel(unitSuffix: unitDisplaySuffix))
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.92))
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-            Toggle(isOn: Binding(
-                get: { !PlayInfoPanelSettings.hiddenSet(from: playInfoPanelHiddenRaw).contains(rid.rawValue) },
-                set: { on in
-                    var h = PlayInfoPanelSettings.hiddenSet(from: playInfoPanelHiddenRaw)
-                    if on { h.remove(rid.rawValue) } else { h.insert(rid.rawValue) }
-                    playInfoPanelHiddenRaw = PlayInfoPanelSettings.persistHidden(h)
-                }
-            )) { EmptyView() }
-            .labelsHidden()
-            .tint(cyan)
+                Toggle(isOn: playInfoToggleBinding(rid: rid, rowIndex: idx)) { EmptyView() }
+                    .labelsHidden()
+                    .tint(cyan)
 
-            VStack(spacing: 2) {
-                Button {
-                    movePlayInfoRow(from: idx, direction: -1)
-                } label: {
-                    Image(systemName: "chevron.up")
-                        .font(.system(size: 14, weight: .semibold))
-                }
-                .buttonStyle(.plain)
-                .disabled(idx == 0)
+                VStack(spacing: 2) {
+                    Button {
+                        movePlayInfoRow(from: idx, direction: -1)
+                    } label: {
+                        Image(systemName: "chevron.up")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(idx == 0)
 
-                Button {
-                    movePlayInfoRow(from: idx, direction: 1)
-                } label: {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
+                    Button {
+                        movePlayInfoRow(from: idx, direction: 1)
+                    } label: {
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(idx >= playInfoOrderEdit.count - 1)
                 }
-                .buttonStyle(.plain)
-                .disabled(idx >= playInfoOrderEdit.count - 1)
+                .foregroundColor(cyan)
+                .opacity(0.95)
             }
-            .foregroundColor(cyan)
-            .opacity(0.95)
+            .padding(.vertical, 4)
+            if playInfoPanelLimitErrorRowIndex == idx {
+                Text("５個までしか選択できません。")
+                    .font(AppTypography.annotation)
+                    .foregroundColor(.red)
+            }
         }
-        .padding(.vertical, 4)
     }
 
     private var bindingLockEnabled: Binding<Bool> {

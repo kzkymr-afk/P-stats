@@ -42,12 +42,12 @@ struct HelpManualView: View {
                                 Text(cat.title)
                                     .foregroundStyle(.white.opacity(0.95))
                                 Text("\(cat.items.count)件")
-                                    .font(.caption)
+                                    .font(AppTypography.annotation)
                                     .foregroundStyle(AppGlassStyle.textSecondary)
                             }
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .font(.caption)
+                                .font(AppTypography.annotation)
                                 .foregroundStyle(cyan.opacity(0.85))
                         }
                     }
@@ -63,7 +63,7 @@ struct HelpManualView: View {
                                 Text(pair.item.title)
                                     .foregroundStyle(AppGlassStyle.textPrimary)
                                 Text(pair.category.title)
-                                    .font(.caption)
+                                    .font(AppTypography.annotation)
                                     .foregroundStyle(AppGlassStyle.textSecondary)
                             }
                         }
@@ -98,7 +98,7 @@ private struct HelpCategoryDetailView: View {
                             .foregroundStyle(AppGlassStyle.textPrimary)
                         Spacer()
                         Image(systemName: "chevron.right")
-                            .font(.caption)
+                            .font(AppTypography.annotation)
                             .foregroundStyle(cyan.opacity(0.85))
                     }
                 }
@@ -121,7 +121,7 @@ private struct HelpItemDetailView: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 14) {
                 Text(categoryTitle)
-                    .font(.caption.weight(.semibold))
+                    .font(AppTypography.annotationSemibold)
                     .foregroundStyle(cyan.opacity(0.9))
                 Text(item.title)
                     .font(AppTypography.panelHeading)
@@ -152,7 +152,7 @@ private struct HelpTipBox: View {
                 Image(systemName: "lightbulb.fill")
                     .foregroundStyle(cyan)
                 Text("補足")
-                    .font(.caption.weight(.semibold))
+                    .font(AppTypography.annotationSemibold)
                     .foregroundStyle(themeManager.currentTheme.mainTextColor)
             }
             HelpMarkdownBlock(markdown: markdown)
