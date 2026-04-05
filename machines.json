@@ -1,13 +1,13 @@
 [
   {
-    "name": "PA戦国乙女7 終焉の関ヶ原 ときめき78バージョン",
-    "probability": "1/78.21",
+    "name": "eまわるん超ワープ ギンギラパラダイス VIVA FESTA",
+    "probability": "1/319.6",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "アムテックス アムテックス",
+    "manufacturer": "サンスリー",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -15,17 +15,17 @@
         "balls": 1500
       }
     ],
-    "machineId": "4979"
+    "machineId": "4993"
   },
   {
-    "name": "e ゴジラ対エヴァンゲリオン セカンドインパクト G 破壊神覚醒",
-    "probability": "1/499.9",
+    "name": "Pクイーンズブレイド奈落ナナエル79Ver.",
+    "probability": "1/79.9",
     "border": "",
     "machineTypeRaw": "kakugen",
     "supportLimit": 0,
     "timeShortRotations": 0,
     "countPerRound": 10,
-    "manufacturer": "ビスティ",
+    "manufacturer": "高尾",
     "defaultPrize": 1500,
     "prizeEntries": [
       {
@@ -33,7 +33,97 @@
         "balls": 1500
       }
     ],
-    "machineId": "4695"
+    "machineId": "4980"
+  },
+  {
+    "name": "PフィーバークィーンⅡ",
+    "probability": "1/99.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "SANKYO",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4995"
+  },
+  {
+    "name": "eルパン三世VSキャッツ・アイ 157ver. 極限突破ブッた斬り 7500",
+    "probability": "1/157.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4999"
+  },
+  {
+    "name": "eカケグルイ 7500ver",
+    "probability": "1/204",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "5004"
+  },
+  {
+    "name": "eカケグルイ 219ver",
+    "probability": "1/219",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "D-light",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "5005"
+  },
+  {
+    "name": "eひきこまり吸血姫の悶々",
+    "probability": "1/129",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "藤商事",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "5006"
   },
   {
     "name": "eリング 最恐領域",
@@ -322,6 +412,24 @@
       }
     ],
     "machineId": "4977"
+  },
+  {
+    "name": "PA戦国乙女7 終焉の関ヶ原 ときめき78バージョン",
+    "probability": "1/78.21",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "アムテックス アムテックス",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4979"
   },
   {
     "name": "P Re:ゼロから始める異世界生活 season2 249ver.",
@@ -3598,6 +3706,24 @@
       }
     ],
     "machineId": "4684"
+  },
+  {
+    "name": "e ゴジラ対エヴァンゲリオン セカンドインパクト G 破壊神覚醒",
+    "probability": "1/499.9",
+    "border": "",
+    "machineTypeRaw": "kakugen",
+    "supportLimit": 0,
+    "timeShortRotations": 0,
+    "countPerRound": 10,
+    "manufacturer": "ビスティ",
+    "defaultPrize": 1500,
+    "prizeEntries": [
+      {
+        "label": "1500玉",
+        "balls": 1500
+      }
+    ],
+    "machineId": "4695"
   },
   {
     "name": "e ソードアート・オンライン 閃光の軌跡",
