@@ -34,9 +34,11 @@ extension EarningsPeriod {
 struct HomeIntegratedInfoPanel: View {
     @EnvironmentObject private var themeManager: ThemeManager
     // 設定の単位ラベル変更を即時反映させるための更新トリガー
-    @AppStorage(UnitDisplaySettings.unitSuffixKey) private var unitDisplaySuffix: String = "pt"
+    @AppStorage(UserDefaultsKey.unitDisplaySuffix.rawValue) private var unitDisplaySuffix: String = "pt"
 
     let sessions: [GameSession]
+    /// スナップショットと現在マスタの差分集計などに使う（空でも可）
+    let machinesByName: [String: Machine]
     @Binding var statsPeriod: EarningsPeriod
     let orderedSectionIDs: [Int]
     let hiddenSectionIDs: Set<Int>
@@ -343,7 +345,7 @@ struct HomeIntegratedInfoPanel: View {
 
     private var affinityBlock: some View {
         let window = HomeInsightMetrics.sessions(inLastDays: lookbackDays, from: sessions)
-        let top = HomeInsightMetrics.affinityTop3(sessionsInWindow: window)
+        let top = HomeInsightMetrics.affinityTop3(sessionsInWindow: window, machinesByName: machinesByName)
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("相性の良い台 Top3")

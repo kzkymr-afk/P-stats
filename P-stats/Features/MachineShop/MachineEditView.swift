@@ -78,11 +78,8 @@ struct MachineEditView: View, Equatable {
     /// 電チュー（RUSH時）の大当たり種類
     @State private var draftDenchuPrizes: [DraftPrize] = []
 
-    /// この機種データをCloudKitでみんなとシェアする（保存時のみ送信）
-    @State private var shareWithEveryone = false
-
     @State private var presetSearchText: String = ""
-    /// true のとき「新台から探す」で最新20件を表示するモード
+    /// true のとき「新台から探す」で、導入開始日が今日から遡り2か月以内の機種を表示
     @State private var showNewest20 = false
     /// マスタ一覧は参照用ホルダーで保持（Task.detached にコピーせず渡してメインスレッドをブロックしない）
     @State private var serverPresetsHolder: PresetListHolder?
@@ -92,10 +89,10 @@ struct MachineEditView: View, Equatable {
     /// `index.json` 取得結果（スペック完了フィルタ用）。取得失敗時は `loadedOK == false`。
     @State private var registrationIndexEntries: [MachineMasterIndexEntry] = []
     @State private var registrationIndexLoadedOK = false
-    @AppStorage("machineMasterDataURL") private var machineMasterDataURL: String = ""
+    @AppStorage(UserDefaultsKey.machineMasterDataURL.rawValue) private var machineMasterDataURL: String = ""
     /// 遊技画面と同じ。`index.json` の取得元（空なら `PresetServiceConfig.defaultMachineDetailBaseURL`）。
-    @AppStorage("machineDetailBaseURL") private var machineDetailBaseURL: String = ""
-    @AppStorage("machineMasterListURL") private var machineMasterListURL: String = ""
+    @AppStorage(UserDefaultsKey.machineDetailBaseURL.rawValue) private var machineDetailBaseURL: String = ""
+    @AppStorage(UserDefaultsKey.machineMasterListURL.rawValue) private var machineMasterListURL: String = ""
     @State private var machineMasterItems: [MachineMasterItem] = []
     @State private var showMasterPicker = false
     @State private var masterSearchText: String = ""
@@ -125,13 +122,6 @@ struct MachineEditView: View, Equatable {
                             presetPanel
                             editPanel(title: "機種概要") { machineOverviewPanel }
                             editPanel(title: "ボーダー（等価ベース）") { borderPanelWithDmmLink }
-                            editPanel(title: "データの共有") {
-                                Toggle("この機種データをみんなとシェアする", isOn: $shareWithEveryone)
-                                    .tint(accent)
-                                Text("ONにすると、他のユーザーがマスタから検索したときにあなたの機種データ（1R純増など）を参照できます。")
-                                    .font(AppTypography.annotation)
-                                    .foregroundStyle(t.subTextColor.opacity(0.88))
-                            }
                         }
                         .padding(16)
                         .padding(.bottom, 100)
@@ -228,7 +218,11 @@ struct MachineEditView: View, Equatable {
                     let specReadySorted = sorted
                     let filtered: [PresetFromServer]
                     if key.isEmpty {
-                        filtered = Array(specReadySorted.prefix(20))
+                        let window = MachineEditIntroductionDateParsing.newModelsWindow()
+                        filtered = specReadySorted.filter { p in
+                            guard let d = MachineEditIntroductionDateParsing.date(fromRaw: p.introductionDateRaw) else { return false }
+                            return d >= window.start && d < window.endExclusive
+                        }
                     } else {
                         filtered = Array(specReadySorted.filter { $0.name.lowercased().contains(key) }.prefix(30))
                     }
@@ -301,7 +295,7 @@ struct MachineEditView: View, Equatable {
             return "スペック一覧を取得できないため、ここには表示できません。"
         }
         if keyEmpty {
-            return "該当する機種が新台20件に含まれていないか、検索に一致しません。"
+            return "該当する機種が直近2か月の新台に含まれていないか、検索に一致しません。"
         }
         return "該当する機種がありません。"
     }
@@ -310,7 +304,7 @@ struct MachineEditView: View, Equatable {
     private var presetPanel: some View {
         let keyEmpty = presetSearchText.trimmingCharacters(in: .whitespaces).isEmpty
         let showListArea = showNewest20 || !keyEmpty || isLoadingPresets
-            editPanel(title: "機種を検索", trailing: { InfoIconView(explanation: "設定のマスターデータURLから取得した一覧を、マシン詳細マスタ（index.json）と突き合わせます。ステータスが「対象外」（導入から6年経過後など）の機種は表示しません。検索するか「新台から探す」で表示。選ぶと機種名・メーカー以下が自動入力されます。", tint: t.subTextColor.opacity(0.65)) }) {
+            editPanel(title: "機種を検索", trailing: { InfoIconView(explanation: "設定のマスターデータURLから取得した一覧を、マシン詳細マスタ（index.json）と突き合わせます。ステータスが「対象外」（導入から6年経過後など）の機種のみ除外し、スペックの「完了」未満でも index に載っていれば表示されます。検索するか「新台から探す」で表示。選ぶと機種名・メーカー以下が自動入力されます。", tint: t.subTextColor.opacity(0.65)) }) {
             HStack(spacing: 10) {
                 TextField("機種名で検索", text: $presetSearchText)
                     .textContentType(.none)
@@ -339,13 +333,8 @@ struct MachineEditView: View, Equatable {
                     .font(AppTypography.annotation)
                     .foregroundStyle(.orange.opacity(0.9))
             }
-            if registrationIndexLoadedOK {
-                Text("※ index.json に載る機種のうち、ステータス「対象外」以外を表示しています。")
-                    .font(AppTypography.annotationSmall)
-                    .foregroundStyle(.secondary)
-            }
             if !showListArea {
-                Text("検索窓に文字を入力するか「新台から探す」をタップすると、該当機種を導入日が新しい順で表示します。")
+                Text("検索窓に文字を入力するか「新台から探す」をタップしてください。「新台から探す」では導入開始日が今日から遡り2か月以内の機種を、導入日が新しい順で表示します。")
                     .font(AppTypography.annotation)
                     .foregroundStyle(.secondary)
             } else {
@@ -735,39 +724,6 @@ struct MachineEditView: View, Equatable {
             }
             onNewMachineSaved?(machine)
         }
-        if shareWithEveryone {
-            let manufacturer = manufacturerStr.trimmingCharacters(in: .whitespaces)
-            let inferredType: MachineType = (Int(supportLimit) ?? 0) > 0 ? .st : .kakugen
-            let prizeEntriesForCloud = allPrizes.map { (label: $0.label, balls: $0.balls) }
-            let netBaseFromPrizes: Double = {
-                guard !allPrizes.isEmpty else { return 140 }
-                let totalBalls = allPrizes.reduce(0) { $0 + $1.balls }
-                let totalFeed = allPrizes.count * cPerRound
-                let totalNet = totalBalls - totalFeed
-                return allPrizes.count > 0 ? max(50, min(250, Double(max(0, totalNet)) / Double(allPrizes.count))) : 140
-            }()
-            Task {
-                do {
-                    try await SharedMachineCloudKitService.saveToCloud(
-                        name: name,
-                        manufacturer: manufacturer,
-                        machineTypeRaw: inferredType.rawValue,
-                        supportLimit: sup,
-                        timeShortRotations: timeShort,
-                        defaultPrize: prize,
-                        probability: probability,
-                        border: border,
-                        entryRate: 100,
-                        continuationRate: 100,
-                        countPerRound: cPerRound,
-                        netPerRoundBase: netBaseFromPrizes,
-                        prizeEntries: prizeEntriesForCloud
-                    )
-                } catch {
-                    // ローカル保存は完了しているため、CloudKit失敗時はログのみ（必要ならトースト表示）
-                }
-            }
-        }
         dismiss()
     }
     
@@ -791,55 +747,32 @@ struct MachineEditView: View, Equatable {
         return URL(string: "https://p-town.dmm.com/machines/\(id)")
     }
     
-    /// 最下部に常時表示。左端＝登録フォームへ、右端＝DMMアプリ内ブラウザ（空間メタファー＋スワイプ補助）。
+    /// 最下部に常時表示。左端＝登録フォームへ、右端＝DMMアプリ内ブラウザ。
     @ViewBuilder
     private var dmmSwipeBar: some View {
         let barHeight: CGFloat = 72
+        let edgeInset: CGFloat = 8
         GeometryReader { geo in
             let w = geo.size.width
             let edgeW = max(92, min(124, w * 0.255))
             let stripCorner: CGFloat = 10
 
             ZStack {
-                // 端の「現在位置」を淡く照らす（プリアテンション：どちらがアクティブか）
-                HStack(spacing: 0) {
-                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
-                        .fill(
-                            !isDMMPanelExpanded
-                                ? accent.opacity(0.22)
-                                : t.formCanvasMutedBackground
-                        )
-                        .frame(width: edgeW + 8)
-                        .padding(.leading, 6)
-                    Spacer(minLength: 0)
-                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
-                        .fill(
-                            isDMMPanelExpanded && dmmMachineURL != nil
-                                ? accent.opacity(0.2)
-                                : (dmmMachineURL != nil ? t.formCanvasMidBackground : t.formCanvasDeepBackground)
-                        )
-                        .frame(width: edgeW + 8)
-                        .padding(.trailing, 6)
-                }
-                .allowsHitTesting(false)
-
                 HStack(spacing: 0) {
                     dmmEdgeRegisterZone(width: edgeW, stripCorner: stripCorner)
+                        .padding(.leading, edgeInset)
                     Spacer(minLength: 0)
                     dmmEdgeBrowserZone(width: edgeW, stripCorner: stripCorner)
+                        .padding(.trailing, edgeInset)
                 }
 
-                // 中央はヒット不要（端操作への誤爆を減らす）
                 VStack(spacing: 3) {
-                    Text(isDMMPanelExpanded ? "DMM ぱちタウン 表示中" : "機種の登録フォーム")
+                    Text(isDMMPanelExpanded ? "DMM ぱちタウン 表示中" : "ブラウザ切替")
                         .font(AppTypography.annotationSemibold)
                         .foregroundStyle(t.mainTextColor.opacity(0.95))
                     Text("左端・右端をタップ")
                         .font(AppTypography.annotationSmallMedium)
                         .foregroundStyle(t.subTextColor.opacity(0.9))
-                    Text("または横スワイプ")
-                        .font(AppTypography.annotationSmall)
-                        .foregroundStyle(t.subTextColor.opacity(0.75))
                 }
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: max(120, w - edgeW * 2 - 20))
@@ -850,26 +783,7 @@ struct MachineEditView: View, Equatable {
         .frame(height: barHeight)
         .padding(.horizontal, 8)
         .contentShape(Rectangle())
-        .highPriorityGesture(
-            DragGesture(minimumDistance: 50)
-                .onEnded { value in
-                    let dx = value.translation.width
-                    let dy = value.translation.height
-                    guard abs(dx) > abs(dy) * 1.2 else { return }
-                    // 指が左へ＝ブラウザ（右ペインへ進む）、右へ＝登録へ戻る（LTR の空間と一致）
-                    if dx < -40 {
-                        guard dmmMachineURL != nil else { return }
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-                            isDMMPanelExpanded = true
-                        }
-                    } else if dx > 40 {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-                            isDMMPanelExpanded = false
-                        }
-                    }
-                }
-        )
-        .pstatsChromeSheetBarStyle()
+        .pstatsChromeSheetBarStyle(borderStyle: .topEdgeOnly)
     }
 
     /// 左端：登録画面へ戻る（戻る＝左のメンタルモデルに合わせ chevron.left を手前に）
@@ -880,6 +794,7 @@ struct MachineEditView: View, Equatable {
                 isDMMPanelExpanded = false
             }
         } label: {
+            let active = !isDMMPanelExpanded
             VStack(alignment: .center, spacing: 4) {
                 HStack(spacing: 3) {
                     Image(systemName: "chevron.left")
@@ -887,11 +802,11 @@ struct MachineEditView: View, Equatable {
                     Image(systemName: "doc.text.fill")
                         .font(.system(size: 14, weight: .semibold))
                 }
-                .foregroundStyle(t.mainTextColor.opacity(!isDMMPanelExpanded ? 1.0 : 0.78))
+                .foregroundStyle(t.mainTextColor.opacity(active ? 1.0 : 0.78))
                 Text("登録画面")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundStyle(t.mainTextColor)
-                Text(!isDMMPanelExpanded ? "いま表示中" : "端をタップで戻る")
+                Text(active ? "いま表示中" : "端をタップで戻る")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(t.subTextColor.opacity(0.88))
                     .lineLimit(2)
@@ -901,25 +816,29 @@ struct MachineEditView: View, Equatable {
             .frame(width: width)
             .frame(maxHeight: .infinity)
             .padding(.vertical, 6)
-            .contentShape(Rectangle())
             .background(
-                RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                t.chromeSheetBorderColor.opacity(!isDMMPanelExpanded ? 1.0 : 0.55),
-                                accent.opacity(!isDMMPanelExpanded ? 0.35 : 0.12)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: !isDMMPanelExpanded ? 1.25 : 0.85
-                    )
+                ZStack {
+                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                        .fill(active ? accent.opacity(0.22) : t.formCanvasMutedBackground)
+                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    t.chromeSheetBorderColor.opacity(active ? 1.0 : 0.55),
+                                    accent.opacity(active ? 0.35 : 0.12)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: active ? 1.25 : 0.85
+                        )
+                }
             )
+            .contentShape(RoundedRectangle(cornerRadius: stripCorner, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel("登録画面に戻る")
-        .accessibilityHint("タップで機種登録フォームを表示します。")
+        .accessibilityHint("タップで機種編集画面を表示します。")
     }
 
     /// 右端：DMM アプリ内ブラウザ（進む・外部コンテンツ＝右方向の慣例に合わせ safari と chevron.right）
@@ -933,6 +852,7 @@ struct MachineEditView: View, Equatable {
                 isDMMPanelExpanded = true
             }
         } label: {
+            let active = urlReady && isDMMPanelExpanded
             VStack(alignment: .center, spacing: 4) {
                 HStack(spacing: 3) {
                     Image(systemName: "safari")
@@ -958,21 +878,29 @@ struct MachineEditView: View, Equatable {
             .frame(width: width)
             .frame(maxHeight: .infinity)
             .padding(.vertical, 6)
-            .contentShape(Rectangle())
             .background(
-                RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                accent.opacity(urlReady && isDMMPanelExpanded ? 0.5 : 0.2),
-                                t.chromeSheetBorderColor.opacity(urlReady ? 0.85 : 0.4)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: urlReady && isDMMPanelExpanded ? 1.25 : 0.85
-                    )
+                ZStack {
+                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                        .fill(
+                            active
+                                ? accent.opacity(0.2)
+                                : (urlReady ? t.formCanvasMidBackground : t.formCanvasDeepBackground)
+                        )
+                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    accent.opacity(active ? 0.5 : 0.2),
+                                    t.chromeSheetBorderColor.opacity(urlReady ? 0.85 : 0.4)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: active ? 1.25 : 0.85
+                        )
+                }
             )
+            .contentShape(RoundedRectangle(cornerRadius: stripCorner, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(!urlReady)
@@ -1044,6 +972,48 @@ struct MachineMasterPickerSheet: View {
             }
         }
         .keyboardDismissToolbar()
+    }
+}
+
+// MARK: - 新台フィルタ（導入開始日のパース・2か月窓）
+
+private enum MachineEditIntroductionDateParsing {
+    private static var tokyoCalendar: Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "Asia/Tokyo") ?? .current
+        return c
+    }
+
+    /// マスタの導入日文字列（例: yyyy-MM-dd, yyyy/MM/dd）を日付にする。解釈できなければ nil。
+    static func date(fromRaw raw: String?) -> Date? {
+        guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else { return nil }
+        let iso = ISO8601DateFormatter()
+        iso.formatOptions = [.withFullDate]
+        iso.timeZone = TimeZone(identifier: "Asia/Tokyo")
+        if let d = iso.date(from: raw) { return d }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.timeZone = TimeZone(identifier: "Asia/Tokyo")
+        for format in ["yyyy/MM/dd", "yyyy/M/d", "yyyy-MM-dd", "yyyy-M-d", "yyyy.MM.dd", "yyyy.M.d"] {
+            f.dateFormat = format
+            if let d = f.date(from: raw) { return d }
+        }
+        f.locale = Locale(identifier: "ja_JP")
+        for format in ["yyyy年M月d日", "yyyy年MM月dd日"] {
+            f.dateFormat = format
+            if let d = f.date(from: raw) { return d }
+        }
+        return nil
+    }
+
+    /// 今日（カレンダー日）から遡り 2 か月の窓 `[start, endExclusive)`。導入日がこの範囲に入る新台を列挙する。
+    static func newModelsWindow(now: Date = Date()) -> (start: Date, endExclusive: Date) {
+        let cal = tokyoCalendar
+        let dayStart = cal.startOfDay(for: now)
+        let twoMonthsAgo = cal.date(byAdding: .month, value: -2, to: dayStart) ?? dayStart
+        let windowStart = cal.startOfDay(for: twoMonthsAgo)
+        let endExclusive = cal.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart.addingTimeInterval(86400)
+        return (windowStart, endExclusive)
     }
 }
 

@@ -40,7 +40,7 @@ enum MasterSpecRegistrationGate {
         return presets.filter { gate.includes($0) }
     }
 
-    /// `index.json` を正とし、**対象外**以外の全機種を検索に載せる。`machines.json` に詳細がある ID はそちらを採用し、無い行は `PresetFromServer.minimalFromIndexEntry` で補う。
+    /// `index.json` を正とし、**対象外**以外の行を検索に載せる（ステータスが「完了」かどうかは見ない。マスタ生成側で機種名・導入開始日が揃った行も index に載る想定）。`machines.json` に詳細がある ID はそちらを採用し、無い行は `PresetFromServer.minimalFromIndexEntry` で補う。
     static func mergeServerPresetsWithIndex(_ server: [PresetFromServer]?, indexEntries: [MachineMasterIndexEntry]?) -> [PresetFromServer] {
         guard let indexEntries, !indexEntries.isEmpty else { return server ?? [] }
         var richById: [String: PresetFromServer] = [:]
@@ -56,7 +56,15 @@ enum MasterSpecRegistrationGate {
             let sid = MachineDetailLoader.sanitizeMachineId(entry.machineId)
             guard !sid.isEmpty, sid != "unknown" else { continue }
             if let rich = richById[sid] {
-                out.append(rich)
+                var merged = rich
+                // CSV 等に導入日が無くても index の intro_start があれば新台フィルタ・並びに使えるようにする
+                if (merged.introductionDateRaw ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    let fromIndex = (entry.introStart ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !fromIndex.isEmpty {
+                        merged.introductionDateRaw = fromIndex
+                    }
+                }
+                out.append(merged)
             } else {
                 out.append(PresetFromServer.minimalFromIndexEntry(entry))
             }

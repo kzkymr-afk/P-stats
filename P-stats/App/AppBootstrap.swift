@@ -35,11 +35,15 @@ private actor AppModelContainerLoader {
         let task = Task(priority: .userInitiated) {
             try await MainActor.run {
                 let schema = Schema(versionedSchema: PStatsSchemaV1.self)
-                return try ModelContainer(
+                let configuration = PStatsStoreConfiguration.modelConfiguration(schema: schema)
+                let container = try ModelContainer(
                     for: schema,
                     migrationPlan: PStatsMigrationPlan.self,
-                    configurations: ModelConfiguration()
+                    configurations: configuration
                 )
+                // `@Query` より前に、版付き正規化を完了させる（VersionedSchema 以外の欠損補填）
+                PStatsDataNormalizer.normalizeIfNeeded(container: container)
+                return container
             }
         }
         inFlight = task

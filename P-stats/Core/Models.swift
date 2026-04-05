@@ -209,11 +209,11 @@ final class PresetMachine {
 @Model
 final class Shop {
     var name: String = ""
-    /// 貸玉（500pt あたり玉数）。未設定の解釈は `interpretedBallsPer500Pt`（`PersistedDataSemantics`）。
+    /// 貸玉数（500pt あたり玉数）。未設定の解釈は `interpretedBallsPer500Pt`（`PersistedDataSemantics`）。
     var ballsPerCashUnit: Int = PersistedDataSemantics.defaultBallsPer500Pt
-    /// 払出係数（1玉あたりのpt換算）。統計シミュレーション用。未設定の解釈は `interpretedPayoutCoefficientPtPerBall`。
+    /// 交換率（1玉あたりのpt＝店レート設定の「交換率」）。未設定の解釈は `interpretedPayoutCoefficientPtPerBall`。
     var payoutCoefficient: Double = PersistedDataSemantics.defaultPayoutCoefficientPtPerBall
-    /// 持ち玉投資ボタン1回で消費する玉数。**0** のときは `ballsPerCashUnit`（500ptあたり）と同じ扱い。
+    /// 持ち玉払い出し数（投資ボタン1回で消費する玉数）。**0** のときは `ballsPerCashUnit`（貸玉数）と同じ扱い。
     var holdingsBallsPerButton: Int = 0
     /// 店が貯玉（カウンター預かり）に対応しているか。実戦終了時の「貯玉」精算や端数の貯玉反映に使用。
     var supportsChodamaService: Bool = false
@@ -335,6 +335,10 @@ struct WinRecord: Identifiable, Codable {
     var rushGamesPlayed: Int? = nil
     /// 大当たりモード終了時に確定した「この区間の大当たり回数（連チャン含む）」。旧データは nil
     var bonusSessionHitCount: Int? = nil
+    /// 当選までの通常時に「現在の持ち玉数に合わせる」で積算した持ち玉投資調整（玉）。旧データは nil
+    var normalPhaseHoldingsReconcileBalls: Int? = nil
+    /// この当たり区間（大当たりモード／赤残）中に同機能で積算した調整（玉）。旧データは nil
+    var bonusPhaseHoldingsReconcileBalls: Int? = nil
 }
 
 struct LendingRecord: Identifiable, Codable {
@@ -397,6 +401,12 @@ struct ResumableState: Codable {
     var bigHitSessionNormalRotationsAtWin: Int? = nil
     /// 当選時点の総回転（ランプ想定）。旧データは nil
     var bigHitSessionTotalRotationsAtWin: Int? = nil
+    /// 直前の通常区間で「現在の持ち玉数に合わせる」の調整玉の積算。旧データは nil
+    var normalSegmentHoldingsReconcileAccumulator: Int? = nil
+    /// 大当たり突入時に直前通常区間分として退避した調整玉。旧データは nil
+    var stashedNormalHoldingsReconcileForBigHit: Int? = nil
+    /// 大当たりモード中の同機能の調整玉の積算。旧データは nil
+    var bigHitSegmentHoldingsReconcileAccumulator: Int? = nil
 }
 
 // --- 3. テーマ定義 (⚠️ここが1回だけであることを確認！) ---
@@ -495,6 +505,10 @@ enum AppTheme: String, CaseIterable, Codable {
     }
 }
 
+/// 個人の遊技記録（店舗名・収支・内部 JSON・スナップショット等を含む）。
+///
+/// - Important: CloudKit **Public Database** には送信しないこと。将来クラウド同期する場合は
+///   `UserSessionSyncService`（Private DB）経路のみを想定する。共有マスタは `SharedMachineCloudKitService`。
 @Model
 final class GameSession {
     var id: UUID = UUID()
@@ -505,6 +519,7 @@ final class GameSession {
     /// 実戦終了時刻（保存時刻）。旧データは nil
     var endedAt: Date? = nil
     var machineName: String = ""
+    /// 実店舗の識別に近い個人情報。Public 同期ペイロードに含めないこと。
     var shopName: String = ""
     var manufacturerName: String = ""  // 保存時メーカー（分析用）
     var inputCash: Int = 0             // 投資（現金）
@@ -542,6 +557,8 @@ final class GameSession {
     var slumpChartInitialDisplayRotation: Int = 0
     /// 0 のときは `SessionSlumpChartForSessionView` 側で 125 を仮定
     var slumpChartHoldingsBallsPerTap: Int = 0
+    /// `GameSessionSnapshot` を JSON エンコードしたバイト列。nil＝未保存の旧データ。
+    var snapshotData: Data? = nil
 
     init(machineName: String, shopName: String, manufacturerName: String = "", inputCash: Int, totalHoldings: Int, normalRotations: Int, totalUsedBalls: Int, payoutCoefficient: Double, totalRealCost: Double = 0, expectationRatioAtSave: Double = 0, rushWinCount: Int = 0, normalWinCount: Int = 0, formulaBorderPer1k: Double = 0) {
         self.machineName = machineName
@@ -572,9 +589,9 @@ final class GameSession {
         )
     }
 
-    /// 欠損・余剰（成績 − 期待値）。正＝期待値より得、負＝期待値より損
+    /// 欠損・余剰（成績 − 期待値）。正＝期待値より得、負＝期待値より損。期待値は `analyticsTheoreticalValuePt`（スナップショット優先）。
     var deficitSurplus: Int {
-        PStatsCalculator.deficitSurplusPt(performancePt: performance, theoreticalValuePt: theoreticalValue)
+        PStatsCalculator.deficitSurplusPt(performancePt: performance, theoreticalValuePt: analyticsTheoreticalValuePt)
     }
 }
 
@@ -661,9 +678,9 @@ extension GameSession {
         )
     }
 
-    /// 保存時ボーダー比の平均に含める
+    /// 保存時ボーダー比の平均に含める（スナップショット再計算値を優先）
     var participatesInExpectationRatioAggregate: Bool {
-        !excludesFromRotationExpectationAnalytics && expectationRatioAtSave > 0
+        !excludesFromRotationExpectationAnalytics && analyticsExpectationRatio > 0
     }
 
     /// 通算実戦回転率の加重平均の分母（pt）。`totalRealCost` を優先し、0 の旧データは `inputCash`（pt）で代替（実戦保存時の補正と同趣旨）。

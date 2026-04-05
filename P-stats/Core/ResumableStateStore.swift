@@ -49,7 +49,10 @@ enum ResumableStateStore {
             isBigHitMode: log.isBigHitMode,
             bigHitChainCount: log.bigHitChainCount,
             bigHitSessionNormalRotationsAtWin: log.bigHitSessionNormalRotationsAtWin,
-            bigHitSessionTotalRotationsAtWin: log.bigHitSessionTotalRotationsAtWin
+            bigHitSessionTotalRotationsAtWin: log.bigHitSessionTotalRotationsAtWin,
+            normalSegmentHoldingsReconcileAccumulator: log.normalSegmentHoldingsReconcileAccumulator,
+            stashedNormalHoldingsReconcileForBigHit: log.stashedNormalHoldingsReconcileForBigHit,
+            bigHitSegmentHoldingsReconcileAccumulator: log.bigHitSegmentHoldingsReconcileAccumulator
         )
         do {
             let data = try JSONEncoder().encode(state)

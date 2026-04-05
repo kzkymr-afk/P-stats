@@ -96,7 +96,7 @@ struct GameSessionEditView: View {
                             }
                             let rate = selectedShop?.payoutCoefficient ?? 0
                             if rec > 0, rate <= 0 {
-                                errorMessage = "回収額を保存するには店舗の払出係数（pt/玉）が必要です。店舗を編集して設定してください。"
+                                errorMessage = "回収額を保存するには店舗の交換率（pt/玉）が必要です。店舗を編集して設定してください。"
                                 showErrorAlert = true
                                 return
                             }
@@ -242,14 +242,14 @@ struct GameSessionEditView: View {
                         simpleAmountInputPanel(
                             scrollId: "simpleRecovery",
                             title: "回収額（pt）",
-                            caption: "精算・換金したポイント相当。店の払出係数で玉数に換算して保存",
+                            caption: "精算・換金したポイント相当。店の交換率（pt/玉）で玉数に換算して保存",
                             text: $recoveryAmountPt,
                             padTrigger: $simpleRecoveryPadTrigger,
                             onPreviousField: { simpleInvestPadTrigger += 1 },
                             onNextField: nil
                         )
 
-                        Text("回収額を保存するには、店舗に払出係数（pt/玉）が設定されている必要があります。")
+                        Text("回収額を保存するには、店舗に交換率（pt/玉）が設定されている必要があります。")
                             .font(AppTypography.annotation)
                             .foregroundColor(skin.subTextColor)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -714,7 +714,7 @@ struct GameSessionEditView: View {
         dismiss()
     }
 
-    /// シンプル入力：投資・回収は pt。回収は店舗の払出係数で玉数に換算。回転・当選・期待値は 0 / 中立で保存。
+    /// シンプル入力：投資・回収は pt。回収は店舗の交換率（pt/玉）で玉数に換算。回転・当選・期待値は 0 / 中立で保存。
     private func saveSimpleNewSession(machine: Machine, shop: Shop) {
         let invCash = Int(investmentCash) ?? 0
         let recPt = Int(recoveryAmountPt) ?? 0

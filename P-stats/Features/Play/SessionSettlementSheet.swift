@@ -24,7 +24,7 @@ struct SessionSettlementSheet: View {
                             Text("回収 \(recoveryBalls) 玉")
                                 .font(.title3.weight(.bold))
                                 .foregroundStyle(.white)
-                            Text("pt 換算　約 \(breakdown.totalRecoveryPt) pt（店の払出係数に基づく換金レート）")
+                            Text("pt 換算　約 \(breakdown.totalRecoveryPt) pt（店の交換率（pt/玉）に基づく換金レート）")
                                 .font(.subheadline)
                                 .foregroundStyle(.white.opacity(0.85))
                         }

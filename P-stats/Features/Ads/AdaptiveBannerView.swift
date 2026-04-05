@@ -46,6 +46,17 @@ final class AdaptiveBannerSlotContainerView: UIView, GADBannerViewDelegate {
     private let banner = GADBannerView(adSize: GADAdSizeBanner)
     private var lastSnappedLoadWidth: CGFloat = 0
 
+    /// `true` のとき新規 `load` しない（入力フォーカス・ビュー非表示時）。既に表示中のクリエイティブはそのまま。
+    var isAdLoadPaused: Bool = false {
+        didSet {
+            guard oldValue != isAdLoadPaused else { return }
+            if oldValue, !isAdLoadPaused {
+                lastSnappedLoadWidth = 0
+            }
+            setNeedsLayout()
+        }
+    }
+
     var adUnitID: String {
         didSet {
             guard oldValue != adUnitID else { return }
@@ -59,7 +70,8 @@ final class AdaptiveBannerSlotContainerView: UIView, GADBannerViewDelegate {
         self.adUnitID = adUnitID
         super.init(frame: .zero)
         clipsToBounds = true
-        backgroundColor = .black
+        /// クリエイティブより短いスロット内のレターボックスは親（SwiftUI の `.background`）に任せる
+        backgroundColor = .clear
         banner.adUnitID = adUnitID
         banner.delegate = self
         banner.clipsToBounds = false
@@ -70,6 +82,14 @@ final class AdaptiveBannerSlotContainerView: UIView, GADBannerViewDelegate {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { nil }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window != nil {
+            lastSnappedLoadWidth = 0
+            setNeedsLayout()
+        }
+    }
 
     private static func keyRootViewController() -> UIViewController? {
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
@@ -98,6 +118,7 @@ final class AdaptiveBannerSlotContainerView: UIView, GADBannerViewDelegate {
         let h = ceil(adSize.size.height)
         banner.adSize = adSize
         banner.frame = CGRect(x: 0, y: 0, width: w, height: h)
+        guard !isAdLoadPaused, window != nil else { return }
         if abs(snapped - lastSnappedLoadWidth) >= 0.5 {
             lastSnappedLoadWidth = snapped
             banner.load(GADRequest())
@@ -118,6 +139,8 @@ final class AdaptiveBannerSlotContainerView: UIView, GADBannerViewDelegate {
 /// `AdaptiveBannerSlot` 用。`sizeThatFits` と UIKit レイアウトで縦幅を SDK と一致させる。
 struct AdaptiveBannerSlotRepresentable: UIViewRepresentable {
     let adUnitID: String
+    /// 親からの一時停止（入力フォーカス等）。SwiftUI の `onDisappear` と併用する場合は `AdaptiveBannerSlot` 側で合成する。
+    var pauseAdRefresh: Bool = false
 
     func makeUIView(context: Context) -> AdaptiveBannerSlotContainerView {
         AdaptiveBannerSlotContainerView(adUnitID: adUnitID)
@@ -125,6 +148,7 @@ struct AdaptiveBannerSlotRepresentable: UIViewRepresentable {
 
     func updateUIView(_ uiView: AdaptiveBannerSlotContainerView, context: Context) {
         uiView.adUnitID = adUnitID
+        uiView.isAdLoadPaused = pauseAdRefresh
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, uiView: AdaptiveBannerSlotContainerView, context: Context) -> CGSize? {
@@ -209,9 +233,24 @@ struct AdaptiveBannerView: UIViewRepresentable {
 /// ホーム下端・オーバーレイ等で使うバナー枠（UIKit で実寸レイアウトし見切れを防ぐ）。
 struct AdaptiveBannerSlot: View {
     let adUnitID: String
+    /// 親画面の状態に応じた一時停止（例: 実戦でインサイト・シート表示中）
+    var pauseAdRefresh: Bool = false
+
+    /// SwiftUI ツリー上で非表示になった間は読み込みを止める（`pauseAdRefresh` と合成）
+    @State private var isAttachedInSwiftUITree = true
+
+    private var effectivePauseAdRefresh: Bool {
+        pauseAdRefresh || !isAttachedInSwiftUITree
+    }
 
     var body: some View {
-        AdaptiveBannerSlotRepresentable(adUnitID: adUnitID)
+        AdaptiveBannerSlotRepresentable(adUnitID: adUnitID, pauseAdRefresh: effectivePauseAdRefresh)
             .frame(maxWidth: .infinity)
+            .onAppear {
+                isAttachedInSwiftUITree = true
+            }
+            .onDisappear {
+                isAttachedInSwiftUITree = false
+            }
     }
 }

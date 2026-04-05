@@ -1,28 +1,62 @@
 import Foundation
 import SwiftData
+import os
 
 /// スキーマ移行（VersionedSchema）だけでは吸収しづらい「意味のあるデフォルト」や
-/// 旧データの整合を、アプリ起動時に一括で正規化する。
+/// 旧データの整合を、ストアオープン直後に **版付き**で実行する。
 ///
 /// - 注意: 「黙って値を変える」ことで分析が変わるのは避けたいので、
 ///   ここでは **欠損の明らかな派生値のみ**（再計算しても意味が変わりにくいもの）を対象にする。
+///
+/// ## 正規化を追加するとき
+/// 1. `applyNormalizationSteps` に **冪等**な処理だけ追加する。
+/// 2. `currentNormalizationRevision` を **1 つ上げる**（未適用ユーザーだけ再実行される）。
 enum PStatsDataNormalizer {
-    private static let normalizationKey = "PStatsDataNormalizer.lastRun.v1"
 
-    /// ストアを開いた直後に 1 回だけ実行する想定。
+    private static let log = Logger(subsystem: Bundle.main.bundleIdentifier ?? "P-stats", category: "PStatsDataNormalizer")
+
+    /// 実装済み正規化ロジックの最新版。手順を足したら必ずインクリメントする。
+    private static let currentNormalizationRevision = 1
+
+    private static let appliedRevisionKey = "PStatsDataNormalizer.appliedNormalizationRevision"
+    /// 旧実装（bool）からの移行用
+    private static let legacyBoolKey = "PStatsDataNormalizer.lastRun.v1"
+
+    /// `ModelContainer` 生成直後・UI が `@Query` する前に呼ぶ。
     @MainActor
     static func normalizeIfNeeded(container: ModelContainer) {
         let defaults = UserDefaults.standard
-        if defaults.bool(forKey: normalizationKey) { return }
+        migrateLegacyDefaults(defaults)
+
+        let applied = defaults.integer(forKey: appliedRevisionKey)
+        guard applied < currentNormalizationRevision else { return }
 
         let ctx = ModelContext(container)
         do {
-            try normalizeSessions(ctx: ctx)
+            try applyNormalizationSteps(fromRevision: applied, ctx: ctx)
             try ctx.save()
-            defaults.set(true, forKey: normalizationKey)
+            defaults.set(currentNormalizationRevision, forKey: appliedRevisionKey)
         } catch {
-            // 正規化に失敗してもアプリを落とさない（次回以降に再試行できる）
+            log.error("正規化に失敗: \(String(describing: error), privacy: .public)")
+            // 失敗時は revision を進めない → 次回起動で再試行
         }
+    }
+
+    private static func migrateLegacyDefaults(_ defaults: UserDefaults) {
+        guard defaults.object(forKey: legacyBoolKey) != nil else { return }
+        if defaults.bool(forKey: legacyBoolKey), defaults.object(forKey: appliedRevisionKey) == nil {
+            defaults.set(1, forKey: appliedRevisionKey)
+        }
+        defaults.removeObject(forKey: legacyBoolKey)
+    }
+
+    /// `fromRevision` は「すでに適用済みの版」。`fromRevision+1 ... current` のステップを想定（現状は一括）。
+    @MainActor
+    private static func applyNormalizationSteps(fromRevision: Int, ctx: ModelContext) throws {
+        // 将来: if fromRevision < 2 { try stepV2(ctx) }
+        //       if fromRevision < 3 { try stepV3(ctx) }
+        _ = fromRevision
+        try normalizeSessions(ctx: ctx)
     }
 
     @MainActor

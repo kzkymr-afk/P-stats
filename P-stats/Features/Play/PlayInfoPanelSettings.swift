@@ -2,10 +2,10 @@ import Foundation
 
 /// 実戦（PlayView）右側の情報パネル（最大5行）の表示・並び設定
 enum PlayInfoPanelSettings {
-    static let orderKey = "playInfoPanelOrder"
-    static let hiddenKey = "playInfoPanelHidden"
+    static var orderKey: String { UserDefaultsKey.playInfoPanelOrder.rawValue }
+    static var hiddenKey: String { UserDefaultsKey.playInfoPanelHidden.rawValue }
     /// 時給の基準（実収支 vs 期待値理論）。`PlayHourlyWageBasis.rawValue`
-    static let hourlyWageBasisKey = "playHourlyWageBasis"
+    static var hourlyWageBasisKey: String { UserDefaultsKey.playHourlyWageBasis.rawValue }
 
     /// デフォルト：期待値 / 総回転数 / 現在損益 / 持ち玉 / 時給（実収支）
     static let defaultOrder: [PlayInfoPanelRowID] = [.expectationPercent, .normalRotations, .currentProfit, .holdings, .hourlyWage]

@@ -12,7 +12,7 @@ struct P_statsApp: App {
         // シミュレータは通常テスト端末扱い（公式ドキュメント参照）。
         #endif
         #if DEBUG
-        if let raw = UserDefaults.standard.string(forKey: "GADTestDeviceIDs"), !raw.isEmpty {
+        if let raw = UserDefaults.standard.string(for: .gadTestDeviceIDs), !raw.isEmpty {
             let ids = raw.split(separator: ",").map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
             if !ids.isEmpty {
                 GADMobileAds.sharedInstance().requestConfiguration.testDeviceIdentifiers = ids

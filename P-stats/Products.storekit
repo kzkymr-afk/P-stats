@@ -1,4 +1,14 @@
 {
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
   "identifier" : "PStatsStoreKit01",
   "nonRenewingSubscriptions" : [
 
@@ -7,7 +17,18 @@
 
   ],
   "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "ja",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "JPN",
+    "_storeKitErrors" : [
 
+    ],
+    "_timeRate" : 0
   },
   "subscriptionGroups" : [
     {
@@ -16,7 +37,7 @@
         {
           "description" : "広告非表示と分析機能のフル利用",
           "displayName" : "P-stats プレミアム",
-          "locale" : "ja_JP"
+          "locale" : "ja"
         },
         {
           "description" : "広告非表示と分析機能のフル利用",
@@ -33,16 +54,18 @@
           "codeOffers" : [
 
           ],
-          "displayPrice" : "450",
+          "displayPrice" : "480",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "SUBPREM01",
-          "introductoryOffer" : null,
+          "introductoryOffers" : [
+
+          ],
           "localizations" : [
             {
               "description" : "アプリ内広告を非表示にし、すべての分析機能を利用できます。",
               "displayName" : "プレミアム（月額）",
-              "locale" : "ja_JP"
+              "locale" : "ja"
             },
             {
               "description" : "アプリ内広告を非表示にし、すべての分析機能を利用できます。",
@@ -54,13 +77,16 @@
           "recurringSubscriptionPeriod" : "P1M",
           "referenceName" : "プレミアム（月額）",
           "subscriptionGroupID" : "21482000",
-          "type" : "RecurringSubscription"
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         }
       ]
     }
   ],
   "version" : {
-    "major" : 3,
+    "major" : 5,
     "minor" : 0
   }
 }

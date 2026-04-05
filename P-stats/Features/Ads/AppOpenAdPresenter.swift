@@ -6,7 +6,7 @@ import UIKit
 /// 遊技 fullScreen 中・インタースティシャル直後は表示しない。
 @MainActor
 enum AppOpenAdPresenter {
-    private static let lastPresentedKey = "AdAppOpenLastPresentationAt"
+    private static var lastPresentedKey: String { UserDefaultsKey.adAppOpenLastPresentationAt.rawValue }
 
     private final class Flow: NSObject, GADFullScreenContentDelegate {
         private var appOpenAd: GADAppOpenAd?

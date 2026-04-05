@@ -21,8 +21,8 @@ final class AppLockState: ObservableObject {
     static let shared = AppLockState()
 
     @Published var isUnlocked = false
-    @AppStorage("appLockEnabled") var lockEnabled = false
-    @AppStorage("appLockUseBiometric") var useBiometric = true
+    @AppStorage(UserDefaultsKey.appLockEnabled.rawValue) var lockEnabled = false
+    @AppStorage(UserDefaultsKey.appLockUseBiometric.rawValue) var useBiometric = true
 
     /// 生体認証の可否・種類は body のたびに LAContext を作ると重いため、ロック表示時に1回だけ評価してキャッシュする
     private var cachedBiometric: (canUse: Bool, name: String)?

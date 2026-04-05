@@ -173,6 +173,10 @@ struct AnalyticsGroup: Identifiable {
     let avgExpectationRatio: Double
     /// ボーダーとの差（回/1k・グループ内を通常回転数で加重平均）。実質回転率 − 店補正後のボーダー（保存値があれば）。nil は対象セッションなし／重み0
     let avgBorderDiffPer1k: Double?
+    /// `snapshotData` があり、期待値を当時スペックで再計算できるセッション件数
+    let snapshotBackedSessionCount: Int
+    /// スナップショットと同名の現在マスタを比較し、スペック差があるセッション件数
+    let masterSpecDriftSessionCount: Int
     /// 並び順用（月別・年別は日付の新しい順）
     var sortKey: String { id }
 }
@@ -201,32 +205,32 @@ enum AnalyticsEngine {
     }
 
     /// 機種別集計
-    static func byMachine(_ sessions: [GameSession]) -> [AnalyticsGroup] {
+    static func byMachine(_ sessions: [GameSession], machinesByName: [String: Machine]? = nil) -> [AnalyticsGroup] {
         let grouped = Dictionary(grouping: sessions) { $0.machineName }
         return grouped.map { name, list in
-            aggregate(label: name.isEmpty ? "未設定" : name, sessions: list)
+            aggregate(label: name.isEmpty ? "未設定" : name, sessions: list, machinesByName: machinesByName)
         }
         .sorted { abs($0.totalProfit) > abs($1.totalProfit) }
     }
 
     /// メーカー別集計（manufacturerName。空は「未設定」にまとめる）
-    static func byManufacturer(_ sessions: [GameSession]) -> [AnalyticsGroup] {
+    static func byManufacturer(_ sessions: [GameSession], machinesByName: [String: Machine]? = nil) -> [AnalyticsGroup] {
         let grouped = Dictionary(grouping: sessions) { s in
             s.manufacturerName.trimmingCharacters(in: .whitespaces).isEmpty ? "未設定" : s.manufacturerName
         }
         return grouped.map { name, list in
-            aggregate(label: name, sessions: list)
+            aggregate(label: name, sessions: list, machinesByName: machinesByName)
         }
         .sorted { abs($0.totalProfit) > abs($1.totalProfit) }
     }
 
     /// 店舗別集計。並び順は最後にプレイした順（その店舗の直近セッション日が新しい順）
-    static func byShop(_ sessions: [GameSession]) -> [AnalyticsGroup] {
+    static func byShop(_ sessions: [GameSession], machinesByName: [String: Machine]? = nil) -> [AnalyticsGroup] {
         let grouped = Dictionary(grouping: sessions) { $0.shopName.isEmpty ? "未設定" : $0.shopName }
         return grouped
             .map { (name: $0.key, list: $0.value) }
             .sorted { ($0.list.map(\.date).max() ?? .distantPast) > ($1.list.map(\.date).max() ?? .distantPast) }
-            .map { aggregate(label: $0.name, sessions: $0.list) }
+            .map { aggregate(label: $0.name, sessions: $0.list, machinesByName: machinesByName) }
     }
 
     private static let calendar = Calendar.current
@@ -274,21 +278,21 @@ enum AnalyticsEngine {
     }
 
     /// 月別集計（yyyy/MM）。新しい月が先
-    static func byMonth(_ sessions: [GameSession]) -> [AnalyticsGroup] {
+    static func byMonth(_ sessions: [GameSession], machinesByName: [String: Machine]? = nil) -> [AnalyticsGroup] {
         let grouped = Dictionary(grouping: sessions) { monthKey(from: $0.date) }
         return grouped.map { key, list in
-            aggregate(label: key, sessions: list)
+            aggregate(label: key, sessions: list, machinesByName: machinesByName)
         }
         .sorted { $0.sortKey > $1.sortKey }
     }
 
     /// 日別集計（期間タブ・月別フィルタ内の日ごと）。`id` はその日 0:00 の `timeIntervalSince1970` 文字列
-    static func byCalendarDay(_ sessions: [GameSession]) -> [AnalyticsGroup] {
+    static func byCalendarDay(_ sessions: [GameSession], machinesByName: [String: Machine]? = nil) -> [AnalyticsGroup] {
         let grouped = Dictionary(grouping: sessions) { calendar.startOfDay(for: $0.date) }
         return grouped.map { dayStart, list in
             let label = dayInMonthFormatter.string(from: dayStart)
             let id = String(dayStart.timeIntervalSince1970)
-            return aggregateGroup(id: id, label: label, sessions: list)
+            return aggregateGroup(id: id, label: label, sessions: list, machinesByName: machinesByName)
         }
         .sorted { a, b in
             let ta = TimeInterval(a.id) ?? 0
@@ -298,16 +302,16 @@ enum AnalyticsEngine {
     }
 
     /// 年別集計（yyyy）。新しい年が先
-    static func byYear(_ sessions: [GameSession]) -> [AnalyticsGroup] {
+    static func byYear(_ sessions: [GameSession], machinesByName: [String: Machine]? = nil) -> [AnalyticsGroup] {
         let grouped = Dictionary(grouping: sessions) { yearLabel(from: $0.date) }
         return grouped.map { label, list in
-            aggregate(label: label, sessions: list)
+            aggregate(label: label, sessions: list, machinesByName: machinesByName)
         }
         .sorted { $0.sortKey > $1.sortKey }
     }
 
     /// 曜日別集計（日〜土）。月曜始まりで並べる
-    static func byWeekday(_ sessions: [GameSession]) -> [AnalyticsGroup] {
+    static func byWeekday(_ sessions: [GameSession], machinesByName: [String: Machine]? = nil) -> [AnalyticsGroup] {
         let grouped = Dictionary(grouping: sessions) { session in
             let comp = calendar.component(.weekday, from: session.date)
             let idx = comp - 1 // 1=日...7=土
@@ -315,14 +319,15 @@ enum AnalyticsEngine {
         }
         let order = ["月曜", "火曜", "水曜", "木曜", "金曜", "土曜", "日曜"]
         return order.compactMap { day in
-            grouped[day].map { list in aggregate(label: day, sessions: list) }
+            grouped[day].map { list in aggregate(label: day, sessions: list, machinesByName: machinesByName) }
         }
     }
 
     /// 特定日属性別集計。ラベルは「毎月N日」「Nのつく日」など数値代入済み。入力されていないルールの区分は含めない。
     static func bySpecificDayAttribute(
         _ sessions: [GameSession],
-        rulesByShopName: [String: SpecificDayRules]
+        rulesByShopName: [String: SpecificDayRules],
+        machinesByName: [String: Machine]? = nil
     ) -> [AnalyticsGroup] {
         let grouped = Dictionary(grouping: sessions) { session in
             let name = session.shopName.isEmpty ? "未設定" : session.shopName
@@ -331,7 +336,7 @@ enum AnalyticsEngine {
         }
         let order = grouped.keys.sorted { specificDayLabelSortOrder($0) < specificDayLabelSortOrder($1) }
         return order.map { label in
-            aggregate(label: label, sessions: grouped[label] ?? [])
+            aggregate(label: label, sessions: grouped[label] ?? [], machinesByName: machinesByName)
         }
     }
 
@@ -354,15 +359,16 @@ enum AnalyticsEngine {
     }
 
     /// 全般タブ用：指定セッションを「全体」1グループとして集計
-    static func overviewGroup(_ sessions: [GameSession]) -> AnalyticsGroup {
-        aggregate(label: "全体", sessions: sessions)
+    static func overviewGroup(_ sessions: [GameSession], machinesByName: [String: Machine]? = nil) -> AnalyticsGroup {
+        aggregate(label: "全体", sessions: sessions, machinesByName: machinesByName)
     }
 
     /// 店舗とメーカーの組み合わせごとに集計（クロス分析）。`minimumSessions` 未満はノイズ削減のため除外。
     static func shopManufacturerCrossRows(
         _ sessions: [GameSession],
         minimumSessions: Int = 2,
-        sortBy sortAxis: CrossAnalysisSortAxis = .sessionsDesc
+        sortBy sortAxis: CrossAnalysisSortAxis = .sessionsDesc,
+        machinesByName: [String: Machine]? = nil
     ) -> [ShopManufacturerCrossRow] {
         let sep = "\u{001F}"
         let grouped = Dictionary(grouping: sessions) { s -> String in
@@ -378,7 +384,7 @@ enum AnalyticsEngine {
             guard parts.count == 2 else { return nil }
             let shop = parts[0]
             let mfr = parts[1]
-            let g = aggregate(label: "\(shop) × \(mfr)", sessions: list)
+            let g = aggregate(label: "\(shop) × \(mfr)", sessions: list, machinesByName: machinesByName)
             return ShopManufacturerCrossRow(
                 id: compoundKey,
                 shop: shop,
@@ -396,7 +402,8 @@ enum AnalyticsEngine {
     static func shopMachineCrossRows(
         _ sessions: [GameSession],
         minimumSessions: Int = 2,
-        sortBy sortAxis: CrossAnalysisSortAxis = .sessionsDesc
+        sortBy sortAxis: CrossAnalysisSortAxis = .sessionsDesc,
+        machinesByName: [String: Machine]? = nil
     ) -> [ShopMachineCrossRow] {
         let sep = "\u{001F}"
         let grouped = Dictionary(grouping: sessions) { s -> String in
@@ -410,7 +417,7 @@ enum AnalyticsEngine {
             guard parts.count == 2 else { return nil }
             let shop = parts[0]
             let machine = parts[1]
-            let g = aggregate(label: "\(shop) × \(machine)", sessions: list)
+            let g = aggregate(label: "\(shop) × \(machine)", sessions: list, machinesByName: machinesByName)
             return ShopMachineCrossRow(
                 id: compoundKey,
                 shop: shop,
@@ -457,11 +464,28 @@ enum AnalyticsEngine {
         }
     }
 
-    private static func aggregate(label: String, sessions: [GameSession]) -> AnalyticsGroup {
-        aggregateGroup(id: label, label: label, sessions: sessions)
+    /// スナップショット件数・マスタ差分件数（集計グループ用）
+    private static func specHistogram(sessions: [GameSession], machinesByName: [String: Machine]?) -> (snap: Int, drift: Int) {
+        let snap = sessions.filter { $0.snapshotData != nil }.count
+        guard let map = machinesByName, !map.isEmpty else { return (snap, 0) }
+        let drift = sessions.filter { s in
+            guard s.snapshotData != nil else { return false }
+            let k = s.machineName.trimmingCharacters(in: .whitespacesAndNewlines)
+            return s.detailedAnalyticsMetrics(currentMachine: map[k]).isSpecChanged
+        }.count
+        return (snap, drift)
     }
 
-    private static func aggregateGroup(id: String, label: String, sessions: [GameSession]) -> AnalyticsGroup {
+    private static func aggregate(label: String, sessions: [GameSession], machinesByName: [String: Machine]? = nil) -> AnalyticsGroup {
+        aggregateGroup(id: label, label: label, sessions: sessions, machinesByName: machinesByName)
+    }
+
+    private static func aggregateGroup(
+        id: String,
+        label: String,
+        sessions: [GameSession],
+        machinesByName: [String: Machine]? = nil
+    ) -> AnalyticsGroup {
         let count = sessions.count
         var sumRate: Double = 0
         let rotationEligible = sessions.filter(\.participatesInRotationRateAnalytics)
@@ -477,10 +501,10 @@ enum AnalyticsEngine {
         var sumRatio: Double = 0
         var ratioCount = 0
         for s in sessions {
-            sumTheoretical += s.theoreticalValue
+            sumTheoretical += s.analyticsTheoreticalValuePt
             sumProfit += s.performance
             if s.participatesInExpectationRatioAggregate {
-                sumRatio += s.expectationRatioAtSave
+                sumRatio += s.analyticsExpectationRatio
                 ratioCount += 1
             }
         }
@@ -489,6 +513,7 @@ enum AnalyticsEngine {
         let totalDS = sessions.reduce(0) { $0 + $1.deficitSurplus }
         let totalInv = sessions.reduce(0) { $0 + Int(round($1.totalRealCost)) }
         let avgBorderDiff = weightedAverageBorderDiffPer1k(sessions: sessions)
+        let specHist = specHistogram(sessions: sessions, machinesByName: machinesByName)
         return AnalyticsGroup(
             id: id,
             label: label,
@@ -499,7 +524,9 @@ enum AnalyticsEngine {
             totalDeficitSurplus: totalDS,
             totalInvestment: totalInv,
             avgExpectationRatio: avgRatio,
-            avgBorderDiffPer1k: avgBorderDiff
+            avgBorderDiffPer1k: avgBorderDiff,
+            snapshotBackedSessionCount: specHist.snap,
+            masterSpecDriftSessionCount: specHist.drift
         )
     }
 
@@ -584,7 +611,7 @@ enum AnalyticsEngine {
                 labels.append(spansMultipleYears ? "\(y)/\(m)" : "\(m)月")
                 let list = sessions.filter { calendar.isDate($0.date, equalTo: monthStart, toGranularity: .month) }
                 periodProfit.append(list.reduce(0) { $0 + $1.performance })
-                periodTheoretical.append(list.reduce(0) { $0 + $1.theoreticalValue })
+                periodTheoretical.append(list.reduce(0) { $0 + $1.analyticsTheoreticalValuePt })
             }
         case .twelveWeeks:
             let anchor = weekIntervalStart(for: ref)
@@ -596,7 +623,7 @@ enum AnalyticsEngine {
                 labels.append(weekAxisLabelFormatter.string(from: interval.start) + "〜")
                 let list = sessions.filter { $0.date >= interval.start && $0.date < interval.end }
                 periodProfit.append(list.reduce(0) { $0 + $1.performance })
-                periodTheoretical.append(list.reduce(0) { $0 + $1.theoreticalValue })
+                periodTheoretical.append(list.reduce(0) { $0 + $1.analyticsTheoreticalValuePt })
             }
         case .thirtyDays:
             for i in 0..<30 {
@@ -605,7 +632,7 @@ enum AnalyticsEngine {
                 labels.append(dayInMonthFormatter.string(from: dayStart))
                 let list = sessions.filter { calendar.isDate($0.date, inSameDayAs: dayStart) }
                 periodProfit.append(list.reduce(0) { $0 + $1.performance })
-                periodTheoretical.append(list.reduce(0) { $0 + $1.theoreticalValue })
+                periodTheoretical.append(list.reduce(0) { $0 + $1.analyticsTheoreticalValuePt })
             }
         }
 
@@ -631,7 +658,11 @@ enum AnalyticsEngine {
     }
 
     /// 機種タイプ別集計（ST vs 確変）。machineTypeByMachineName: 機種名 → "st" or "kakugen"（Machine.machineTypeRaw）
-    static func byMachineType(_ sessions: [GameSession], machineTypeByMachineName: [String: String]) -> [AnalyticsGroup] {
+    static func byMachineType(
+        _ sessions: [GameSession],
+        machineTypeByMachineName: [String: String],
+        machinesByName: [String: Machine]? = nil
+    ) -> [AnalyticsGroup] {
         let grouped = Dictionary(grouping: sessions) { session in
             let name = session.machineName.isEmpty ? "未設定" : session.machineName
             return machineTypeByMachineName[name] ?? "kakugen"
@@ -639,7 +670,7 @@ enum AnalyticsEngine {
         let order: [(String, String)] = [("st", "ST"), ("kakugen", "確変")]
         return order.compactMap { raw, label in
             guard let list = grouped[raw], !list.isEmpty else { return nil }
-            return aggregate(label: label, sessions: list)
+            return aggregate(label: label, sessions: list, machinesByName: machinesByName)
         }
     }
 }
@@ -689,6 +720,10 @@ struct AnalyticsOverviewTotalSummary {
     let avgPerformancePerSession: Double?
     let totalPlayMinutes: Int?
     let hourlyWagePt: Double?
+    /// 期間内で `snapshotData` があるセッション件数
+    let snapshotBackedSessionCount: Int
+    /// スナップショットと現在マスタのスペックが異なるセッション件数
+    let masterSpecDriftSessionCount: Int
 
     static func compute(sessions: [GameSession], machinesByName: [String: Machine]) -> AnalyticsOverviewTotalSummary {
         let cal = Calendar.current
@@ -709,8 +744,17 @@ struct AnalyticsOverviewTotalSummary {
         var denomCount = 0
         for s in sessions {
             let key = s.machineName.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let m = machinesByName[key], m.probabilityDenominator > 0 else { continue }
-            denomSum += m.probabilityDenominator
+            let denom: Double
+            if let snap = s.decodedGameSessionSnapshot {
+                let d = SessionSpecAnalytics.probabilityDenominator(fromProbabilityString: snap.spec.probability)
+                guard d > 0 else { continue }
+                denom = d
+            } else if let m = machinesByName[key], m.probabilityDenominator > 0 {
+                denom = m.probabilityDenominator
+            } else {
+                continue
+            }
+            denomSum += denom
             denomCount += 1
         }
         let avgFirstHitProbabilityText: String? = {
@@ -720,8 +764,14 @@ struct AnalyticsOverviewTotalSummary {
             return "1/\(avgDenom.displayFormat("%.1f"))"
         }()
 
-        let totalTheoretical = sessions.reduce(0) { $0 + $1.theoreticalValue }
+        let totalTheoretical = sessions.reduce(0) { $0 + $1.analyticsTheoreticalValuePt }
         let totalExpectationDiff = sessions.reduce(0) { $0 + $1.deficitSurplus }
+        let snapshotBackedSessionCount = sessions.filter { $0.snapshotData != nil }.count
+        let masterSpecDriftSessionCount = sessions.filter { s in
+            guard s.snapshotData != nil else { return false }
+            let k = s.machineName.trimmingCharacters(in: .whitespacesAndNewlines)
+            return s.detailedAnalyticsMetrics(currentMachine: machinesByName[k]).isSpecChanged
+        }.count
 
         let rotList = sessions.filter(\.participatesInRotationRateAnalytics)
         let totalRotations = rotList.reduce(0) { $0 + $1.normalRotations }
@@ -782,7 +832,9 @@ struct AnalyticsOverviewTotalSummary {
             maxDailyPerformance: maxDailyPerformance,
             avgPerformancePerSession: avgPerformancePerSession,
             totalPlayMinutes: totalPlayMinutes,
-            hourlyWagePt: hourlyWagePt
+            hourlyWagePt: hourlyWagePt,
+            snapshotBackedSessionCount: snapshotBackedSessionCount,
+            masterSpecDriftSessionCount: masterSpecDriftSessionCount
         )
     }
 }

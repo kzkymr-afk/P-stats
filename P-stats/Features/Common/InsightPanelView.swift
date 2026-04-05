@@ -49,13 +49,13 @@ struct InsightPanelView: View {
             // ヘッダー: 閉じる（左スワイプでも閉じる）
             HStack {
                 Text("インサイト")
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .tracking(0.5)
                     .foregroundColor(insightAccent.opacity(0.9))
                 Spacer()
                 Button(action: { onClose() }) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
+                        .font(.system(size: 22, weight: .regular, design: .rounded))
                         .foregroundColor(insightAccent.opacity(0.7))
                 }
             }
@@ -72,14 +72,14 @@ struct InsightPanelView: View {
                             Image(systemName: "gearshape.fill")
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("設定")
-                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .font(.system(size: 15, weight: .medium, design: .monospaced))
                                 Text("機種・店舗・テーマなどのアプリ設定")
-                                    .font(.system(size: 10, weight: .regular))
+                                    .font(.system(size: 12, weight: .regular))
                                     .foregroundColor(insightAccent.opacity(0.6))
                             }
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .font(AppTypography.annotationSmall)
+                                .font(.system(size: 14, weight: .regular, design: .rounded))
                                 .foregroundColor(insightAccent.opacity(0.6))
                         }
                         .foregroundColor(insightAccent)
@@ -97,14 +97,14 @@ struct InsightPanelView: View {
                             Image(systemName: "square.and.arrow.up")
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("SNSで共有")
-                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .font(.system(size: 15, weight: .medium, design: .monospaced))
                                 Text("今の戦果を画像にして共有（途中でもOK）")
-                                    .font(.system(size: 10, weight: .regular))
+                                    .font(.system(size: 12, weight: .regular))
                                     .foregroundColor(insightAccent.opacity(0.6))
                             }
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .font(AppTypography.annotationSmall)
+                                .font(.system(size: 14, weight: .regular, design: .rounded))
                                 .foregroundColor(insightAccent.opacity(0.6))
                         }
                         .foregroundColor(insightAccent)
@@ -126,14 +126,14 @@ struct InsightPanelView: View {
                                     Image(systemName: "calendar")
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("実戦履歴")
-                                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                            .font(.system(size: 15, weight: .medium, design: .monospaced))
                                         Text("日付ごとの実戦一覧・保存した記録")
-                                            .font(.system(size: 10, weight: .regular))
+                                            .font(.system(size: 12, weight: .regular))
                                             .foregroundColor(insightAccent.opacity(0.6))
                                     }
                                     Spacer()
                                     Image(systemName: "chevron.right")
-                                        .font(AppTypography.annotationSmall)
+                                        .font(.system(size: 14, weight: .regular, design: .rounded))
                                         .foregroundColor(insightAccent.opacity(0.6))
                                 }
                                 .foregroundColor(insightAccent)
@@ -148,14 +148,14 @@ struct InsightPanelView: View {
                                     Image(systemName: "list.bullet")
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("当選・投資履歴")
-                                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                            .font(.system(size: 15, weight: .medium, design: .monospaced))
                                         Text("今回の当選・投資の時系列")
-                                            .font(.system(size: 10, weight: .regular))
+                                            .font(.system(size: 12, weight: .regular))
                                             .foregroundColor(insightAccent.opacity(0.6))
                                     }
                                     Spacer()
                                     Image(systemName: "chevron.right")
-                                        .font(AppTypography.annotationSmall)
+                                        .font(.system(size: 14, weight: .regular, design: .rounded))
                                         .foregroundColor(insightAccent.opacity(0.6))
                                 }
                                 .foregroundColor(insightAccent)
@@ -170,14 +170,14 @@ struct InsightPanelView: View {
                                     Image(systemName: "chart.bar")
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text("データ分析")
-                                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                            .font(.system(size: 15, weight: .medium, design: .monospaced))
                                         Text("収支・回転率・稼働ヒートマップなど")
-                                            .font(.system(size: 10, weight: .regular))
+                                            .font(.system(size: 12, weight: .regular))
                                             .foregroundColor(insightAccent.opacity(0.6))
                                     }
                                     Spacer()
                                     Image(systemName: "chevron.right")
-                                        .font(AppTypography.annotationSmall)
+                                        .font(.system(size: 14, weight: .regular, design: .rounded))
                                         .foregroundColor(insightAccent.opacity(0.6))
                                 }
                                 .foregroundColor(insightAccent)
@@ -199,19 +199,19 @@ struct InsightPanelView: View {
                     // 上段：実際の成績（投入に対する回収）
                     VStack(alignment: .leading, spacing: 2) {
                         Text("実際の成績")
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .foregroundColor(insightAccent.opacity(0.75))
                         Text(log.balancePt >= 0 ? "+\(log.balancePt.formattedPtWithUnit)" : "\(log.balancePt.formattedPtWithUnit)")
                             .font(.system(size: 20, weight: .bold, design: .monospaced))
                             .foregroundColor(log.balancePt >= 0 ? insightAccent : themeManager.currentTheme.cautionForegroundColor.opacity(0.95))
-                        Text("回収−投入（回収＝出玉×払出係数・500pt刻み端数切捨て）")
-                            .font(.system(size: 9, weight: .regular, design: .rounded))
+                        Text("回収−投入（回収＝出玉×交換率(pt/玉)・500pt刻み端数切捨て）")
+                            .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundColor(insightAccent.opacity(0.5))
                     }
                     // 下段：期待値収支（期待される損益）
                     VStack(alignment: .leading, spacing: 2) {
                         Text("期待値収支（期待される損益）")
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .foregroundColor(insightAccent.opacity(0.75))
                         if log.effectiveUnitsForBorder > 0 && log.dynamicBorder > 0 {
                             let pt = theoreticalExpectationPt
@@ -224,7 +224,7 @@ struct InsightPanelView: View {
                                 .foregroundColor(insightAccent.opacity(0.6))
                         }
                         Text("実費×（期待値比−1）。実費＝投入＋持ち玉投入のpt換算")
-                            .font(.system(size: 9, weight: .regular, design: .rounded))
+                            .font(.system(size: 11, weight: .regular, design: .rounded))
                             .foregroundColor(insightAccent.opacity(0.5))
                     }
                 }
@@ -243,14 +243,14 @@ struct InsightPanelView: View {
                         }
                         Spacer()
                         Text("\(log.normalRotations)")
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .font(.system(size: 15, weight: .medium, design: .monospaced))
                             .foregroundColor(insightAccent.opacity(0.95))
                     }
                     HStack {
                         labelText("投資額")
                         Spacer()
                         Text(log.totalInput.formattedPtWithUnit)
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .font(.system(size: 15, weight: .medium, design: .monospaced))
                             .foregroundColor(insightAccent.opacity(0.95))
                     }
                     HStack {
@@ -260,7 +260,7 @@ struct InsightPanelView: View {
                         }
                         Spacer()
                         Text("\(log.holdingsInvestedBalls) 玉")
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .font(.system(size: 15, weight: .medium, design: .monospaced))
                             .foregroundColor(insightAccent.opacity(0.95))
                     }
                     if log.dynamicBorder > 0 {
@@ -271,17 +271,17 @@ struct InsightPanelView: View {
                             }
                             Spacer()
                             Text("\(log.tapDerivedBallsConsumed) 玉")
-                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .font(.system(size: 15, weight: .medium, design: .monospaced))
                                 .foregroundColor(insightAccent.opacity(0.95))
                         }
                         HStack {
                             HStack(spacing: 4) {
                                 labelText("現金由来（C）")
-                                InfoIconView(explanation: "現金投資を店の貸玉料金で換算した玉数。", tint: insightAccent.opacity(0.7))
+                                InfoIconView(explanation: "現金投資を店の貸玉数（500ptあたり）で換算した玉数。", tint: insightAccent.opacity(0.7))
                             }
                             Spacer()
                             Text("\(log.cashOriginBallsConsumed) 玉")
-                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .font(.system(size: 15, weight: .medium, design: .monospaced))
                                 .foregroundColor(insightAccent.opacity(0.95))
                         }
                         HStack {
@@ -291,7 +291,7 @@ struct InsightPanelView: View {
                             }
                             Spacer()
                             Text("\(log.holdingsOriginBallsFromIdentity) 玉")
-                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .font(.system(size: 15, weight: .medium, design: .monospaced))
                                 .foregroundColor(insightAccent.opacity(0.95))
                         }
                         HStack {
@@ -302,11 +302,11 @@ struct InsightPanelView: View {
                             Spacer()
                             if let r = log.holdingsUsageRatio, r.isValidForNumericDisplay {
                                 Text((r * 100).displayFormat("%.1f%%"))
-                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .font(.system(size: 15, weight: .medium, design: .monospaced))
                                     .foregroundColor(insightAccent.opacity(0.95))
                             } else {
                                 Text("—")
-                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .font(.system(size: 15, weight: .medium, design: .monospaced))
                                     .foregroundColor(insightAccent.opacity(0.6))
                             }
                         }
@@ -314,21 +314,21 @@ struct InsightPanelView: View {
                     HStack {
                         HStack(spacing: 4) {
                             labelText("実費換算")
-                            InfoIconView(explanation: "現金＋持ち玉を払出係数でpt換算した合計（回転率・期待値の実費ベース）。", tint: insightAccent.opacity(0.7))
+                            InfoIconView(explanation: "現金＋持ち玉を交換率（pt/玉）でpt換算した合計（回転率・期待値の実費ベース）。", tint: insightAccent.opacity(0.7))
                         }
                         Spacer()
                         Text(log.totalRealCost.displayFormat("%.0f pt"))
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .font(.system(size: 15, weight: .medium, design: .monospaced))
                             .foregroundColor(insightAccent.opacity(0.95))
                     }
                     HStack {
                         HStack(spacing: 4) {
                             labelText("換算単位")
-                            InfoIconView(explanation: "回転率の分母。1単位＝等価250玉。現金は500ptごとの貸玉で玉に換算し持ち玉投資を足して250で割ります。", tint: insightAccent.opacity(0.7))
+                            InfoIconView(explanation: "回転率の分母。1単位＝等価250玉。現金は500ptごとの貸玉数で玉に換算し持ち玉投資を足して250で割ります。", tint: insightAccent.opacity(0.7))
                         }
                         Spacer()
                         Text(log.effectiveUnitsForBorder.displayFormat("%.2f 単位"))
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .font(.system(size: 15, weight: .medium, design: .monospaced))
                             .foregroundColor(insightAccent.opacity(0.95))
                     }
                     HStack {
@@ -338,17 +338,17 @@ struct InsightPanelView: View {
                         }
                         Spacer()
                         Text(log.formulaBorderValue > 0 ? log.formulaBorderValue.displayFormat("%.1f 回/1k") : "—")
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .font(.system(size: 15, weight: .medium, design: .monospaced))
                             .foregroundColor(insightAccent.opacity(0.95))
                     }
                     HStack {
                         HStack(spacing: 4) {
                             labelText("実質ボーダー")
-                            InfoIconView(explanation: "店の貸玉料金・払出係数で補正したボーダー（回/1000pt）。", tint: insightAccent.opacity(0.7))
+                            InfoIconView(explanation: "店の貸玉数（500ptあたり）・交換率（pt/玉）で補正したボーダー（回/1000pt）。", tint: insightAccent.opacity(0.7))
                         }
                         Spacer()
                         Text(log.dynamicBorder > 0 ? log.dynamicBorder.displayFormat("%.1f 回/1k") : "—")
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .font(.system(size: 15, weight: .medium, design: .monospaced))
                             .foregroundColor(insightAccent.opacity(0.95))
                     }
                     HStack {
@@ -358,7 +358,7 @@ struct InsightPanelView: View {
                         }
                         Spacer()
                         Text((log.expectationRatio * 100).displayFormat("%.2f%%"))
-                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                            .font(.system(size: 15, weight: .medium, design: .monospaced))
                             .foregroundColor(insightAccent.opacity(0.95))
                     }
                     if log.totalRealCost > 0 && log.dynamicBorder > 0 {
@@ -367,11 +367,11 @@ struct InsightPanelView: View {
                             Spacer()
                             if spinsToBreakEven == 0 {
                                 Text("ボーダー到達")
-                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .font(.system(size: 15, weight: .medium, design: .monospaced))
                                     .foregroundColor(insightAccent)
                             } else {
                                 Text("あと \(spinsToBreakEven) 回")
-                                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                    .font(.system(size: 15, weight: .medium, design: .monospaced))
                                     .foregroundColor(insightAccent.opacity(0.95))
                             }
                         }
@@ -386,7 +386,7 @@ struct InsightPanelView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     panelTitle("修正")
                     Text("入力ミスや記録漏れをあとから直せます")
-                        .font(.system(size: 10, weight: .regular))
+                        .font(.system(size: 12, weight: .regular))
                         .foregroundColor(insightAccent.opacity(0.6))
                         .padding(.horizontal, 10)
                         .padding(.bottom, 2)
@@ -395,15 +395,15 @@ struct InsightPanelView: View {
                             HStack(alignment: .center) {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("開始ゲーム数を修正")
-                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                        .font(.system(size: 15, weight: .medium, design: .monospaced))
                                     Text("遊技開始時の表示回転数")
-                                        .font(.system(size: 10, weight: .regular))
+                                        .font(.system(size: 12, weight: .regular))
                                         .foregroundColor(insightAccent.opacity(0.6))
                                 }
                                 .foregroundColor(insightAccent)
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(AppTypography.annotationSmall)
+                                    .font(.system(size: 14, weight: .regular, design: .rounded))
                                     .foregroundColor(insightAccent.opacity(0.6))
                             }
                             .padding(.vertical, 6)
@@ -416,15 +416,15 @@ struct InsightPanelView: View {
                             HStack(alignment: .center) {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("投資を修正")
-                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                        .font(.system(size: 15, weight: .medium, design: .monospaced))
                                     Text("総投資（pt・現金の合計）")
-                                        .font(.system(size: 10, weight: .regular))
+                                        .font(.system(size: 12, weight: .regular))
                                         .foregroundColor(insightAccent.opacity(0.6))
                                 }
                                 .foregroundColor(insightAccent)
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(AppTypography.annotationSmall)
+                                    .font(.system(size: 14, weight: .regular, design: .rounded))
                                     .foregroundColor(insightAccent.opacity(0.6))
                             }
                             .padding(.vertical, 6)
@@ -436,16 +436,16 @@ struct InsightPanelView: View {
                         Button(action: onCorrectHoldings) {
                             HStack(alignment: .center) {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("持ち玉投資を修正")
-                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                    Text("使った持ち玉の玉数")
-                                        .font(.system(size: 10, weight: .regular))
+                                    Text("現在の持ち玉数に合わせる")
+                                        .font(.system(size: 15, weight: .medium, design: .monospaced))
+                                    Text("台の残り持ち玉を入力（アプリとの差を投資に反映）")
+                                        .font(.system(size: 12, weight: .regular))
                                         .foregroundColor(insightAccent.opacity(0.6))
                                 }
                                 .foregroundColor(insightAccent)
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(AppTypography.annotationSmall)
+                                    .font(.system(size: 14, weight: .regular, design: .rounded))
                                     .foregroundColor(insightAccent.opacity(0.6))
                             }
                             .padding(.vertical, 6)
@@ -457,16 +457,16 @@ struct InsightPanelView: View {
                         Button(action: onCorrectWinCount) {
                             HStack(alignment: .center) {
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("当選回数を修正")
-                                        .font(.system(size: 13, weight: .medium, design: .monospaced))
-                                    Text("棒グラフの棒をタップして1区間ずつ直すか、ここで RUSH・通常の合計を修正")
-                                        .font(.system(size: 10, weight: .regular))
+                                    Text("大当たり区間を修正")
+                                        .font(.system(size: 15, weight: .medium, design: .monospaced))
+                                    Text("今回の遊技の区間を選び、当たり回数（1＝通常・2 以上＝RUSH）と総獲得出玉を入力")
+                                        .font(.system(size: 12, weight: .regular))
                                         .foregroundColor(insightAccent.opacity(0.6))
                                 }
                                 .foregroundColor(insightAccent)
                                 Spacer()
                                 Image(systemName: "chevron.right")
-                                    .font(AppTypography.annotationSmall)
+                                    .font(.system(size: 14, weight: .regular, design: .rounded))
                                     .foregroundColor(insightAccent.opacity(0.6))
                             }
                             .padding(.vertical, 6)
@@ -490,14 +490,14 @@ struct InsightPanelView: View {
                                     Image(systemName: isRightHandMode ? "hand.point.right.fill" : "hand.point.left.fill")
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(isRightHandMode ? "右手操作" : "左手操作（現在）")
-                                            .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                            .font(.system(size: 15, weight: .medium, design: .monospaced))
                                         Text("ボタン配置の左右反転")
-                                            .font(.system(size: 10, weight: .regular))
+                                            .font(.system(size: 12, weight: .regular))
                                             .foregroundColor(insightAccent.opacity(0.6))
                                     }
                                     Spacer()
                                     Text("タップで切り替え")
-                                        .font(.system(size: 10, weight: .regular, design: .monospaced))
+                                        .font(.system(size: 12, weight: .regular, design: .monospaced))
                                         .foregroundColor(insightAccent.opacity(0.6))
                                 }
                                 .foregroundColor(insightAccent)
@@ -539,7 +539,7 @@ struct InsightPanelView: View {
 
     private func labelText(_ s: String) -> some View {
         Text(s)
-            .font(.system(size: 12, weight: .medium, design: .monospaced))
+            .font(.system(size: 14, weight: .medium, design: .monospaced))
             .foregroundColor(insightAccent.opacity(0.6))
     }
 }

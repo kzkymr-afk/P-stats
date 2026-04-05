@@ -10,8 +10,21 @@ import CloudKit
 // entryRate(Double), continuationRate(Double), countPerRound(Int), netPerRoundBase(Double),
 // prizeEntriesJSON(String), sharedAt(Date/Time) を追加する。
 
+// MARK: - Public Database 境界（共有マスタ専用）
+
+/// **CloudKit Public Database へのアクセスはこの型経由に限定する。**
+/// `privateCloudDatabase` はここでは使用しない（個人の実戦データは `UserSessionSyncService`）。
+private enum SharedMachinePublicCloudDatabaseGateway {
+    static var database: CKDatabase {
+        CKContainer.default().publicCloudDatabase
+    }
+}
+
 /// CloudKit Public Database に保存される「ユーザー共有機種」1件。
 /// 検索結果で PresetFromServer と同様に扱い、マイリスト追加時に Machine に変換する。
+///
+/// - Important: 実戦の店舗名・収支・メモ等の個人データはこの型では扱わない。
+///   誤って Public に送らないよう、ペイロードは機種スペックのみとする。
 struct SharedMachineFromCloud: Identifiable {
     let id: String
     var name: String
@@ -70,10 +83,14 @@ private let keyNetPerRoundBase = "netPerRoundBase"
 private let keyPrizeEntriesJSON = "prizeEntriesJSON"
 private let keySharedAt = "sharedAt"
 
+/// みんなで共有する**機種マスタ**の CloudKit 経路。`publicCloudDatabase` のみ使用。
+///
+/// - Warning: `GameSession`・`GameLog`・店舗の実名・収支は **絶対に** このサービスから送らないこと。
 enum SharedMachineCloudKitService {
 
-    private static var publicDB: CKDatabase {
-        CKContainer.default().publicCloudDatabase
+    /// Public DB のみ（`privateCloudDatabase` への参照は持たない）
+    private static var publicDatabase: CKDatabase {
+        SharedMachinePublicCloudDatabaseGateway.database
     }
 
     /// 機種データを CloudKit Public Database に保存する。失敗時は throw（呼び出し元でログのみでも可）
@@ -117,7 +134,7 @@ enum SharedMachineCloudKitService {
             record[keyPrizeEntriesJSON] = jsonString
         }
 
-        _ = try await publicDB.save(record)
+        _ = try await publicDatabase.save(record)
     }
 
     /// CloudKit からユーザー共有機種を取得。searchText が空でなければ name / manufacturer で CONTAINS 検索（大文字小文字無視はアプリ側でフィルタ）。
@@ -132,7 +149,7 @@ enum SharedMachineCloudKitService {
         query.sortDescriptors = [NSSortDescriptor(key: keySharedAt, ascending: false)]
 
         do {
-            let (results, _) = try await publicDB.records(matching: query, resultsLimit: 100)
+            let (results, _) = try await publicDatabase.records(matching: query, resultsLimit: 100)
             return results.compactMap { _, result -> SharedMachineFromCloud? in
                 guard case .success(let record) = result else { return nil }
                 return parseRecord(record)
@@ -176,4 +193,3 @@ enum SharedMachineCloudKitService {
         )
     }
 }
-

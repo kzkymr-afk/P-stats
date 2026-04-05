@@ -40,6 +40,13 @@ struct MainContentWithContainer: View {
             }
         }
         .environment(\.modelContext, container.mainContext)
+        .environment(
+            \.gameSessionRepository,
+            SwiftDataGameSessionRepository(
+                context: container.mainContext,
+                sessionUploadQueue: UserSessionSyncService.shared
+            ) as any GameSessionRepository
+        )
         .animation(.easeInOut(duration: 0.25), value: showLockScreen)
         .onChange(of: scenePhase) { oldPhase, newPhase in
             if newPhase == .background, appLock.lockEnabled {

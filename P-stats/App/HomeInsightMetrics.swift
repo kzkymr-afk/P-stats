@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 /// ホーム統合パネル用の集計（`GameSession`）
 enum HomeInsightMetrics {
@@ -30,7 +31,7 @@ enum HomeInsightMetrics {
     }
 
     static func periodTheoreticalSum(in period: EarningsPeriod, sessions: [GameSession]) -> Int {
-        Self.sessions(in: period, from: sessions).reduce(0) { $0 + $1.theoreticalValue }
+        Self.sessions(in: period, from: sessions).reduce(0) { $0 + $1.analyticsTheoreticalValuePt }
     }
 
     /// 初当たりまでの平均実質投資（pt）。記録があるセッションのみ平均。
@@ -94,8 +95,8 @@ enum HomeInsightMetrics {
     }
 
     /// 直近N日・期待値に対する余剰が大きい機種上位3（同一機種は集計済み想定で `AnalyticsEngine` を利用）
-    static func affinityTop3(sessionsInWindow: [GameSession]) -> [(name: String, deficitSurplus: Int)] {
-        let groups = AnalyticsEngine.byMachine(sessionsInWindow)
+    static func affinityTop3(sessionsInWindow: [GameSession], machinesByName: [String: Machine]? = nil) -> [(name: String, deficitSurplus: Int)] {
+        let groups = AnalyticsEngine.byMachine(sessionsInWindow, machinesByName: machinesByName)
         let ranked = groups.filter { $0.sessionCount > 0 }
             .sorted {
                 if $0.totalDeficitSurplus != $1.totalDeficitSurplus {

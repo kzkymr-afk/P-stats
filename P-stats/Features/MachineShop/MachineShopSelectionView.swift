@@ -37,7 +37,7 @@ struct MachineShopSelectionView: View {
     @State private var holdingsFieldFocusTrigger = 0
     /// 新規開始時：貯玉で開始する場合の持ち玉数（ゲート時のみ使用）
     @State private var initialHoldingsText = ""
-    @AppStorage("initialHoldingsGatePolicy") private var initialHoldingsGatePolicyRaw: String = InitialHoldingsGatePolicy.manual.rawValue
+    @AppStorage(UserDefaultsKey.initialHoldingsGatePolicy.rawValue) private var initialHoldingsGatePolicyRaw: String = InitialHoldingsGatePolicy.manual.rawValue
 
     /// 選択中の機種が登録一覧に含まれるか
     private var isSelectedMachineValid: Bool {
@@ -203,16 +203,30 @@ struct MachineShopSelectionView: View {
         .onChange(of: log.selectedShop.persistentModelID) { _, _ in
             applyInitialHoldingsForGate()
         }
+        .onChange(of: log.selectedShop.supportsChodamaService) { _, _ in
+            applyInitialHoldingsForGate()
+        }
+        .onChange(of: log.selectedShop.chodamaBalanceBalls) { _, _ in
+            applyInitialHoldingsForGate()
+        }
+        .onChange(of: initialHoldingsGatePolicyRaw) { _, _ in
+            applyInitialHoldingsForGate()
+        }
     }
 
-    /// 設定に従い、開始時の持ち玉欄を埋める（店舗変更時も再適用）
+    /// 開始時の持ち玉欄を埋める。貯玉対応店では **常に** 店の貯玉残高（0 含む）を反映。それ以外は設定の `InitialHoldingsGatePolicy` に従う。
     private func applyInitialHoldingsForGate() {
         InitialHoldingsGatePolicy.migrateFromLegacyIfNeeded()
+        let shop = log.selectedShop
+        if shop.supportsChodamaService {
+            initialHoldingsText = "\(max(0, shop.chodamaBalanceBalls))"
+            return
+        }
         guard let policy = InitialHoldingsGatePolicy(rawValue: initialHoldingsGatePolicyRaw) else {
             initialHoldingsText = ""
             return
         }
-        initialHoldingsText = policy.initialText(for: log.selectedShop)
+        initialHoldingsText = policy.initialText(for: shop)
     }
 
     private func gateMachineSection(height: CGFloat) -> some View {
@@ -412,7 +426,7 @@ struct MachineShopSelectionView: View {
                 nextNavEnabled: false
             )
             .frame(width: 88, alignment: .trailing)
-            InfoIconView(explanation: "この実戦で手元に持ち込む玉数です。設定で「空欄」「常に0」「店の貯玉残高に合わせる」から選べます。貯玉サービスを使わない日は手入力か0にするとよいです。", tint: accent.opacity(0.6))
+            InfoIconView(explanation: "この実戦の開始時点の持ち玉です。遊技中は持ち玉投資で減り、大当たりの出玉で増えます。店舗で貯玉サービスをオンにしている店を選ぶと、記録されている貯玉残高が自動で入ります（必要なら編集できます）。貯玉を使わない店では、設定の「新規遊技開始時の持ち玉の初期表示」に従います。", tint: accent.opacity(0.6))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -708,8 +722,8 @@ struct MachineShopSelectionView: View {
             }
             .onAppear {
                 if gateMode, !savedMachines.isEmpty || !savedShops.isEmpty {
-                    let defaultMachineName = UserDefaults.standard.string(forKey: "defaultMachineName")
-                    let defaultShopName = UserDefaults.standard.string(forKey: "defaultShopName")
+                    let defaultMachineName = UserDefaults.standard.string(for: .defaultMachineName)
+                    let defaultShopName = UserDefaults.standard.string(for: .defaultShopName)
                     if !savedMachines.isEmpty {
                         if let name = defaultMachineName, !name.isEmpty, let m = savedMachines.first(where: { $0.name == name }) {
                             log.selectedMachine = m
@@ -1010,8 +1024,8 @@ struct ShopEditView: View {
     @State private var address: String = ""
     @State private var placeID: String?
     @State private var ballsPerCashUnitStr: String = "125"
-    /// 0 または空で「貸玉と同じ」
-    @State private var holdingsBallsPerButtonStr: String = ""
+    /// 空欄保存時は貸玉と同じ（DB 上 0）。画面では貸玉と同じ数を初期表示する。
+    @State private var holdingsBallsPerButtonStr: String = "125"
     @State private var exchangeRatePreset: ExchangeRatePreset = .rate25
     @State private var customBallsPer100YenStr: String = ""
     @State private var customYenPerBallStr: String = ""
@@ -1043,6 +1057,23 @@ struct ShopEditView: View {
         guard let v = Double(customYenPerBallStr.trimmingCharacters(in: .whitespaces)), v > 0 else { return nil }
         return 100.0 / v
     }
+
+    /// 貸玉（500pt あたり）から「4円（250玉／1k）」形式の補助表示。1k＝1000pt あたりの払い出し玉数、円/玉＝1000÷その玉数。
+    private var lendingRateSupplementaryLine: String? {
+        let trimmed = ballsPerCashUnitStr.trimmingCharacters(in: .whitespaces)
+        guard let ballsPer500 = Int(trimmed), ballsPer500 > 0 else { return nil }
+        let ballsPer1k = ballsPer500 * 2
+        let yenPerBall = 1000.0 / Double(ballsPer1k)
+        guard yenPerBall.isValidForNumericDisplay else { return nil }
+        let yenPart: String
+        if abs(yenPerBall - yenPerBall.rounded()) < 0.000_001 {
+            yenPart = "\(Int(yenPerBall.rounded()))円"
+        } else {
+            yenPart = "\(yenPerBall.displayFormat("%.2f"))円"
+        }
+        return "\(yenPart)（\(ballsPer1k)玉／1k）"
+    }
+
     /// 保存用の交換率（円/玉）。プリセットまたはその他入力から算出。
     private var effectiveExchangeRate: Double? {
         if exchangeRatePreset != .other, let rate = exchangeRatePreset.yenPerBall { return rate }
@@ -1151,149 +1182,160 @@ struct ShopEditView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .bottom) {
-                AppGlassStyle.background.ignoresSafeArea()
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        shopEditPanel(title: "店舗選択", trailing: { InfoIconView(explanation: "店名・チェーン名で検索するか、このパネル内の「現在地周辺から探す」で近くのホールを表示します。候補をタップすると店舗名と住所が自動で入ります。", tint: t.subTextColor.opacity(0.72)) }) {
-                            if !placeSearchService.isApiKeyConfigured {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .foregroundColor(.orange.opacity(0.9))
-                                    Text("Google Places APIキーが未設定です。Info.plist の GooglePlacesAPIKey にキーを設定すると実際の店舗検索が利用できます。")
-                                        .font(AppTypography.annotation)
-                                        .foregroundColor(t.subTextColor.opacity(0.92))
-                                }
-                            }
-                            // 検索欄と現在地周辺ボタンを同一パネル内にまとめる
-                            VStack(alignment: .leading, spacing: 10) {
-                                TextField("店名・チェーン名で検索", text: $name)
-                                    .textContentType(.none)
-                                    .foregroundColor(t.mainTextColor)
-                                    .onChange(of: name) { _, newValue in
-                                        placeSearchService.searchText = newValue
-                                    }
-                                if placeSearchService.isLocationDenied {
-                                    HStack(alignment: .top, spacing: 8) {
-                                        Image(systemName: "location.slash")
+            VStack(spacing: 0) {
+                ZStack {
+                    AppGlassStyle.background.ignoresSafeArea()
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 16) {
+                            shopEditPanel(title: "店舗選択", trailing: { InfoIconView(explanation: "店名・チェーン名で検索するか、このパネル内の「現在地周辺から探す」で近くのホールを表示します。候補をタップすると店舗名と住所が自動で入ります。", tint: t.subTextColor.opacity(0.72)) }) {
+                                if !placeSearchService.isApiKeyConfigured {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "exclamationmark.triangle.fill")
                                             .foregroundColor(.orange.opacity(0.9))
-                                        Text("設定から位置情報をオンにすると、現在地周辺のホールを表示できます。")
+                                        Text("Google Places APIキーが未設定です。Info.plist の GooglePlacesAPIKey にキーを設定すると実際の店舗検索が利用できます。")
+                                            .font(AppTypography.annotation)
+                                            .foregroundColor(t.subTextColor.opacity(0.92))
+                                    }
+                                }
+                                // 検索欄と現在地周辺ボタンを同一パネル内にまとめる
+                                VStack(alignment: .leading, spacing: 10) {
+                                    TextField("店名・チェーン名で検索", text: $name)
+                                        .textContentType(.none)
+                                        .foregroundColor(t.mainTextColor)
+                                        .onChange(of: name) { _, newValue in
+                                            placeSearchService.searchText = newValue
+                                        }
+                                    if placeSearchService.isLocationDenied {
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Image(systemName: "location.slash")
+                                                .foregroundColor(.orange.opacity(0.9))
+                                            Text("設定から位置情報をオンにすると、現在地周辺のホールを表示できます。")
+                                                .font(AppTypography.annotation)
+                                                .foregroundColor(t.subTextColor.opacity(0.88))
+                                        }
+                                    } else {
+                                        Button {
+                                            tapNearbyPachinkoSearchFromPanel()
+                                        } label: {
+                                            HStack(spacing: 8) {
+                                                Image(systemName: "location.circle.fill")
+                                                    .foregroundColor(accent)
+                                                Text("現在地周辺から探す")
+                                                    .font(.subheadline.weight(.medium))
+                                                    .foregroundColor(accent)
+                                                Spacer(minLength: 8)
+                                                if placeSearchService.isFetchingNearby {
+                                                    ProgressView()
+                                                        .scaleEffect(0.8)
+                                                        .tint(accent)
+                                                }
+                                            }
+                                            .padding(.vertical, 4)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .disabled(placeSearchService.isFetchingNearby)
+                                    }
+                                }
+                                .padding(12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(t.formCanvasMutedBackground)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                if !placeSearchService.nearbyCandidates.isEmpty && name.trimmingCharacters(in: .whitespaces).isEmpty {
+                                    Text("現在地周辺のホール")
+                                        .font(AppTypography.annotationSemibold)
+                                        .foregroundColor(accent.opacity(0.9))
+                                    VStack(spacing: 8) {
+                                        ForEach(placeSearchService.nearbyCandidates) { candidate in
+                                            placeCandidateRow(candidate)
+                                        }
+                                    }
+                                }
+                                if !placeSearchService.candidates.isEmpty {
+                                    Text("検索結果")
+                                        .font(AppTypography.annotationSemibold)
+                                        .foregroundColor(accent.opacity(0.9))
+                                    VStack(spacing: 8) {
+                                        ForEach(placeSearchService.candidates) { candidate in
+                                            placeCandidateRow(candidate)
+                                        }
+                                    }
+                                }
+                                if placeSearchService.isSearching {
+                                    HStack(spacing: 8) {
+                                        ProgressView()
+                                            .scaleEffect(0.9)
+                                            .tint(accent)
+                                        Text("検索中...")
                                             .font(AppTypography.annotation)
                                             .foregroundColor(t.subTextColor.opacity(0.88))
                                     }
-                                } else {
+                                }
+                                if placeSearchService.hasNextPage && !placeSearchService.isSearching {
                                     Button {
-                                        tapNearbyPachinkoSearchFromPanel()
+                                        placeSearchService.loadMoreKeywordResults()
                                     } label: {
                                         HStack(spacing: 8) {
-                                            Image(systemName: "location.circle.fill")
-                                                .foregroundColor(accent)
-                                            Text("現在地周辺から探す")
+                                            if placeSearchService.isLoadingMore {
+                                                ProgressView().scaleEffect(0.8).tint(accent)
+                                            }
+                                            Text(placeSearchService.isLoadingMore ? "読み込み中..." : "もっと見る")
                                                 .font(.subheadline.weight(.medium))
                                                 .foregroundColor(accent)
-                                            Spacer(minLength: 8)
-                                            if placeSearchService.isFetchingNearby {
-                                                ProgressView()
-                                                    .scaleEffect(0.8)
-                                                    .tint(accent)
-                                            }
                                         }
-                                        .padding(.vertical, 4)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 8)
                                     }
-                                    .buttonStyle(.plain)
-                                    .disabled(placeSearchService.isFetchingNearby)
+                                    .disabled(placeSearchService.isLoadingMore)
                                 }
                             }
-                            .padding(12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(t.formCanvasMutedBackground)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                            if !placeSearchService.nearbyCandidates.isEmpty && name.trimmingCharacters(in: .whitespaces).isEmpty {
-                                Text("現在地周辺のホール")
-                                    .font(AppTypography.annotationSemibold)
-                                    .foregroundColor(accent.opacity(0.9))
-                                VStack(spacing: 8) {
-                                    ForEach(placeSearchService.nearbyCandidates) { candidate in
-                                        placeCandidateRow(candidate)
-                                    }
-                                }
-                            }
-                            if !placeSearchService.candidates.isEmpty {
-                                Text("検索結果")
-                                    .font(AppTypography.annotationSemibold)
-                                    .foregroundColor(accent.opacity(0.9))
-                                VStack(spacing: 8) {
-                                    ForEach(placeSearchService.candidates) { candidate in
-                                        placeCandidateRow(candidate)
-                                    }
-                                }
-                            }
-                            if placeSearchService.isSearching {
-                                HStack(spacing: 8) {
-                                    ProgressView()
-                                        .scaleEffect(0.9)
-                                        .tint(accent)
-                                    Text("検索中...")
-                                        .font(AppTypography.annotation)
-                                        .foregroundColor(t.subTextColor.opacity(0.88))
-                                }
-                            }
-                            if placeSearchService.hasNextPage && !placeSearchService.isSearching {
-                                Button {
-                                    placeSearchService.loadMoreKeywordResults()
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        if placeSearchService.isLoadingMore {
-                                            ProgressView().scaleEffect(0.8).tint(accent)
-                                        }
-                                        Text(placeSearchService.isLoadingMore ? "読み込み中..." : "もっと見る")
-                                            .font(.subheadline.weight(.medium))
-                                            .foregroundColor(accent)
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 8)
-                                }
-                                .disabled(placeSearchService.isLoadingMore)
-                            }
-                        }
-                        shopEditPanel(title: "レート設定", trailing: { InfoIconView(explanation: "貸玉数は 500pt あたりの玉数。交換率は 1 玉あたりの換金（pt）。メニューでよくある組み合わせを選ぶか「その他」で自由入力。玉/100pt と pt/玉は連動します。", tint: t.subTextColor.opacity(0.72)) }) {
-                            HStack {
-                                Text("貸玉数（500ptあたり）")
-                                    .foregroundColor(t.mainTextColor.opacity(0.92))
-                                    .fixedSize(horizontal: true, vertical: false)
-                                Spacer()
-                                IntegerPadTextField(
-                                    text: $ballsPerCashUnitStr,
-                                    placeholder: "125",
-                                    maxDigits: 4,
-                                    font: .preferredFont(forTextStyle: .body),
-                                    textColor: UIColor(t.mainTextColor),
-                                    accentColor: UIColor(accent)
-                                )
-                                    .multilineTextAlignment(.trailing)
-                            }
-                            HStack(alignment: .top, spacing: 10) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("持ち玉1回（玉）")
+                            shopEditPanel(title: "レート設定", trailing: { InfoIconView(explanation: "貸玉数は 500pt あたりの玉数。交換率は 1 玉あたりの換金（pt）。メニューでよくある組み合わせを選ぶか「その他」で自由入力。玉/100pt と pt/玉は連動します。", tint: t.subTextColor.opacity(0.72)) }) {
+                                HStack {
+                                    Text("貸玉数（500ptあたり）")
                                         .foregroundColor(t.mainTextColor.opacity(0.92))
-                                    Text("空欄または0＝貸玉と同じ。コンパクト機などで1タップの減り玉が貸玉と違うときに入力。")
-                                        .font(AppTypography.annotationSmall)
-                                        .foregroundColor(t.subTextColor.opacity(0.78))
+                                        .fixedSize(horizontal: true, vertical: false)
+                                    Spacer()
+                                    IntegerPadTextField(
+                                        text: $ballsPerCashUnitStr,
+                                        placeholder: "125",
+                                        maxDigits: 4,
+                                        font: .preferredFont(forTextStyle: .body),
+                                        textColor: UIColor(t.mainTextColor),
+                                        accentColor: UIColor(accent)
+                                    )
+                                        .multilineTextAlignment(.trailing)
                                 }
-                                Spacer(minLength: 8)
-                                IntegerPadTextField(
-                                    text: $holdingsBallsPerButtonStr,
-                                    placeholder: "同左",
-                                    maxDigits: 4,
-                                    font: .preferredFont(forTextStyle: .body),
-                                    textColor: UIColor(t.mainTextColor),
-                                    accentColor: UIColor(accent)
-                                )
-                                    .multilineTextAlignment(.trailing)
-                                    .frame(width: 88)
-                            }
-                            VStack(alignment: .leading, spacing: 8) {
+                                if let lendingLine = lendingRateSupplementaryLine {
+                                    Text(lendingLine)
+                                        .font(AppTypography.annotationMedium)
+                                        .foregroundColor(t.subTextColor.opacity(0.88))
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                }
+                                Text("貸玉数は、貸玉ボタンを押した際に払い出される玉の数です。")
+                                    .font(AppTypography.annotationSmall)
+                                    .foregroundColor(t.subTextColor.opacity(0.78))
+                                    .fixedSize(horizontal: false, vertical: true)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                HStack(alignment: .top, spacing: 10) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("持ち玉払い出し数")
+                                            .foregroundColor(t.mainTextColor.opacity(0.92))
+                                        Text("持ち玉払い出しボタンを押した時に出てくる玉の数です。デフォルトは貸玉数と同じに設定されています。")
+                                            .font(AppTypography.annotationSmall)
+                                            .foregroundColor(t.subTextColor.opacity(0.78))
+                                    }
+                                    Spacer(minLength: 8)
+                                    IntegerPadTextField(
+                                        text: $holdingsBallsPerButtonStr,
+                                        placeholder: "125",
+                                        maxDigits: 4,
+                                        font: .preferredFont(forTextStyle: .body),
+                                        textColor: UIColor(t.mainTextColor),
+                                        accentColor: UIColor(accent)
+                                    )
+                                        .multilineTextAlignment(.trailing)
+                                        .frame(minWidth: 72, alignment: .trailing)
+                                }
                                 HStack(alignment: .center, spacing: 10) {
                                     Text("交換率")
                                         .foregroundColor(t.mainTextColor.opacity(0.92))
@@ -1302,172 +1344,172 @@ struct ShopEditView: View {
                                     Picker("交換率", selection: $exchangeRatePreset) {
                                         ForEach(ExchangeRatePreset.allCases, id: \.self) { preset in
                                             Text(preset.rawValue)
+                                                .lineLimit(1)
+                                                .minimumScaleFactor(0.82)
                                                 .tag(preset)
                                         }
                                     }
                                     .labelsHidden()
                                     .pickerStyle(.menu)
                                     .tint(accent)
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
                                 }
-                                Text(exchangeRatePreset == .other ? "その他（下の欄で入力）" : exchangeRatePreset.rawValue)
-                                    .font(AppTypography.annotationMedium)
-                                    .foregroundColor(t.subTextColor.opacity(0.88))
-                                    .multilineTextAlignment(.leading)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .accessibilityElement(children: .combine)
-                            .accessibilityLabel("交換率")
-                            if exchangeRatePreset == .other {
-                                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                    Text("玉/100pt")
-                                        .foregroundColor(t.mainTextColor.opacity(0.88))
-                                    DecimalPadTextField(
-                                        text: $customBallsPer100YenStr,
-                                        placeholder: "25.0",
-                                        maxIntegerDigits: 4,
-                                        maxFractionDigits: 3,
-                                        font: .preferredFont(forTextStyle: .body),
-                                        textColor: UIColor(t.mainTextColor),
-                                        accentColor: UIColor(accent)
-                                    )
-                                        .multilineTextAlignment(.trailing)
-                                        .onChange(of: customBallsPer100YenStr) { _, new in
-                                            guard !isSyncingCustomRate, !new.isEmpty, let y = customYenPerBallFromBalls else { return }
-                                            isSyncingCustomRate = true
-                                            customYenPerBallStr = y.displayFormat("%.2f")
-                                            DispatchQueue.main.async { isSyncingCustomRate = false }
-                                        }
-                                    Text(customYenPerBallFromBalls.map { "→ \($0.displayFormat("%.2f"))pt/玉" } ?? "→ — pt/玉")
-                                        .font(AppTypography.annotation)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                }
-                                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                                    Text("pt交換")
-                                        .foregroundColor(t.mainTextColor.opacity(0.88))
-                                    DecimalPadTextField(
-                                        text: $customYenPerBallStr,
-                                        placeholder: "4.00",
-                                        maxIntegerDigits: 4,
-                                        maxFractionDigits: 4,
-                                        font: .preferredFont(forTextStyle: .body),
-                                        textColor: UIColor(t.mainTextColor),
-                                        accentColor: UIColor(accent)
-                                    )
-                                        .multilineTextAlignment(.trailing)
-                                        .onChange(of: customYenPerBallStr) { _, new in
-                                            guard !isSyncingCustomRate, !new.isEmpty, let b = customBallsPer100FromYen else { return }
-                                            isSyncingCustomRate = true
-                                            customBallsPer100YenStr = b.displayFormat("%.1f")
-                                            DispatchQueue.main.async { isSyncingCustomRate = false }
-                                        }
-                                    Text(customBallsPer100FromYen.map { "→ \($0.displayFormat("%.1f"))玉/100pt" } ?? "→ — 玉/100pt")
-                                        .font(AppTypography.annotation)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                }
-                            }
-                        }
-                        shopEditPanel(title: "貯玉", trailing: { InfoIconView(explanation: "貯玉（カウンター預かり）に対応している店だけオンにしてください。オンにすると実戦終了時に「貯玉」精算が選べ、換金時の端数玉を残高へ自動加算できます。残高は手入力で合わせたり、精算のたびに増えます。", tint: t.subTextColor.opacity(0.72)) }) {
-                            Toggle("貯玉サービスを利用する", isOn: $supportsChodamaService)
-                                .foregroundColor(t.mainTextColor.opacity(0.94))
-                            HStack {
-                                Text("貯玉残高（玉）")
-                                    .foregroundColor(t.mainTextColor.opacity(0.92))
-                                Spacer()
-                                IntegerPadTextField(
-                                    text: $chodamaBalanceStr,
-                                    placeholder: "0",
-                                    maxDigits: 9,
-                                    font: .preferredFont(forTextStyle: .body),
-                                    textColor: UIColor(t.mainTextColor),
-                                    accentColor: UIColor(accent)
-                                )
-                                    .multilineTextAlignment(.trailing)
-                            }
-                        }
-                        shopEditPanel(title: "特定日ルール（分析で使用・最大4つ）", trailing: { InfoIconView(explanation: "種類で「毎月N日」か「Nのつく日」を選び、右のN欄に数字を入力。個別店舗分析の「特定日傾向」に追加順で表示されます。", tint: t.subTextColor.opacity(0.72)) }) {
-                            VStack(alignment: .leading, spacing: 12) {
-                                HStack(spacing: 6) {
-                                    Text("種類")
-                                        .font(AppTypography.annotation)
-                                        .foregroundColor(t.subTextColor.opacity(0.88))
-                                        .frame(width: 36, alignment: .leading)
-                                    Text("N")
-                                        .font(AppTypography.annotation)
-                                        .foregroundColor(t.subTextColor.opacity(0.88))
-                                        .frame(width: 28, alignment: .center)
-                                }
-                                .padding(.leading, 28)
-                                ForEach(0..<4, id: \.self) { i in
-                                    HStack(spacing: 8) {
-                                        Text(["①", "②", "③", "④"][i])
-                                            .font(.subheadline.weight(.medium))
-                                            .foregroundColor(t.mainTextColor.opacity(0.92))
-                                            .frame(width: 20, alignment: .center)
-                                        Picker("", selection: Binding(
-                                            get: { specificDayEntries[i].type },
-                                            set: { newVal in
-                                                var arr = specificDayEntries
-                                                arr[i].type = newVal
-                                                specificDayEntries = arr
-                                            }
-                                        )) {
-                                            ForEach(SpecificDayRuleType.allCases, id: \.self) { t in
-                                                Text(t.rawValue).tag(t)
-                                            }
-                                        }
-                                        .pickerStyle(.menu)
-                                        .labelsHidden()
-                                        .tint(accent)
-                                        .fixedSize(horizontal: true, vertical: false)
-                                        IntegerPadTextField(
-                                            text: Binding(
-                                                get: { specificDayEntries[i].value },
-                                                set: { newVal in
-                                                    var arr = specificDayEntries
-                                                    arr[i].value = newVal
-                                                    specificDayEntries = arr
-                                                }
-                                            ),
-                                            placeholder: specificDayEntries[i].type == .monthDay ? "1〜31" : "0〜9",
-                                            maxDigits: 2,
+                                .accessibilityElement(children: .combine)
+                                .accessibilityLabel("交換率")
+                                if exchangeRatePreset == .other {
+                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                        Text("玉/100pt")
+                                            .foregroundColor(t.mainTextColor.opacity(0.88))
+                                        DecimalPadTextField(
+                                            text: $customBallsPer100YenStr,
+                                            placeholder: "25.0",
+                                            maxIntegerDigits: 4,
+                                            maxFractionDigits: 3,
                                             font: .preferredFont(forTextStyle: .body),
                                             textColor: UIColor(t.mainTextColor),
                                             accentColor: UIColor(accent)
                                         )
-                                        .multilineTextAlignment(.center)
-                                        .frame(width: 48)
-                                        if !displayLabel(for: i).isEmpty {
-                                            Text(displayLabel(for: i))
-                                                .font(AppTypography.annotation)
-                                                .foregroundColor(t.subTextColor.opacity(0.88))
-                                                .lineLimit(1)
+                                            .multilineTextAlignment(.trailing)
+                                            .onChange(of: customBallsPer100YenStr) { _, new in
+                                                guard !isSyncingCustomRate, !new.isEmpty, let y = customYenPerBallFromBalls else { return }
+                                                isSyncingCustomRate = true
+                                                customYenPerBallStr = y.displayFormat("%.2f")
+                                                DispatchQueue.main.async { isSyncingCustomRate = false }
+                                            }
+                                        Text(customYenPerBallFromBalls.map { "→ \($0.displayFormat("%.2f"))pt/玉" } ?? "→ — pt/玉")
+                                            .font(AppTypography.annotation)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                                        Text("pt交換")
+                                            .foregroundColor(t.mainTextColor.opacity(0.88))
+                                        DecimalPadTextField(
+                                            text: $customYenPerBallStr,
+                                            placeholder: "4.00",
+                                            maxIntegerDigits: 4,
+                                            maxFractionDigits: 4,
+                                            font: .preferredFont(forTextStyle: .body),
+                                            textColor: UIColor(t.mainTextColor),
+                                            accentColor: UIColor(accent)
+                                        )
+                                            .multilineTextAlignment(.trailing)
+                                            .onChange(of: customYenPerBallStr) { _, new in
+                                                guard !isSyncingCustomRate, !new.isEmpty, let b = customBallsPer100FromYen else { return }
+                                                isSyncingCustomRate = true
+                                                customBallsPer100YenStr = b.displayFormat("%.1f")
+                                                DispatchQueue.main.async { isSyncingCustomRate = false }
+                                            }
+                                        Text(customBallsPer100FromYen.map { "→ \($0.displayFormat("%.1f"))玉/100pt" } ?? "→ — 玉/100pt")
+                                            .font(AppTypography.annotation)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                    }
+                                }
+                            }
+                            shopEditPanel(title: "貯玉", trailing: { InfoIconView(explanation: "貯玉（カウンター預かり）に対応している店だけオンにしてください。オンにすると実戦終了時に「貯玉」精算が選べ、換金時の端数玉を残高へ自動加算できます。残高は手入力で合わせたり、精算のたびに増えます。", tint: t.subTextColor.opacity(0.72)) }) {
+                                Toggle("貯玉サービスを利用する", isOn: $supportsChodamaService)
+                                    .foregroundColor(t.mainTextColor.opacity(0.94))
+                                HStack {
+                                    Text("貯玉残高（玉）")
+                                        .foregroundColor(t.mainTextColor.opacity(0.92))
+                                    Spacer()
+                                    IntegerPadTextField(
+                                        text: $chodamaBalanceStr,
+                                        placeholder: "0",
+                                        maxDigits: 9,
+                                        font: .preferredFont(forTextStyle: .body),
+                                        textColor: UIColor(t.mainTextColor),
+                                        accentColor: UIColor(accent)
+                                    )
+                                        .multilineTextAlignment(.trailing)
+                                }
+                            }
+                            shopEditPanel(title: "特定日ルール（分析で使用・最大4つ）", trailing: { InfoIconView(explanation: "種類で「毎月N日」か「Nのつく日」を選び、右のN欄に数字を入力。個別店舗分析の「特定日傾向」に追加順で表示されます。", tint: t.subTextColor.opacity(0.72)) }) {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack(spacing: 6) {
+                                        Text("種類")
+                                            .font(AppTypography.annotation)
+                                            .foregroundColor(t.subTextColor.opacity(0.88))
+                                            .frame(width: 36, alignment: .leading)
+                                        Text("N")
+                                            .font(AppTypography.annotation)
+                                            .foregroundColor(t.subTextColor.opacity(0.88))
+                                            .frame(width: 28, alignment: .center)
+                                    }
+                                    .padding(.leading, 28)
+                                    ForEach(0..<4, id: \.self) { i in
+                                        HStack(spacing: 8) {
+                                            Text(["①", "②", "③", "④"][i])
+                                                .font(.subheadline.weight(.medium))
+                                                .foregroundColor(t.mainTextColor.opacity(0.92))
+                                                .frame(width: 20, alignment: .center)
+                                            Picker("", selection: Binding(
+                                                get: { specificDayEntries[i].type },
+                                                set: { newVal in
+                                                    var arr = specificDayEntries
+                                                    arr[i].type = newVal
+                                                    specificDayEntries = arr
+                                                }
+                                            )) {
+                                                ForEach(SpecificDayRuleType.allCases, id: \.self) { t in
+                                                    Text(t.rawValue).tag(t)
+                                                }
+                                            }
+                                            .pickerStyle(.menu)
+                                            .labelsHidden()
+                                            .tint(accent)
+                                            .fixedSize(horizontal: true, vertical: false)
+                                            IntegerPadTextField(
+                                                text: Binding(
+                                                    get: { specificDayEntries[i].value },
+                                                    set: { newVal in
+                                                        var arr = specificDayEntries
+                                                        arr[i].value = newVal
+                                                        specificDayEntries = arr
+                                                    }
+                                                ),
+                                                placeholder: specificDayEntries[i].type == .monthDay ? "1〜31" : "0〜9",
+                                                maxDigits: 2,
+                                                font: .preferredFont(forTextStyle: .body),
+                                                textColor: UIColor(t.mainTextColor),
+                                                accentColor: UIColor(accent)
+                                            )
+                                            .multilineTextAlignment(.center)
+                                            .frame(width: 48)
+                                            if !displayLabel(for: i).isEmpty {
+                                                Text(displayLabel(for: i))
+                                                    .font(AppTypography.annotation)
+                                                    .foregroundColor(t.subTextColor.opacity(0.88))
+                                                    .lineLimit(1)
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
+                        .padding(16)
+                        .padding(.bottom, 100)
                     }
-                    .padding(16)
-                    .padding(.bottom, 96)
-                }
-                .opacity(isShopBrowserExpanded ? 0 : 1)
-                .allowsHitTesting(!isShopBrowserExpanded)
-                .animation(.easeInOut(duration: 0.22), value: isShopBrowserExpanded)
+                    .opacity(isShopBrowserExpanded ? 0 : 1)
+                    .allowsHitTesting(!isShopBrowserExpanded)
+                    .animation(isShopBrowserExpanded ? nil : .easeInOut(duration: 0.25), value: isShopBrowserExpanded)
 
-                if let url = shopResearchGoogleURL {
-                    InAppWebView(url: url)
-                        .id(url.absoluteString)
-                        .background(AppGlassStyle.background)
-                        .opacity(isShopBrowserExpanded ? 1 : 0)
-                        .allowsHitTesting(isShopBrowserExpanded)
-                        .animation(.easeInOut(duration: 0.22), value: isShopBrowserExpanded)
+                    if let url = shopResearchGoogleURL {
+                        InAppWebView(url: url)
+                            .id(url.absoluteString)
+                            .background(AppGlassStyle.background)
+                            .opacity(isShopBrowserExpanded ? 1 : 0)
+                            .allowsHitTesting(isShopBrowserExpanded)
+                            .animation(isShopBrowserExpanded ? nil : .easeInOut(duration: 0.25), value: isShopBrowserExpanded)
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .animation(isShopBrowserExpanded ? nil : .spring(response: 0.35, dampingFraction: 0.82), value: isShopBrowserExpanded)
 
                 shopBrowserSwipeBar
             }
+            .ignoresSafeArea(edges: .bottom)
             .navigationTitle(isNew ? "新規店舗登録" : "店舗を編集")
             .navigationBarTitleDisplayMode(.inline)
             .keyboardDismissToolbar()
@@ -1519,7 +1561,9 @@ struct ShopEditView: View {
                     address = s.address
                     placeID = s.placeID
                     ballsPerCashUnitStr = "\(s.ballsPerCashUnit)"
-                    holdingsBallsPerButtonStr = s.holdingsBallsPerButton > 0 ? "\(s.holdingsBallsPerButton)" : ""
+                    holdingsBallsPerButtonStr = s.holdingsBallsPerButton > 0
+                        ? "\(s.holdingsBallsPerButton)"
+                        : "\(s.ballsPerCashUnit)"
                     applyExchangeRateToPreset(s.payoutCoefficient)
                     loadSpecificDayEntries(from: s)
                     supportsChodamaService = s.supportsChodamaService
@@ -1527,14 +1571,18 @@ struct ShopEditView: View {
                 } else {
                     address = ""
                     placeID = nil
-                    let defaultRate = Double(UserDefaults.standard.string(forKey: "defaultExchangeRate") ?? "4.0") ?? 4.0
+                    let defaultRate = Double(UserDefaults.standard.string(for: .defaultExchangeRate) ?? "4.0") ?? 4.0
                     applyExchangeRateToPreset(defaultRate)
-                    let defaultBalls = Int(UserDefaults.standard.string(forKey: "defaultBallsPerCash") ?? "125") ?? 125
+                    let defaultBalls = Int(UserDefaults.standard.string(for: .defaultBallsPerCash) ?? "125") ?? 125
                     ballsPerCashUnitStr = "\(defaultBalls)"
+                    holdingsBallsPerButtonStr = "\(defaultBalls)"
                     supportsChodamaService = false
                     chodamaBalanceStr = "0"
                 }
                 isShopBrowserExpanded = false
+            }
+            .onChange(of: ballsPerCashUnitStr) { oldVal, newVal in
+                syncHoldingsFieldWithLendingIfMirrored(oldLending: oldVal, newLending: newVal)
             }
             .onChange(of: placeSearchService.lastUserFacingMessage) { _, new in
                 guard let m = new, !m.isEmpty else { return }
@@ -1549,60 +1597,32 @@ struct ShopEditView: View {
         }
     }
 
-    /// 店名＋「交換率」Google 検索と登録フォームの切替（機種編集の DMM バーと同系）
+    /// 最下部に常時表示。左端＝登録フォームへ、右端＝Google（店名＋交換率）アプリ内ブラウザ。（機種編集の DMM バーと同一レイアウト）
     @ViewBuilder
     private var shopBrowserSwipeBar: some View {
         let barHeight: CGFloat = 72
+        let edgeInset: CGFloat = 8
         GeometryReader { geo in
             let w = geo.size.width
             let edgeW = max(92, min(124, w * 0.255))
             let stripCorner: CGFloat = 10
-            let urlReady = shopResearchGoogleURL != nil
-            let queryHint: String = {
-                let q = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                return q.isEmpty ? "検索: 店名 ＋ 交換率" : "\(q) 交換率"
-            }()
 
             ZStack {
                 HStack(spacing: 0) {
-                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
-                        .fill(
-                            !isShopBrowserExpanded
-                                ? accent.opacity(0.22)
-                                : t.formCanvasMutedBackground
-                        )
-                        .frame(width: edgeW + 8)
-                        .padding(.leading, 6)
-                    Spacer(minLength: 0)
-                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
-                        .fill(
-                            isShopBrowserExpanded && urlReady
-                                ? accent.opacity(0.2)
-                                : (urlReady ? t.formCanvasMidBackground : t.formCanvasDeepBackground)
-                        )
-                        .frame(width: edgeW + 8)
-                        .padding(.trailing, 6)
-                }
-                .allowsHitTesting(false)
-
-                HStack(spacing: 0) {
                     shopBrowserRegisterEdge(width: edgeW, stripCorner: stripCorner)
+                        .padding(.leading, edgeInset)
                     Spacer(minLength: 0)
                     shopBrowserWebEdge(width: edgeW, stripCorner: stripCorner)
+                        .padding(.trailing, edgeInset)
                 }
 
                 VStack(spacing: 3) {
-                    Text(isShopBrowserExpanded ? "Google 検索 表示中" : "店舗の登録")
+                    Text(isShopBrowserExpanded ? "Google 検索 表示中" : "ブラウザ切替")
                         .font(AppTypography.annotationSemibold)
                         .foregroundStyle(t.mainTextColor.opacity(0.95))
                     Text("左端・右端をタップ")
                         .font(AppTypography.annotationSmallMedium)
                         .foregroundStyle(t.subTextColor.opacity(0.9))
-                    Text(queryHint)
-                        .font(AppTypography.annotationSmall)
-                        .foregroundStyle(t.subTextColor.opacity(0.75))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.75)
                 }
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: max(120, w - edgeW * 2 - 20))
@@ -1613,27 +1633,10 @@ struct ShopEditView: View {
         .frame(height: barHeight)
         .padding(.horizontal, 8)
         .contentShape(Rectangle())
-        .highPriorityGesture(
-            DragGesture(minimumDistance: 50)
-                .onEnded { value in
-                    let dx = value.translation.width
-                    let dy = value.translation.height
-                    guard abs(dx) > abs(dy) * 1.2 else { return }
-                    if dx < -40 {
-                        guard shopResearchGoogleURL != nil else { return }
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-                            isShopBrowserExpanded = true
-                        }
-                    } else if dx > 40 {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-                            isShopBrowserExpanded = false
-                        }
-                    }
-                }
-        )
-        .pstatsChromeSheetBarStyle()
+        .pstatsChromeSheetBarStyle(borderStyle: .topEdgeOnly)
     }
 
+    /// 左端：登録画面へ戻る（機種編集の DMM 左端と同一）
     private func shopBrowserRegisterEdge(width: CGFloat, stripCorner: CGFloat) -> some View {
         Button {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -1641,6 +1644,7 @@ struct ShopEditView: View {
                 isShopBrowserExpanded = false
             }
         } label: {
+            let active = !isShopBrowserExpanded
             VStack(alignment: .center, spacing: 4) {
                 HStack(spacing: 3) {
                     Image(systemName: "chevron.left")
@@ -1648,11 +1652,11 @@ struct ShopEditView: View {
                     Image(systemName: "doc.text.fill")
                         .font(.system(size: 14, weight: .semibold))
                 }
-                .foregroundStyle(t.mainTextColor.opacity(!isShopBrowserExpanded ? 1.0 : 0.78))
+                .foregroundStyle(t.mainTextColor.opacity(active ? 1.0 : 0.78))
                 Text("登録画面")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundStyle(t.mainTextColor)
-                Text(!isShopBrowserExpanded ? "いま表示中" : "端をタップで戻る")
+                Text(active ? "いま表示中" : "端をタップで戻る")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(t.subTextColor.opacity(0.88))
                     .lineLimit(2)
@@ -1662,27 +1666,32 @@ struct ShopEditView: View {
             .frame(width: width)
             .frame(maxHeight: .infinity)
             .padding(.vertical, 6)
-            .contentShape(Rectangle())
             .background(
-                RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                t.chromeSheetBorderColor.opacity(!isShopBrowserExpanded ? 1.0 : 0.55),
-                                accent.opacity(!isShopBrowserExpanded ? 0.35 : 0.12)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: !isShopBrowserExpanded ? 1.25 : 0.85
-                    )
+                ZStack {
+                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                        .fill(active ? accent.opacity(0.22) : t.formCanvasMutedBackground)
+                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    t.chromeSheetBorderColor.opacity(active ? 1.0 : 0.55),
+                                    accent.opacity(active ? 0.35 : 0.12)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: active ? 1.25 : 0.85
+                        )
+                }
             )
+            .contentShape(RoundedRectangle(cornerRadius: stripCorner, style: .continuous))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("店舗登録フォームに戻る")
-        .accessibilityHint("タップで編集画面を表示します。")
+        .accessibilityLabel("登録画面に戻る")
+        .accessibilityHint("タップで店舗編集画面を表示します。")
     }
 
+    /// 右端：Google アプリ内ブラウザ（機種編集の DMM 右端と同一）
     @ViewBuilder
     private func shopBrowserWebEdge(width: CGFloat, stripCorner: CGFloat) -> some View {
         let urlReady = shopResearchGoogleURL != nil
@@ -1693,15 +1702,16 @@ struct ShopEditView: View {
                 isShopBrowserExpanded = true
             }
         } label: {
+            let active = urlReady && isShopBrowserExpanded
             VStack(alignment: .center, spacing: 4) {
                 HStack(spacing: 3) {
-                    Image(systemName: "magnifyingglass")
+                    Image(systemName: "safari")
                         .font(.system(size: 14, weight: .semibold))
                     Image(systemName: "chevron.right")
                         .font(.system(size: 11, weight: .bold))
                 }
                 .foregroundStyle(t.mainTextColor.opacity(urlReady ? (isShopBrowserExpanded ? 1.0 : 0.9) : 0.42))
-                Text("検索")
+                Text("Google")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundStyle(t.mainTextColor.opacity(urlReady ? 1.0 : 0.5))
                 Text(
@@ -1718,29 +1728,37 @@ struct ShopEditView: View {
             .frame(width: width)
             .frame(maxHeight: .infinity)
             .padding(.vertical, 6)
-            .contentShape(Rectangle())
             .background(
-                RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                accent.opacity(urlReady && isShopBrowserExpanded ? 0.5 : 0.2),
-                                t.chromeSheetBorderColor.opacity(urlReady ? 0.85 : 0.4)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: urlReady && isShopBrowserExpanded ? 1.25 : 0.85
-                    )
+                ZStack {
+                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                        .fill(
+                            active
+                                ? accent.opacity(0.2)
+                                : (urlReady ? t.formCanvasMidBackground : t.formCanvasDeepBackground)
+                        )
+                    RoundedRectangle(cornerRadius: stripCorner, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    accent.opacity(active ? 0.5 : 0.2),
+                                    t.chromeSheetBorderColor.opacity(urlReady ? 0.85 : 0.4)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: active ? 1.25 : 0.85
+                        )
+                }
             )
+            .contentShape(RoundedRectangle(cornerRadius: stripCorner, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(!urlReady)
         .opacity(urlReady ? 1.0 : 0.72)
-        .accessibilityLabel("店舗名と交換率でGoogle検索を開く")
+        .accessibilityLabel("Google検索をアプリ内ブラウザで開く")
         .accessibilityHint(
             urlReady
-                ? "タップでアプリ内ブラウザに切り替わります。"
+                ? "タップで店名と交換率の検索結果を表示します。"
                 : "店名を入力すると利用できます。"
         )
     }
@@ -1760,6 +1778,22 @@ struct ShopEditView: View {
                 customBallsPer100YenStr = ""
             }
         }
+    }
+
+    /// 持ち玉欄が空、または変更前の貸玉数と同じときだけ貸玉入力に追従する。
+    private func syncHoldingsFieldWithLendingIfMirrored(oldLending: String, newLending: String) {
+        let newBalls = Int(newLending.trimmingCharacters(in: .whitespaces))
+        guard let nb = newBalls, nb > 0 else { return }
+        let hTrim = holdingsBallsPerButtonStr.trimmingCharacters(in: .whitespaces)
+        if hTrim.isEmpty {
+            holdingsBallsPerButtonStr = "\(nb)"
+            return
+        }
+        guard let oldBalls = Int(oldLending.trimmingCharacters(in: .whitespaces)),
+              let hi = Int(hTrim),
+              hi == oldBalls
+        else { return }
+        holdingsBallsPerButtonStr = "\(nb)"
     }
 
     private func loadSpecificDayEntries(from s: Shop) {

@@ -3,8 +3,6 @@ import SwiftData
 import UIKit
 
 // MARK: - 機種管理（スワイプで編集・削除、並べ替え、右下FABで新規登録）
-private let machineOrderKey = "machineDisplayOrder"
-private let shopOrderKey = "shopDisplayOrder"
 
 /// 機種・店舗管理リスト上部の控えめなスワイプ案内
 private struct ManagementSwipeHintBar: View {
@@ -125,11 +123,13 @@ private struct ShopManagementCard: View {
 }
 
 struct MachineManagementView: View {
+    /// `HomeView` で非表示タブのまま `List` が生きているとネイティブが裏読み込みされるため、選択中タブのときだけ差し込む。
+    var nativeAdsInListEnabled: Bool = true
     @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Machine.name) private var machines: [Machine]
     @Query(sort: \GameSession.date, order: .reverse) private var recentSessions: [GameSession]
-    @AppStorage(machineOrderKey) private var machineOrderStr = ""
+    @AppStorage(UserDefaultsKey.machineDisplayOrder.rawValue) private var machineOrderStr = ""
     @State private var machineToEdit: Machine?
     @State private var showNewMachine = false
     @State private var isReorderMode = false
@@ -220,7 +220,7 @@ struct MachineManagementView: View {
                             arr.move(fromOffsets: from, toOffset: to)
                             saveMachineOrder(arr)
                         }
-                    } else {
+                    } else if nativeAdsInListEnabled {
                         ForEach(machineRowsWithAds) { row in
                             switch row {
                             case .machine(let m):
@@ -231,6 +231,10 @@ struct MachineManagementView: View {
                                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                                     .listRowSeparator(.hidden)
                             }
+                        }
+                    } else {
+                        ForEach(machinesForList) { m in
+                            machineListRow(for: m)
                         }
                     }
                 }
@@ -307,11 +311,12 @@ struct MachineManagementView: View {
 
 // MARK: - 店舗管理（スワイプで編集・削除、右上並べ替え、右下FABで新規登録）
 struct ShopManagementView: View {
+    var nativeAdsInListEnabled: Bool = true
     @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Shop.name) private var shops: [Shop]
     @Query(sort: \GameSession.date, order: .reverse) private var allSessions: [GameSession]
-    @AppStorage(shopOrderKey) private var shopOrderStr = ""
+    @AppStorage(UserDefaultsKey.shopDisplayOrder.rawValue) private var shopOrderStr = ""
     @State private var shopToEdit: Shop?
     @State private var showNewShop = false
     @State private var isReorderMode = false
@@ -378,7 +383,7 @@ struct ShopManagementView: View {
                             arr.move(fromOffsets: from, toOffset: to)
                             saveShopOrder(arr)
                         }
-                    } else {
+                    } else if nativeAdsInListEnabled {
                         ForEach(shopRowsWithAds) { row in
                             switch row {
                             case .shop(let s):
@@ -389,6 +394,10 @@ struct ShopManagementView: View {
                                     .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                                     .listRowSeparator(.hidden)
                             }
+                        }
+                    } else {
+                        ForEach(orderedShops) { s in
+                            shopListRow(for: s)
                         }
                     }
                 }
@@ -1086,7 +1095,7 @@ struct SessionEditView: View {
                 }
                 .listRowBackground(themeManager.currentTheme.listRowBackground)
                 HStack {
-                    Text("払出係数（pt/玉）")
+                    Text("交換率（pt/玉）")
                     Spacer()
                     DecimalPadTextField(
                         text: Binding(

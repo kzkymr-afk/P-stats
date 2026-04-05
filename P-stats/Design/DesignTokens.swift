@@ -137,13 +137,6 @@ enum DesignTokens {
             static let panelScrim: Double = 0.55
         }
 
-        /// 実戦バナー広告のクロム
-        enum AdBanner {
-            static let dismissAffordance: Double = 0.38
-            static let chromeBackdropStrong: Double = 0.9
-            static let chromeBackdrop: Double = 0.88
-        }
-
         /// 省電力オーバーレイ
         enum PowerSaving {
             static let dialogScrim: Double = 0.85
@@ -267,6 +260,29 @@ enum DesignTokens {
         static let shadowRadiusNeonRail: CGFloat = 8
         static let shadowYNeonRail: CGFloat = 4
         static let shadowRadiusNeonSplash: CGFloat = 8
+    }
+
+    /// レイアウト寸法（角丸・余白の直書き削減）
+    enum Layout {
+        static let cornerRadiusStandard: CGFloat = 12
+        static let cornerRadiusCard: CGFloat = 14
+        static let cornerRadiusControl: CGFloat = 10
+        static let cornerRadiusSmall: CGFloat = 8
+        static let paddingXS: CGFloat = 4
+        static let paddingS: CGFloat = 8
+        static let paddingM: CGFloat = 16
+        static let paddingL: CGFloat = 20
+    }
+
+    /// 広告枠（バナー・ネイティブ）の下地・ラベル階調
+    enum AdChrome {
+        static let bannerBackdropR: Double = Glass.dockBackgroundTopR
+        static let bannerBackdropG: Double = Glass.dockBackgroundTopG
+        static let bannerBackdropB: Double = Glass.dockBackgroundTopB
+        static let bannerBackdropOpacity: Double = 0.96
+        static let borderOpacity: Double = Surface.WhiteOnDark.chromeBorder
+        static let disclosureLabelOpacity: Double = Surface.WhiteOnDark.captionOnPanel
+        static let nativeCardBackgroundOpacity: Double = 0.95
     }
 
     enum Opacity {
@@ -461,6 +477,20 @@ enum DesignTokens {
         }
     }
 
+    /// 実戦ヘッダーとトップバナーの位置・余白（`PlayView`）
+    enum PlayLayout {
+        /// `headerRow` の `.padding(.vertical)` 片側。実高には上下で 2 倍して加算する。
+        static let headerRowVerticalPadding: CGFloat = 6
+        /// ヘッダーブロック下端〜バナー上端の余白
+        static let marginBelowHeaderBeforeBanner: CGFloat = 10
+        /// バナー非表示時、ヘッダー直下〜メインカラムまでの間隔
+        static let spacerBelowHeaderNoAds: CGFloat = 8
+        /// インサイトドロワーがこのオフセットを超えたらバナーを畳む（誤タッチ・ちらつき防止の閾値）
+        static let insightDrawerOpenThresholdForAdSuppression: CGFloat = 16
+        /// 入力・インサイト表示時のバナー opacity 切り替え（秒）
+        static let bannerFocusCrossfadeSeconds: Double = 0.25
+    }
+
     /// 実戦スワイプヒントバーなど、端末 UI 用の固定トークン
     enum PlaySessionChrome {
         static let swipeHintBarStainlessR: Double = 0.22
@@ -569,6 +599,10 @@ enum DesignTokens {
         static let ctaForegroundR: Double = 0.25
         static let ctaForegroundG: Double = 0.85
         static let ctaForegroundB: Double = 0.95
+        /// リスト用ネイティブ内 `GADMediaView` の高さ。120pt だと動画クリエイティブで「mediaView is too small for video」になりやすい。
+        static let listCardMediaHeight: CGFloat = 180
+        /// `OptionalNativeAdCardSlot` の SwiftUI 側最小高さ（メディア枠拡大に合わせる）
+        static let listCardSlotMinHeight: CGFloat = 260
     }
 
     // MARK: - ホーム背景オーブ（`HomeView` / `StaticHomeBackgroundView` 共通）

@@ -9,6 +9,7 @@
 - **導入開始日からカレンダー6年を経過した日の翌日以降**は、ステータスを **対象外** とみなす（CSV が「完了」でも変換時に上書き）。
 - **index.json** および **machines/*.json** には **対象外** の行を含めない（新規登録検索から除外）。
 - `MASTER_EXPORT_STATUS_VALUES` を **未設定**にすると、対象外・ステータス空以外はすべて JSON 化。設定時はその集合に加えて対象外を除外。
+- **機種名**と**導入開始日**（または導入日）が両方入っている行は、ステータスが「完了」でなくても（空でも）index / machines に含める（検索対象）。それ以外の行は従来どおりステータスでフィルタ。
 
 使い方:
   python scripts/convert_master_one_sheet.py [CSVのパス]
@@ -166,6 +167,19 @@ def _should_skip_machine_export(status: str) -> bool:
     return False
 
 
+def _row_has_name_and_intro(values: list, idx: dict[str, int]) -> bool:
+    """機種名と導入開始日（または導入日）が両方非空なら True（ステータスに関わらず検索用マスタへ載せる）。"""
+
+    def cell(key: str, default: str = "") -> str:
+        if key not in idx or idx[key] >= len(values):
+            return default
+        return (values[idx[key]] or "").strip() or default
+
+    name = cell("機種名", "")
+    intro = cell("導入開始日") or cell("導入日")
+    return bool(name.strip()) and bool(intro.strip())
+
+
 def fetch_csv_from_url(url: str) -> str:
     if requests is None:
         raise RuntimeError("requests がインストールされていません: pip install requests")
@@ -221,11 +235,15 @@ def load_and_validate_rows(csv_content: str, today: Optional[date] = None):
             continue
         seen_ids.add(machine_id)
 
-        if _should_skip_machine_export(effective_status):
+        if effective_status == "対象外":
+            skip_report.append((row_no, machine_id, "skipped", "taishogai"))
+            continue
+
+        has_name_and_intro = _row_has_name_and_intro(values, idx)
+
+        if not has_name_and_intro and _should_skip_machine_export(effective_status):
             detail = "status_excluded_or_empty"
-            if effective_status == "対象外":
-                detail = "taishogai"
-            elif not (v(values, "ステータス") or "").strip():
+            if not (v(values, "ステータス") or "").strip():
                 detail = "status_empty"
             elif EXPORT_STATUS_VALUES is not None:
                 detail = "status_not_in_MASTER_EXPORT_STATUS_VALUES"

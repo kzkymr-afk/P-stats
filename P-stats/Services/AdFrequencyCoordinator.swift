@@ -3,7 +3,7 @@ import Foundation
 /// フルスクリーン広告の頻度・連鎖防止（インタースティシャル終了直後の App Open 抑止など）。
 @MainActor
 enum AdFrequencyCoordinator {
-    private static let lastInterstitialFlowEndKey = "AdFreq.lastInterstitialFlowEndAt"
+    private static var lastInterstitialFlowEndKey: String { UserDefaultsKey.adFreqLastInterstitialFlowEndAt.rawValue }
 
     /// インタースティシャルのロード〜終了までの一式が完了したときに呼ぶ（ロード失敗も含む）。
     static func markInterstitialFlowEnded() {

@@ -31,8 +31,8 @@ extension View {
     }
 
     /// DMM / 店舗リサーチなど、下部クロームバーの背後＋細い枠。
-    func pstatsChromeSheetBarStyle() -> some View {
-        modifier(PStatsChromeSheetBarModifier())
+    func pstatsChromeSheetBarStyle(borderStyle: PStatsChromeSheetBarBorderStyle = .fullRectangle) -> some View {
+        modifier(PStatsChromeSheetBarModifier(borderStyle: borderStyle))
     }
 
     /// `ApplicationTheme` のシャドウ仕様を適用する。
@@ -42,6 +42,14 @@ extension View {
 }
 
 // MARK: - 入力・クロームバー
+
+/// 下部クロームバー外周の枠線どう描くか（機種編集は上線のみにして左右の縦線を消す用途）。
+enum PStatsChromeSheetBarBorderStyle {
+    /// 四面 1pt（店舗編集バーなど従来どおり）
+    case fullRectangle
+    /// 上辺のみ（左右の縦線なし）
+    case topEdgeOnly
+}
 
 private struct PStatsInputChromeModifier: ViewModifier {
     @EnvironmentObject private var themeManager: ThemeManager
@@ -56,15 +64,26 @@ private struct PStatsInputChromeModifier: ViewModifier {
 
 private struct PStatsChromeSheetBarModifier: ViewModifier {
     @EnvironmentObject private var themeManager: ThemeManager
+    var borderStyle: PStatsChromeSheetBarBorderStyle
 
     func body(content: Content) -> some View {
         let t = themeManager.currentTheme
         content
             .background(t.chromeSheetBackdropColor)
-            .overlay(
-                RoundedRectangle(cornerRadius: 0)
-                    .stroke(t.chromeSheetBorderColor, lineWidth: 1)
-                    .padding(1)
-            )
+            .overlay(alignment: .top) {
+                if borderStyle == .topEdgeOnly {
+                    Rectangle()
+                        .fill(t.chromeSheetBorderColor)
+                        .frame(height: 1)
+                        .frame(maxWidth: .infinity)
+                }
+            }
+            .overlay {
+                if borderStyle == .fullRectangle {
+                    RoundedRectangle(cornerRadius: 0)
+                        .stroke(t.chromeSheetBorderColor, lineWidth: 1)
+                        .padding(1)
+                }
+            }
     }
 }

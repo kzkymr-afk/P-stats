@@ -21,30 +21,30 @@ struct SettingsTabView: View {
     @Query(sort: \MyMachinePreset.name) private var myMachinePresets: [MyMachinePreset]
     @Query(sort: \PrizeSet.displayOrder) private var prizeSets: [PrizeSet]
 
-    @AppStorage("homeBackgroundStyle") private var homeBackgroundStyle = HomeBackgroundStore.defaultStyle
-    @AppStorage("homeBackgroundImagePath") private var homeBackgroundImagePath = ""
-    @AppStorage("playViewBackgroundStyle") private var playViewBackgroundStyle = "sameAsHome"
-    @AppStorage("playViewBackgroundImagePath") private var playViewBackgroundImagePath = ""
+    @AppStorage(UserDefaultsKey.homeBackgroundStyle.rawValue) private var homeBackgroundStyle = HomeBackgroundStore.defaultStyle
+    @AppStorage(UserDefaultsKey.homeBackgroundImagePath.rawValue) private var homeBackgroundImagePath = ""
+    @AppStorage(UserDefaultsKey.playViewBackgroundStyle.rawValue) private var playViewBackgroundStyle = "sameAsHome"
+    @AppStorage(UserDefaultsKey.playViewBackgroundImagePath.rawValue) private var playViewBackgroundImagePath = ""
     // 旧キー（true ならプロモード相当として移行）
-    @AppStorage("playViewStartWithPowerSaving") private var playViewStartWithPowerSavingLegacy = false
+    @AppStorage(UserDefaultsKey.playViewStartWithPowerSaving.rawValue) private var playViewStartWithPowerSavingLegacy = false
     /// "normal" / "pro"
-    @AppStorage("playStartMode") private var playStartModeRaw: String = "normal"
+    @AppStorage(UserDefaultsKey.playStartMode.rawValue) private var playStartModeRaw: String = "normal"
     /// 実戦画面表示中は自動スリープ（画面オフ）を無効化
-    @AppStorage("playDisableIdleTimerDuringPlay") private var playDisableIdleTimerDuringPlay = true
+    @AppStorage(UserDefaultsKey.playDisableIdleTimerDuringPlay.rawValue) private var playDisableIdleTimerDuringPlay = true
     /// 遊技中の時給の基準（実収支の損益 vs 期待値理論）
     @AppStorage(PlayInfoPanelSettings.hourlyWageBasisKey) private var playHourlyWageBasisRaw: String = PlayHourlyWageBasis.actual.rawValue
-    @AppStorage("initialHoldingsGatePolicy") private var initialHoldingsGatePolicyRaw: String = InitialHoldingsGatePolicy.manual.rawValue
-    @AppStorage("hapticEnabled") private var hapticEnabled = true
-    @AppStorage("defaultExchangeRate") private var defaultExchangeRateStr = "4.0"  // 払出係数（pt/玉）文字列
-    @AppStorage(UnitDisplaySettings.unitSuffixKey) private var unitDisplaySuffix: String = "pt"
-    @AppStorage("defaultBallsPerCash") private var defaultBallsPerCashStr = "125"
-    @AppStorage("defaultMachineName") private var defaultMachineName = ""
-    @AppStorage("defaultShopName") private var defaultShopName = ""
-    @AppStorage("alwaysShowBothInvestmentButtons") private var alwaysShowBothInvestmentButtons = true
-    @AppStorage("bigHitHoldingsEntryDefault") private var bigHitHoldingsEntryDefaultRaw = BigHitHoldingsEntryKind.appStorageDefaultRawValue
-    @AppStorage("homeInfoPanelOrder") private var homeInfoPanelOrderRaw = HomeInfoPanelSettings.defaultOrderCSV
-    @AppStorage("homeInfoPanelHidden") private var homeInfoPanelHiddenRaw = ""
-    @AppStorage("homeStatsLookbackDays") private var homeStatsLookbackDays = 30
+    @AppStorage(UserDefaultsKey.initialHoldingsGatePolicy.rawValue) private var initialHoldingsGatePolicyRaw: String = InitialHoldingsGatePolicy.manual.rawValue
+    @AppStorage(UserDefaultsKey.hapticEnabled.rawValue) private var hapticEnabled = true
+    @AppStorage(UserDefaultsKey.defaultExchangeRate.rawValue) private var defaultExchangeRateStr = "4.0"  // 交換率（pt/玉）文字列（店レート設定と同義）
+    @AppStorage(UserDefaultsKey.unitDisplaySuffix.rawValue) private var unitDisplaySuffix: String = "pt"
+    @AppStorage(UserDefaultsKey.defaultBallsPerCash.rawValue) private var defaultBallsPerCashStr = "125"
+    @AppStorage(UserDefaultsKey.defaultMachineName.rawValue) private var defaultMachineName = ""
+    @AppStorage(UserDefaultsKey.defaultShopName.rawValue) private var defaultShopName = ""
+    @AppStorage(UserDefaultsKey.alwaysShowBothInvestmentButtons.rawValue) private var alwaysShowBothInvestmentButtons = true
+    @AppStorage(UserDefaultsKey.bigHitHoldingsEntryDefault.rawValue) private var bigHitHoldingsEntryDefaultRaw = BigHitHoldingsEntryKind.appStorageDefaultRawValue
+    @AppStorage(UserDefaultsKey.homeInfoPanelOrder.rawValue) private var homeInfoPanelOrderRaw = HomeInfoPanelSettings.defaultOrderCSV
+    @AppStorage(UserDefaultsKey.homeInfoPanelHidden.rawValue) private var homeInfoPanelHiddenRaw = ""
+    @AppStorage(UserDefaultsKey.homeStatsLookbackDays.rawValue) private var homeStatsLookbackDays = 30
     @AppStorage(PlayInfoPanelSettings.orderKey) private var playInfoPanelOrderRaw: String = PlayInfoPanelSettings.defaultOrderCSV
     @AppStorage(PlayInfoPanelSettings.hiddenKey) private var playInfoPanelHiddenRaw: String = ""
     @State private var panelOrderEdit: [Int] = []
@@ -154,7 +154,7 @@ struct SettingsTabView: View {
                                 }
                             }
                             .tint(cyan)
-                            Text("・手入力：毎回空欄から（貯玉を使わない・同日に台移動して持ち玉だけ持ち込む等）\n・常に0：貯玉に頼らず毎回ゼロから\n・貯玉残高に合わせる：店舗マスタの貯玉が1玉以上ならその数を入れる（0なら0）。貯玉サービスで残高をアプリに合わせている場合向け")
+                            Text("・手入力：毎回空欄から（貯玉を使わない・同日に台移動して持ち玉だけ持ち込む等）\n・常に0：貯玉に頼らず毎回ゼロから\n・貯玉残高に合わせる：店で貯玉サービスをオフにしている店向け。貯玉が1玉以上ならその数（0なら0）を入れます。\n※店で貯玉サービスをオンにしている店を選んだ新規遊技では、ここで選んだ方針にかかわらず、常にその店の貯玉残高が入ります。")
                                 .font(AppTypography.annotation)
                                 .foregroundColor(.white.opacity(0.68))
                                 .fixedSize(horizontal: false, vertical: true)
@@ -220,19 +220,18 @@ struct SettingsTabView: View {
                         }
                     }
 
-                    // 店舗選択なしの場合のデフォルト交換率
-                    settingsCard(title: "店舗選択なしの場合のデフォルト払出係数", icon: "yensign.circle.fill") {
+                    // 店舗登録の「レート設定」と同じ意味のデフォルト（店舗未選択時）
+                    settingsCard(title: "店舗選択なしの場合のデフォルトレート", icon: "yensign.circle.fill") {
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
-                                Text("払出係数（pt/玉）")
+                                Text("貸玉数（500ptあたり）")
                                     .font(AppTypography.sectionSubheading)
                                     .foregroundColor(.white.opacity(0.9))
                                 Spacer()
-                                DecimalPadTextField(
-                                    text: $defaultExchangeRateStr,
-                                    placeholder: "4.0",
-                                    maxIntegerDigits: 4,
-                                    maxFractionDigits: 4,
+                                IntegerPadTextField(
+                                    text: $defaultBallsPerCashStr,
+                                    placeholder: "125",
+                                    maxDigits: 4,
                                     font: .preferredFont(forTextStyle: .body),
                                     textColor: UIColor.white,
                                     accentColor: UIColor(cyan)
@@ -244,14 +243,15 @@ struct SettingsTabView: View {
                                     .background(themeManager.currentTheme.inputFieldBackground, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
                             }
                             HStack {
-                                Text("貸玉料金（500ptあたりの玉数）")
+                                Text("交換率（pt/玉）")
                                     .font(AppTypography.sectionSubheading)
                                     .foregroundColor(.white.opacity(0.9))
                                 Spacer()
-                                IntegerPadTextField(
-                                    text: $defaultBallsPerCashStr,
-                                    placeholder: "125",
-                                    maxDigits: 4,
+                                DecimalPadTextField(
+                                    text: $defaultExchangeRateStr,
+                                    placeholder: "4.0",
+                                    maxIntegerDigits: 4,
+                                    maxFractionDigits: 4,
                                     font: .preferredFont(forTextStyle: .body),
                                     textColor: UIColor.white,
                                     accentColor: UIColor(cyan)
@@ -557,11 +557,11 @@ struct SettingsTabView: View {
                                 if entitlements.hasPurchasedPremium {
                                     Text("利用中")
                                         .font(AppTypography.annotation)
-                                        .foregroundColor(cyan)
+                                        .foregroundColor(AppGlassStyle.subscriptionStatusColor(.purchasedPremium))
                                 } else if entitlements.isRewardTrialActiveForDisplay {
                                     Text("試用中")
                                         .font(AppTypography.annotation)
-                                        .foregroundColor(cyan.opacity(0.9))
+                                        .foregroundColor(AppGlassStyle.subscriptionStatusColor(.rewardTrialActive))
                                 }
                             }
                             if !entitlements.hasPurchasedPremium {
@@ -575,7 +575,7 @@ struct SettingsTabView: View {
                                             .padding(.vertical, 12)
                                             .foregroundColor(.black)
                                             .background(cyan)
-                                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                                            .clipShape(RoundedRectangle(cornerRadius: AppGlassStyle.cornerRadiusControl, style: .continuous))
                                     }
                                 } else {
                                     ProgressView().tint(cyan)
@@ -590,7 +590,7 @@ struct SettingsTabView: View {
                                         .padding(.vertical, 12)
                                         .foregroundColor(.black)
                                         .background(cyan.opacity(0.85))
-                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                        .clipShape(RoundedRectangle(cornerRadius: AppGlassStyle.cornerRadiusControl, style: .continuous))
                                 }
                                 if entitlements.isRewardTrialActiveForDisplay, let end = entitlements.rewardTrialEndDateForDisplay {
                                     Text("試用期限: \(analyticsTrialEndLabel(end))")

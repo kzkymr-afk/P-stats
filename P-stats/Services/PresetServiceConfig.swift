@@ -9,7 +9,7 @@ enum PresetServiceConfig {
     /// 例: https://kzkymr-afk.github.io/P-stats/master_out
     static let defaultMachineDetailBaseURL = "https://kzkymr-afk.github.io/P-stats/master_out"
 
-    /// 旧仕様: スペック「完了」など。現在は `MasterSpecRegistrationGate` が「対象外」以外を許可。
+    /// 旧仕様・参照用。index 掲載は `scripts/convert_master_one_sheet.py` が決定（機種名＋導入開始日が揃えばステータス未完了でも掲載可）。アプリ側は `MasterSpecRegistrationGate` で「対象外」以外を許可。
     static let masterSpecReadyStatuses: Set<String> = ["完了", "公開"]
 
     /// 新規登録検索の index から除外するステータス（`index.json` にも載らない想定）。

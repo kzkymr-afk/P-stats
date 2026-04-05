@@ -9,7 +9,7 @@ enum AppTypography {
     static let sectionSubheading = AppDesignSystem.Typography.sectionSubheading
     /// 本文・リスト主文
     static let bodyRounded = AppDesignSystem.Typography.bodyRounded
-    /// インサイトドロワー内のパネルタイトル（幅が狭いため上限 ~13pt）
+    /// インサイトドロワー内のパネルタイトル（可読性優先で 15pt）
     static let insightPanelTitle = AppDesignSystem.Typography.insightPanelTitle
     /// 本文（数値・主文・モノスペース）
     static let bodyMonoSemibold = AppDesignSystem.Typography.bodyMonoSemibold

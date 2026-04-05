@@ -9,7 +9,7 @@ private struct PlayOverlayBottomBannerInsetModifier: ViewModifier {
             if adVisibility.shouldShowBanner {
                 AdaptiveBannerSlot(adUnitID: AdMobConfig.bannerUnitID)
                     .frame(maxWidth: .infinity)
-                    .background(Color.black)
+                    .background(AppGlassStyle.AdChrome.bannerBackground)
             }
         }
     }

@@ -41,8 +41,8 @@ enum DebugRewardTrialMode: String, CaseIterable, Identifiable {
 final class DeveloperEntitlementDebugSettings: ObservableObject {
     static let shared = DeveloperEntitlementDebugSettings()
 
-    private let premiumKey = "devDebugPremiumEntitlementMode"
-    private let rewardKey = "devDebugRewardTrialMode"
+    private let premiumKey = UserDefaultsKey.devDebugPremiumEntitlementMode.rawValue
+    private let rewardKey = UserDefaultsKey.devDebugRewardTrialMode.rawValue
 
     @Published var premiumMode: DebugPremiumEntitlementMode {
         didSet {

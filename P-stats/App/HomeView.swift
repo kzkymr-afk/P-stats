@@ -57,11 +57,11 @@ enum HomeTab: String, CaseIterable {
 struct HomeView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.scenePhase) private var scenePhase
-    @AppStorage("homeBackgroundStyle") private var homeBackgroundStyle = HomeBackgroundStore.defaultStyle
-    @AppStorage("homeBackgroundImagePath") private var homeBackgroundImagePath = ""
+    @AppStorage(UserDefaultsKey.homeBackgroundStyle.rawValue) private var homeBackgroundStyle = HomeBackgroundStore.defaultStyle
+    @AppStorage(UserDefaultsKey.homeBackgroundImagePath.rawValue) private var homeBackgroundImagePath = ""
 
     @State private var log = GameLog()
-    @AppStorage("appTheme") private var appThemeRaw: String = AppTheme.dark.rawValue
+    @AppStorage(UserDefaultsKey.appTheme.rawValue) private var appThemeRaw: String = AppTheme.dark.rawValue
 
     private var themeBinding: Binding<AppTheme> {
         Binding(
@@ -90,9 +90,9 @@ struct HomeView: View {
     @State private var statsPeriod: EarningsPeriod = .month
     @State private var loadedBackgroundImage: UIImage?
 
-    @AppStorage("homeInfoPanelOrder") private var homeInfoPanelOrderRaw = HomeInfoPanelSettings.defaultOrderCSV
-    @AppStorage("homeInfoPanelHidden") private var homeInfoPanelHiddenRaw = ""
-    @AppStorage("homeStatsLookbackDays") private var homeStatsLookbackDays = 30
+    @AppStorage(UserDefaultsKey.homeInfoPanelOrder.rawValue) private var homeInfoPanelOrderRaw = HomeInfoPanelSettings.defaultOrderCSV
+    @AppStorage(UserDefaultsKey.homeInfoPanelHidden.rawValue) private var homeInfoPanelHiddenRaw = ""
+    @AppStorage(UserDefaultsKey.homeStatsLookbackDays.rawValue) private var homeStatsLookbackDays = 30
 
     @ObservedObject private var entitlements = EntitlementsStore.shared
     @ObservedObject private var adVisibility = AdVisibilityManager.shared
@@ -109,6 +109,16 @@ struct HomeView: View {
 
     private var homeLookbackClamped: Int {
         min(365, max(7, homeStatsLookbackDays))
+    }
+
+    /// 分析・ホーム集計でスナップショット差分を数えるためのマスタ辞書（同名は先勝ち）
+    private var homeMachinesByName: [String: Machine] {
+        var d: [String: Machine] = [:]
+        for m in machines {
+            let k = m.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            if d[k] == nil { d[k] = m }
+        }
+        return d
     }
 
     /// 通常モードでのバッテリー節約：アニメーションはホームタブ・フォアグラウンド・低電力でない時のみ
@@ -264,7 +274,7 @@ struct HomeView: View {
 
                 // 機種管理
                 NavigationStack {
-                    MachineManagementView()
+                    MachineManagementView(nativeAdsInListEnabled: selectedTab == .machines)
                         .navigationTitle(HomeTab.machines.rawValue)
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbarColorScheme(.dark, for: .navigationBar)
@@ -276,7 +286,7 @@ struct HomeView: View {
 
                 // 店舗管理
                 NavigationStack {
-                    ShopManagementView()
+                    ShopManagementView(nativeAdsInListEnabled: selectedTab == .shops)
                         .navigationTitle(HomeTab.shops.rawValue)
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbarColorScheme(.dark, for: .navigationBar)
@@ -317,7 +327,7 @@ struct HomeView: View {
                     if adVisibility.shouldShowBanner {
                         AdaptiveBannerSlot(adUnitID: AdMobConfig.bannerUnitID)
                             .frame(maxWidth: .infinity)
-                            .background(Color.black)
+                            .background(AppGlassStyle.AdChrome.bannerBackground)
                     }
                     footerTabBar
                 }
@@ -520,6 +530,7 @@ struct HomeView: View {
             VStack(spacing: m.verticalSpacing) {
                 HomeIntegratedInfoPanel(
                     sessions: allSessions,
+                    machinesByName: homeMachinesByName,
                     statsPeriod: $statsPeriod,
                     orderedSectionIDs: homeInfoPanelOrderParsed,
                     hiddenSectionIDs: homeInfoPanelHiddenParsed,

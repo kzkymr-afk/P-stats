@@ -1,10 +1,15 @@
 import Foundation
 import Observation
 
+/// 実戦中の一時状態。選択店・機種・当たり履歴など **個人の遊技コンテキスト** を保持する。
+///
+/// - Important: このオブジェクトの内容を CloudKit **Public**（共有マスタ）へ送らないこと。
+///   共有できるのはマスタ化した機種スペックのみ（`SharedMachineCloudKitService`）。
 @Observable
 final class GameLog {
     // 初期値としての仮データ（SelectionViewで上書きされます）
     var selectedMachine: Machine = Machine(name: "未選択", supportLimit: 100, defaultPrize: 1500)
+    /// 店舗名・レート等を含む。Public DB 同期の対象外。
     var selectedShop: Shop = Shop(
         name: "未選択",
         ballsPerCashUnit: PersistedDataSemantics.defaultBallsPer500Pt,
@@ -39,6 +44,12 @@ final class GameLog {
     var bigHitSessionNormalRotationsAtWin: Int? = nil
     /// 突入シートで確定した当選時点の総回転（ランプ）
     var bigHitSessionTotalRotationsAtWin: Int? = nil
+    /// 当選までの通常時に「現在の持ち玉数に合わせる」で積んだ調整玉（確定時に WinRecord へ）
+    var normalSegmentHoldingsReconcileAccumulator: Int = 0
+    /// 大当たり突入時に直前通常分として退避（確定時に WinRecord.normal に載せる）
+    var stashedNormalHoldingsReconcileForBigHit: Int = 0
+    /// 大当たりモード中に同機能で積んだ調整玉（確定時に WinRecord.bonus に載せる）
+    var bigHitSegmentHoldingsReconcileAccumulator: Int = 0
 
     var winRecords: [WinRecord] = []
     var lendingRecords: [LendingRecord] = []
@@ -117,7 +128,7 @@ final class GameLog {
         }
     }
 
-    /// 持ち玉投資は 1タップ＝店の「持ち玉1回あたり」設定（未設定時は貸玉と同じ玉数）。残りが少ないときは全額
+    /// 持ち玉投資は 1タップ＝店の「持ち玉払い出し数」（未設定時は貸玉数と同じ玉数）。残りが少ないときは全額
     private var holdingsBallsPerTap: Int { max(1, selectedShop.interpretedHoldingsBallsPerTap) }
 
     init() {}
@@ -245,6 +256,8 @@ final class GameLog {
 
     /// 大当たり突入時：当選時点の回転・投資を揃えてから大当たりモード開始。持ち玉は「投資玉数」と「残り玉数」のどちらか一方のみ指定。
     func applyBigHitEntryAtWin(normalRotationsAtWin: Int, cashPt: Int, holdingsInvestedBalls: Int?, remainingHoldingsBalls: Int?) {
+        stashedNormalHoldingsReconcileForBigHit = normalSegmentHoldingsReconcileAccumulator
+        normalSegmentHoldingsReconcileAccumulator = 0
         let cashUnits = max(0, cashPt / 500)
         reconcileCashLendingCount(toUnits: cashUnits)
         if let invested = holdingsInvestedBalls {
@@ -335,6 +348,17 @@ final class GameLog {
         }
     }
 
+    /// 1 区間（`WinRecord` 1 件）の「大当たり回数」と総獲得出玉をまとめて修正。回数 1＝通常、2 以上＝ RUSH として `type` も揃える。
+    func updateWinSessionHitsAndPrize(winId: UUID, hitCount: Int, totalPrizeBalls: Int) {
+        guard winId != Self.provisionalBigHitChartId else { return }
+        guard let index = winRecords.firstIndex(where: { $0.id == winId }) else { return }
+        let h = max(1, hitCount)
+        let p = max(0, totalPrizeBalls)
+        winRecords[index].bonusSessionHitCount = h
+        winRecords[index].prize = p
+        winRecords[index].type = h >= 2 ? .rush : .normal
+    }
+
     /// 大当たりモード終了。1区間の当たりとして `winRecords` に1件追加する。
     /// - Parameter electricSupportTurns: 大当たり確定の時点で **すでに消化した** 電サポのゲーム数。ランプ・「当選からのゲーム数」はこの分だけ進んだ扱いにし、通常へ即復帰する（残りカウントダウンにはしない）。
     func commitBigHitSessionToNormal(hitCount: Int, totalPrizeBalls: Int, electricSupportTurns: Int) {
@@ -344,9 +368,17 @@ final class GameLog {
         let support = max(0, electricSupportTurns)
         let rotW = bigHitSessionTotalRotationsAtWin ?? totalRotations
         let normW = bigHitSessionNormalRotationsAtWin ?? normalRotations
-        var record = WinRecord(type: .normal, prize: prize, rotationAtWin: rotW, normalRotationsAtWin: normW)
+        var record = WinRecord(type: h >= 2 ? .rush : .normal, prize: prize, rotationAtWin: rotW, normalRotationsAtWin: normW)
         record.timestamp = Date()
         record.bonusSessionHitCount = h
+        if stashedNormalHoldingsReconcileForBigHit != 0 {
+            record.normalPhaseHoldingsReconcileBalls = stashedNormalHoldingsReconcileForBigHit
+        }
+        if bigHitSegmentHoldingsReconcileAccumulator != 0 {
+            record.bonusPhaseHoldingsReconcileBalls = bigHitSegmentHoldingsReconcileAccumulator
+        }
+        stashedNormalHoldingsReconcileForBigHit = 0
+        bigHitSegmentHoldingsReconcileAccumulator = 0
         winRecords.append(record)
         pushUndo(.removeWin(id: record.id, before: beforeSnapshot))
         isBigHitMode = false
@@ -371,6 +403,9 @@ final class GameLog {
         bigHitChainCount = 0
         bigHitSessionNormalRotationsAtWin = nil
         bigHitSessionTotalRotationsAtWin = nil
+        normalSegmentHoldingsReconcileAccumulator += stashedNormalHoldingsReconcileForBigHit
+        stashedNormalHoldingsReconcileForBigHit = 0
+        bigHitSegmentHoldingsReconcileAccumulator = 0
     }
 
     /// カウントボタン表示用：前回大当たり以降のゲーム数（時短・ST抜けゲーム数含む）。
@@ -807,9 +842,9 @@ final class GameLog {
         lines.append("貸玉補正：×\(loanC.displayFormat("%.2f"))倍（等価は1,000ptで250玉＝基準。この店は約\(Int(ballsPer1000))玉/1,000pt）")
         if payout > 0 {
             let exchC = 4.0 / payout
-            lines.append("交換補正：×\(exchC.displayFormat("%.2f"))倍（払出係数 \(payout.displayFormat("%.4g"))pt/玉。等価4pt/玉との比率がボーダーに反映されます）")
+            lines.append("交換補正：×\(exchC.displayFormat("%.2f"))倍（交換率 \(payout.displayFormat("%.4g"))pt/玉。等価4pt/玉との比率がボーダーに反映されます）")
         } else {
-            lines.append("交換補正：—（払出係数が未設定のため倍率を出せません）")
+            lines.append("交換補正：—（交換率（pt/玉）が未設定のため倍率を出せません）")
         }
         return lines.joined(separator: "\n")
     }
@@ -836,18 +871,18 @@ final class GameLog {
         var lines: [String] = []
         lines.append("―― いまの値（この説明を開いたとき）――")
         lines.append("店：\(shopName) ／ 機：\(machineName)")
-        lines.append("貸玉 \(ballsPer500)玉/500pt → B＝\(Int(ballsPer1000))玉/1kpt ／ 払出 \(payout.displayFormat("%.4g"))pt/玉")
+        lines.append("貸玉 \(ballsPer500)玉/500pt → B＝\(Int(ballsPer1000))玉/1kpt ／ 交換率 \(payout.displayFormat("%.4g"))pt/玉")
         lines.append("現金 \(cashPt)pt ／ 持ち玉投資 \(holdBalls)玉 ／ 通常回転 \(nRot)")
         lines.append("")
         lines.append("実質ボーダー ≒ \(db.displayFormat("%.2f")) 回/単位")
         if payout <= 0 {
-            lines.append("（払出0のため参考になりません）")
+            lines.append("（交換率0のため参考になりません）")
         } else if formula > 0 {
-            lines.append("＝ 等価\(formula.displayFormat("%.3g")) × 250/B(\(loanC.displayFormat("%.4g"))) × 4/払出(\(exchC.displayFormat("%.4g")))")
+            lines.append("＝ 等価\(formula.displayFormat("%.3g")) × 250/B(\(loanC.displayFormat("%.4g"))) × 4/交換率(\(exchC.displayFormat("%.4g")))")
         } else if oneR > 0, probDenom > 0 {
             lines.append("＝ 確率分母\(probDenom.displayFormat("%.4g"))×250÷1R\(oneR.displayFormat("%.4g")) × 貸玉・交換補正（同上）")
         } else if oneR > 0, payout > 0 {
-            lines.append("＝ 1000÷(1R\(oneR.displayFormat("%.4g"))×払出) など")
+            lines.append("＝ 1000÷(1R\(oneR.displayFormat("%.4g"))×交換率) など")
         }
         lines.append("")
         let cashBalls = Double(cashPt / 500) * Double(ballsPer500)
@@ -1009,15 +1044,6 @@ final class GameLog {
         }
     }
 
-    /// 当選回数をあとから修正（RUSH回数・通常回数）。持ち玉数は変更しない
-    func setWinCounts(rush: Int, normal: Int) {
-        let r = max(0, rush)
-        let n = max(0, normal)
-        let rushRecords = (0..<r).map { _ in WinRecord(type: .rush, prize: 0, rotationAtWin: 0) }
-        let normalRecords = (0..<n).map { _ in WinRecord(type: .normal, prize: 0, rotationAtWin: 0) }
-        winRecords = rushRecords + normalRecords
-    }
-
     /// 直近1回の操作を取り消す（最後に追加した Win または Lending を削除）。最大3回まで
     func undoLastAction() {
         guard let action = undoStack.popLast() else { return }
@@ -1100,6 +1126,21 @@ final class GameLog {
         }
     }
 
+    /// ドロワー「現在の持ち玉数に合わせる」：台の実残りを入力し、アプリ表示との差分を持ち玉投資に反映（表面・実質回転率の分母に効く）。
+    /// 差分は通常時は `normalSegmentHoldingsReconcileAccumulator`、大当たりモード中は `bigHitSegmentHoldingsReconcileAccumulator` に積算し、区間確定時に `WinRecord` に記録する。
+    func reconcileHoldingsToActualCount(_ actualHoldings: Int) {
+        let actual = max(0, actualHoldings)
+        let currentHoldings = totalHoldings
+        let diff = currentHoldings - actual
+        guard diff != 0 else { return }
+        lendingRecords.append(LendingRecord(type: .holdings, timestamp: Date(), balls: diff))
+        if isBigHitMode {
+            bigHitSegmentHoldingsReconcileAccumulator += diff
+        } else {
+            normalSegmentHoldingsReconcileAccumulator += diff
+        }
+    }
+
     func reset() {
         undoStack = []
         sessionStartedAt = nil
@@ -1118,6 +1159,9 @@ final class GameLog {
         bigHitChainCount = 0
         bigHitSessionNormalRotationsAtWin = nil
         bigHitSessionTotalRotationsAtWin = nil
+        normalSegmentHoldingsReconcileAccumulator = 0
+        stashedNormalHoldingsReconcileForBigHit = 0
+        bigHitSegmentHoldingsReconcileAccumulator = 0
         winRecords = []
         lendingRecords = []
     }
@@ -1145,6 +1189,9 @@ final class GameLog {
         bigHitChainCount = state.bigHitChainCount ?? 0
         bigHitSessionNormalRotationsAtWin = state.bigHitSessionNormalRotationsAtWin
         bigHitSessionTotalRotationsAtWin = state.bigHitSessionTotalRotationsAtWin
+        normalSegmentHoldingsReconcileAccumulator = state.normalSegmentHoldingsReconcileAccumulator ?? 0
+        stashedNormalHoldingsReconcileForBigHit = state.stashedNormalHoldingsReconcileForBigHit ?? 0
+        bigHitSegmentHoldingsReconcileAccumulator = state.bigHitSegmentHoldingsReconcileAccumulator ?? 0
         restoreUndoStack(from: state.undoStackEntries)
     }
 

@@ -8,8 +8,8 @@ struct MasterMachineSearchView: View {
     @Environment(\.modelContext) private var modelContext
 
     @Query(sort: \PresetMachine.name) private var localPresets: [PresetMachine]
-    @AppStorage("machineMasterDataURL") private var machineMasterDataURL: String = ""
-    @AppStorage("machineDetailBaseURL") private var machineDetailBaseURL: String = ""
+    @AppStorage(UserDefaultsKey.machineMasterDataURL.rawValue) private var machineMasterDataURL: String = ""
+    @AppStorage(UserDefaultsKey.machineDetailBaseURL.rawValue) private var machineDetailBaseURL: String = ""
     @State private var urlPresets: [PresetFromServer]?
     @State private var urlLoadError: String?
     /// index.json 取得失敗時（一覧を空にした理由）
@@ -42,14 +42,9 @@ struct MasterMachineSearchView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                VStack(spacing: 6) {
-                    Text("マスタから機種を選び、マイリストに追加できます。")
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.75))
-                    Text("※ index.json に載る機種のうち、ステータス「対象外」（導入から6年超など）以外を表示します。詳細は machines.json 優先。")
-                        .font(AppTypography.annotationSmall)
-                        .foregroundStyle(.white.opacity(0.55))
-                }
+                Text("マスタから機種を選び、マイリストに追加できます。")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.75))
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 20)

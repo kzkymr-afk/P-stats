@@ -3,8 +3,8 @@ import UIKit
 
 // MARK: - 共通背景（実戦履歴・分析で使用。トップと同じビジュアルだが静止）
 struct StaticHomeBackgroundView: View {
-    @AppStorage("homeBackgroundStyle") private var homeBackgroundStyle = HomeBackgroundStore.defaultStyle
-    @AppStorage("homeBackgroundImagePath") private var homeBackgroundImagePath = ""
+    @AppStorage(UserDefaultsKey.homeBackgroundStyle.rawValue) private var homeBackgroundStyle = HomeBackgroundStore.defaultStyle
+    @AppStorage(UserDefaultsKey.homeBackgroundImagePath.rawValue) private var homeBackgroundImagePath = ""
     @State private var loadedBackgroundImage: UIImage?
 
     private let cyan = AppGlassStyle.accent

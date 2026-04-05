@@ -72,8 +72,8 @@ enum AppDesignSystem {
         static let sectionSubheading = Font.system(size: 15, weight: .semibold, design: .rounded)
         /// 本文
         static let bodyRounded = Font.system(size: 14, weight: .medium, design: .rounded)
-        /// 狭い場所のパネルタイトル
-        static let insightPanelTitle = Font.system(size: 13, weight: .semibold, design: .rounded)
+        /// 狭い場所のパネルタイトル（インサイトドロワー。可読性のため +2pt）
+        static let insightPanelTitle = Font.system(size: 15, weight: .semibold, design: .rounded)
         /// 数値（読みやすさ最優先）
         static let bodyMonoSemibold = Font.system(size: 14, weight: .semibold, design: .monospaced)
         // MARK: 注釈（TextStyle の caption / caption2 相当を +1pt）

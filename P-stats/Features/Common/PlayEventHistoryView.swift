@@ -11,9 +11,10 @@ struct PlayEventHistoryView: View {
     @State private var editLendingId: UUID?
     @State private var editRotation: String = ""
     @State private var editPrize: String = ""
-    @State private var editWinType: WinType = .normal
+    @State private var editHitCount: String = ""
     @State private var editLendingType: LendingType = .cash
     @State private var editLendingBalls: String = ""
+    @State private var editWinHitCountPadTrigger = 0
     @State private var editWinRotationPadTrigger = 0
     @State private var editWinPrizePadTrigger = 0
     @State private var editLendingBallsPadTrigger = 0
@@ -74,11 +75,17 @@ struct PlayEventHistoryView: View {
         }
     }
 
+    @ViewBuilder
     private func winRow(_ record: WinRecord) -> some View {
+        let hits = max(1, record.bonusSessionHitCount ?? 1)
+        let kind = hits >= 2 ? "RUSH" : "通常"
         HStack {
-            Text(record.type.compactHistoryLabel)
+            Text(kind)
                 .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                .foregroundColor(record.type == .rush ? .red : .blue)
+                .foregroundColor(hits >= 2 ? .red : .blue)
+            Text("×\(hits)")
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundColor(.secondary)
             Spacer()
             Text("\(record.rotationAtWin) G")
                 .font(.system(size: 12, design: .monospaced))
@@ -110,9 +117,9 @@ struct PlayEventHistoryView: View {
 
     private func openEditWin(_ record: WinRecord) {
         editWinId = record.id
-        editWinType = record.type
         editRotation = "\(record.rotationAtWin)"
         editPrize = "\(record.prize ?? 0)"
+        editHitCount = "\(max(1, record.bonusSessionHitCount ?? 1))"
     }
 
     private func openEditLending(_ record: LendingRecord) {
@@ -139,19 +146,44 @@ struct PlayEventHistoryView: View {
 
     @ViewBuilder
     private func winEditSheet(winId: UUID) -> some View {
-        if let record = log.winRecords.first(where: { $0.id == winId }) {
+        if log.winRecords.first(where: { $0.id == winId }) != nil {
             let rotBinding = Binding(get: { editRotation }, set: { editRotation = $0 })
             let prizeBinding = Binding(get: { editPrize }, set: { editPrize = $0 })
+            let hitBinding = Binding(get: { editHitCount }, set: { editHitCount = $0 })
             NavigationStack {
                 Form {
-                    Section("種別") {
-                        Picker("種別", selection: $editWinType) {
-                            Text("通常").tag(WinType.normal)
-                            Text("RUSH").tag(WinType.rush)
-                        }
-                        .pickerStyle(.segmented)
+                    Section {
+                        IntegerPadTextField(
+                            text: hitBinding,
+                            placeholder: "回数",
+                            maxDigits: 5,
+                            font: .preferredFont(forTextStyle: .body),
+                            textColor: UIColor.label,
+                            accentColor: UIColor(accent),
+                            focusTrigger: editWinHitCountPadTrigger,
+                            onNextField: { editWinPrizePadTrigger += 1 }
+                        )
+                    } header: {
+                        Text("この区間の大当たり回数")
+                    } footer: {
+                        Text("1 回＝通常、2 回以上＝ RUSH（連チャン）として扱います。")
                     }
-                    Section("回転数") {
+                    Section {
+                        IntegerPadTextField(
+                            text: prizeBinding,
+                            placeholder: "玉",
+                            maxDigits: 9,
+                            font: .preferredFont(forTextStyle: .body),
+                            textColor: UIColor.label,
+                            accentColor: UIColor(accent),
+                            focusTrigger: editWinPrizePadTrigger,
+                            onPreviousField: { editWinHitCountPadTrigger += 1 },
+                            onNextField: { editWinRotationPadTrigger += 1 }
+                        )
+                    } header: {
+                        Text("総獲得出玉（玉）")
+                    }
+                    Section {
                         IntegerPadTextField(
                             text: rotBinding,
                             placeholder: "回転数",
@@ -161,21 +193,10 @@ struct PlayEventHistoryView: View {
                             accentColor: UIColor(accent),
                             focusTrigger: editWinRotationPadTrigger,
                             onPreviousField: { editWinPrizePadTrigger += 1 },
-                            onNextField: { editWinPrizePadTrigger += 1 }
+                            onNextField: { editWinHitCountPadTrigger += 1 }
                         )
-                    }
-                    Section("出玉数（玉）") {
-                        IntegerPadTextField(
-                            text: prizeBinding,
-                            placeholder: "出玉数",
-                            maxDigits: 7,
-                            font: .preferredFont(forTextStyle: .body),
-                            textColor: UIColor.label,
-                            accentColor: UIColor(accent),
-                            focusTrigger: editWinPrizePadTrigger,
-                            onPreviousField: { editWinRotationPadTrigger += 1 },
-                            onNextField: { editWinRotationPadTrigger += 1 }
-                        )
+                    } header: {
+                        Text("当選時の総回転（ランプ）")
                     }
                 }
                 .navigationTitle("大当たりを編集")
@@ -188,20 +209,20 @@ struct PlayEventHistoryView: View {
                     ToolbarItem(placement: .confirmationAction) {
                         Button("完了") {
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                            if let r = Int(editRotation), let p = Int(editPrize), r >= 0, p >= 0 {
+                            let rTrim = editRotation.trimmingCharacters(in: .whitespaces)
+                            let pTrim = editPrize.trimmingCharacters(in: .whitespaces)
+                            let hTrim = editHitCount.trimmingCharacters(in: .whitespaces)
+                            if let r = Int(rTrim), let p = Int(pTrim), let h = Int(hTrim),
+                               r >= 0, p >= 0, h >= 1 {
                                 log.updateWinRotation(id: winId, rotationAtWin: r)
-                                log.updatePrize(id: winId, newPrize: p)
-                                log.updateWinType(id: winId, newType: editWinType)
+                                log.updateWinSessionHitsAndPrize(winId: winId, hitCount: h, totalPrizeBalls: p)
                             }
                             editWinId = nil
                         }
                     }
                 }
                 .onAppear {
-                    editWinType = record.type
-                    editRotation = "\(record.rotationAtWin)"
-                    editPrize = "\(record.prize ?? 0)"
-                    editWinRotationPadTrigger += 1
+                    editWinHitCountPadTrigger += 1
                 }
             }
         }

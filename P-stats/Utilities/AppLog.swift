@@ -8,4 +8,5 @@ enum AppLog {
     static let places = Logger(subsystem: subsystem, category: "Places")
     static let machineMaster = Logger(subsystem: subsystem, category: "MachineMaster")
     static let presets = Logger(subsystem: subsystem, category: "Presets")
+    static let sessionSnapshot = Logger(subsystem: subsystem, category: "SessionSnapshot")
 }

@@ -16,7 +16,7 @@ struct NativeAdCardSlot: UIViewRepresentable {
 
     func updateUIView(_ nativeAdView: GADNativeAdView, context: Context) {
         context.coordinator.attachIfNeeded(nativeAdView)
-        nativeAdView.layer.cornerRadius = 14
+        nativeAdView.layer.cornerRadius = DesignTokens.Layout.cornerRadiusCard
         nativeAdView.clipsToBounds = true
     }
 
@@ -44,21 +44,21 @@ struct NativeAdCardSlot: UIViewRepresentable {
                 red: DesignTokens.Glass.dockBackgroundTopR,
                 green: DesignTokens.Glass.dockBackgroundTopG,
                 blue: DesignTokens.Glass.dockBackgroundTopB,
-                alpha: 0.95
+                alpha: DesignTokens.AdChrome.nativeCardBackgroundOpacity
             )
-            v.layer.cornerRadius = 14
+            v.layer.cornerRadius = DesignTokens.Layout.cornerRadiusCard
             v.clipsToBounds = true
 
             let adMark = UILabel()
             adMark.text = "広告"
             adMark.font = .systemFont(ofSize: 10, weight: .semibold)
-            adMark.textColor = UIColor.white.withAlphaComponent(0.45)
+            adMark.textColor = UIColor.white.withAlphaComponent(CGFloat(DesignTokens.AdChrome.disclosureLabelOpacity))
             adMark.translatesAutoresizingMaskIntoConstraints = false
 
             let iconView = UIImageView()
             iconView.contentMode = .scaleAspectFill
             iconView.clipsToBounds = true
-            iconView.layer.cornerRadius = 8
+            iconView.layer.cornerRadius = DesignTokens.Layout.cornerRadiusSmall
             iconView.backgroundColor = UIColor.white.withAlphaComponent(0.08)
             iconView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -90,7 +90,7 @@ struct NativeAdCardSlot: UIViewRepresentable {
                 alpha: 1
             )
             ctaConfig.background.backgroundColor = UIColor.white.withAlphaComponent(0.1)
-            ctaConfig.background.cornerRadius = 8
+            ctaConfig.background.cornerRadius = DesignTokens.Layout.cornerRadiusSmall
             ctaConfig.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
                 var out = incoming
                 out.font = .systemFont(ofSize: 13, weight: .semibold)
@@ -145,7 +145,7 @@ struct NativeAdCardSlot: UIViewRepresentable {
                 media.leadingAnchor.constraint(equalTo: v.leadingAnchor, constant: 12),
                 media.trailingAnchor.constraint(equalTo: v.trailingAnchor, constant: -12),
                 media.topAnchor.constraint(equalTo: cta.bottomAnchor, constant: 8),
-                media.heightAnchor.constraint(equalToConstant: 120),
+                media.heightAnchor.constraint(equalToConstant: DesignTokens.NativeAd.listCardMediaHeight),
                 media.bottomAnchor.constraint(equalTo: v.bottomAnchor, constant: -12),
             ])
 
@@ -203,7 +203,7 @@ struct OptionalNativeAdCardSlot: View {
     var body: some View {
         if adVisibility.shouldShowBanner {
             NativeAdCardSlot(placementID: placementID)
-                .frame(minHeight: 200)
+                .frame(minHeight: DesignTokens.NativeAd.listCardSlotMinHeight)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

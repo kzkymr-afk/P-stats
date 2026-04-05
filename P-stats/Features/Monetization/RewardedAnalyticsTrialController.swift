@@ -9,9 +9,9 @@ final class RewardedAnalyticsTrialController: ObservableObject {
     /// 1 回のリワードで延長する時間（時間）。UI 文言と AdMob の報酬説明と揃える。
     static let trialHoursPerReward = 3
 
-    private let trialEndKey = "rewardedAnalyticsTrialEndAt"
-    private let rewardsDayStartKey = "rewardedAnalyticsRewardsDayStart"
-    private let rewardsCountKey = "rewardedAnalyticsRewardsCountToday"
+    private let trialEndKey = UserDefaultsKey.rewardedAnalyticsTrialEndAt.rawValue
+    private let rewardsDayStartKey = UserDefaultsKey.rewardedAnalyticsRewardsDayStart.rawValue
+    private let rewardsCountKey = UserDefaultsKey.rewardedAnalyticsRewardsCountToday.rawValue
 
     /// 1 暦日あたりのリワード付与上限
     static let maxRewardsPerCalendarDay = 2

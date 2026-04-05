@@ -12,13 +12,13 @@ enum InitialHoldingsGatePolicy: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 
     /// `UserDefaults` キー（`AppStorage` と一致）
-    static let storageKey = "initialHoldingsGatePolicy"
+    static var storageKey: String { UserDefaultsKey.initialHoldingsGatePolicy.rawValue }
 
     /// 旧 `startWithZeroHoldings` からの一回限り移行（未設定時のみ）
     static func migrateFromLegacyIfNeeded() {
         let u = UserDefaults.standard
         guard u.object(forKey: storageKey) == nil else { return }
-        let legacy = u.object(forKey: "startWithZeroHoldings") as? Bool
+        let legacy = u.object(forKey: UserDefaultsKey.startWithZeroHoldings.rawValue) as? Bool
         let v: InitialHoldingsGatePolicy = (legacy == true) ? .prefillZero : .manual
         u.set(v.rawValue, forKey: storageKey)
     }

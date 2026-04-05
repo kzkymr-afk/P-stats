@@ -3,7 +3,7 @@ import UIKit
 // MARK: - バイブ（触覚フィードバック）ユーティリティ
 enum HapticUtil {
     static var isEnabled: Bool {
-        UserDefaults.standard.object(forKey: "hapticEnabled") as? Bool ?? true
+        UserDefaults.standard.object(forKey: UserDefaultsKey.hapticEnabled.rawValue) as? Bool ?? true
     }
 
     static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle = .light) {

@@ -328,4 +328,57 @@ enum AppGlassStyle {
             .ignoresSafeArea(edges: .bottom)
         }
     }
+
+    // MARK: - レイアウト定数（`DesignTokens.Layout` のエイリアス）
+
+    static var cornerRadiusStandard: CGFloat { DesignTokens.Layout.cornerRadiusStandard }
+    static var cornerRadiusCard: CGFloat { DesignTokens.Layout.cornerRadiusCard }
+    static var cornerRadiusControl: CGFloat { DesignTokens.Layout.cornerRadiusControl }
+    static var cornerRadiusSmall: CGFloat { DesignTokens.Layout.cornerRadiusSmall }
+    static var spacingXS: CGFloat { DesignTokens.Layout.paddingXS }
+    static var spacingSmall: CGFloat { DesignTokens.Layout.paddingS }
+    static var spacingMedium: CGFloat { DesignTokens.Layout.paddingM }
+    static var spacingLarge: CGFloat { DesignTokens.Layout.paddingL }
+
+    // MARK: - 広告枠（バナー・ネイティブの下敷きをテーマと同系に）
+
+    enum AdChrome {
+        static var bannerBackground: Color {
+            Color(
+                red: DesignTokens.AdChrome.bannerBackdropR,
+                green: DesignTokens.AdChrome.bannerBackdropG,
+                blue: DesignTokens.AdChrome.bannerBackdropB
+            )
+            .opacity(DesignTokens.AdChrome.bannerBackdropOpacity)
+        }
+
+        static var bannerBorder: Color {
+            Color.white.opacity(DesignTokens.AdChrome.borderOpacity)
+        }
+
+        /// 「広告」等の副次ラベル
+        static var disclosureLabel: Color {
+            Color.white.opacity(DesignTokens.AdChrome.disclosureLabelOpacity)
+        }
+    }
+
+    // MARK: - 課金ステータス別の強調色（ビューは `EntitlementsStore` を監視し、種類だけ渡す）
+
+    enum SubscriptionHighlightKind {
+        case purchasedPremium
+        case rewardTrialActive
+    }
+
+    static func subscriptionStatusColor(_ kind: SubscriptionHighlightKind) -> Color {
+        switch kind {
+        case .purchasedPremium:
+            return Color(
+                red: DesignTokens.Semantic.Standard.winStrongR,
+                green: DesignTokens.Semantic.Standard.winStrongG,
+                blue: DesignTokens.Semantic.Standard.winStrongB
+            )
+        case .rewardTrialActive:
+            return DefaultTheme.shared.accentColor.opacity(DesignTokens.Surface.WhiteOnDark.nearOpaqueLabel)
+        }
+    }
 }

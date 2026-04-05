@@ -208,20 +208,21 @@ final class AnalyticsDashboardSharedModel: ObservableObject {
     @Published private(set) var cachedFilteredSessions: [GameSession] = []
     @Published private(set) var cachedAllGroups: [AnalyticsGroup] = []
 
-    func updateCaches(sessionsQuery: [GameSession]) {
+    func updateCaches(sessionsQuery: [GameSession], machinesByName: [String: Machine]) {
         let f = periodFilter.filter(sessionsQuery, referenceDate: selectedPeriodDate)
         cachedFilteredSessions = f
+        let m = machinesByName
         switch bottomSegment {
-        case .overview: cachedAllGroups = [AnalyticsEngine.overviewGroup(f)]
-        case .shop: cachedAllGroups = AnalyticsEngine.byShop(f)
-        case .machine: cachedAllGroups = AnalyticsEngine.byMachine(f)
-        case .manufacturer: cachedAllGroups = AnalyticsEngine.byManufacturer(f)
+        case .overview: cachedAllGroups = [AnalyticsEngine.overviewGroup(f, machinesByName: m)]
+        case .shop: cachedAllGroups = AnalyticsEngine.byShop(f, machinesByName: m)
+        case .machine: cachedAllGroups = AnalyticsEngine.byMachine(f, machinesByName: m)
+        case .manufacturer: cachedAllGroups = AnalyticsEngine.byManufacturer(f, machinesByName: m)
         case .period:
             switch periodFilter {
             case .all, .year, .last30, .last7:
-                cachedAllGroups = AnalyticsEngine.byMonth(f)
+                cachedAllGroups = AnalyticsEngine.byMonth(f, machinesByName: m)
             case .month:
-                cachedAllGroups = AnalyticsEngine.byCalendarDay(f)
+                cachedAllGroups = AnalyticsEngine.byCalendarDay(f, machinesByName: m)
             }
         }
     }
@@ -842,8 +843,16 @@ struct AnalyticsDashboardView: View {
         })
     }
 
+    /// マスタ変更で分析キャッシュ（スナップショット差分カウント等）を更新する
+    private var machinesMasterFingerprint: String {
+        machines.map { mach in
+            let k = mach.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            return "\(k)|\(mach.border)|\(mach.probability)|\(mach.effectivePayoutDisplay)|\(mach.averageNetPerRound)|\(mach.countPerRound)|\(mach.supportLimit)|\(mach.timeShortRotations)|\(mach.machineTypeRaw)|\(mach.masterID ?? "")"
+        }.sorted().joined(separator: "\u{1E}")
+    }
+
     private func updateCaches() {
-        model.updateCaches(sessionsQuery: sessionsQuery)
+        model.updateCaches(sessionsQuery: sessionsQuery, machinesByName: machinesByName)
     }
 
     /// 店舗名 → 特定日ルール（分析で優先して使用）
@@ -887,6 +896,7 @@ struct AnalyticsDashboardView: View {
                 .presentationDetents([.medium])
         }
         .onChange(of: sessionsQuery) { _, _ in updateCaches() }
+        .onChange(of: machinesMasterFingerprint) { _, _ in updateCaches() }
         .onChange(of: model.periodFilter) { _, _ in updateCaches() }
         .onChange(of: model.selectedPeriodDate) { _, _ in updateCaches() }
         .onChange(of: model.bottomSegment) { _, _ in updateCaches() }
@@ -1045,6 +1055,7 @@ struct AnalyticsDashboardView: View {
         case .crossAnalysis:
             CrossAnalysisFullScreenView(
                 sessions: filteredSessions,
+                machinesByName: machinesByName,
                 periodFilter: model.periodFilter,
                 selectedPeriodDate: model.selectedPeriodDate,
                 dimension: $model.crossAnalysisDimension,
@@ -1115,6 +1126,7 @@ struct AnalyticsDashboardView: View {
                     if entitlements.analyticsUnlocked {
                         CrossAnalysisOverviewSection(
                             sessions: filteredSessions,
+                            machinesByName: machinesByName,
                             periodFilter: model.periodFilter,
                             selectedPeriodDate: model.selectedPeriodDate,
                             dimension: $model.crossAnalysisDimension,
@@ -1273,6 +1285,21 @@ private struct OverviewTotalSummaryPanel: View {
                 .font(AppTypography.panelHeading)
                 .foregroundColor(AppGlassStyle.textPrimary)
                 .padding(.bottom, 6)
+
+            if metrics.snapshotBackedSessionCount > 0 {
+                Text("※スナップショットがある実戦は、保存時の機種スペックで期待値を再計算しています。")
+                    .font(AppTypography.annotation)
+                    .foregroundStyle(AppGlassStyle.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, 6)
+            }
+            if metrics.masterSpecDriftSessionCount > 0 {
+                Text("※機種マスタ更新後、当時保存されたスペックと現マスタが異なる実戦が含まれます。")
+                    .font(AppTypography.annotation)
+                    .foregroundStyle(AppGlassStyle.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom, 6)
+            }
 
             summaryPairRow(
                 "通算成績", signedPt(metrics.totalPerformance), metrics.totalPerformance >= 0 ? accent : lossColor,
@@ -1459,6 +1486,7 @@ private struct AnalyticsPeriodPickerSheet: View {
 private struct CrossAnalysisPanelCore: View {
     @EnvironmentObject private var themeManager: ThemeManager
     let sessions: [GameSession]
+    let machinesByName: [String: Machine]
     let periodFilter: AnalyticsPeriodFilter
     let selectedPeriodDate: Date
     @Binding var dimension: CrossAnalysisDimension
@@ -1474,11 +1502,11 @@ private struct CrossAnalysisPanelCore: View {
     }
 
     private var manufacturerRows: [ShopManufacturerCrossRow] {
-        AnalyticsEngine.shopManufacturerCrossRows(sessions, sortBy: sortAxis)
+        AnalyticsEngine.shopManufacturerCrossRows(sessions, sortBy: sortAxis, machinesByName: machinesByName)
     }
 
     private var machineRows: [ShopMachineCrossRow] {
-        AnalyticsEngine.shopMachineCrossRows(sessions, sortBy: sortAxis)
+        AnalyticsEngine.shopMachineCrossRows(sessions, sortBy: sortAxis, machinesByName: machinesByName)
     }
 
     var body: some View {
@@ -1623,6 +1651,7 @@ private struct CrossAnalysisPanelCore: View {
 /// 全般タブ一覧内：ヒートマップ等と同じ外周パネル
 private struct CrossAnalysisOverviewSection: View {
     let sessions: [GameSession]
+    let machinesByName: [String: Machine]
     let periodFilter: AnalyticsPeriodFilter
     let selectedPeriodDate: Date
     @Binding var dimension: CrossAnalysisDimension
@@ -1634,6 +1663,7 @@ private struct CrossAnalysisOverviewSection: View {
     var body: some View {
         CrossAnalysisPanelCore(
             sessions: sessions,
+            machinesByName: machinesByName,
             periodFilter: periodFilter,
             selectedPeriodDate: selectedPeriodDate,
             dimension: $dimension,
@@ -1651,6 +1681,7 @@ private struct CrossAnalysisOverviewSection: View {
 /// ドックは増やさずナビで専用画面（同一モデルのバインディングを共有）
 private struct CrossAnalysisFullScreenView: View {
     let sessions: [GameSession]
+    let machinesByName: [String: Machine]
     let periodFilter: AnalyticsPeriodFilter
     let selectedPeriodDate: Date
     @Binding var dimension: CrossAnalysisDimension
@@ -1664,6 +1695,7 @@ private struct CrossAnalysisFullScreenView: View {
             ScrollView(showsIndicators: false) {
                 CrossAnalysisPanelCore(
                     sessions: sessions,
+                    machinesByName: machinesByName,
                     periodFilter: periodFilter,
                     selectedPeriodDate: selectedPeriodDate,
                     dimension: $dimension,
@@ -2569,7 +2601,7 @@ private struct AnalyticsSessionCardView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
                 Spacer(minLength: 0)
-                Text("\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)")
+                Text("\(session.analyticsTheoreticalValuePt >= 0 ? "+" : "")\(session.analyticsTheoreticalValuePt.formattedPtWithUnit)")
                     .font(skin.themedFont(size: 14, weight: .semibold, monospaced: true))
                     .foregroundStyle(skin.subTextColor)
                     .lineLimit(1)
@@ -2647,8 +2679,9 @@ private struct AnalyticsSessionDetailView: View {
         return "\(d >= 0 ? "+" : "")\(d.displayFormat("%.1f")) 回/1k"
     }
     private var expectationDisplay: String {
-        let pt = "\(session.theoreticalValue >= 0 ? "+" : "")\(session.theoreticalValue.formattedPtWithUnit)"
-        let ratio = session.displayExpectationRatioAtSave.map { ($0 * 100).displayFormat("%.2f%%") } ?? "—"
+        let pt = "\(session.analyticsTheoreticalValuePt >= 0 ? "+" : "")\(session.analyticsTheoreticalValuePt.formattedPtWithUnit)"
+        let r = session.analyticsExpectationRatio
+        let ratio = r > 0 ? (r * 100).displayFormat("%.2f%%") : "—"
         return "\(pt)（\(ratio)）"
     }
     @State private var showEditSheet = false
@@ -2684,6 +2717,12 @@ private struct AnalyticsSessionDetailView: View {
                         sessionDetailLabeledRow("実質回転率", realRotationRateDisplay)
                         sessionDetailDivider()
                         sessionDetailLabeledRow("ボーダーとの差", borderDiffDisplay)
+                    }
+                    if session.snapshotData != nil {
+                        Text("※期待値・欠損／余剰は、保存時の機種スナップショットに基づき再計算した値です。")
+                            .font(AppTypography.annotation)
+                            .foregroundStyle(skin.subTextColor.opacity(0.9))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -2937,14 +2976,14 @@ private struct AnalyticsShopDetailView: View {
     }
 
     private var weekdayGroups: [AnalyticsGroup] {
-        let byWeekday = AnalyticsEngine.byWeekday(shopSessions)
+        let byWeekday = AnalyticsEngine.byWeekday(shopSessions, machinesByName: machinesByName)
         let order = ["日曜", "月曜", "火曜", "水曜", "木曜", "金曜", "土曜"]
         return order.map { day in byWeekday.first(where: { $0.label == day }) ?? AnalyticsEngine.emptyGroup(label: day) }
     }
 
     /// 個別店舗用：通常日 + 設定した特定日（最大4つ）+ ゾロ目。7分割表示
     private var specificDayGroups: [AnalyticsGroup] {
-        let fromAttr = AnalyticsEngine.bySpecificDayAttribute(shopSessions, rulesByShopName: rulesByShopName)
+        let fromAttr = AnalyticsEngine.bySpecificDayAttribute(shopSessions, rulesByShopName: rulesByShopName, machinesByName: machinesByName)
         let byLabel = Dictionary(uniqueKeysWithValues: fromAttr.map { ($0.label, $0) })
         let labels = ["通常日"] + orderedSpecificDayLabels.prefix(4) + ["ゾロ目"]
         return labels.map { byLabel[$0] ?? AnalyticsEngine.emptyGroup(label: $0) }
@@ -3049,13 +3088,13 @@ private struct AnalyticsShopMachineCrossDetailView: View {
     }
 
     private var weekdayGroups: [AnalyticsGroup] {
-        let byWeekday = AnalyticsEngine.byWeekday(pairSessions)
+        let byWeekday = AnalyticsEngine.byWeekday(pairSessions, machinesByName: machinesByName)
         let order = ["日曜", "月曜", "火曜", "水曜", "木曜", "金曜", "土曜"]
         return order.map { day in byWeekday.first(where: { $0.label == day }) ?? AnalyticsEngine.emptyGroup(label: day) }
     }
 
     private var specificDayGroups: [AnalyticsGroup] {
-        let fromAttr = AnalyticsEngine.bySpecificDayAttribute(pairSessions, rulesByShopName: rulesByShopName)
+        let fromAttr = AnalyticsEngine.bySpecificDayAttribute(pairSessions, rulesByShopName: rulesByShopName, machinesByName: machinesByName)
         let byLabel = Dictionary(uniqueKeysWithValues: fromAttr.map { ($0.label, $0) })
         let labels = ["通常日"] + orderedSpecificDayLabels.prefix(4) + ["ゾロ目"]
         return labels.map { byLabel[$0] ?? AnalyticsEngine.emptyGroup(label: $0) }
@@ -3159,7 +3198,7 @@ private struct AnalyticsMachineDetailView: View {
     }
 
     private var weekdayGroups: [AnalyticsGroup] {
-        let byWeekday = AnalyticsEngine.byWeekday(machineSessions)
+        let byWeekday = AnalyticsEngine.byWeekday(machineSessions, machinesByName: machinesByName)
         let order = ["日曜", "月曜", "火曜", "水曜", "木曜", "金曜", "土曜"]
         return order.map { day in byWeekday.first(where: { $0.label == day }) ?? AnalyticsEngine.emptyGroup(label: day) }
     }
@@ -3253,14 +3292,14 @@ private struct AnalyticsManufacturerDetailView: View {
     }
 
     private var weekdayGroups: [AnalyticsGroup] {
-        let byWeekday = AnalyticsEngine.byWeekday(manufacturerSessions)
+        let byWeekday = AnalyticsEngine.byWeekday(manufacturerSessions, machinesByName: machinesByName)
         let order = ["日曜", "月曜", "火曜", "水曜", "木曜", "金曜", "土曜"]
         return order.map { day in byWeekday.first(where: { $0.label == day }) ?? AnalyticsEngine.emptyGroup(label: day) }
     }
 
     /// メーカー全体では通常日・7のつく日・ゾロ目の3つのみ、7分割
     private var specificDayGroups: [AnalyticsGroup] {
-        let fromAttr = AnalyticsEngine.bySpecificDayAttribute(manufacturerSessions, rulesByShopName: rulesByShopName)
+        let fromAttr = AnalyticsEngine.bySpecificDayAttribute(manufacturerSessions, rulesByShopName: rulesByShopName, machinesByName: machinesByName)
         let byLabel = Dictionary(uniqueKeysWithValues: fromAttr.map { ($0.label, $0) })
         return AnalyticsFixedSpecificDayLabels.list.map { byLabel[$0] ?? AnalyticsEngine.emptyGroup(label: $0) }
     }

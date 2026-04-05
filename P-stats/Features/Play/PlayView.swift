@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 import Combine
 import UIKit
+import os
 
 struct PlayView: View {
     @Bindable var log: GameLog
@@ -10,9 +11,11 @@ struct PlayView: View {
     var onOpenSettingsTab: (() -> Void)? = nil
     @Environment(\.dismiss) var dismiss // ホームに戻るために必要
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.gameSessionRepository) private var gameSessionRepository
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @EnvironmentObject private var themeManager: ThemeManager
-    @AppStorage("alwaysShowBothInvestmentButtons") private var alwaysShowBothInvestmentButtons = true
+    @AppStorage(UserDefaultsKey.alwaysShowBothInvestmentButtons.rawValue) private var alwaysShowBothInvestmentButtons = true
 
     @State private var showSettingsSheet = false
     @State private var showSyncSheet = false
@@ -64,16 +67,13 @@ struct PlayView: View {
     @State private var showInitialRotationCorrectSheet = false
     @State private var showCashCorrectSheet = false
     @State private var showHoldingsCorrectSheet = false
-    @State private var showWinCountCorrectSheet = false
     @State private var tempInitialRotationCorrect: String = ""
     @State private var tempCashCorrect: String = ""
     @State private var tempHoldingsCorrectValue: String = ""
-    @State private var tempRushWinCount: String = ""
-    @State private var tempNormalWinCount: String = ""
-    @State private var showWinBonusEditSheet = false
-    @State private var tempWinBonusEditId: UUID?
-    @State private var tempWinBonusEditCount: String = ""
-    @State private var tempWinBonusEditPadTrigger = 0
+    @State private var showWinSessionEditSheet = false
+    @State private var winSessionEditInitialId: UUID?
+    @State private var winSessionEditFormOnly = false
+    @State private var winSessionEditPresentationId = UUID()
     /// タップ成功時の波紋アニメーション（期待値に応じた色）
     @State private var rippleScale: CGFloat = 0
     @State private var rippleOpacity: Double = 0
@@ -94,17 +94,17 @@ struct PlayView: View {
     private let winRecordsDisplayLimit = 30
     /// ゲージ再描画用（設定シート戻り時にインクリメント。SwiftDataモデル編集の反映）
     @State private var gaugeRefreshId = 0
-    @AppStorage("playViewRightHandMode") private var rightHandMode = false
+    @AppStorage(UserDefaultsKey.playViewRightHandMode.rawValue) private var rightHandMode = false
     // 旧キーからの移行用（true ならプロモード扱いに寄せる）
-    @AppStorage("playViewStartWithPowerSaving") private var playViewStartWithPowerSavingLegacy = false
-    @AppStorage("playStartMode") private var playStartModeRaw: String = "normal"
-    @AppStorage("playDisableIdleTimerDuringPlay") private var playDisableIdleTimerDuringPlay = true
-    @AppStorage("machineDetailBaseURL") private var machineDetailBaseURL: String = ""
-    @AppStorage("playViewBackgroundStyle") private var playViewBackgroundStyle = "sameAsHome"
-    @AppStorage("playViewBackgroundImagePath") private var playViewBackgroundImagePath = ""
-    @AppStorage("homeBackgroundStyle") private var homeBackgroundStyle = HomeBackgroundStore.defaultStyle
-    @AppStorage("homeBackgroundImagePath") private var homeBackgroundImagePath = ""
-    @AppStorage("bigHitHoldingsEntryDefault") private var bigHitHoldingsEntryDefaultRaw = BigHitHoldingsEntryKind.appStorageDefaultRawValue
+    @AppStorage(UserDefaultsKey.playViewStartWithPowerSaving.rawValue) private var playViewStartWithPowerSavingLegacy = false
+    @AppStorage(UserDefaultsKey.playStartMode.rawValue) private var playStartModeRaw: String = "normal"
+    @AppStorage(UserDefaultsKey.playDisableIdleTimerDuringPlay.rawValue) private var playDisableIdleTimerDuringPlay = true
+    @AppStorage(UserDefaultsKey.machineDetailBaseURL.rawValue) private var machineDetailBaseURL: String = ""
+    @AppStorage(UserDefaultsKey.playViewBackgroundStyle.rawValue) private var playViewBackgroundStyle = "sameAsHome"
+    @AppStorage(UserDefaultsKey.playViewBackgroundImagePath.rawValue) private var playViewBackgroundImagePath = ""
+    @AppStorage(UserDefaultsKey.homeBackgroundStyle.rawValue) private var homeBackgroundStyle = HomeBackgroundStore.defaultStyle
+    @AppStorage(UserDefaultsKey.homeBackgroundImagePath.rawValue) private var homeBackgroundImagePath = ""
+    @AppStorage(UserDefaultsKey.bigHitHoldingsEntryDefault.rawValue) private var bigHitHoldingsEntryDefaultRaw = BigHitHoldingsEntryKind.appStorageDefaultRawValue
     @State private var loadedPlayBackgroundImage: UIImage?
     @State private var showHistoryFromPlay = false
     @State private var showEventHistorySheet = false
@@ -140,8 +140,32 @@ struct PlayView: View {
     @State private var headerTopInset: CGFloat = 59
 
     @ObservedObject private var adVisibility = AdVisibilityManager.shared
-    /// 実戦下部バナーをユーザーがスワイプで隠したか（終了確認中は `playTerminationFlowActive` で再表示）
-    @State private var playSessionAdDismissed = false
+
+    /// インサイト（分析ドロワー）が実質オープン
+    private var isInsightPanelPresented: Bool {
+        drawerOffset > DesignTokens.PlayLayout.insightDrawerOpenThresholdForAdSuppression
+    }
+
+    /// 投資・回収・同期など数値入力のシート
+    private var isActivePlayInputSheetPresented: Bool {
+        showSyncSheet || showTrayAdjustSheet || showHoldingsSyncSheet
+            || showFinalHoldingsInput || showSettlementSheet
+            || showBigHitExitSheet || showBigHitEntrySheet
+            || showInitialRotationCorrectSheet || showCashCorrectSheet || showHoldingsCorrectSheet
+            || showWinSessionEditSheet
+    }
+
+    private var isPlayFullScreenCoverPresented: Bool {
+        showProMode || showHistoryFromPlay || showAnalyticsFromPlay || showEventHistorySheet
+    }
+
+    /// バナーを畳み、読み込みも止める（レイアウト用のスロット高は維持）
+    private var playBannerSuppressedForFocus: Bool {
+        isInsightPanelPresented
+            || isActivePlayInputSheetPresented
+            || isPlayFullScreenCoverPresented
+            || shareSheetItem != nil
+    }
 
     private func applyPlayIdleTimerPreference() {
         UIApplication.shared.isIdleTimerDisabled = playDisableIdleTimerDuringPlay
@@ -154,6 +178,20 @@ struct PlayView: View {
     /// ゲーム数カウント用：最弱のバイブ
     private func hapticSoft() {
         HapticUtil.impact(.soft)
+    }
+
+    /// 棒グラフなどからそのままフォームへ（無効 ID のときは一覧へ）。
+    private func winSessionEditShouldFormOnly(preselected: UUID?) -> Bool {
+        guard let id = preselected else { return false }
+        if id == GameLog.provisionalBigHitChartId { return log.isBigHitMode }
+        return log.winRecords.contains { $0.id == id }
+    }
+
+    private func presentWinSessionEdit(preselected: UUID?) {
+        winSessionEditInitialId = preselected
+        winSessionEditFormOnly = winSessionEditShouldFormOnly(preselected: preselected)
+        winSessionEditPresentationId = UUID()
+        showWinSessionEditSheet = true
     }
 
     private enum BigHitCorrectionTarget {
@@ -174,7 +212,7 @@ struct PlayView: View {
                 tempCashCorrect = "\(log.totalInput)"
                 showCashCorrectSheet = true
             case .correctHoldingsInvested:
-                tempHoldingsCorrectValue = "\(log.holdingsInvestedBalls)"
+                tempHoldingsCorrectValue = "\(log.totalHoldings)"
                 showHoldingsCorrectSheet = true
             }
         }
@@ -212,30 +250,26 @@ struct PlayView: View {
         }
     }
 
-    /// 実戦終了フロー中は下部バナーを閉じられず常に表示（インタースティシャル前の確認と両立）
-    private var playTerminationFlowActive: Bool {
-        showEndConfirm || showEmptySaveConfirm || showFinalHoldingsInput || showSettlementSheet || saveResult != nil
-    }
-
-    /// ヘッダー（機種・店舗）の直下オーバーレイ。大当たり回数・ゲージ等より手前。
+    /// ヘッダー（機種・店舗）の直下オーバーレイ。大当たり回数・ゲージ等より手前。スロット高のみ確保しヘッダーと隙間をトークンで揃える。
     @ViewBuilder
-    private func playTopAdOverlay(geo: GeometryProxy) -> some View {
-        if adVisibility.shouldShowBanner {
-            SwipeDismissiblePlayAdBanner(
-                adUnitID: AdMobConfig.bannerUnitID,
-                allowDismiss: !playTerminationFlowActive,
-                userDismissed: $playSessionAdDismissed
-            )
+    private func playTopAdOverlay(geo: GeometryProxy, metrics: PlaySessionLayoutMetrics) -> some View {
+        if adVisibility.shouldShowBanner, metrics.adSlotHeight > 0 {
+            let suppressed = playBannerSuppressedForFocus
+            VStack(spacing: 0) {
+                AdaptiveBannerSlot(adUnitID: AdMobConfig.bannerUnitID, pauseAdRefresh: suppressed)
+                    .frame(maxWidth: .infinity)
+            }
+            .frame(width: geo.size.width, height: metrics.adSlotHeight, alignment: .top)
+            .background(AppGlassStyle.AdChrome.bannerBackground)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .padding(.top, playTopAdTopInset(geo: geo))
+            .padding(.top, metrics.headerBlockHeight + DesignTokens.PlayLayout.marginBelowHeaderBeforeBanner)
+            .opacity(suppressed ? 0 : 1)
+            .animation(
+                accessibilityReduceMotion ? nil : .easeInOut(duration: DesignTokens.PlayLayout.bannerFocusCrossfadeSeconds),
+                value: suppressed
+            )
+            .allowsHitTesting(!suppressed)
         }
-    }
-
-    /// ヘッダー帯＋その直下スペーサまでの高さ（`PlaySessionLayoutMetrics` と 10pt スペーサと整合）
-    private func playTopAdTopInset(geo: GeometryProxy) -> CGFloat {
-        let m = playSessionLayoutMetrics(geo: geo)
-        let spacerBelowHeader: CGFloat = 10
-        return m.headerTopMargin + m.h2 + spacerBelowHeader
     }
 
     private func dismissPlayAfterSaveFlow() {
@@ -382,24 +416,64 @@ struct PlayView: View {
         let h22center: CGFloat
         let barHeight: CGFloat
         let headerTopMargin: CGFloat
+        /// `headerRow` の上下パディングを含めたヘッダー帯の最小高さ（バナー位置の基準）
+        let headerBlockHeight: CGFloat
+        /// ヘッダー直下〜メインカラム先頭まで（バナー時は余白＋スロット高）
+        let contentTopSpacing: CGFloat
+        /// トップバナー用 GAD スロット高（非表示時 0）
+        let adSlotHeight: CGFloat
         let maxRippleSize: CGFloat
     }
 
     private func playSessionLayoutMetrics(geo: GeometryProxy) -> PlaySessionLayoutMetrics {
         let H = geo.size.height
+        let W = geo.size.width
         let hHeaderOne = H * 0.05
         let hHeaderBigHitExtra: CGFloat = log.isBigHitMode ? max(34, H * 0.042) : 0
         let h2 = hHeaderOne + hHeaderBigHitExtra
-        let hWinCount = H * 0.055
-        let hSlumpBig = H * 0.168
-        let hHistBig = H * 0.118
-        let h20info = max(H * 0.191, 155)
-        let h10 = H * 0.088
-        let bigHitChainAndNormalTotal = max(H * 0.22 + min(H * 0.18, 96), 160)
+        let headerRowPad = DesignTokens.PlayLayout.headerRowVerticalPadding
+        let headerTopMargin = max(headerTopInset, 20)
+        let headerBlockHeight = headerTopMargin + h2 + headerRowPad * 2
+
+        let adSlotHeight: CGFloat = adVisibility.shouldShowBanner
+            ? AdaptiveBannerLayout.slotHeight(forWidth: W)
+            : 0
+        let contentTopSpacing: CGFloat = adVisibility.shouldShowBanner
+            ? (DesignTokens.PlayLayout.marginBelowHeaderBeforeBanner + adSlotHeight)
+            : DesignTokens.PlayLayout.spacerBelowHeaderNoAds
+
+        /// バナーで失う縦幅（従来の 6pt 相当より増えた分）。メインの可変ブロックを同比率で縮める。
+        let bannerVerticalTax = adVisibility.shouldShowBanner
+            ? max(0, DesignTokens.PlayLayout.marginBelowHeaderBeforeBanner + adSlotHeight - DesignTokens.PlayLayout.spacerBelowHeaderNoAds)
+            : 0
+        let shrinkRatio: CGFloat = {
+            guard bannerVerticalTax > 0 else { return 0 }
+            return min(0.22, (bannerVerticalTax / max(H, 320)) * 1.05)
+        }()
+
+        var hWinCount = H * 0.055
+        var hSlumpBig = H * 0.168
+        var hHistBig = H * 0.118
+        var h20info = max(H * 0.191, 155)
+        var h10 = H * 0.088
+        var bigHitChainAndNormalTotal = max(H * 0.22 + min(H * 0.18, 96), 160)
+        if shrinkRatio > 0 {
+            hSlumpBig *= 1 - shrinkRatio * 0.55
+            hHistBig *= 1 - shrinkRatio * 0.38
+            h10 *= 1 - shrinkRatio * 0.32
+            h20info *= 1 - shrinkRatio * 0.18
+            hWinCount *= 1 - shrinkRatio * 0.12
+            bigHitChainAndNormalTotal *= 1 - shrinkRatio * 0.62
+            hSlumpBig = max(hSlumpBig, 92)
+            hHistBig = max(hHistBig, 72)
+            h10 = max(h10, 64)
+            h20info = max(h20info, 138)
+            hWinCount = max(hWinCount, 48)
+            bigHitChainAndNormalTotal = max(bigHitChainAndNormalTotal, 124)
+        }
         let h22center = bigHitChainAndNormalTotal * 3 / 4
         let barHeight = bigHitChainAndNormalTotal * 1 / 4
-        let headerTopMargin = max(headerTopInset, 20)
-        let maxRippleSize = max(geo.size.width, geo.size.height) * 1.4
+        let maxRippleSize = max(W, H) * 1.4
         return PlaySessionLayoutMetrics(
             screenHeight: H,
             hHeaderOne: hHeaderOne,
@@ -412,17 +486,23 @@ struct PlayView: View {
             h22center: h22center,
             barHeight: barHeight,
             headerTopMargin: headerTopMargin,
+            headerBlockHeight: headerBlockHeight,
+            contentTopSpacing: contentTopSpacing,
+            adSlotHeight: adSlotHeight,
             maxRippleSize: maxRippleSize
         )
     }
 
     @ViewBuilder
     private func playSessionHeaderBlock(metrics: PlaySessionLayoutMetrics) -> some View {
-        ZStack(alignment: .bottom) {
+        // 上寄せ：大当たり2行目があっても1行目（機種・店舗）のYを通常時と揃える（下寄せだと余白が上に乗り1行目が下がる）
+        ZStack(alignment: .top) {
             theme.playHeaderBackground
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             headerRow(firstRowHeight: metrics.hHeaderOne)
+                .padding(.top, metrics.headerTopMargin)
         }
-        .frame(minHeight: metrics.headerTopMargin + metrics.h2)
+        .frame(minHeight: metrics.headerBlockHeight)
         .frame(maxWidth: .infinity)
     }
 
@@ -434,25 +514,25 @@ struct PlayView: View {
         infoRow(height: metrics.h20info)
         Spacer().frame(height: sectionGap)
 
-        WinHistoryBarChartView(
-            records: Array(log.winRecords.suffix(winRecordsDisplayLimit)),
-            maxHeight: metrics.h10,
-            accentStroke: focusAccent,
-            onSelectRecord: { rec in
-                tempWinBonusEditId = rec.id
-                tempWinBonusEditCount = "\(max(1, rec.bonusSessionHitCount ?? 1))"
-                showWinBonusEditSheet = true
-            }
-        )
-        .padding(6)
-        .frame(maxWidth: .infinity)
-        .background(playCardBackground, in: RoundedRectangle(cornerRadius: playCardCorner, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: playCardCorner, style: .continuous)
-                .stroke(focusAccent, lineWidth: playCardBorderWidth)
-        )
-        .padding(.horizontal, contentHorizontalPadding)
-        Spacer().frame(height: sectionGap)
+        if !adVisibility.shouldShowBanner {
+            WinHistoryBarChartView(
+                records: Array(log.winRecords.suffix(winRecordsDisplayLimit)),
+                maxHeight: metrics.h10,
+                accentStroke: focusAccent,
+                onSelectRecord: { rec in
+                    presentWinSessionEdit(preselected: rec.id)
+                }
+            )
+            .padding(6)
+            .frame(maxWidth: .infinity)
+            .background(playCardBackground, in: RoundedRectangle(cornerRadius: playCardCorner, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: playCardCorner, style: .continuous)
+                    .stroke(focusAccent, lineWidth: playCardBorderWidth)
+            )
+            .padding(.horizontal, contentHorizontalPadding)
+            Spacer().frame(height: sectionGap)
+        }
 
         PlaySessionSwipeHintBar(
             focusAccent: focusAccent,
@@ -484,30 +564,29 @@ struct PlayView: View {
             .padding(.horizontal, infoPanelHorizontalMargin)
             .animation(.easeInOut(duration: 0.28), value: log.bigHitChainCount)
         Spacer().frame(height: sectionGap)
-        WinHistoryBarChartView(
-            records: Array(log.winRecordsForChartDisplay().suffix(winRecordsDisplayLimit)),
-            maxHeight: metrics.hHistBig,
-            accentStroke: bigHitChainUsesRainbow(log.bigHitChainCount)
-                ? Color.white.opacity(DesignTokens.Surface.WhiteOnDark.winHistoryAccentStroke)
-                : bigHitChainPrimaryColor(log.bigHitChainCount),
-            chainBarColor: bigHitChainUsesRainbow(log.bigHitChainCount)
-                ? nil
-                : bigHitChainPrimaryColor(log.bigHitChainCount),
-            chainBarGradient: bigHitChainUsesRainbow(log.bigHitChainCount) ? bigHitRainbowForeground : nil,
-            onSelectRecord: { rec in
-                if rec.id == GameLog.provisionalBigHitChartId { return }
-                tempWinBonusEditId = rec.id
-                tempWinBonusEditCount = "\(max(1, rec.bonusSessionHitCount ?? 1))"
-                showWinBonusEditSheet = true
-            }
-        )
-        .padding(6)
-        .frame(maxWidth: .infinity)
-        .background(playCardBackground, in: RoundedRectangle(cornerRadius: playCardCorner, style: .continuous))
-        .overlay(bigHitThemedStroke(cornerRadius: playCardCorner, chainCount: log.bigHitChainCount))
-        .animation(.easeInOut(duration: 0.28), value: log.bigHitChainCount)
-        .padding(.horizontal, contentHorizontalPadding)
-        Spacer().frame(height: sectionGap)
+        if !adVisibility.shouldShowBanner {
+            WinHistoryBarChartView(
+                records: Array(log.winRecordsForChartDisplay().suffix(winRecordsDisplayLimit)),
+                maxHeight: metrics.hHistBig,
+                accentStroke: bigHitChainUsesRainbow(log.bigHitChainCount)
+                    ? Color.white.opacity(DesignTokens.Surface.WhiteOnDark.winHistoryAccentStroke)
+                    : bigHitChainPrimaryColor(log.bigHitChainCount),
+                chainBarColor: bigHitChainUsesRainbow(log.bigHitChainCount)
+                    ? nil
+                    : bigHitChainPrimaryColor(log.bigHitChainCount),
+                chainBarGradient: bigHitChainUsesRainbow(log.bigHitChainCount) ? bigHitRainbowForeground : nil,
+                onSelectRecord: { rec in
+                    presentWinSessionEdit(preselected: rec.id)
+                }
+            )
+            .padding(6)
+            .frame(maxWidth: .infinity)
+            .background(playCardBackground, in: RoundedRectangle(cornerRadius: playCardCorner, style: .continuous))
+            .overlay(bigHitThemedStroke(cornerRadius: playCardCorner, chainCount: log.bigHitChainCount))
+            .animation(.easeInOut(duration: 0.28), value: log.bigHitChainCount)
+            .padding(.horizontal, contentHorizontalPadding)
+            Spacer().frame(height: sectionGap)
+        }
         PlaySessionSwipeHintBar(
             focusAccent: focusAccent,
             rightHandMode: rightHandMode,
@@ -558,12 +637,10 @@ struct PlayView: View {
                     tempCashCorrect = "\(log.totalInput)"
                     showCashCorrectSheet = true
                 }, onCorrectHoldings: {
-                    tempHoldingsCorrectValue = "\(log.holdingsInvestedBalls)"
+                    tempHoldingsCorrectValue = "\(log.totalHoldings)"
                     showHoldingsCorrectSheet = true
                 }, onCorrectWinCount: {
-                    tempRushWinCount = "\(log.rushWinCount)"
-                    tempNormalWinCount = "\(log.normalWinCount)"
-                    showWinCountCorrectSheet = true
+                    presentWinSessionEdit(preselected: nil)
                 }, onOpenHistory: {
                     showHistoryFromPlay = true
                 }, onOpenEventHistory: {
@@ -633,7 +710,7 @@ struct PlayView: View {
 
                 VStack(spacing: 0) {
                     playSessionHeaderBlock(metrics: m)
-                    Spacer().frame(height: 6)
+                    Spacer().frame(height: m.contentTopSpacing)
 
                     if log.isBigHitMode {
                         playBigHitModeMainColumn(geo: geo, metrics: m)
@@ -644,7 +721,7 @@ struct PlayView: View {
                 .frame(minHeight: m.screenHeight)
                 .ignoresSafeArea(edges: .top)
 
-                playTopAdOverlay(geo: geo)
+                playTopAdOverlay(geo: geo, metrics: m)
 
                 popoverOverlays(geo: geo)
 
@@ -726,59 +803,27 @@ struct PlayView: View {
             }
         }
         .sheet(isPresented: $showHoldingsCorrectSheet) {
-            SyncInputView(title: "持ち玉投資を修正", label: "今回遊技に使った持ち玉数（玉）", val: $tempHoldingsCorrectValue) {
+            SyncInputView(title: "現在の持ち玉数に合わせる", label: "台に残っている持ち玉数（玉）", val: $tempHoldingsCorrectValue) {
                 if let v = Int(tempHoldingsCorrectValue) {
-                    log.setHoldingsInvested(balls: v)
+                    log.reconcileHoldingsToActualCount(v)
                 }
                 showHoldingsCorrectSheet = false
             }
         }
-        .sheet(isPresented: $showWinCountCorrectSheet) {
-            WinCountCorrectView(rushCount: $tempRushWinCount, normalCount: $tempNormalWinCount) {
-                let r = Int(tempRushWinCount.trimmingCharacters(in: .whitespaces)) ?? 0
-                let n = Int(tempNormalWinCount.trimmingCharacters(in: .whitespaces)) ?? 0
-                log.setWinCounts(rush: r, normal: n)
-                showWinCountCorrectSheet = false
-            }
-        }
-        .sheet(isPresented: $showWinBonusEditSheet) {
-            NavigationStack {
-                Form {
-                    Section {
-                        IntegerPadTextField(
-                            text: $tempWinBonusEditCount,
-                            placeholder: "連チャン含む回数",
-                            maxDigits: 5,
-                            font: .preferredFont(forTextStyle: .body),
-                            textColor: UIColor.label,
-                            accentColor: UIColor(focusAccent),
-                            focusTrigger: tempWinBonusEditPadTrigger
-                        )
-                    } footer: {
-                        Text("棒を長押しするか、VoiceOver の「大当たり回数を修正」で、その区間の連チャン含む回数を変更できます。")
-                    }
+        .sheet(isPresented: $showWinSessionEditSheet) {
+            WinSessionHitPrizeEditSheet(
+                log: log,
+                initialWinId: winSessionEditInitialId,
+                formOnlyMode: winSessionEditFormOnly,
+                accentColor: focusAccent,
+                onDismiss: {
+                    showWinSessionEditSheet = false
+                    winSessionEditInitialId = nil
+                    winSessionEditFormOnly = false
                 }
-                .navigationTitle("大当たり回数")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("キャンセル") {
-                            showWinBonusEditSheet = false
-                            tempWinBonusEditId = nil
-                        }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("保存") {
-                            if let id = tempWinBonusEditId, let v = Int(tempWinBonusEditCount.trimmingCharacters(in: .whitespaces)) {
-                                log.updateBonusSessionHitCount(winId: id, count: v)
-                            }
-                            showWinBonusEditSheet = false
-                            tempWinBonusEditId = nil
-                        }
-                    }
-                }
-                .onAppear { tempWinBonusEditPadTrigger += 1 }
-            }
+            )
+            .environmentObject(themeManager)
+            .id(winSessionEditPresentationId)
         }
         .fullScreenCover(isPresented: $showProMode) {
             ProModeView(
@@ -851,7 +896,6 @@ struct PlayView: View {
             }
         }
         .onAppear {
-            playSessionAdDismissed = false
             UIDevice.current.beginGeneratingDeviceOrientationNotifications()
             DispatchQueue.main.async { headerTopInset = Self.windowSafeAreaTop }
             if playStartMode == .pro, !didAutoOpenProModeThisSession, !log.isBigHitMode {
@@ -904,7 +948,7 @@ struct PlayView: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 6)
+        .padding(.vertical, DesignTokens.PlayLayout.headerRowVerticalPadding)
     }
 
     private func headerMachineShopButton() -> some View {
@@ -1725,9 +1769,31 @@ struct PlayView: View {
            let lendStr = String(data: lendData, encoding: .utf8) {
             session.slumpChartLendingRecordsJSON = lendStr
         }
-        modelContext.insert(session)
+        // 保存時点の店レート・機種スペックを JSON で固定（失敗してもセッション保存は続行）
         do {
-            try modelContext.save()
+            let snapshot = GameSessionSnapshot(
+                sessionID: session.id,
+                appliedRate: Double(refShop.interpretedBallsPer500Pt),
+                appliedExchangeRate: refShop.interpretedPayoutCoefficientPtPerBall,
+                spec: log.selectedMachine.makeSpecSnapshot()
+            )
+            session.snapshotData = try snapshot.jsonData()
+            #if DEBUG
+            AppLog.sessionSnapshot.debug(
+                "encoded GameSessionSnapshot sessionID=\(session.id.uuidString, privacy: .public) bytes=\(session.snapshotData?.count ?? 0, privacy: .public)"
+            )
+            #endif
+        } catch {
+            AppLog.sessionSnapshot.error(
+                "GameSessionSnapshot encode failed: \(error.localizedDescription, privacy: .public)"
+            )
+        }
+        guard let sessionRepo = gameSessionRepository else {
+            saveResult = "error: データの保存経路が初期化されていません。"
+            return false
+        }
+        do {
+            try sessionRepo.save(session)
             // 確定済みセッションを「続きから」に残すと同一内容の再保存リスクがあるため消す。失敗時はオートセーブ済みスナップショットを温存。
             ResumableStateStore.clear()
             // 成功：アラートは出さない。必要ならトーストのみ。
@@ -2387,23 +2453,23 @@ private struct DownTriangle: Shape {
 private enum BorderGaugeHelp {
     static let explanation = """
 📊 数値の見方ガイド（ポップアップ用）
-このゲージは、お店のルール（貸玉料金や交換率）をすべて計算に入れ、「その台が本当に勝てる台か」をリアルタイムで判定しています。
+このゲージは、お店のルール（貸玉数・交換率）をすべて計算に入れ、「その台が本当に勝てる台か」をリアルタイムで判定しています。
 
 1. 等価ボーダー
 1,000pt（250玉）あたり何回まわればトントンかという、機種ごとの基準値で、全ての計算の土台となります。
 
 2. 実質ボーダー
-等価ボーダーに「お店の手数料（貸玉料金）」と「交換の差損」を加味した、その店専用の目標値です。
+等価ボーダーに「お店の手数料（貸玉数の違い）」と「交換の差損」を加味した、その店専用の目標値です。
 
 手数料が高い店ほど、この数字は上がります。「この店で勝つには最低これだけ回さなければならない」という本当の目標値です。
 
 3. 実質回転率
-現金投資（pt）と、持ち玉投資を払出係数で換算した実費を合計し、その1000ptあたりで通常回転を割った値です。交換（換金）の有利不利は主にここに反映されます。
+現金投資（pt）と、持ち玉投資を交換率（pt/玉）で換算した実費を合計し、その1000ptあたりで通常回転を割った値です。交換（換金）の有利不利は主にここに反映されます。
 
 実質ボーダーとの差がゲージの目安になります。
 
 4. 表面回転率
-貸玉で換算した玉数と持ち玉投資の玉を、等価250玉＝1単位にそろえた分母で割った回転数です。払出係数は入れないため、台の「純粋な回り」に近い指標です。
+貸玉で換算した玉数と持ち玉投資の玉を、等価250玉＝1単位にそろえた分母で割った回転数です。交換率（pt/玉）は分母に入れないため、台の「純粋な回り」に近い指標です。
 
 注意: 貸玉が等価でない店では、表面と実質で数字がずれます。
 """
@@ -2869,10 +2935,10 @@ struct WinHistoryBarChartView: View {
 
         if onSelectRecord != nil {
             column
-                .accessibilityHint("長押し、またはここで「大当たり回数を修正」で連チャン含む回数を変更できます。")
+                .accessibilityHint("長押しで、この区間の大当たり回数と総獲得出玉を修正できます。")
                 .accessibilityAddTraits(.allowsDirectInteraction)
                 .accessibilityActions {
-                    Button("大当たり回数を修正") {
+                    Button("大当たりを修正") {
                         onSelectRecord?(record)
                     }
                 }
@@ -2941,91 +3007,6 @@ struct SyncInputView: View {
     }
 }
 
-struct WinCountCorrectView: View {
-    @Binding var rushCount: String
-    @Binding var normalCount: String
-    var onConfirm: () -> Void
-    @EnvironmentObject private var themeManager: ThemeManager
-    @State private var showErrorAlert = false
-    @State private var rushPadTrigger = 0
-    @State private var normalPadTrigger = 0
-
-    var body: some View {
-        let t = themeManager.currentTheme
-        let fieldCorner = max(6, min(t.cornerRadius * 0.4, 12))
-        VStack(spacing: 20) {
-            Text("当選回数を修正")
-                .font(t.themedFont(size: 17, weight: .semibold))
-                .foregroundColor(t.mainTextColor)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("RUSH 当選回数")
-                    .font(t.themedFont(size: 12, weight: .regular))
-                    .foregroundColor(t.subTextColor)
-                IntegerPadTextField(
-                    text: $rushCount,
-                    placeholder: "",
-                    maxDigits: 5,
-                    font: .monospacedSystemFont(ofSize: 22, weight: .medium),
-                    textColor: .label,
-                    accentColor: UIColor(t.accentColor),
-                    focusTrigger: rushPadTrigger,
-                    onPreviousField: { normalPadTrigger += 1 },
-                    onNextField: { normalPadTrigger += 1 }
-                )
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .multilineTextAlignment(.center)
-                .background(t.panelBackground.opacity(0.35))
-                .clipShape(RoundedRectangle(cornerRadius: fieldCorner, style: .continuous))
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                Text("通常当選回数")
-                    .font(t.themedFont(size: 12, weight: .regular))
-                    .foregroundColor(t.subTextColor)
-                IntegerPadTextField(
-                    text: $normalCount,
-                    placeholder: "",
-                    maxDigits: 5,
-                    font: .monospacedSystemFont(ofSize: 22, weight: .medium),
-                    textColor: .label,
-                    accentColor: UIColor(t.accentColor),
-                    focusTrigger: normalPadTrigger,
-                    onPreviousField: { rushPadTrigger += 1 },
-                    onNextField: { rushPadTrigger += 1 }
-                )
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .multilineTextAlignment(.center)
-                .background(t.panelBackground.opacity(0.35))
-                .clipShape(RoundedRectangle(cornerRadius: fieldCorner, style: .continuous))
-            }
-            Button("確定") {
-                UIApplication.dismissKeyboard()
-                let r = Int(rushCount.trimmingCharacters(in: .whitespaces)) ?? 0
-                let n = Int(normalCount.trimmingCharacters(in: .whitespaces)) ?? 0
-                if r < 0 || n < 0 {
-                    showErrorAlert = true
-                    return
-                }
-                onConfirm()
-            }
-            .buttonStyle(.borderedProminent)
-            Spacer()
-        }
-        .padding()
-        .pstatsPanelStyle()
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                rushPadTrigger += 1
-            }
-        }
-        .presentationDetents([.height(360)])
-        .alert("入力エラー", isPresented: $showErrorAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("負の数は入力できません")
-        }
-    }
-}
-
 // MARK: - 続きからオートセーブ（タイマー更新のスコープを限定）
 /// `ResumableStateStore.autosave` 内の最短間隔スロットルと併用。タイマーは本型の body のみ無効化し、実戦メイン UI の再レイアウトコストを抑える。
 private struct PlayResumableAutosaveHook: View {
@@ -3049,8 +3030,3 @@ private struct PlayResumableAutosaveHook: View {
     }
 }
 
-#Preview("WinCountCorrectView") {
-    ThemePreview {
-        WinCountCorrectView(rushCount: .constant("2"), normalCount: .constant("5")) {}
-    }
-}

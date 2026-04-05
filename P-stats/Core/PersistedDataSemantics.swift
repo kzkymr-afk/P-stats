@@ -6,9 +6,11 @@ import Foundation
 /// SwiftData で新プロパティを足すと「旧ストアにそのフィールドがない」状態が必ず発生するため、**未設定時の解釈はここと `*Interpreted` 拡張に集約**する（バラバラの `?? 0` を避ける）。
 ///
 /// ## 運用ルール（コードレビュー用チェックリスト）
-/// 1. **新プロパティ追加** → `VersionedSchema` で V2 を切り、`SchemaMigrationPlan` のステージで **バックフィル or 明示的デフォルト**を決める。意味のある値が「黙って 0」になるのを防ぐ。
+/// 1. **新プロパティ追加** → `PStatsSchemaVersions.swift` の手順で V2 を切り、`SchemaMigrationPlan` のステージで **バックフィル or 明示的デフォルト**を決める。意味のある値が「黙って 0」になるのを防ぐ。
 /// 2. **計算式だけ変更** → 可能なら **再計算で直る**形（生データから導出）にし、派生値の永続化は最小限にする。
 /// 3. **Optional vs デフォルト** → 「未記録」と「本当に 0」を区別したいときは Optional＋解釈、そうでなければここの既定とコメントで揃える。
+/// 4. **軽量移行で足りない変換** → `PStatsDataNormalizer` の `currentNormalizationRevision` を上げ、**冪等**な正規化ステップを追加する（`AppBootstrap` でコンテナ直後に実行済み）。
+/// 5. **ストアファイル名** → `PStatsStoreConfiguration.persistentStoreName` はリリース後に変更しない（別 DB 扱いになる）。
 enum PersistedDataSemantics {
 
     // MARK: 店舗（`Shop`）— 貸玉・払出
@@ -17,7 +19,7 @@ enum PersistedDataSemantics {
     /// 未設定・0・負数の解釈に使う（旧データや欠損対策）。
     static let defaultBallsPer500Pt: Int = 125
 
-    /// 払出係数：1 玉あたりの換金（pt/玉）。等価 **4.0**（1000pt＝250玉と整合）。
+    /// 交換率（1玉あたりのpt／UIでは「交換率（pt/玉）」）。等価 **4.0**（1000pt＝250玉と整合）。
     static let defaultPayoutCoefficientPtPerBall: Double = 4.0
 
     // MARK: 実戦の現金投資粒度（`GameLog`・精算）
@@ -50,7 +52,7 @@ extension Shop {
         return PersistedDataSemantics.defaultBallsPer500Pt
     }
 
-    /// 払出係数（pt/玉）。**0 以下**は未設定としてアプリ既定へ。
+    /// 交換率（pt/玉）。**0 以下**は未設定としてアプリ既定へ。
     var interpretedPayoutCoefficientPtPerBall: Double {
         if payoutCoefficient > 0 { return payoutCoefficient }
         return PersistedDataSemantics.defaultPayoutCoefficientPtPerBall
@@ -61,7 +63,7 @@ extension Shop {
         PersistedDataSemantics.ballsPer1000Pt(fromBallsPer500Pt: interpretedBallsPer500Pt)
     }
 
-    /// 持ち玉投資1回あたりの玉数。**0 以下**は未設定として貸玉（500ptあたり）と同じ。
+    /// 持ち玉払い出し数（投資ボタン1回あたりの玉）。**0 以下**は未設定として貸玉数（500ptあたり）と同じ。
     var interpretedHoldingsBallsPerTap: Int {
         if holdingsBallsPerButton > 0 { return holdingsBallsPerButton }
         return interpretedBallsPer500Pt
@@ -71,7 +73,7 @@ extension Shop {
 // MARK: - GameSession（保存済み係数が欠ける行）
 
 extension GameSession {
-    /// 行に保存された払出係数。0 のときは **店舗の解釈値**、なければアプリ既定。
+    /// 行に保存された交換率（pt/玉）。0 のときは **店舗の解釈値**、なければアプリ既定。
     func interpretedPayoutCoefficientPtPerBall(fallbackShop: Shop?) -> Double {
         if payoutCoefficient > 0 { return payoutCoefficient }
         if let shop = fallbackShop { return shop.interpretedPayoutCoefficientPtPerBall }
