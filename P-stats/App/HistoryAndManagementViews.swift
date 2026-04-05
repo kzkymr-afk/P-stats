@@ -705,8 +705,8 @@ struct SessionDetailView: View {
     }
 
     private var playTimeDisplay: (start: String, end: String, duration: String, hourly: String) {
-        let start = session.startedAt.map { JapaneseDateFormatters.timeShort.string(from: $0) } ?? "—"
-        let end = session.endedAt.map { JapaneseDateFormatters.timeShort.string(from: $0) } ?? "—"
+        let start = session.startedAt.map { JapaneseDateFormatters.dateTimeTokyo.string(from: $0) } ?? "—"
+        let end = session.endedAt.map { JapaneseDateFormatters.dateTimeTokyo.string(from: $0) } ?? "—"
         let duration: String
         if let sec = session.playDurationSeconds {
             let m = Int((sec / 60).rounded())
@@ -730,6 +730,16 @@ struct SessionDetailView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     SessionSlumpChartForSessionView(session: session, height: 180, strokeTint: themeManager.currentTheme.accentColor)
 
+                    let t = playTimeDisplay
+                    detailPanel(title: "遊技時間（東京）") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            detailRow(label: "遊技開始", value: t.start)
+                            detailRow(label: "遊技終了", value: t.end)
+                            detailRow(label: "遊技時間", value: t.duration)
+                            detailRow(label: "時給", value: t.hourly)
+                        }
+                    }
+
                     detailPanel(title: "機種・店舗") {
                         VStack(alignment: .leading, spacing: 8) {
                             detailRow(label: "機種", value: session.machineName)
@@ -752,11 +762,23 @@ struct SessionDetailView: View {
                             detailRow(label: "欠損・余剰", value: "\(session.deficitSurplus >= 0 ? "+" : "")\(session.deficitSurplus.formattedPtWithUnit)")
                             detailRow(label: "実質回転率", value: realRotationRateDisplay)
                             detailRow(label: "ボーダーとの差", value: borderDiffDisplay)
-                            let t = playTimeDisplay
-                            detailRow(label: "開始時刻", value: t.start)
-                            detailRow(label: "終了時刻", value: t.end)
-                            detailRow(label: "遊技時間", value: t.duration)
-                            detailRow(label: "時給", value: t.hourly)
+                        }
+                    }
+
+                    if !session.simplePlayTimelineJSON.isEmpty {
+                        let rows = GameSessionSimpleTimelineStorage.decode(session.simplePlayTimelineJSON)
+                        if !rows.isEmpty {
+                            detailPanel(title: "シンプル入力の区間") {
+                                VStack(alignment: .leading, spacing: 10) {
+                                    ForEach(rows) { row in
+                                        simpleTimelineDetailRow(row: row, rows: rows)
+                                    }
+                                    let sumP = GameSessionSimpleTimelineStorage.sumPrizeBalls(rows)
+                                    if sumP > 0 {
+                                        detailRow(label: "獲得出玉（区間合計）", value: "\(sumP) 玉")
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -818,6 +840,38 @@ struct SessionDetailView: View {
             .padding(.top, 10)
             .padding(.bottom, 10)
             .background(Color.black.opacity(DesignTokens.Surface.History.panelScrim))
+        }
+    }
+
+    private func simpleTimelineRowTitle(row: SimplePlayTimelineRowStored, in rows: [SimplePlayTimelineRowStored]) -> String {
+        var n = 0
+        var s = 0
+        for r in rows {
+            if r.id == row.id { break }
+            switch r.kind {
+            case .normal: n += 1
+            case .bonusSession: s += 1
+            }
+        }
+        switch row.kind {
+        case .normal: return "通常時\(n + 1)"
+        case .bonusSession: return "セッション\(s + 1)"
+        }
+    }
+
+    @ViewBuilder
+    private func simpleTimelineDetailRow(row: SimplePlayTimelineRowStored, rows: [SimplePlayTimelineRowStored]) -> some View {
+        let title = simpleTimelineRowTitle(row: row, in: rows)
+        switch row.kind {
+        case .normal:
+            let v = row.investmentNormalRotations > 0 ? "投資通常回転 \(row.investmentNormalRotations) 回" : "—"
+            detailRow(label: title, value: v)
+        case .bonusSession:
+            let parts = [
+                row.hitCount > 0 ? "あたり \(row.hitCount) 回" : nil,
+                row.prizeBalls > 0 ? "出玉 \(row.prizeBalls) 玉" : nil
+            ].compactMap { $0 }
+            detailRow(label: title, value: parts.isEmpty ? "—" : parts.joined(separator: " · "))
         }
     }
 

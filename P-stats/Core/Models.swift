@@ -559,6 +559,8 @@ final class GameSession {
     var slumpChartHoldingsBallsPerTap: Int = 0
     /// `GameSessionSnapshot` を JSON エンコードしたバイト列。nil＝未保存の旧データ。
     var snapshotData: Data? = nil
+    /// シンプル入力の「通常時／セッション」タイムライン（JSON）。空＝未使用・旧データ
+    var simplePlayTimelineJSON: String = ""
 
     init(machineName: String, shopName: String, manufacturerName: String = "", inputCash: Int, totalHoldings: Int, normalRotations: Int, totalUsedBalls: Int, payoutCoefficient: Double, totalRealCost: Double = 0, expectationRatioAtSave: Double = 0, rushWinCount: Int = 0, normalWinCount: Int = 0, formulaBorderPer1k: Double = 0) {
         self.machineName = machineName

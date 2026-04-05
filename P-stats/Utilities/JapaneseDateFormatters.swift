@@ -27,10 +27,29 @@ enum JapaneseDateFormatters {
         return f
     }()
 
-    /// 時刻のみ（日本語ロケール・例: 21:30）
+    /// 時刻のみ（日本語ロケール・例: 21:30）。端末の現地タイムゾーン。
     static let timeShort: DateFormatter = {
         let f = DateFormatter()
         f.locale = Locale(identifier: "ja_JP")
+        f.dateStyle = .none
+        f.timeStyle = .short
+        return f
+    }()
+
+    /// 日本標準時（東京）で日付＋時刻。例: 2026年4月5日 14:30
+    static let dateTimeTokyo: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ja_JP")
+        f.timeZone = TimeZone(identifier: "Asia/Tokyo")
+        f.dateFormat = "yyyy年M月d日 H:mm"
+        return f
+    }()
+
+    /// 日本標準時（東京）で時刻のみ（例: 14:30）
+    static let timeShortTokyo: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ja_JP")
+        f.timeZone = TimeZone(identifier: "Asia/Tokyo")
         f.dateStyle = .none
         f.timeStyle = .short
         return f

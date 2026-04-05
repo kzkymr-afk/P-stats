@@ -15,6 +15,26 @@ private struct PhaseDraft: Identifiable, Equatable {
     }
 }
 
+private struct SimpleTimelineDraft: Identifiable, Equatable {
+    var id: UUID
+    var kind: SimplePlayTimelineRowKind
+    var investmentRotationsStr: String
+    var hitCountStr: String
+    var prizeBallsStr: String
+
+    static func normal(id: UUID = UUID()) -> SimpleTimelineDraft {
+        SimpleTimelineDraft(id: id, kind: .normal, investmentRotationsStr: "", hitCountStr: "", prizeBallsStr: "")
+    }
+
+    static func bonus(id: UUID = UUID()) -> SimpleTimelineDraft {
+        SimpleTimelineDraft(id: id, kind: .bonusSession, investmentRotationsStr: "", hitCountStr: "", prizeBallsStr: "")
+    }
+
+    static func defaultTriple() -> [SimpleTimelineDraft] {
+        [normal(), bonus(), normal()]
+    }
+}
+
 struct GameSessionEditView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -44,6 +64,12 @@ struct GameSessionEditView: View {
 
     @State private var simpleInvestPadTrigger = 0
     @State private var simpleRecoveryPadTrigger = 0
+    @State private var recordSimplePlayTimes = false
+    @State private var recordSimpleTimeline = false
+    @State private var simplePlayStartedAt = Date()
+    @State private var simplePlayEndedAt = Date()
+    @State private var simpleTimelineRows: [SimpleTimelineDraft] = SimpleTimelineDraft.defaultTriple()
+    @State private var simpleTimelinePadTriggers: [UUID: Int] = [:]
 
     private var skin: any ApplicationTheme { themeManager.currentTheme }
     private var accent: Color { skin.accentColor }
@@ -249,6 +275,62 @@ struct GameSessionEditView: View {
                             onNextField: nil
                         )
 
+                        simpleInputCardHeader(title: "遊技時間（任意）", systemImage: "clock") {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Toggle(isOn: $recordSimplePlayTimes) {
+                                    Text("遊技開始・終了を記録する")
+                                        .font(AppTypography.bodyRounded)
+                                        .foregroundColor(skin.mainTextColor)
+                                }
+                                .tint(accent)
+                                if recordSimplePlayTimes {
+                                    DatePicker(
+                                        "遊技開始",
+                                        selection: $simplePlayStartedAt,
+                                        displayedComponents: [.date, .hourAndMinute]
+                                    )
+                                    .environment(\.timeZone, TimeZone(identifier: "Asia/Tokyo")!)
+                                    .tint(accent)
+                                    DatePicker(
+                                        "遊技終了",
+                                        selection: $simplePlayEndedAt,
+                                        displayedComponents: [.date, .hourAndMinute]
+                                    )
+                                    .environment(\.timeZone, TimeZone(identifier: "Asia/Tokyo")!)
+                                    .tint(accent)
+                                }
+                            }
+                        }
+
+                        simpleInputCardHeader(title: "区間の内訳（任意）", systemImage: "square.split.2x1") {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Toggle(isOn: $recordSimpleTimeline) {
+                                    Text("区間の内訳を入力する")
+                                        .font(AppTypography.bodyRounded)
+                                        .foregroundColor(skin.mainTextColor)
+                                }
+                                .tint(accent)
+                                if recordSimpleTimeline {
+                                    ForEach($simpleTimelineRows) { $row in
+                                        simpleTimelineRowEditor(row: $row)
+                                    }
+                                    Button {
+                                        simpleTimelineRows.append(SimpleTimelineDraft.bonus())
+                                        simpleTimelineRows.append(SimpleTimelineDraft.normal())
+                                    } label: {
+                                        Label("セッションを追加", systemImage: "plus.circle.fill")
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundColor(accent)
+                                    }
+                                    .buttonStyle(.plain)
+                                    Text("通常時の行には「投資通常回転」、セッションの行には「あたり回数」「獲得出玉」を入力できます。ここに回転数や出玉を入れると、期待値分析・回転率系の集計に反映されます（投資額は上欄のままです）。")
+                                        .font(AppTypography.annotation)
+                                        .foregroundColor(skin.subTextColor)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+
                         Text("回収額を保存するには、店舗に交換率（pt/玉）が設定されている必要があります。")
                             .font(AppTypography.annotation)
                             .foregroundColor(skin.subTextColor)
@@ -276,6 +358,109 @@ struct GameSessionEditView: View {
             }
         }
         .toolbarColorScheme(.dark, for: .navigationBar)
+    }
+
+    private func bumpSimpleTimelinePad(id: UUID) {
+        simpleTimelinePadTriggers[id, default: 0] += 1
+    }
+
+    private func simpleTimelineDraftTitle(draft: SimpleTimelineDraft, in rows: [SimpleTimelineDraft]) -> String {
+        var n = 0
+        var s = 0
+        for r in rows {
+            if r.id == draft.id { break }
+            switch r.kind {
+            case .normal: n += 1
+            case .bonusSession: s += 1
+            }
+        }
+        switch draft.kind {
+        case .normal: return "通常時\(n + 1)"
+        case .bonusSession: return "セッション\(s + 1)"
+        }
+    }
+
+    @ViewBuilder
+    private func simpleTimelineRowEditor(row: Binding<SimpleTimelineDraft>) -> some View {
+        let id = row.wrappedValue.id
+        let title = simpleTimelineDraftTitle(draft: row.wrappedValue, in: simpleTimelineRows)
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .font(AppTypography.sectionSubheading)
+                .foregroundColor(skin.mainTextColor)
+            if row.wrappedValue.kind == .normal {
+                HStack(alignment: .center, spacing: 10) {
+                    Text("投資通常回転")
+                        .font(AppTypography.annotation)
+                        .foregroundColor(skin.subTextColor)
+                        .frame(width: 120, alignment: .leading)
+                    Spacer(minLength: 8)
+                    IntegerPadTextField(
+                        text: row.investmentRotationsStr,
+                        placeholder: "0",
+                        maxDigits: 6,
+                        font: .systemFont(ofSize: 20, weight: .semibold),
+                        textColor: UIColor(skin.mainTextColor),
+                        accentColor: UIColor(accent),
+                        focusTrigger: simpleTimelinePadTriggers[id, default: 0],
+                        adjustsFontSizeToFitWidth: true,
+                        minimumFontSize: 12
+                    )
+                    .frame(width: 88, alignment: .trailing)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { bumpSimpleTimelinePad(id: id) }
+            } else {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(alignment: .center, spacing: 10) {
+                        Text("あたり回数")
+                            .font(AppTypography.annotation)
+                            .foregroundColor(skin.subTextColor)
+                            .frame(width: 120, alignment: .leading)
+                        Spacer(minLength: 8)
+                        IntegerPadTextField(
+                            text: row.hitCountStr,
+                            placeholder: "0",
+                            maxDigits: 5,
+                            font: .systemFont(ofSize: 20, weight: .semibold),
+                            textColor: UIColor(skin.mainTextColor),
+                            accentColor: UIColor(accent),
+                            focusTrigger: simpleTimelinePadTriggers[id, default: 0],
+                            adjustsFontSizeToFitWidth: true,
+                            minimumFontSize: 12
+                        )
+                        .frame(width: 72, alignment: .trailing)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture { bumpSimpleTimelinePad(id: id) }
+                    HStack(alignment: .center, spacing: 10) {
+                        Text("獲得出玉（玉）")
+                            .font(AppTypography.annotation)
+                            .foregroundColor(skin.subTextColor)
+                            .frame(width: 120, alignment: .leading)
+                        Spacer(minLength: 8)
+                        IntegerPadTextField(
+                            text: row.prizeBallsStr,
+                            placeholder: "0",
+                            maxDigits: 8,
+                            font: .systemFont(ofSize: 20, weight: .semibold),
+                            textColor: UIColor(skin.mainTextColor),
+                            accentColor: UIColor(accent),
+                            focusTrigger: simpleTimelinePadTriggers[id, default: 0],
+                            adjustsFontSizeToFitWidth: true,
+                            minimumFontSize: 12
+                        )
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .trailing)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture { bumpSimpleTimelinePad(id: id) }
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppGlassStyle.rowBackground, in: RoundedRectangle(cornerRadius: 12))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(accent.opacity(0.2), lineWidth: 1))
     }
 
     private func simpleInputCardHeader<Content: View>(
@@ -714,7 +899,7 @@ struct GameSessionEditView: View {
         dismiss()
     }
 
-    /// シンプル入力：投資・回収は pt。回収は店舗の交換率（pt/玉）で玉数に換算。回転・当選・期待値は 0 / 中立で保存。
+    /// シンプル入力：投資・回収は pt。回収は店舗の交換率（pt/玉）で玉数に換算。区間入力で通常回転があれば期待値系を再計算。
     private func saveSimpleNewSession(machine: Machine, shop: Shop) {
         let invCash = Int(investmentCash) ?? 0
         let recPt = Int(recoveryAmountPt) ?? 0
@@ -730,24 +915,89 @@ struct GameSessionEditView: View {
         let cashBalls = ballsPer1000 > 0
             ? Int(Double(invCash) / 1000.0 * ballsPer1000)
             : max(0, Int((Double(invCash) / 1000.0 * 250.0).rounded()))
+
+        let storedTimeline: [SimplePlayTimelineRowStored] = recordSimpleTimeline
+            ? simpleTimelineRows.map { d in
+                let r = Int(d.investmentRotationsStr.trimmingCharacters(in: .whitespaces)) ?? 0
+                let h = Int(d.hitCountStr.trimmingCharacters(in: .whitespaces)) ?? 0
+                let p = Int(d.prizeBallsStr.trimmingCharacters(in: .whitespaces)) ?? 0
+                return SimplePlayTimelineRowStored(
+                    id: d.id,
+                    kind: d.kind,
+                    investmentNormalRotations: max(0, r),
+                    hitCount: max(0, h),
+                    prizeBalls: max(0, p)
+                )
+            }
+            : []
+        let sumR = recordSimpleTimeline ? GameSessionSimpleTimelineStorage.sumNormalRotations(storedTimeline) : 0
+        let sumH = recordSimpleTimeline ? GameSessionSimpleTimelineStorage.sumHitCounts(storedTimeline) : 0
+        let timelineJSON = recordSimpleTimeline ? GameSessionSimpleTimelineStorage.encode(storedTimeline) : ""
+
         let newSession = GameSession(
             machineName: machine.name,
             shopName: shop.name,
             manufacturerName: machine.manufacturer,
             inputCash: invCash,
             totalHoldings: tHoldings,
-            normalRotations: 0,
+            normalRotations: recordSimpleTimeline && sumR > 0 ? sumR : 0,
             totalUsedBalls: max(0, cashBalls),
             payoutCoefficient: rate,
             totalRealCost: Double(invCash),
             expectationRatioAtSave: 1.0,
-            rushWinCount: 0,
+            rushWinCount: recordSimpleTimeline ? sumH : 0,
             normalWinCount: 0,
             formulaBorderPer1k: formula > 0 ? formula : 0
         )
         newSession.date = date
-        newSession.isCashflowOnlyRecord = true
+        newSession.simplePlayTimelineJSON = timelineJSON
+        if recordSimplePlayTimes {
+            var s = simplePlayStartedAt
+            var e = simplePlayEndedAt
+            if e < s { swap(&s, &e) }
+            newSession.startedAt = s
+            newSession.endedAt = e
+        }
+        if recordSimpleTimeline && sumR > 0 {
+            let m = expectationMetricsForSimpleSave(machine: machine, shop: shop, invCash: invCash, normalRotations: sumR)
+            newSession.isCashflowOnlyRecord = false
+            newSession.effectiveBorderPer1kAtSave = m.dynamicBorder
+            newSession.realRotationRateAtSave = m.economicRealRate
+            newSession.expectationRatioAtSave = m.expectationRatio
+            newSession.theoreticalValue = PStatsCalculator.theoreticalValuePt(
+                totalRealCostPt: Double(invCash),
+                expectationRatio: m.expectationRatio
+            )
+        } else {
+            newSession.isCashflowOnlyRecord = true
+        }
         modelContext.insert(newSession)
+    }
+
+    private func expectationMetricsForSimpleSave(machine: Machine, shop: Shop, invCash: Int, normalRotations nRot: Int)
+        -> (dynamicBorder: Double, economicRealRate: Double, expectationRatio: Double) {
+        let rate = shop.payoutCoefficient
+        let realCost = Double(invCash)
+        let economicRealRate: Double = realCost > 0 ? Double(nRot) / (realCost / 1000.0) : 0.0
+        let ballsPer1000 = Double(shop.ballsPerCashUnit * 2)
+        let cashToBalls = Double(invCash) / 500.0 * Double(shop.ballsPerCashUnit)
+        let effectiveUnitsForBorder = cashToBalls / 250.0
+        let formula = parseFormulaBorder(machine.border)
+        let effective1RNet = machine.averageNetPerRound
+        let loanCorrection = ballsPer1000 > 0 ? 250.0 / ballsPer1000 : 1.0
+        let exchangeCorrection = rate > 0 ? 4.0 / rate : 1.0
+        let dynamicBorder: Double
+        if formula > 0 {
+            dynamicBorder = formula * loanCorrection * exchangeCorrection
+        } else if effective1RNet > 0 && machine.probabilityDenominator > 0 && rate > 0 && ballsPer1000 > 0 {
+            dynamicBorder = Double(machine.probabilityDenominator) * 250.0 / effective1RNet * loanCorrection * exchangeCorrection
+        } else if effective1RNet > 0 && rate > 0 {
+            dynamicBorder = 1000.0 / (effective1RNet * rate)
+        } else {
+            dynamicBorder = 0
+        }
+        let expectationRatio = (dynamicBorder > 0 && effectiveUnitsForBorder > 0) ? (economicRealRate / dynamicBorder) : 1.0
+        return (dynamicBorder, economicRealRate, expectationRatio)
     }
 
     private func parseFormulaBorder(_ borderStr: String) -> Double {
